@@ -1,0 +1,13 @@
+﻿  Map.cpp
+d:\game-master\game\map.cpp(8): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+d:\game-master\game\map.cpp(8): warning C4244: 'initializing': conversion from 'float' to 'LONG', possible loss of data
+d:\game-master\game\map.cpp(17): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+d:\game-master\game\map.cpp(20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\game-master\game\map.cpp(21): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\game-master\game\map.cpp(51): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\game-master\game\map.cpp(82): warning C4838: conversion from 'int' to 'float' requires a narrowing conversion
+d:\game-master\game\map.cpp(82): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+d:\game-master\game\map.cpp(93): warning C4838: conversion from 'int' to 'float' requires a narrowing conversion
+d:\game-master\game\map.cpp(93): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+  Game.vcxproj -> D:\Game-master\x64\Debug\Game.exe
+  Game.vcxproj -> D:\Game-master\x64\Debug\Game.pdb (Partial PDB)

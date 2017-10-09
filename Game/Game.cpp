@@ -1,12 +1,22 @@
 #include <Windows.h>
+#include "Map.h"
 
 static bool running;
+
+Map map;
 
 LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam) 
 {
 	LRESULT result = 0;
 
 	switch (message) {
+	case WM_PAINT: {
+		PAINTSTRUCT paint = {};
+		HDC context = BeginPaint(window, &paint);
+		map.draw(context);
+		EndPaint(window, &paint);
+	} break;
+
 	case WM_DESTROY: {
 		running = false;
 	} break;
@@ -21,36 +31,6 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	}
 
 	return result;
-}
-
-void WinDraw(HWND window, HDC context)
-{
-	RECT rect;
-	GetClientRect(window, &rect);
-
-	HBRUSH brushBlack = CreateSolidBrush(RGB(0, 0, 0));
-	HBRUSH brushRed = CreateSolidBrush(RGB(255, 0, 0));
-	HBRUSH brushWhite = CreateSolidBrush(RGB(255, 255, 255));
-
-	FillRect(context, &rect, brushBlack);
-
-	RECT rect1 = {};
-
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
-
-	rect1.left = rect.left + width / 4;
-	rect1.right = rect.right - width / 2;
-
-	rect1.bottom = rect.bottom - height / 4;
-	rect1.top = rect.top + height / 4;
-
-	FillRect(context, &rect1, brushRed);
-
-	rect1.left = rect.left + width / 2;
-	rect1.right = rect.right - width / 4;
-
-	FillRect(context, &rect1, brushWhite);
 }
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
@@ -89,6 +69,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	HDC context = GetDC(window);
 	MSG message;
+	
+	RECT rect;
+	GetClientRect(window, &rect);
+
+	int width = rect.right - rect.left;
+	int height = rect.bottom - rect.top;
+
+	map.width = width;
+	map.height = height;
+	map.generateGrid(100);
 
 	running = true;
 	while (running) {
@@ -100,8 +90,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		else {
 			break;
 		}
-
-		WinDraw(window, context);
 	}
 
 	return 0;
