@@ -1,5 +1,5 @@
 #include <Windows.h>
-#include "Map.h"
+#include "GridMapCreator.h"
 
 static bool running;
 
@@ -75,10 +75,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-
-	map.width = width;
-	map.height = height;
-	map.generateGrid(100);
+	GridMapCreator creator = { width, height, 100 };
+	map = creator.generateGrid();
 
 	running = true;
 	while (running) {
