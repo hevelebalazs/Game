@@ -1,0 +1,8 @@
+﻿  GridMapCreator.cpp
+d:\game\game\gridmapcreator.cpp(9): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+d:\game\game\gridmapcreator.cpp(10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\game\game\gridmapcreator.cpp(11): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\game\game\gridmapcreator.cpp(16): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+d:\game\game\gridmapcreator.cpp(19): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  Game.vcxproj -> D:\Game\x64\Debug\Game.exe
+  Game.vcxproj -> D:\Game\x64\Debug\Game.pdb (Partial PDB)
