@@ -157,14 +157,17 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 
 			startIntersection = endIntersection;
 			startPosition = endPosition;
-
+			
 			if (endConnected) {
 				if (rand() % 2 < 1) break;
+			}
+			else {
+				if (rand() % 5 < 1) break;
 			}
 		}
 	}
 
-	delete connectedPositions;
+	delete[] connectedPositions;
 
 	return map;
 }
