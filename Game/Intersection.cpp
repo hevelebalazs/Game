@@ -2,8 +2,8 @@
 
 void Intersection::draw(HDC context) {
 	if (leftRoad || rightRoad || topRoad || bottomRoad) {
-		HBRUSH brushGrey = CreateSolidBrush(RGB(200, 128, 128));
-		int roadWidth;
+		HBRUSH brushGrey = CreateSolidBrush(RGB(128, 128, 128));
+		float roadWidth;
 		if (leftRoad)
 			roadWidth = leftRoad->width;
 		else if (rightRoad)

@@ -113,7 +113,6 @@
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GridMapCreator.cpp" />
-    <ClCompile Include="GridPosition.cpp" />
     <ClCompile Include="Intersection.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Point.cpp" />
@@ -121,7 +120,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GridMapCreator.h" />
-    <ClInclude Include="GridPosition.h" />
     <ClInclude Include="Intersection.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="Point.h" />

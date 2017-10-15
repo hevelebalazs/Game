@@ -75,7 +75,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-	map = generateGrid(width, height, 100);
+	map = createGridMap((float)width, (float)height, 100);
 
 	running = true;
 	while (running) {

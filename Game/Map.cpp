@@ -4,8 +4,8 @@
 #include <time.h>
 
 void Map::draw(HDC context) {
-	HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0));
-	RECT rect = { 0, 0, width, height };
+	HBRUSH brush = CreateSolidBrush(RGB(0, 255, 0));
+	RECT rect = { 0, 0, (LONG)width, (LONG)height };
 
 	FillRect(context, &rect, brush);
 
@@ -14,4 +14,3 @@ void Map::draw(HDC context) {
 	for (int i = 0; i < roadCount; ++i)
 		roads[i].draw(context);
 }
-
