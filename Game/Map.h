@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Intersection.h"
 
 struct Map

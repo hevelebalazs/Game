@@ -34,6 +34,18 @@ void Bitmap::drawPixel(int row, int col, Color color) {
 }
 
 void Bitmap::drawRect(int top, int left, int bottom, int right, Color color) {
+	if (top > bottom) {
+		int tmp = top;
+		top = bottom;
+		bottom = tmp;
+	}
+
+	if (left > right) {
+		int tmp = left;
+		left = right;
+		right = tmp;
+	}
+
 	for (int row = top; row < bottom; ++row) {
 		for (int col = left; col < right; ++col) {
 			drawPixel(row, col, color);

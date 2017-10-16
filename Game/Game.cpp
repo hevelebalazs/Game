@@ -2,11 +2,14 @@
 #include <math.h>
 #include "GridMapCreator.h"
 #include "Bitmap.h"
+#include "Path.h"
 
 static bool running;
 
 Bitmap globalBitmap;
-Map map;
+Map globalMap;
+Intersection *globalSelectedIntersection;
+IntersectionPathHelper globalPathHelper;
 
 void WinResize(Bitmap *bitmap, int width, int height) {
 	if (bitmap->memory) delete bitmap->memory;
@@ -43,11 +46,26 @@ static Point WinMousePosition(HWND window) {
 
 void WinDraw(HWND window, Bitmap bitmap) {
 	Point mousePoint = WinMousePosition(window);
-	Intersection *highlightIntersection = map.getIntersectionAtPoint(mousePoint, 20.0f);
+	Intersection *highlightIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
 
-	map.draw(bitmap);
+	globalMap.draw(bitmap);
 
-	if (highlightIntersection) highlightIntersection->highlight(bitmap);
+	if (highlightIntersection) {
+		Color color = { 1.0f, 0.5f, 0.0f };
+		highlightIntersection->highlight(bitmap, color);
+	}
+
+	if (globalSelectedIntersection) {
+		Color color = { 1.0f, 0.0f, 0.0f };
+		globalSelectedIntersection->highlight(bitmap, color);
+	}
+
+	if (highlightIntersection && globalSelectedIntersection) {
+		IntersectionPath path = findConnectingPath(globalMap, globalSelectedIntersection, highlightIntersection, &globalPathHelper);
+		drawIntersectionPath(path, bitmap);
+
+		delete path.intersections;
+	}
 }
 
 void WinUpdate(Bitmap bitmap, HDC context, RECT clientRect) {
@@ -147,7 +165,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-	map = createGridMap((float)width, (float)height, 100);
+	globalMap = createGridMap((float)width, (float)height, 100);
+
+	globalPathHelper.indexes = new int[globalMap.intersectionCount];
+	globalPathHelper.isHelper = new int[globalMap.intersectionCount];
+	globalPathHelper.source = new int[globalMap.intersectionCount];
 
 	int xOffset = 0;
 	int yOffset = 0;
@@ -158,6 +180,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
 			if (message.message == WM_QUIT) running = false;
+			else if (message.message == WM_LBUTTONDOWN) {
+				Point mousePoint = WinMousePosition(window);
+
+				globalSelectedIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
+			}
 
 			TranslateMessage(&message);
 			DispatchMessageA(&message);

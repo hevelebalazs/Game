@@ -1,4 +1,8 @@
+#pragma once
+
 #include "Road.h"
+
+struct Road;
 
 struct Intersection {
 	Point coordinate;
@@ -7,6 +11,6 @@ struct Intersection {
 	Road* topRoad = 0;
 	Road* bottomRoad = 0;
 
-	void highlight(Bitmap bitmap);
+	void highlight(Bitmap bitmap, Color color);
 	void draw(Bitmap bitmap);
 };
