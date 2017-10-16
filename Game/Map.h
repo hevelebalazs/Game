@@ -15,4 +15,3 @@ struct Map
 
 	void draw(Bitmap bitmap);
 };
-

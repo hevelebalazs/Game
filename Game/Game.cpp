@@ -3,6 +3,7 @@
 #include "GridMapCreator.h"
 #include "Bitmap.h"
 #include "Path.h"
+#include "Vehicle.h"
 
 static bool running;
 
@@ -10,6 +11,8 @@ Bitmap globalBitmap;
 Map globalMap;
 Intersection *globalSelectedIntersection;
 IntersectionPathHelper globalPathHelper;
+
+Vehicle globalVehicle;
 
 void WinResize(Bitmap *bitmap, int width, int height) {
 	if (bitmap->memory) delete bitmap->memory;
@@ -60,12 +63,7 @@ void WinDraw(HWND window, Bitmap bitmap) {
 		globalSelectedIntersection->highlight(bitmap, color);
 	}
 
-	if (highlightIntersection && globalSelectedIntersection) {
-		IntersectionPath path = findConnectingPath(globalMap, globalSelectedIntersection, highlightIntersection, &globalPathHelper);
-		drawIntersectionPath(path, bitmap);
-
-		delete path.intersections;
-	}
+	globalVehicle.draw(bitmap);
 }
 
 void WinUpdate(Bitmap bitmap, HDC context, RECT clientRect) {
@@ -171,6 +169,28 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPathHelper.isHelper = new int[globalMap.intersectionCount];
 	globalPathHelper.source = new int[globalMap.intersectionCount];
 
+	globalVehicle.orientationx = 0;
+	globalVehicle.orientationy = 1;
+	globalVehicle.width = 15.0f;
+	globalVehicle.length = 25.0f;
+	globalVehicle.color = { 0.0f, 0.0f, 1.0f };
+	globalVehicle.maxSpeed = 150.0f;
+
+	globalVehicle.map = &globalMap;
+	globalVehicle.pathHelper = &globalPathHelper;
+
+	for (int i = 0; i < globalMap.intersectionCount; ++i) {
+		Intersection *intersection = &globalMap.intersections[i];
+
+		if (intersection->leftRoad || intersection->rightRoad ||
+				intersection->topRoad || intersection->bottomRoad) {
+			globalVehicle.position = intersection->coordinate;
+			globalVehicle.onIntersection = intersection;
+			globalVehicle.targetIntersection = intersection;
+			break;
+		}
+	}
+
 	int xOffset = 0;
 	int yOffset = 0;
 
@@ -184,11 +204,14 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 				Point mousePoint = WinMousePosition(window);
 
 				globalSelectedIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
+				globalVehicle.targetIntersection = globalSelectedIntersection;
 			}
 
 			TranslateMessage(&message);
 			DispatchMessageA(&message);
 		}
+
+		globalVehicle.update(0.016f);
 
 		WinDraw(window, globalBitmap);
 

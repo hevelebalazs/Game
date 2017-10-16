@@ -1,9 +1,6 @@
 #include "Path.h"
 
-Intersection *otherIntersection(Road *road, Intersection *intersection) {
-	if (road->intersection1 == intersection) return road->intersection2;
-	else return road->intersection1;
-}
+
 
 void addIntersectionPathHelper(Map map, Intersection *intersection, int sourceIndex, IntersectionPathHelper *pathHelper) {
 	int intersectionIndex = (int)(intersection - map.intersections);
@@ -15,7 +12,7 @@ void addIntersectionPathHelper(Map map, Intersection *intersection, int sourceIn
 	}
 }
 
-IntersectionPath findConnectingPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper) {
+static void buildUpPathHelper(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper) {
 	for (int i = 0; i < map.intersectionCount; ++i) pathHelper->isHelper[i] = 0;
 
 	int startIndex = (int)(start - map.intersections);
@@ -31,36 +28,63 @@ IntersectionPath findConnectingPath(Map map, Intersection *start, Intersection *
 		intersection1Index = pathHelper->indexes[i];
 		intersection1 = &map.intersections[intersection1Index];
 
-		if (intersection1 == finish) break;
-
 		if (intersection1->topRoad) {
-			Intersection *intersection2 = otherIntersection(intersection1->topRoad, intersection1);
+			Intersection *intersection2 = intersection1->topRoad->otherIntersection(intersection1);
 			addIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
+
+			if (intersection2 == finish) break;
 		}
 
 		if (intersection1->bottomRoad) {
-			Intersection *intersection2 = otherIntersection(intersection1->bottomRoad, intersection1);
+			Intersection *intersection2 = intersection1->bottomRoad->otherIntersection(intersection1);
 			addIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
+
+			if (intersection2 == finish) break;
 		}
 
 		if (intersection1->leftRoad) {
-			Intersection *intersection2 = otherIntersection(intersection1->leftRoad, intersection1);
+			Intersection *intersection2 = intersection1->leftRoad->otherIntersection(intersection1);
 			addIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
+
+			if (intersection2 == finish) break;
+
 		}
 
 		if (intersection1->rightRoad) {
-			Intersection *intersection2 = otherIntersection(intersection1->rightRoad, intersection1);
+			Intersection *intersection2 = intersection1->rightRoad->otherIntersection(intersection1);
 			addIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
+
+			if (intersection2 == finish) break;
 		}
 	}
+}
+
+Intersection *nextIntersectionOnPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper) {
+	buildUpPathHelper(map, start, finish, pathHelper);
+
+	int startIndex = (int)(start - map.intersections);
+	int intersectionIndex = pathHelper->indexes[pathHelper->count - 1];
+
+	while (pathHelper->source[intersectionIndex] != startIndex) {
+		intersectionIndex = pathHelper->source[intersectionIndex];
+	}
+
+	return &map.intersections[intersectionIndex];
+}
+
+IntersectionPath findConnectingPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper) {
+	buildUpPathHelper(map, start, finish, pathHelper);
 
 	IntersectionPath result = {};
 
-	if (intersection1 == finish) {
+	int intersectionIndex = pathHelper->indexes[pathHelper->count - 1];
+	Intersection *intersection = &map.intersections[intersectionIndex];
+
+	if (intersection == finish) {
 		int count = 0;
-		while (intersection1Index > -1) {
-			pathHelper->indexes[count++] = intersection1Index;
-			intersection1Index = pathHelper->source[intersection1Index];
+		while (intersectionIndex > -1) {
+			pathHelper->indexes[count++] = intersectionIndex;
+			intersectionIndex = pathHelper->source[intersectionIndex];
 		}
 
 		result.intersectionCount = count;
@@ -75,7 +99,7 @@ IntersectionPath findConnectingPath(Map map, Intersection *start, Intersection *
 	return result;
 }
 
-void drawIntersectionPath(IntersectionPath path, Bitmap bitmap) {
+void drawIntersectionPath(IntersectionPath path, Bitmap bitmap, float pathWidth) {
 	for (int i = 1; i < path.intersectionCount; ++i) {
 		Intersection *prevIntersection = path.intersections[i - 1];
 		Intersection *thisIntersection = path.intersections[i];
@@ -85,19 +109,17 @@ void drawIntersectionPath(IntersectionPath path, Bitmap bitmap) {
 
 		Color color = { 1.0f, 0.5f, 0.0f };
 
-		float lineWidth = 5.0f;
-
 		if (prevCenter.x == thisCenter.x) {
 			bitmap.drawRect(
-				(int)(prevCenter.y), (int)(prevCenter.x - lineWidth / 2),
-				(int)(thisCenter.y), (int)(thisCenter.x + lineWidth / 2),
+				(int)(prevCenter.y), (int)(prevCenter.x - pathWidth / 2),
+				(int)(thisCenter.y), (int)(thisCenter.x + pathWidth / 2),
 				color
 			);
 		}
 		else {
 			bitmap.drawRect(
-				(int)(prevCenter.y - lineWidth / 2), (int)(prevCenter.x),
-				(int)(thisCenter.y + lineWidth / 2), (int)(thisCenter.x),
+				(int)(prevCenter.y - pathWidth / 2), (int)(prevCenter.x),
+				(int)(thisCenter.y + pathWidth / 2), (int)(thisCenter.x),
 				color
 			);
 		}

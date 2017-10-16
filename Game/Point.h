@@ -1,3 +1,5 @@
+#pragma once
+
 struct Point{
 	static float distanceSquare(Point point1, Point point2);
 	float x;

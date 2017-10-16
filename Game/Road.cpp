@@ -2,7 +2,12 @@
 #include <stdio.h>
 #include <math.h>
 
-void Road::draw(Bitmap bitmap){
+Intersection* Road::otherIntersection(Intersection *intersection) {
+	if (intersection1 == intersection) return intersection2;
+	else return intersection1;
+}
+
+void Road::draw(Bitmap bitmap) {
 	int top = 0;
 	int left = 0;
 	int bottom = 0;

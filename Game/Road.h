@@ -14,6 +14,8 @@ struct Road{
 	Intersection *intersection1;
 	Intersection *intersection2;
 
+	Intersection *otherIntersection(Intersection*);
+
 	float width;
 	
 	void draw(Bitmap bitmap);
