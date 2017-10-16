@@ -9,6 +9,8 @@ struct Map
 	float width = 0;
 	float height = 0;
 
-	void draw(HDC context);
+	Intersection* getIntersectionAtPoint(Point point, float maxDistance);
+
+	void draw(Bitmap bitmap);
 };
 

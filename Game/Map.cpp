@@ -3,14 +3,27 @@
 #include <stdlib.h>
 #include <time.h>
 
-void Map::draw(HDC context) {
-	HBRUSH brush = CreateSolidBrush(RGB(0, 255, 0));
-	RECT rect = { 0, 0, (LONG)width, (LONG)height };
+Intersection* Map::getIntersectionAtPoint(Point point, float maxDistance) {
+	float maxDistanceSquare = maxDistance * maxDistance;
 
-	FillRect(context, &rect, brush);
+	Intersection *result = 0;
+
+	for (int i = 0; i < intersectionCount; ++i) {
+		float distanceSquare = Point::distanceSquare(point, intersections[i].coordinate);
+
+		if (distanceSquare <= maxDistanceSquare) result = &intersections[i];
+	}
+
+	return result;
+};
+
+void Map::draw(Bitmap bitmap) {
+	Color color = { 0.0f, 1.0f, 0.0f };
+	bitmap.drawRect(0, 0, (int)height, (int)width, color);
 
 	for (int i = 0; i < intersectionCount; ++i)
-		intersections[i].draw(context);
+		intersections[i].draw(bitmap);
 	for (int i = 0; i < roadCount; ++i)
-		roads[i].draw(context);
+		roads[i].draw(bitmap);
 }
+

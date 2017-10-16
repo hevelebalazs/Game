@@ -1,4 +1,5 @@
 #include "Point.h"
+#include "Bitmap.h"
 #include <Windows.h>
 
 struct Road{
@@ -6,5 +7,5 @@ struct Road{
 	Point endPoint2;
 	float width;
 	
-	void draw(HDC context);
+	void draw(Bitmap bitmap);
 };

@@ -1,19 +1,91 @@
 #include <Windows.h>
+#include <math.h>
 #include "GridMapCreator.h"
+#include "Bitmap.h"
 
 static bool running;
 
+Bitmap globalBitmap;
 Map map;
+
+void WinResize(Bitmap *bitmap, int width, int height) {
+	if (bitmap->memory) delete bitmap->memory;
+
+	bitmap->width = width;
+	bitmap->height = height;
+
+	bitmap->info.bmiHeader.biSize = sizeof(bitmap->info.bmiHeader);
+	bitmap->info.bmiHeader.biWidth = bitmap->width;
+	bitmap->info.bmiHeader.biHeight = -bitmap->height;
+	bitmap->info.bmiHeader.biPlanes = 1;
+	bitmap->info.bmiHeader.biBitCount = 32;
+	bitmap->info.bmiHeader.biCompression = BI_RGB;
+
+	int bytesPerPixel = 4;
+	int bitmapMemorySize = (bitmap->width * bitmap->height) * bytesPerPixel;
+
+	bitmap->memory = (void *)(new char[bitmapMemorySize]);
+
+	bitmap->clear({0.0f, 0.0f, 0.0f});
+}
+
+static Point WinMousePosition(HWND window) {
+	POINT cursorPoint = {};
+	GetCursorPos(&cursorPoint);
+	ScreenToClient(window, &cursorPoint);
+
+	Point point = {};
+	point.x = (float)cursorPoint.x;
+	point.y = (float)cursorPoint.y;
+
+	return point;
+}
+
+void WinDraw(HWND window, Bitmap bitmap) {
+	Point mousePoint = WinMousePosition(window);
+	Intersection *highlightIntersection = map.getIntersectionAtPoint(mousePoint, 20.0f);
+
+	map.draw(bitmap);
+
+	if (highlightIntersection) highlightIntersection->highlight(bitmap);
+}
+
+void WinUpdate(Bitmap bitmap, HDC context, RECT clientRect) {
+	int windowWidth = clientRect.right - clientRect.left;
+	int windowHeight = clientRect.bottom - clientRect.top;
+
+	StretchDIBits(context,
+		0, 0, bitmap.width, bitmap.height,
+		0, 0, windowWidth, windowHeight,
+		bitmap.memory,
+		&bitmap.info,
+		DIB_RGB_COLORS,
+		SRCCOPY
+	);
+}
 
 LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam) 
 {
 	LRESULT result = 0;
 
 	switch (message) {
+	case WM_SIZE: {
+		RECT clientRect;
+		GetClientRect(window, &clientRect);
+		int width = clientRect.right - clientRect.left;
+		int height = clientRect.bottom - clientRect.top;
+		WinResize(&globalBitmap, width, height);
+	}
+
 	case WM_PAINT: {
-		PAINTSTRUCT paint = {};
+		PAINTSTRUCT paint;
 		HDC context = BeginPaint(window, &paint);
-		map.draw(context);
+		
+		RECT clientRect;
+		GetClientRect(window, &clientRect);
+
+		WinUpdate(globalBitmap, context, clientRect);
+
 		EndPaint(window, &paint);
 	} break;
 
@@ -77,16 +149,30 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	int height = rect.bottom - rect.top;
 	map = createGridMap((float)width, (float)height, 100);
 
+	int xOffset = 0;
+	int yOffset = 0;
+
 	running = true;
 	while (running) {
-		BOOL result = GetMessageA(&message, 0, 0, 0);
-		if (result > 0) {
+		xOffset ++;
+
+		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+			if (message.message == WM_QUIT) running = false;
+
 			TranslateMessage(&message);
 			DispatchMessageA(&message);
 		}
-		else {
-			break;
-		}
+
+		WinDraw(window, globalBitmap);
+
+		RECT rect;
+		GetClientRect(window, &rect);
+
+		HDC context = GetDC(window);
+
+		WinUpdate(globalBitmap, context, rect);
+		
+		ReleaseDC(window, context);
 	}
 
 	return 0;

@@ -7,5 +7,6 @@ struct Intersection {
 	Road* topRoad = 0;
 	Road* bottomRoad = 0;
 
-	void draw(HDC context);
+	void highlight(Bitmap bitmap);
+	void draw(Bitmap bitmap);
 };
