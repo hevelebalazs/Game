@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <math.h>
+#include <stdio.h>
 #include "GridMapCreator.h"
 #include "Bitmap.h"
 #include "Path.h"
@@ -11,6 +12,10 @@ Bitmap globalBitmap;
 Map globalMap;
 Intersection *globalSelectedIntersection;
 IntersectionPathHelper globalPathHelper;
+
+static float globalTargetFPS = 60.0f;
+static float globalTargetFrameS = 1.0f / globalTargetFPS;
+static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
 
 Vehicle globalVehicle;
 
@@ -163,7 +168,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-	globalMap = createGridMap((float)width, (float)height, 100);
+	globalMap = createGridMap((float)width, (float)height, 150);
 
 	globalPathHelper.indexes = new int[globalMap.intersectionCount];
 	globalPathHelper.isHelper = new int[globalMap.intersectionCount];
@@ -173,7 +178,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalVehicle.width = 15.0f;
 	globalVehicle.length = 25.0f;
 	globalVehicle.color = { 0.0f, 0.0f, 1.0f };
-	globalVehicle.maxSpeed = 150.0f;
+	globalVehicle.maxSpeed = 50.0f;
 
 	globalVehicle.map = &globalMap;
 	globalVehicle.pathHelper = &globalPathHelper;
@@ -190,13 +195,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		}
 	}
 
-	int xOffset = 0;
-	int yOffset = 0;
+	timeBeginPeriod(1);
+
+	LARGE_INTEGER counterFrequency;
+	QueryPerformanceFrequency(&counterFrequency);
+
+	LARGE_INTEGER lastCounter;
+	QueryPerformanceCounter(&lastCounter);
 
 	running = true;
 	while (running) {
-		xOffset ++;
-
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
 			if (message.message == WM_QUIT) running = false;
 			else if (message.message == WM_LBUTTONDOWN) {
@@ -210,8 +218,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 			DispatchMessageA(&message);
 		}
 
-		globalVehicle.update(0.016f);
-
+		globalVehicle.update(globalTargetFrameS);
 		WinDraw(window, globalBitmap);
 
 		RECT rect;
@@ -222,6 +229,19 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		WinUpdate(globalBitmap, context, rect);
 		
 		ReleaseDC(window, context);
+
+		LARGE_INTEGER nowCounter;
+		QueryPerformanceCounter(&nowCounter);
+
+		long long elapsedUS = nowCounter.QuadPart - lastCounter.QuadPart;
+		float elapsedMS = ((float)elapsedUS * 1000.0f) / (float)counterFrequency.QuadPart;
+
+		if (elapsedMS < globalTargetFrameMS) {
+			DWORD sleepMS = (DWORD)(globalTargetFrameMS - elapsedMS);
+			Sleep(sleepMS);
+		}
+
+		QueryPerformanceCounter(&lastCounter);
 	}
 
 	return 0;

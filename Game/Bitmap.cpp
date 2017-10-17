@@ -34,6 +34,8 @@ void Bitmap::drawPixel(int row, int col, Color color) {
 }
 
 void Bitmap::drawRect(int top, int left, int bottom, int right, Color color) {
+	unsigned int colorCode = getColorCode(color);
+
 	if (top > bottom) {
 		int tmp = top;
 		top = bottom;
@@ -46,9 +48,16 @@ void Bitmap::drawRect(int top, int left, int bottom, int right, Color color) {
 		right = tmp;
 	}
 
+	if (top < 0) top = 0;
+	if (bottom >= height) bottom = height - 1;
+	
+	if (left < 0) left = 0;
+	if (right >= width) right - width - 1;
+
 	for (int row = top; row < bottom; ++row) {
 		for (int col = left; col < right; ++col) {
-			drawPixel(row, col, color);
+			unsigned int *pixel = (unsigned int *)memory + row * width + col;
+			pixel[0] = colorCode;
 		}
 	}
 }
