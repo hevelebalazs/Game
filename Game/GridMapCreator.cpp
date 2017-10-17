@@ -28,6 +28,9 @@ static void connectIntersections(Intersection *intersection1, Intersection *inte
 
 		left->rightRoad = road;
 		right->leftRoad = road;
+
+		road->intersection1 = left;
+		road->intersection2 = right;
 	}
 	else {
 		Intersection *top, *bottom;
@@ -49,10 +52,10 @@ static void connectIntersections(Intersection *intersection1, Intersection *inte
 
 		bottom->topRoad = road;
 		top->bottomRoad = road;
-	}
 
-	road->intersection1 = intersection1;
-	road->intersection2 = intersection2;
+		road->intersection1 = top;
+		road->intersection2 = bottom;
+	}
 
 	road->width = roadWidth;
 }

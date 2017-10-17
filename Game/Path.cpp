@@ -1,7 +1,5 @@
 #include "Path.h"
 
-
-
 void addIntersectionPathHelper(Map map, Intersection *intersection, int sourceIndex, IntersectionPathHelper *pathHelper) {
 	int intersectionIndex = (int)(intersection - map.intersections);
 
@@ -57,6 +55,27 @@ static void buildUpPathHelper(Map map, Intersection *start, Intersection *finish
 			if (intersection2 == finish) break;
 		}
 	}
+}
+
+Road *nextRoadOnPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper) {
+	Intersection *nextIntersection = nextIntersectionOnPath(map, start, finish, pathHelper);
+
+	Road *road = 0;
+
+	if (start->leftRoad && start->leftRoad->otherIntersection(start) == nextIntersection) {
+		road = start->leftRoad;
+	}
+	else if (start->rightRoad && start->rightRoad->otherIntersection(start) == nextIntersection) {
+		road = start->rightRoad;
+	}
+	else if (start->topRoad && start->topRoad->otherIntersection(start) == nextIntersection) {
+		road = start->topRoad;
+	}
+	else if (start->bottomRoad && start->bottomRoad->otherIntersection(start) == nextIntersection) {
+		road = start->bottomRoad;
+	}
+
+	return road;
 }
 
 Intersection *nextIntersectionOnPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper) {

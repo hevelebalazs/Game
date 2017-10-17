@@ -169,8 +169,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPathHelper.isHelper = new int[globalMap.intersectionCount];
 	globalPathHelper.source = new int[globalMap.intersectionCount];
 
-	globalVehicle.orientationx = 0;
-	globalVehicle.orientationy = 1;
+	globalVehicle.angle = 0.0f;
 	globalVehicle.width = 15.0f;
 	globalVehicle.length = 25.0f;
 	globalVehicle.color = { 0.0f, 0.0f, 1.0f };

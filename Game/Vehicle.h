@@ -7,23 +7,30 @@
 
 struct Vehicle {
 	Point position;
+	float angle;
+
 	Color color;
 
 	float length;
 	float width;
 
-	float speed;
 	float maxSpeed;
-	
-	int orientationx;
-	int orientationy;
 
 	Intersection *targetIntersection;
-	Road *onRoad;
-	int onRoadTarget;
-	float onRoadLength;
 
 	Intersection *onIntersection;
+	Road *nextRoad;
+
+	Road *onRoad;
+	Intersection *nextIntersection;
+
+	Point startPoint;
+	float startAngle;
+	Point targetPoint;
+	float targetAngle;
+
+	float spentSeconds;
+	float totalSeconds;
 
 	Map *map;
 	IntersectionPathHelper *pathHelper;

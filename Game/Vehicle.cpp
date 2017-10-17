@@ -1,124 +1,120 @@
 #include "Vehicle.h"
 #include <math.h>
+#include <stdio.h>
+
+static float PI = 3.14159265358979323f;
 
 void Vehicle::update(float seconds) {
-	if (onIntersection) {
-		position = onIntersection->coordinate;
+	while (seconds > 0.0f) {
+		if (targetIntersection == 0 || targetIntersection == onIntersection) {
+			seconds = 0.0f;
+			startPoint = position;
+			targetPoint = position;
 
-		if (!targetIntersection || onIntersection == targetIntersection) {
-			speed = 0.0f;
+			totalSeconds = 0.0f;
+
+			break;
+		}
+		
+		if (onIntersection) {
+			if (nextRoad == 0) {
+				nextRoad = nextRoadOnPath(*map, onIntersection, targetIntersection, pathHelper);
+
+				if (nextRoad->intersection1 == onIntersection) targetPoint = nextRoad->endPoint1;
+				else targetPoint = nextRoad->endPoint2;
+
+				targetAngle = 0.0f;
+				if (onIntersection->leftRoad == nextRoad) targetAngle = -PI;
+				else if (onIntersection->rightRoad == nextRoad) targetAngle = 0.0f;
+				else if (onIntersection->topRoad == nextRoad) targetAngle = -PI / 2.0f;
+				else if (onIntersection->bottomRoad == nextRoad) targetAngle = PI / 2.0f;
+
+				startAngle = angle;
+				startPoint = position;
+
+				while (startAngle - targetAngle > PI) {
+					startAngle -= 2 * PI;
+				}
+
+				while (startAngle - targetAngle < -PI) {
+					startAngle += 2 * PI;
+				}
+
+				totalSeconds = Point::cityDistance(startPoint, targetPoint) / maxSpeed;
+				spentSeconds = 0.0f;
+			}
+
+			if (totalSeconds == spentSeconds) {
+				onRoad = nextRoad;
+
+				startAngle = targetAngle;
+				targetAngle = targetAngle;
+
+				if (onRoad->intersection1 == onIntersection) {
+					startPoint = onRoad->endPoint1;
+					targetPoint = onRoad->endPoint2;
+					nextIntersection = onRoad->intersection2;
+				}
+				else if (onRoad->intersection2 == onIntersection) {
+					startPoint = onRoad->endPoint2;
+					targetPoint = onRoad->endPoint1;
+					nextIntersection = onRoad->intersection1;
+				}
+				else {
+					*(char*)0 = 0;
+				}
+
+				onIntersection = 0;
+				nextRoad = 0;
+
+				totalSeconds = Point::cityDistance(startPoint, targetPoint) / maxSpeed;
+				spentSeconds = 0.0f;
+			}
+		}
+		else if (onRoad) {
+			if (totalSeconds == spentSeconds) {
+				onIntersection = nextIntersection;
+				nextRoad = 0;
+
+				startPoint = targetPoint;
+				startAngle = targetAngle;
+
+				onRoad = 0;
+				nextIntersection = 0;
+			}
+		}
+
+		if (spentSeconds + seconds > totalSeconds) {
+			seconds -= (totalSeconds - spentSeconds);
+			spentSeconds = totalSeconds;
 		}
 		else {
-			Intersection *nextIntersection = nextIntersectionOnPath(*map, onIntersection, targetIntersection, pathHelper);
-
-			onRoad = 0;
-
-			if (onIntersection->leftRoad && onIntersection->leftRoad->otherIntersection(onIntersection) == nextIntersection) {
-				onRoad = onIntersection->leftRoad;
-				orientationx = -1;
-				orientationy = 0;
-			}
-			else if (onIntersection->rightRoad && onIntersection->rightRoad->otherIntersection(onIntersection) == nextIntersection) {
-				onRoad = onIntersection->rightRoad;
-				orientationx = 1;
-				orientationy = 0;
-			}
-			else if (onIntersection->topRoad && onIntersection->topRoad->otherIntersection(onIntersection) == nextIntersection) {
-				onRoad = onIntersection->topRoad;
-				orientationx = 0;
-				orientationy = -1;
-			}
-			else if (onIntersection->bottomRoad && onIntersection->bottomRoad->otherIntersection(onIntersection) == nextIntersection) {
-				onRoad = onIntersection->bottomRoad;
-				orientationx = 0;
-				orientationy = 1;
-			}
-
-			if (onRoad->intersection1 == nextIntersection) onRoadTarget = 1;
-			else onRoadTarget = 2;
-
-			onRoadLength = 0.0f;
-
-			onIntersection = 0;
-		}
-	}
-	else if (onRoad) {
-		speed = maxSpeed;
-	}
-	else {
-		speed = 0.0f;
-	}
-
-	position.x += seconds * speed * orientationx;
-	position.y += seconds * speed * orientationy;
-
-	if (onRoad) {
-		onRoadLength += seconds * speed;
-
-		float totalRoadLength;
-
-		if (onRoad->endPoint1.x == onRoad->endPoint2.x) {
-			totalRoadLength = fabsf(onRoad->endPoint1.y - onRoad->endPoint2.y);
-		}
-		else {
-			totalRoadLength = fabsf(onRoad->endPoint1.x - onRoad->endPoint2.x);
+			spentSeconds += seconds;
+			seconds = 0.0;
 		}
 
-		if (onRoadLength >= totalRoadLength) {
-			Intersection *nextIntersection = 0;
-			if (onRoadTarget == 1) nextIntersection = onRoad->intersection1;
-			else nextIntersection = onRoad->intersection2;
-
-			onIntersection = nextIntersection;
-			position = onIntersection->coordinate;
-			onRoad = 0;
-		}
+		angle = startAngle + (targetAngle - startAngle) * (spentSeconds / totalSeconds);
+		position.x = startPoint.x + (targetPoint.x - startPoint.x) * (spentSeconds / totalSeconds);
+		position.y = startPoint.y + (targetPoint.y - startPoint.y) * (spentSeconds / totalSeconds);
 	}
 }
 
 void Vehicle::draw(Bitmap bitmap) {
-	if (onRoad) {
-		float pathWidth = 5.0f;
+	float addWidthX = (width / 2.0f) * cosf(angle + PI / 2.0f);
+	float addWidthY = (width / 2.0f) * sinf(angle + PI / 2.0f);
 
-		Intersection *nextIntersection = 0;
+	Point side1 = { position.x + addWidthX, position.y + addWidthY };
+	Point side2 = { position.x - addWidthX, position.y - addWidthY };
 
-		if (onRoadTarget == 1) nextIntersection = onRoad->intersection1;
-		else nextIntersection = onRoad->intersection2;
+	float addLengthX = (length / 2.0f) * cosf(angle);
+	float addLengthY = (length / 2.0f) * sinf(angle);
 
-		IntersectionPath path = findConnectingPath(*map, nextIntersection, targetIntersection, pathHelper);
-		drawIntersectionPath(path, bitmap, pathWidth);
-		delete path.intersections;
+	Point points[4] = {
+		{ side1.x + addLengthX, side1.y + addLengthY },
+		{ side1.x - addLengthX, side1.y - addLengthY },
+		{ side2.x - addLengthX, side2.y - addLengthY },
+		{ side2.x + addLengthX, side2.y + addLengthY }
+	};
 
-		Color color = { 1.0f, 0.5f, 0.0f };
-
-		if (onRoad->endPoint1.y == onRoad->endPoint2.y) {
-			bitmap.drawRect(
-				(int)(position.y - pathWidth / 2), (int)(position.x),
-				(int)(nextIntersection->coordinate.y + pathWidth / 2), (int)(nextIntersection->coordinate.x),
-				color
-			);
-		}
-		else {
-			bitmap.drawRect(
-				(int)(position.y), (int)(position.x - pathWidth / 2),
-				(int)(nextIntersection->coordinate.y), (int)(nextIntersection->coordinate.x + pathWidth / 2),
-				color
-			);
-		}
-	}
-
-	if (orientationx == 0) {
-		bitmap.drawRect(
-			(int)(position.y - length / 2), (int)(position.x - width / 2),
-			(int)(position.y + length / 2), (int)(position.x + width / 2),
-			color
-		);
-	}
-	else {
-		bitmap.drawRect(
-			(int)(position.y - width / 2), (int)(position.x - length / 2),
-			(int)(position.y + width / 2), (int)(position.x + length / 2),
-			color
-		);
-	}
+	bitmap.drawQuad(points, color);
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include "Point.h"
 
 struct Color {
 	float red;
@@ -18,4 +19,5 @@ struct Bitmap {
 	void clear(Color color);
 	void drawPixel(int row, int col, Color color);
 	void drawRect(int top, int left, int bottom, int right, Color color);
+	void drawQuad(Point points[4], Color color);
 };
