@@ -11,6 +11,8 @@ struct Intersection {
 	Road* topRoad = 0;
 	Road* bottomRoad = 0;
 
+	float getRoadWidth();
+
 	void highlight(Bitmap bitmap, Color color);
 	void draw(Bitmap bitmap);
 };

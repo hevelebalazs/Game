@@ -29,6 +29,12 @@ struct Vehicle {
 	Point targetPoint;
 	float targetAngle;
 
+	bool rotationMovement;
+	float rotationSide;
+	float rotationStartAngle;
+	float rotationTargetAngle;
+	Point rotationPoint = {};
+
 	float spentSeconds;
 	float totalSeconds;
 

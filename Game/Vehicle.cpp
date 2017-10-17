@@ -40,7 +40,28 @@ void Vehicle::update(float seconds) {
 					startAngle += 2 * PI;
 				}
 
-				totalSeconds = Point::cityDistance(startPoint, targetPoint) / maxSpeed;
+				if (startPoint.x == targetPoint.x || startPoint.y == targetPoint.y) {
+					rotationMovement = false;
+					totalSeconds = Point::cityDistance(startPoint, targetPoint) / maxSpeed;
+				}
+				else {
+					rotationMovement = true;
+					rotationSide = fabsf(startPoint.x - targetPoint.x);
+
+					rotationTargetAngle = startAngle;
+					rotationStartAngle = targetAngle + PI;
+
+					if (rotationStartAngle - rotationTargetAngle > PI) rotationStartAngle -= 2 * PI;
+					if (rotationStartAngle - rotationTargetAngle < -PI) rotationStartAngle += 2 * PI;
+
+					rotationPoint = {
+						startPoint.x + rotationSide * cosf(targetAngle),
+						startPoint.y + rotationSide * sinf(targetAngle)
+					};
+
+					totalSeconds = (rotationSide * PI / 2.0f) / maxSpeed;
+				}
+
 				spentSeconds = 0.0f;
 			}
 
@@ -60,15 +81,14 @@ void Vehicle::update(float seconds) {
 					targetPoint = onRoad->endPoint1;
 					nextIntersection = onRoad->intersection1;
 				}
-				else {
-					*(char*)0 = 0;
-				}
 
 				onIntersection = 0;
 				nextRoad = 0;
 
 				totalSeconds = Point::cityDistance(startPoint, targetPoint) / maxSpeed;
 				spentSeconds = 0.0f;
+
+				rotationMovement = false;
 			}
 		}
 		else if (onRoad) {
@@ -94,8 +114,17 @@ void Vehicle::update(float seconds) {
 		}
 
 		angle = startAngle + (targetAngle - startAngle) * (spentSeconds / totalSeconds);
-		position.x = startPoint.x + (targetPoint.x - startPoint.x) * (spentSeconds / totalSeconds);
-		position.y = startPoint.y + (targetPoint.y - startPoint.y) * (spentSeconds / totalSeconds);
+
+		if (rotationMovement == false) {
+			position.x = startPoint.x + (targetPoint.x - startPoint.x) * (spentSeconds / totalSeconds);
+			position.y = startPoint.y + (targetPoint.y - startPoint.y) * (spentSeconds / totalSeconds);
+		}
+		else {
+			float rotationAngle = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * (spentSeconds / totalSeconds);
+
+			position.x = rotationPoint.x + rotationSide * cosf(rotationAngle);
+			position.y = rotationPoint.y + rotationSide * sinf(rotationAngle);
+		}
 	}
 }
 

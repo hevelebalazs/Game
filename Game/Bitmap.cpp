@@ -52,7 +52,7 @@ void Bitmap::drawRect(int top, int left, int bottom, int right, Color color) {
 	if (bottom >= height) bottom = height - 1;
 	
 	if (left < 0) left = 0;
-	if (right >= width) right - width - 1;
+	if (right >= width) right = width - 1;
 
 	for (int row = top; row < bottom; ++row) {
 		for (int col = left; col < right; ++col) {

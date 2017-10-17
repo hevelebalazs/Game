@@ -178,7 +178,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalVehicle.width = 15.0f;
 	globalVehicle.length = 25.0f;
 	globalVehicle.color = { 0.0f, 0.0f, 1.0f };
-	globalVehicle.maxSpeed = 50.0f;
+	globalVehicle.maxSpeed = 100.0f;
 
 	globalVehicle.map = &globalMap;
 	globalVehicle.pathHelper = &globalPathHelper;
