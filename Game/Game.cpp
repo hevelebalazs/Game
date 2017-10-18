@@ -57,17 +57,6 @@ void WinDraw(HWND window, Bitmap bitmap) {
 	Intersection *highlightIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
 
 	globalMap.draw(bitmap);
-
-	if (highlightIntersection) {
-		Color color = { 1.0f, 0.5f, 0.0f };
-		highlightIntersection->highlight(bitmap, color);
-	}
-
-	if (globalSelectedIntersection) {
-		Color color = { 1.0f, 0.0f, 0.0f };
-		globalSelectedIntersection->highlight(bitmap, color);
-	}
-
 	globalVehicle.draw(bitmap);
 }
 
@@ -175,8 +164,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPathHelper.source = new int[globalMap.intersectionCount];
 
 	globalVehicle.angle = 0.0f;
-	globalVehicle.width = 15.0f;
-	globalVehicle.length = 25.0f;
+	globalVehicle.width = 10.0f;
+	globalVehicle.length = 20.0f;
 	globalVehicle.color = { 0.0f, 0.0f, 1.0f };
 	globalVehicle.maxSpeed = 100.0f;
 

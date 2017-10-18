@@ -22,6 +22,7 @@ void Bitmap::clear(Color color) {
 	}
 }
 
+/*
 void Bitmap::drawPixel(int row, int col, Color color) {
 	unsigned int colorCode = getColorCode(color);
 
@@ -32,30 +33,36 @@ void Bitmap::drawPixel(int row, int col, Color color) {
 
 	memoryUint[row * width + col] = colorCode;
 }
+*/
 
-void Bitmap::drawRect(int top, int left, int bottom, int right, Color color) {
+void Bitmap::drawRect(float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = getColorCode(color);
 
-	if (top > bottom) {
-		int tmp = top;
-		top = bottom;
-		bottom = tmp;
+	int topi = (int)top;
+	int lefti = (int)left;
+	int bottomi = (int)bottom;
+	int righti = (int)right;
+
+	if (topi > bottomi) {
+		int tmp = topi;
+		topi = bottomi;
+		bottomi = tmp;
 	}
 
-	if (left > right) {
-		int tmp = left;
-		left = right;
-		right = tmp;
+	if (lefti > righti) {
+		int tmp = lefti;
+		lefti = righti;
+		righti = tmp;
 	}
 
-	if (top < 0) top = 0;
-	if (bottom >= height) bottom = height - 1;
+	if (topi < 0) topi = 0;
+	if (bottomi >= height) bottomi = height - 1;
 	
-	if (left < 0) left = 0;
-	if (right >= width) right = width - 1;
+	if (lefti < 0) lefti = 0;
+	if (righti >= width) righti = width - 1;
 
-	for (int row = top; row < bottom; ++row) {
-		for (int col = left; col < right; ++col) {
+	for (int row = topi; row < bottomi; ++row) {
+		for (int col = lefti; col < righti; ++col) {
 			unsigned int *pixel = (unsigned int *)memory + row * width + col;
 			pixel[0] = colorCode;
 		}

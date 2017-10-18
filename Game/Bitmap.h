@@ -17,7 +17,6 @@ struct Bitmap {
 	BITMAPINFO info;
 
 	void clear(Color color);
-	void drawPixel(int row, int col, Color color);
-	void drawRect(int top, int left, int bottom, int right, Color color);
+	void drawRect(float top, float left, float bottom, float right, Color color);
 	void drawQuad(Point points[4], Color color);
 };

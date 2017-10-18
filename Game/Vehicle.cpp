@@ -20,8 +20,8 @@ void Vehicle::update(float seconds) {
 			if (nextRoad == 0) {
 				nextRoad = nextRoadOnPath(*map, onIntersection, targetIntersection, pathHelper);
 
-				if (nextRoad->intersection1 == onIntersection) targetPoint = nextRoad->endPoint1;
-				else targetPoint = nextRoad->endPoint2;
+				if (nextRoad->intersection1 == onIntersection) targetPoint = nextRoad->enterPoint(1);
+				else targetPoint = nextRoad->enterPoint(2);
 
 				targetAngle = 0.0f;
 				if (onIntersection->leftRoad == nextRoad) targetAngle = -PI;
@@ -72,13 +72,13 @@ void Vehicle::update(float seconds) {
 				targetAngle = targetAngle;
 
 				if (onRoad->intersection1 == onIntersection) {
-					startPoint = onRoad->endPoint1;
-					targetPoint = onRoad->endPoint2;
+					startPoint = onRoad->enterPoint(1);
+					targetPoint = onRoad->leavePoint(2);
 					nextIntersection = onRoad->intersection2;
 				}
 				else if (onRoad->intersection2 == onIntersection) {
-					startPoint = onRoad->endPoint2;
-					targetPoint = onRoad->endPoint1;
+					startPoint = onRoad->enterPoint(2);
+					targetPoint = onRoad->leavePoint(1);
 					nextIntersection = onRoad->intersection1;
 				}
 

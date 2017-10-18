@@ -130,15 +130,15 @@ void drawIntersectionPath(IntersectionPath path, Bitmap bitmap, float pathWidth)
 
 		if (prevCenter.x == thisCenter.x) {
 			bitmap.drawRect(
-				(int)(prevCenter.y), (int)(prevCenter.x - pathWidth / 2),
-				(int)(thisCenter.y), (int)(thisCenter.x + pathWidth / 2),
+				prevCenter.y, prevCenter.x - (pathWidth / 2.0f),
+				thisCenter.y, thisCenter.x + (pathWidth / 2.0f),
 				color
 			);
 		}
 		else {
 			bitmap.drawRect(
-				(int)(prevCenter.y - pathWidth / 2), (int)(prevCenter.x),
-				(int)(thisCenter.y + pathWidth / 2), (int)(thisCenter.x),
+				prevCenter.y - (pathWidth / 2.0f), prevCenter.x,
+				thisCenter.y + (pathWidth / 2.0f), thisCenter.x,
 				color
 			);
 		}

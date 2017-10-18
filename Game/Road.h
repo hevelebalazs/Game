@@ -14,6 +14,9 @@ struct Road{
 	Intersection *intersection1;
 	Intersection *intersection2;
 
+	Point enterPoint(int endPointIndex);
+	Point leavePoint(int endPointIndex);
+
 	Intersection *otherIntersection(Intersection*);
 
 	float width;

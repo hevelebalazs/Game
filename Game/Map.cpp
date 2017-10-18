@@ -19,7 +19,7 @@ Intersection* Map::getIntersectionAtPoint(Point point, float maxDistance) {
 
 void Map::draw(Bitmap bitmap) {
 	Color color = { 0.0f, 1.0f, 0.0f };
-	bitmap.drawRect(0, 0, (int)height, (int)width, color);
+	bitmap.drawRect(0, 0, height, width, color);
 
 	for (int i = 0; i < intersectionCount; ++i)
 		intersections[i].draw(bitmap);
