@@ -40,9 +40,59 @@ void Vehicle::update(float seconds) {
 					startAngle += 2 * PI;
 				}
 
-				if (startPoint.x == targetPoint.x || startPoint.y == targetPoint.y) {
+				if (startAngle == targetAngle) {
 					rotationMovement = false;
 					totalSeconds = Point::cityDistance(startPoint, targetPoint) / maxSpeed;
+				}
+				else if (startPoint.x == targetPoint.x) {
+					rotationMovement = true;
+
+					rotationPoint.x = startPoint.x;
+					rotationPoint.y = (startPoint.y + targetPoint.y) / 2.0f;
+
+					rotationSide = fabsf(startPoint.y - targetPoint.y) / 2.0f;
+
+					if (startPoint.y > targetPoint.y) {
+						rotationStartAngle = PI / 2.0f;
+						rotationTargetAngle = -PI / 2.0f;
+
+						startAngle = 0.0f;
+						targetAngle = -PI;
+					}
+					else {
+						rotationStartAngle = -PI / 2.0f;
+						rotationTargetAngle = -3.0f * PI / 2.0f;
+
+						startAngle = PI;
+						targetAngle = 0.0f;
+					}
+
+					totalSeconds = (rotationSide * PI) / maxSpeed;
+				}
+				else if (startPoint.y == targetPoint.y) {
+					rotationMovement = true;
+
+					rotationPoint.y = startPoint.y;
+					rotationPoint.x = (startPoint.x + targetPoint.x) / 2.0f;
+
+					rotationSide = fabsf(startPoint.x - targetPoint.x) / 2.0f;
+
+					if (startPoint.x > targetPoint.x) {
+						rotationStartAngle = 0.0f;
+						rotationTargetAngle = -PI;
+
+						startAngle = 3.0f * PI / 2.0f;
+						targetAngle = PI / 2.0f;
+					}
+					else {
+						rotationStartAngle = PI;
+						rotationTargetAngle = 0.0f;
+
+						startAngle = PI / 2.0f;
+						targetAngle = -PI / 2.0f;
+					}
+
+					totalSeconds = (rotationSide * PI) / maxSpeed;
 				}
 				else {
 					rotationMovement = true;
@@ -73,11 +123,13 @@ void Vehicle::update(float seconds) {
 
 				if (onRoad->intersection1 == onIntersection) {
 					startPoint = onRoad->enterPoint(1);
+
 					targetPoint = onRoad->leavePoint(2);
 					nextIntersection = onRoad->intersection2;
 				}
 				else if (onRoad->intersection2 == onIntersection) {
 					startPoint = onRoad->enterPoint(2);
+
 					targetPoint = onRoad->leavePoint(1);
 					nextIntersection = onRoad->intersection1;
 				}
@@ -97,6 +149,7 @@ void Vehicle::update(float seconds) {
 				nextRoad = 0;
 
 				startPoint = targetPoint;
+
 				startAngle = targetAngle;
 
 				onRoad = 0;
