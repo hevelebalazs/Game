@@ -166,14 +166,18 @@ void Vehicle::update(float seconds) {
 			seconds = 0.0;
 		}
 
-		angle = startAngle + (targetAngle - startAngle) * (spentSeconds / totalSeconds);
+		float timeRatio = 0.0f;
+
+		if (totalSeconds > 0.0f) timeRatio = (spentSeconds / totalSeconds);
+
+		angle = startAngle + (targetAngle - startAngle) * (timeRatio);
 
 		if (rotationMovement == false) {
-			position.x = startPoint.x + (targetPoint.x - startPoint.x) * (spentSeconds / totalSeconds);
-			position.y = startPoint.y + (targetPoint.y - startPoint.y) * (spentSeconds / totalSeconds);
+			position.x = startPoint.x + (targetPoint.x - startPoint.x) * (timeRatio);
+			position.y = startPoint.y + (targetPoint.y - startPoint.y) * (timeRatio);
 		}
 		else {
-			float rotationAngle = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * (spentSeconds / totalSeconds);
+			float rotationAngle = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * (timeRatio);
 
 			position.x = rotationPoint.x + rotationSide * cosf(rotationAngle);
 			position.y = rotationPoint.y + rotationSide * sinf(rotationAngle);
