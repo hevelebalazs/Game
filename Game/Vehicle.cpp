@@ -13,6 +13,8 @@ void Vehicle::update(float seconds) {
 
 			totalSeconds = 0.0f;
 
+			targetIntersection = map->getRandomIntersection();
+
 			break;
 		}
 		
@@ -203,4 +205,9 @@ void Vehicle::draw(Bitmap bitmap) {
 	};
 
 	bitmap.drawQuad(points, color);
+
+	if (targetIntersection) {
+		Color highlightColor = {0.0, 0.0, 1.0};
+		targetIntersection->highlight(bitmap, highlightColor);
+	}
 }

@@ -11,6 +11,7 @@ struct Map
 	float width = 0;
 	float height = 0;
 
+	Intersection *getRandomIntersection();
 	Intersection* getIntersectionAtPoint(Point point, float maxDistance);
 
 	void draw(Bitmap bitmap);

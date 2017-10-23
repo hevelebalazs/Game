@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include <time.h>
 
+Intersection* Map::getRandomIntersection() {
+	int intersectionIndex = rand() % intersectionCount;
+
+	return &intersections[intersectionIndex];
+}
+
 Intersection* Map::getIntersectionAtPoint(Point point, float maxDistance) {
 	float maxDistanceSquare = maxDistance * maxDistance;
 

@@ -175,5 +175,59 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 
 	delete[] connectedPositions;
 
+	int realIntersectionCount = 0;
+	for (int i = 0; i < intersectionCount; ++i) {
+		Intersection *oldIntersection = &map.intersections[i];
+		Intersection *newIntersection = &map.intersections[realIntersectionCount];
+		int isIntersectionReal = 0;
+		
+		if (oldIntersection->leftRoad) {
+			if (oldIntersection->leftRoad->intersection1 == oldIntersection) {
+				oldIntersection->leftRoad->intersection1 = newIntersection;
+			}
+			else {
+				oldIntersection->leftRoad->intersection2 = newIntersection;
+			}
+			isIntersectionReal = 1;
+		}
+
+		if (oldIntersection->rightRoad) {
+			if (oldIntersection->rightRoad->intersection1 == oldIntersection) {
+				oldIntersection->rightRoad->intersection1 = newIntersection;
+			}
+			else {
+				oldIntersection->rightRoad->intersection2 = newIntersection;
+			}
+			isIntersectionReal = 1;
+		}
+
+		if (oldIntersection->topRoad) {
+			if (oldIntersection->topRoad->intersection1 == oldIntersection) {
+				oldIntersection->topRoad->intersection1 = newIntersection;
+			}
+			else {
+				oldIntersection->topRoad->intersection2 = newIntersection;
+			}
+			isIntersectionReal = 1;
+		}
+
+		if (oldIntersection->bottomRoad) {
+			if (oldIntersection->bottomRoad->intersection1 == oldIntersection) {
+				oldIntersection->bottomRoad->intersection1 = newIntersection;
+			}
+			else {
+				oldIntersection->bottomRoad->intersection2 = newIntersection;
+			}
+			isIntersectionReal = 1;
+		}
+
+		if (isIntersectionReal) {
+			*newIntersection = *oldIntersection;
+			realIntersectionCount++;
+		}
+	}
+
+	map.intersectionCount = realIntersectionCount;
+
 	return map;
 }
