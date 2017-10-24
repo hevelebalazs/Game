@@ -106,10 +106,7 @@ void Vehicle::update(float seconds) {
 					if (rotationStartAngle - rotationTargetAngle > PI) rotationStartAngle -= 2 * PI;
 					if (rotationStartAngle - rotationTargetAngle < -PI) rotationStartAngle += 2 * PI;
 
-					rotationPoint = {
-						startPoint.x + rotationSide * cosf(targetAngle),
-						startPoint.y + rotationSide * sinf(targetAngle)
-					};
+					rotationPoint = startPoint + rotationSide * Point::rotation(targetAngle);
 
 					totalSeconds = (rotationSide * PI / 2.0f) / maxSpeed;
 				}
@@ -175,33 +172,27 @@ void Vehicle::update(float seconds) {
 		angle = startAngle + (targetAngle - startAngle) * (timeRatio);
 
 		if (rotationMovement == false) {
-			position.x = startPoint.x + (targetPoint.x - startPoint.x) * (timeRatio);
-			position.y = startPoint.y + (targetPoint.y - startPoint.y) * (timeRatio);
+			position = startPoint + (targetPoint - startPoint) * timeRatio;
 		}
 		else {
 			float rotationAngle = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * (timeRatio);
 
-			position.x = rotationPoint.x + rotationSide * cosf(rotationAngle);
-			position.y = rotationPoint.y + rotationSide * sinf(rotationAngle);
+			position = rotationPoint + rotationSide * Point::rotation(rotationAngle);
 		}
 	}
 }
 
 void Vehicle::draw(Bitmap bitmap) {
-	float addWidthX = (width / 2.0f) * cosf(angle + PI / 2.0f);
-	float addWidthY = (width / 2.0f) * sinf(angle + PI / 2.0f);
+	Point addWidth = (width / 2.0f) * Point::rotation(angle + PI / 2.0f);
 
-	Point side1 = { position.x + addWidthX, position.y + addWidthY };
-	Point side2 = { position.x - addWidthX, position.y - addWidthY };
+	Point side1 = position + addWidth;
+	Point side2 = position - addWidth;
 
-	float addLengthX = (length / 2.0f) * cosf(angle);
-	float addLengthY = (length / 2.0f) * sinf(angle);
+	Point addLength = (length / 2.0f) * Point::rotation(angle);
 
 	Point points[4] = {
-		{ side1.x + addLengthX, side1.y + addLengthY },
-		{ side1.x - addLengthX, side1.y - addLengthY },
-		{ side2.x - addLengthX, side2.y - addLengthY },
-		{ side2.x + addLengthX, side2.y + addLengthY }
+		side1 + addLength, side1 - addLength,
+		side2 - addLength, side2 + addLength
 	};
 
 	bitmap.drawQuad(points, color);

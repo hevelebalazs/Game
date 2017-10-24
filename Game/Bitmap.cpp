@@ -22,19 +22,6 @@ void Bitmap::clear(Color color) {
 	}
 }
 
-/*
-void Bitmap::drawPixel(int row, int col, Color color) {
-	unsigned int colorCode = getColorCode(color);
-
-	if (row < 0 || row >= height) return;
-	if (col < 0 || col >= width) return;
-
-	unsigned int *memoryUint = (unsigned int*)memory;
-
-	memoryUint[row * width + col] = colorCode;
-}
-*/
-
 void Bitmap::drawRect(float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = getColorCode(color);
 

@@ -14,6 +14,22 @@ Point Point::operator+(Point otherPoint) {
 	return { x + otherPoint.x, y + otherPoint.y };
 }
 
+Point Point::operator-(Point otherPoint) {
+	return { x - otherPoint.x, y - otherPoint.y };
+}
+
 bool Point::operator==(Point otherPoint) {
 	return x == otherPoint.x && y == otherPoint.y;
+}
+
+Point Point::rotation(float angle) {
+	return { cosf(angle), sinf(angle) };
+}
+
+Point operator*(float multiplier, Point point) {
+	return { multiplier * point.x, multiplier * point.y };
+}
+
+Point operator*(Point point, float multiplier) {
+	return multiplier * point;
 }

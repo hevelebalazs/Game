@@ -84,8 +84,7 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 	int intersectionIndex = 0;
 	for (int row = 0; row < rowCount; ++row) {
 		for (int col = 0; col < colCount; ++col) {
-			map.intersections[intersectionIndex].coordinate.x = col * intersectionDistance;
-			map.intersections[intersectionIndex].coordinate.y = row * intersectionDistance;
+			map.intersections[intersectionIndex].coordinate = Point{ (float)col, (float)row } * (float)intersectionDistance;
 
 			++intersectionIndex;
 		}
