@@ -115,6 +115,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Bitmap.cpp" />
+    <ClCompile Include="Building.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GridMapCreator.cpp" />
     <ClCompile Include="Intersection.cpp" />
@@ -126,6 +127,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="Building.h" />
     <ClInclude Include="GridMapCreator.h" />
     <ClInclude Include="Intersection.h" />
     <ClInclude Include="Map.h" />

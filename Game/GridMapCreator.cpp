@@ -76,6 +76,11 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 	int colCount = (int)(width / intersectionDistance) + 1;
 	int rowCount = (int)(height / intersectionDistance) + 1;
 
+	float rightOffset = width - ((float)(colCount - 1) * intersectionDistance);
+	float bottomOffset = height - ((float)(rowCount - 1) * intersectionDistance);
+
+	Point leftTop = { rightOffset / 2.0f, bottomOffset / 2.0f };
+
 	int intersectionCount = colCount * rowCount;
 
 	map.intersections = new Intersection[intersectionCount];
@@ -84,7 +89,8 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 	int intersectionIndex = 0;
 	for (int row = 0; row < rowCount; ++row) {
 		for (int col = 0; col < colCount; ++col) {
-			map.intersections[intersectionIndex].coordinate = Point{ (float)col, (float)row } * (float)intersectionDistance;
+			map.intersections[intersectionIndex].coordinate = 
+				leftTop + (Point{ (float)col, (float)row } * (float)intersectionDistance);
 
 			++intersectionIndex;
 		}
@@ -173,6 +179,47 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 	}
 
 	delete[] connectedPositions;
+
+	int maxBuildingCount = (rowCount + 1) * (colCount + 1);
+	map.buildings = new Building[maxBuildingCount];
+
+	map.buildingCount = 0;
+
+	float buildingPadding = intersectionDistance / 5.0f;
+
+	for (int row = 0; row <= rowCount; ++row) {
+		for (int col = 0; col <= colCount; ++col) {
+			Intersection *topLeftIntersection = 0;
+			if (row > 0 && col > 0) topLeftIntersection = &map.intersections[(row - 1) * colCount + (col - 1)];
+
+			Intersection *topRightIntersection = 0;
+			if (row > 0 && col < colCount) topRightIntersection = &map.intersections[(row - 1) * colCount + (col)];
+
+			Intersection *bottomLeftIntersection = 0;
+			if (row < rowCount && col > 0) bottomLeftIntersection = &map.intersections[(row)* colCount + (col - 1)];
+
+			Intersection *bottomRightIntersection = 0;
+			if (row < rowCount && col < colCount) bottomRightIntersection = &map.intersections[(row)* colCount + (col)];
+
+			bool roadOnLeft = (topLeftIntersection != 0) && (topLeftIntersection->bottomRoad != 0);
+			bool roadOnRight = (topRightIntersection != 0) && (topRightIntersection->bottomRoad != 0);
+			bool roadOnTop = (topLeftIntersection != 0) && (topLeftIntersection->rightRoad != 0);
+			bool roadOnBottom = (bottomLeftIntersection != 0) && (bottomLeftIntersection->rightRoad != 0);
+
+			if (roadOnLeft || roadOnRight || roadOnTop || roadOnBottom) {
+				Building *building = &map.buildings[map.buildingCount];
+				map.buildingCount++;
+
+				building->top = ((float)(row - 1) * intersectionDistance) + buildingPadding + leftTop.y;
+				building->bottom = ((float)row * intersectionDistance) - buildingPadding + leftTop.y;
+
+				building->left = ((float)(col - 1) * intersectionDistance) + buildingPadding + leftTop.x;
+				building->right = ((float)col * intersectionDistance) - buildingPadding + leftTop.x;
+
+				building->color = Color{ 0.0f, 0.0f, 0.0f };
+			}
+		}
+	}
 
 	int realIntersectionCount = 0;
 	for (int i = 0; i < intersectionCount; ++i) {

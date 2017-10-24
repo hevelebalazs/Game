@@ -157,7 +157,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-	globalMap = createGridMap((float)width, (float)height, 150);
+	globalMap = createGridMap((float)width, (float)height, 100);
 
 	globalPathHelper.indexes = new int[globalMap.intersectionCount];
 	globalPathHelper.isHelper = new int[globalMap.intersectionCount];
