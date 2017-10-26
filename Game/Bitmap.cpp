@@ -1,5 +1,15 @@
 #include "Bitmap.h"
 
+Color Color::random() {
+	Color randomColor = {
+		(float)rand() / (float)RAND_MAX,
+		(float)rand() / (float)RAND_MAX,
+		(float)rand() / (float)RAND_MAX
+	};
+
+	return randomColor;
+}
+
 static unsigned int getColorCode(Color color) {
 	unsigned char red = (unsigned char)(color.red * 255);
 	unsigned char green = (unsigned char)(color.green * 255);

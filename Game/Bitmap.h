@@ -1,11 +1,14 @@
 #pragma once
 #include <Windows.h>
+#include <math.h>
 #include "Point.h"
 
 struct Color {
 	float red;
 	float green;
 	float blue;
+
+	static Color random();
 };
 
 struct Bitmap {

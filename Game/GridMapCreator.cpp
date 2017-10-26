@@ -73,8 +73,8 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 	map.width = width;
 	map.height = height;
 
-	int colCount = (int)(width / intersectionDistance) + 1;
-	int rowCount = (int)(height / intersectionDistance) + 1;
+	int colCount = (int)(width / intersectionDistance);
+	int rowCount = (int)(height / intersectionDistance);
 
 	float rightOffset = width - ((float)(colCount - 1) * intersectionDistance);
 	float bottomOffset = height - ((float)(rowCount - 1) * intersectionDistance);
@@ -187,7 +187,18 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 
 	float buildingPadding = intersectionDistance / 5.0f;
 
+	Building **gridBuilding = new Building*[maxBuildingCount];
+
+	for (int i = 0; i < maxBuildingCount; ++i) gridBuilding[i] = 0;
+
 	for (int row = 0; row <= rowCount; ++row) {
+		bool isNewBuilding = false;
+		Building newBuilding = {};
+		bool roadAbove = false;
+
+		newBuilding.top = ((float)(row - 1) * intersectionDistance) + buildingPadding + leftTop.y;
+		newBuilding.bottom = ((float)row * intersectionDistance) - buildingPadding + leftTop.y;
+
 		for (int col = 0; col <= colCount; ++col) {
 			Intersection *topLeftIntersection = 0;
 			if (row > 0 && col > 0) topLeftIntersection = &map.intersections[(row - 1) * colCount + (col - 1)];
@@ -206,20 +217,62 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 			bool roadOnTop = (topLeftIntersection != 0) && (topLeftIntersection->rightRoad != 0);
 			bool roadOnBottom = (bottomLeftIntersection != 0) && (bottomLeftIntersection->rightRoad != 0);
 
-			if (roadOnLeft || roadOnRight || roadOnTop || roadOnBottom) {
-				Building *building = &map.buildings[map.buildingCount];
-				map.buildingCount++;
+			bool createBuilding = false;
 
-				building->top = ((float)(row - 1) * intersectionDistance) + buildingPadding + leftTop.y;
-				building->bottom = ((float)row * intersectionDistance) - buildingPadding + leftTop.y;
+			bool isNearRoad = (roadOnLeft || roadOnRight || roadOnTop || roadOnBottom);
 
-				building->left = ((float)(col - 1) * intersectionDistance) + buildingPadding + leftTop.x;
-				building->right = ((float)col * intersectionDistance) - buildingPadding + leftTop.x;
+			if (isNearRoad) {
+				if (isNewBuilding) {
+					if (roadOnLeft) {
+						createBuilding = true;
+						isNewBuilding = false;
+					}
+					else {
+						newBuilding.right += intersectionDistance;
 
-				building->color = Color{ 0.0f, 0.0f, 0.0f };
+						roadAbove |= roadOnTop;
+					}
+				}
+			}
+			else if(isNewBuilding) {
+				createBuilding = true;
+			}
+
+			if (createBuilding) {
+				Building *buildingAbove = 0;
+				if (row != 0) buildingAbove = gridBuilding[(row - 1) * (colCount - 1) + (col)];
+
+				if (!roadAbove && buildingAbove && 
+					buildingAbove->left == newBuilding.left && 
+					buildingAbove->right == newBuilding.right
+				) {
+					buildingAbove->bottom += intersectionDistance;
+
+					gridBuilding[(row) * (colCount - 1) + (col)] = buildingAbove;
+				}
+				else {
+					newBuilding.color = Color{ 0.0f, 0.0f, 0.0f };
+					map.buildings[map.buildingCount] = newBuilding;
+
+					gridBuilding[(row) * (colCount - 1) + (col)] = &map.buildings[map.buildingCount];
+
+					map.buildingCount++;
+				}
+
+				isNewBuilding = false;
+			}
+
+			if (isNearRoad && !isNewBuilding) {
+				isNewBuilding = true;
+				newBuilding.left = ((float)(col - 1) * intersectionDistance) + buildingPadding + leftTop.x;
+				newBuilding.right = ((float)col * intersectionDistance) - buildingPadding + leftTop.x;
+
+				roadAbove = roadOnTop;
 			}
 		}
 	}
+
+	delete[] gridBuilding;
 
 	int realIntersectionCount = 0;
 	for (int i = 0; i < intersectionCount; ++i) {
