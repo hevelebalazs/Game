@@ -240,7 +240,7 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 
 			if (createBuilding) {
 				Building *buildingAbove = 0;
-				if (row != 0) buildingAbove = gridBuilding[(row - 1) * (colCount - 1) + (col)];
+				if (row != 0) buildingAbove = gridBuilding[(row - 1) * (colCount + 1) + (col - 1)];
 
 				if (!roadAbove && buildingAbove && 
 					buildingAbove->left == newBuilding.left && 
@@ -248,13 +248,13 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 				) {
 					buildingAbove->bottom += intersectionDistance;
 
-					gridBuilding[(row) * (colCount - 1) + (col)] = buildingAbove;
+					gridBuilding[(row) * (colCount + 1) + (col - 1)] = buildingAbove;
 				}
 				else {
 					newBuilding.color = Color{ 0.0f, 0.0f, 0.0f };
 					map.buildings[map.buildingCount] = newBuilding;
 
-					gridBuilding[(row) * (colCount - 1) + (col)] = &map.buildings[map.buildingCount];
+					gridBuilding[(row) * (colCount + 1) + (col - 1)] = &map.buildings[map.buildingCount];
 
 					map.buildingCount++;
 				}
