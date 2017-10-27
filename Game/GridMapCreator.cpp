@@ -7,6 +7,70 @@ struct GridPosition {
 	int col;
 };
 
+enum GridMapDirection {
+	GRIDMAP_LEFT,
+	GRIDMAP_RIGHT,
+	GRIDMAP_UP,
+	GRIDMAP_DOWN
+};
+
+struct BuildArea {
+	float left;
+	float right;
+	float top;
+	float bottom;
+};
+
+static float RandomBetween(float left, float right) {
+	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
+}
+
+static void generateBuildings(Map *map, BuildArea area, float buildingPadding, float minBuildingSide) {
+	area.left += RandomBetween(0.0f, minBuildingSide / 2.0f);
+	area.right -= RandomBetween(0.0f, minBuildingSide / 2.0f);
+	area.top += RandomBetween(0.0f, minBuildingSide / 2.0f);
+	area.bottom -= RandomBetween(0.0f, minBuildingSide / 2.0f);
+
+	float areaWidth = area.right - area.left;
+	float areaHeight = area.bottom - area.top;
+
+	if (areaWidth < buildingPadding) return;
+	if (areaHeight < buildingPadding) return;
+
+	if ((areaWidth >= buildingPadding + 2 * minBuildingSide) && (RandomBetween(0.0f, 1.0f) < 0.5f)) {
+		BuildArea areaLeft = area;
+		areaLeft.right = ((area.left + area.right) / 2.0f);
+		
+		BuildArea areaRight = area;
+		areaRight.left = ((area.left + area.right) / 2.0f);
+
+		generateBuildings(map, areaLeft, buildingPadding, minBuildingSide);
+		generateBuildings(map, areaRight, buildingPadding, minBuildingSide);
+	}
+	else if ((areaHeight >= buildingPadding + 2 * minBuildingSide) && (RandomBetween(0.0f, 1.0f) < 0.5f)) {
+		BuildArea areaTop = area;
+		areaTop.bottom = ((area.top + area.bottom) / 2.0f);
+
+		BuildArea areaBottom = area;
+		areaBottom.top = ((area.top + area.bottom) / 2.0f);
+
+		generateBuildings(map, areaTop, buildingPadding, minBuildingSide);
+		generateBuildings(map, areaBottom, buildingPadding, minBuildingSide);
+	}
+	else {
+		Building *building = &map->buildings[map->buildingCount];
+
+		building->left = area.left;
+		building->right = area.right;
+		building->top = area.top;
+		building->bottom = area.bottom;
+
+		building->color = Color{ 0.0f, 0.0f, 0.0f };
+
+		map->buildingCount++;
+	}
+}
+
 static void connectIntersections(Intersection *intersection1, Intersection *intersection2, Road *road, float roadWidth) {
 	if (intersection1->coordinate.y == intersection2->coordinate.y) {
 		Intersection *left, *right;
@@ -59,13 +123,6 @@ static void connectIntersections(Intersection *intersection1, Intersection *inte
 
 	road->width = roadWidth;
 }
-
-enum GridMapDirection {
-	GRIDMAP_LEFT,
-	GRIDMAP_RIGHT,
-	GRIDMAP_UP,
-	GRIDMAP_DOWN
-};
 
 Map createGridMap(float width, float height, float intersectionDistance) {
 	Map map;
@@ -180,26 +237,33 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 
 	delete[] connectedPositions;
 
-	int maxBuildingCount = (rowCount + 1) * (colCount + 1);
-	map.buildings = new Building[maxBuildingCount];
+	int maxAreaCount = (rowCount + 1) * (colCount + 1);
+	map.buildings = new Building[4 * maxAreaCount];
 
 	map.buildingCount = 0;
 
-	float buildingPadding = intersectionDistance / 5.0f;
+	float buildingPadding = intersectionDistance / 10.0f;
 
-	Building **gridBuilding = new Building*[maxBuildingCount];
+	BuildArea **gridAreas = new BuildArea *[maxAreaCount];
+	BuildArea *buildAreas = new BuildArea[maxAreaCount];
+	int buildAreaCount = 0;
 
-	for (int i = 0; i < maxBuildingCount; ++i) gridBuilding[i] = 0;
+	for (int i = 0; i < maxAreaCount; ++i) {
+		gridAreas[i] = 0;
+	}
 
 	for (int row = 0; row <= rowCount; ++row) {
 		bool isNewBuilding = false;
-		Building newBuilding = {};
+		BuildArea newArea = {};
 		bool roadAbove = false;
 
-		newBuilding.top = ((float)(row - 1) * intersectionDistance) + buildingPadding + leftTop.y;
-		newBuilding.bottom = ((float)row * intersectionDistance) - buildingPadding + leftTop.y;
+		newArea.top = ((float)(row - 1) * intersectionDistance) + buildingPadding + leftTop.y;
+		newArea.bottom = ((float)row * intersectionDistance) - buildingPadding + leftTop.y;
 
 		for (int col = 0; col <= colCount; ++col) {
+			BuildArea *areaAbove = 0;
+			if (row > 0) areaAbove = gridAreas[(row - 1) * (colCount + 1) + (col - 1)];
+
 			Intersection *topLeftIntersection = 0;
 			if (row > 0 && col > 0) topLeftIntersection = &map.intersections[(row - 1) * colCount + (col - 1)];
 
@@ -217,46 +281,40 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 			bool roadOnTop = (topLeftIntersection != 0) && (topLeftIntersection->rightRoad != 0);
 			bool roadOnBottom = (bottomLeftIntersection != 0) && (bottomLeftIntersection->rightRoad != 0);
 
-			bool createBuilding = false;
+			bool createArea = false;
 
 			bool isNearRoad = (roadOnLeft || roadOnRight || roadOnTop || roadOnBottom);
 
 			if (isNearRoad) {
 				if (isNewBuilding) {
 					if (roadOnLeft) {
-						createBuilding = true;
+						createArea = true;
 						isNewBuilding = false;
 					}
 					else {
-						newBuilding.right += intersectionDistance;
+						newArea.right += intersectionDistance;
 
 						roadAbove |= roadOnTop;
 					}
 				}
 			}
 			else if(isNewBuilding) {
-				createBuilding = true;
+				createArea = true;
 			}
 
-			if (createBuilding) {
-				Building *buildingAbove = 0;
-				if (row != 0) buildingAbove = gridBuilding[(row - 1) * (colCount + 1) + (col - 1)];
-
-				if (!roadAbove && buildingAbove && 
-					buildingAbove->left == newBuilding.left && 
-					buildingAbove->right == newBuilding.right
+			if (createArea) {
+				if (!roadAbove && areaAbove && 
+					areaAbove->left == newArea.left && 
+					areaAbove->right == newArea.right
 				) {
-					buildingAbove->bottom += intersectionDistance;
+					areaAbove->bottom += intersectionDistance;
 
-					gridBuilding[(row) * (colCount + 1) + (col - 1)] = buildingAbove;
+					gridAreas[(row) * (colCount + 1) + (col - 1)] = areaAbove;
 				}
 				else {
-					newBuilding.color = Color{ 0.0f, 0.0f, 0.0f };
-					map.buildings[map.buildingCount] = newBuilding;
-
-					gridBuilding[(row) * (colCount + 1) + (col - 1)] = &map.buildings[map.buildingCount];
-
-					map.buildingCount++;
+					buildAreas[buildAreaCount] = newArea;
+					gridAreas[(row) * (colCount + 1) + (col - 1)] = &buildAreas[buildAreaCount];
+					buildAreaCount++;
 				}
 
 				isNewBuilding = false;
@@ -264,15 +322,20 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 
 			if (isNearRoad && !isNewBuilding) {
 				isNewBuilding = true;
-				newBuilding.left = ((float)(col - 1) * intersectionDistance) + buildingPadding + leftTop.x;
-				newBuilding.right = ((float)col * intersectionDistance) - buildingPadding + leftTop.x;
+				newArea.left = ((float)(col - 1) * intersectionDistance) + buildingPadding + leftTop.x;
+				newArea.right = ((float)col * intersectionDistance) - buildingPadding + leftTop.x;
 
 				roadAbove = roadOnTop;
 			}
 		}
 	}
 
-	delete[] gridBuilding;
+	for (int i = 0; i < buildAreaCount; ++i) {
+		generateBuildings(&map, buildAreas[i], buildingPadding, intersectionDistance / 4.0f);
+	}
+
+	delete[] gridAreas;
+	delete[] buildAreas;
 
 	int realIntersectionCount = 0;
 	for (int i = 0; i < intersectionCount; ++i) {
