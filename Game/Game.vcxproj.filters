@@ -45,6 +45,12 @@
     <ClCompile Include="Building.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AutoVehicle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerVehicle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Intersection.h">
@@ -72,6 +78,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Building.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AutoVehicle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerVehicle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

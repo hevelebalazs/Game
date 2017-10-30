@@ -5,19 +5,19 @@
 #include "Bitmap.h"
 #include "Path.h"
 #include "Vehicle.h"
+#include "AutoVehicle.h"
+#include "PlayerVehicle.h"
 
 static bool running;
 
 Bitmap globalBitmap;
 Map globalMap;
 Intersection *globalSelectedIntersection;
-IntersectionPathHelper globalPathHelper;
+PlayerVehicle globalPlayerVehicle;
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
 static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
-
-Vehicle globalVehicle;
 
 void WinResize(Bitmap *bitmap, int width, int height) {
 	if (bitmap->memory) delete bitmap->memory;
@@ -57,7 +57,7 @@ void WinDraw(HWND window, Bitmap bitmap) {
 	Intersection *highlightIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
 
 	globalMap.draw(bitmap);
-	globalVehicle.draw(bitmap);
+	globalPlayerVehicle.vehicle.draw(bitmap);
 }
 
 void WinUpdate(Bitmap bitmap, HDC context, RECT clientRect) {
@@ -97,6 +97,45 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		WinUpdate(globalBitmap, context, clientRect);
 
 		EndPaint(window, &paint);
+	} break;
+
+	case WM_KEYUP: {
+		WPARAM keyCode = wparam;
+
+		switch (keyCode) {
+
+		case 'W': {
+			globalPlayerVehicle.speed = 0.0f;
+		} break;
+		case 'A': {
+			globalPlayerVehicle.turnAngle = 0.0f;
+		} break;
+
+		case 'D': {
+			globalPlayerVehicle.turnAngle = 0.0f;
+		}
+
+		}
+	} break;
+
+	case WM_KEYDOWN: {
+		WPARAM keyCode = wparam;
+
+		switch (keyCode) {
+
+		case 'W': {
+			globalPlayerVehicle.speed = globalPlayerVehicle.vehicle.maxSpeed;
+		} break;
+
+		case 'A': {
+			globalPlayerVehicle.turnAngle = -2.0f;
+		} break;
+
+		case 'D': {
+			globalPlayerVehicle.turnAngle = 2.0f;
+		}
+
+		}
 	} break;
 
 	case WM_DESTROY: {
@@ -159,30 +198,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	int height = rect.bottom - rect.top;
 	globalMap = createGridMap((float)width, (float)height, 100);
 
-	globalPathHelper.indexes = new int[globalMap.intersectionCount];
-	globalPathHelper.isHelper = new int[globalMap.intersectionCount];
-	globalPathHelper.source = new int[globalMap.intersectionCount];
-
-	globalVehicle.angle = 0.0f;
-	globalVehicle.width = 10.0f;
-	globalVehicle.length = 20.0f;
-	globalVehicle.color = { 0.0f, 0.0f, 1.0f };
-	globalVehicle.maxSpeed = 100.0f;
-
-	globalVehicle.map = &globalMap;
-	globalVehicle.pathHelper = &globalPathHelper;
-
-	for (int i = 0; i < globalMap.intersectionCount; ++i) {
-		Intersection *intersection = &globalMap.intersections[i];
-
-		if (intersection->leftRoad || intersection->rightRoad ||
-				intersection->topRoad || intersection->bottomRoad) {
-			globalVehicle.position = intersection->coordinate;
-			globalVehicle.onIntersection = intersection;
-			globalVehicle.targetIntersection = intersection;
-			break;
-		}
-	}
+	globalPlayerVehicle.vehicle.position = { (float)width / 2.0f, (float)height / 2.0f };
+	globalPlayerVehicle.vehicle.angle = 0.0f;
+	globalPlayerVehicle.vehicle.color = { 1.0f, 0.0f, 0.0f };
+	globalPlayerVehicle.vehicle.width = 10.0f;
+	globalPlayerVehicle.vehicle.length = 18.0f;
+	globalPlayerVehicle.vehicle.maxSpeed = 100.0f;
 
 	timeBeginPeriod(1);
 
@@ -196,18 +217,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	while (running) {
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
 			if (message.message == WM_QUIT) running = false;
-			else if (message.message == WM_LBUTTONDOWN) {
-				Point mousePoint = WinMousePosition(window);
-
-				globalSelectedIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
-				globalVehicle.targetIntersection = globalSelectedIntersection;
-			}
 
 			TranslateMessage(&message);
 			DispatchMessageA(&message);
 		}
 
-		globalVehicle.update(globalTargetFrameS);
+		globalPlayerVehicle.update(globalTargetFrameS);
+
 		WinDraw(window, globalBitmap);
 
 		RECT rect;

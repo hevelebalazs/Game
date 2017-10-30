@@ -26,10 +26,10 @@ static float RandomBetween(float left, float right) {
 }
 
 static void generateBuildings(Map *map, BuildArea area, float buildingPadding, float minBuildingSide) {
-	area.left += RandomBetween(0.0f, minBuildingSide / 2.0f);
-	area.right -= RandomBetween(0.0f, minBuildingSide / 2.0f);
-	area.top += RandomBetween(0.0f, minBuildingSide / 2.0f);
-	area.bottom -= RandomBetween(0.0f, minBuildingSide / 2.0f);
+	area.left += RandomBetween(0.0f, buildingPadding);
+	area.right -= RandomBetween(0.0f, buildingPadding);
+	area.top += RandomBetween(0.0f, buildingPadding);
+	area.bottom -= RandomBetween(0.0f, buildingPadding);
 
 	float areaWidth = area.right - area.left;
 	float areaHeight = area.bottom - area.top;
@@ -245,6 +245,7 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 	float buildingPadding = intersectionDistance / 10.0f;
 
 	BuildArea **gridAreas = new BuildArea *[maxAreaCount];
+
 	BuildArea *buildAreas = new BuildArea[maxAreaCount];
 	int buildAreaCount = 0;
 

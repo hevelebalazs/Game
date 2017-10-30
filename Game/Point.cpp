@@ -18,6 +18,16 @@ Point Point::operator-(Point otherPoint) {
 	return { x - otherPoint.x, y - otherPoint.y };
 }
 
+Point Point::operator+=(Point otherPoint) {
+	*this = (*this + otherPoint);
+	return (*this);
+}
+
+Point Point::operator-=(Point otherPoint) {
+	(*this) = (*this - otherPoint);
+	return (*this);
+}
+
 bool Point::operator==(Point otherPoint) {
 	return x == otherPoint.x && y == otherPoint.y;
 }
