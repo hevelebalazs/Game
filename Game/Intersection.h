@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Road.h"
+#include "Renderer.h"
 
 struct Road;
 
@@ -13,6 +14,6 @@ struct Intersection {
 
 	float getRoadWidth();
 
-	void highlight(Bitmap bitmap, Color color);
-	void draw(Bitmap bitmap);
+	void highlight(Renderer renderer, Color color);
+	void draw(Renderer renderer);
 };

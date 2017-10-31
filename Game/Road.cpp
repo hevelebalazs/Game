@@ -49,7 +49,7 @@ Intersection* Road::otherIntersection(Intersection *intersection) {
 	else return intersection1;
 }
 
-void Road::draw(Bitmap bitmap) {
+void Road::draw(Renderer renderer) {
 	float stripeWidth = width / 20.0f;
 
 	float top = 0.0f;
@@ -89,8 +89,8 @@ void Road::draw(Bitmap bitmap) {
 	}
 
 	Color roadColor = { 0.5f, 0.5f, 0.5f };
-	bitmap.drawRect(top, left, bottom, right, roadColor);
+	renderer.drawRect(top, left, bottom, right, roadColor);
 
 	Color stripeColor = { 1.0f, 1.0f, 1.0f };
-	bitmap.drawRect(stripeTop, stripeLeft, stripeBottom, stripeRight, stripeColor);
+	renderer.drawRect(stripeTop, stripeLeft, stripeBottom, stripeRight, stripeColor);
 }

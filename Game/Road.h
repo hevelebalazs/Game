@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Point.h"
-#include "Bitmap.h"
+#include "Renderer.h"
 #include "Intersection.h"
 #include <Windows.h>
 
@@ -21,5 +21,5 @@ struct Road{
 
 	float width;
 	
-	void draw(Bitmap bitmap);
+	void draw(Renderer renderer);
 };

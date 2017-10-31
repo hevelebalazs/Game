@@ -9,7 +9,7 @@ float Intersection::getRoadWidth() {
 	return 0.0f;
 }
 
-void Intersection::highlight(Bitmap bitmap, Color color) {
+void Intersection::highlight(Renderer renderer, Color color) {
 	if (leftRoad || rightRoad || topRoad || bottomRoad) {
 		float roadWidth = getRoadWidth();
 
@@ -19,11 +19,11 @@ void Intersection::highlight(Bitmap bitmap, Color color) {
 		float left = coordinate.x - (roadWidth / 2.0f);
 		float right = coordinate.x + (roadWidth / 2.0f);
 
-		bitmap.drawRect(top, left, bottom, right, color);
+		renderer.drawRect(top, left, bottom, right, color);
 	}
 }
 
-void Intersection::draw(Bitmap bitmap) {
+void Intersection::draw(Renderer renderer) {
 	float roadWidth = getRoadWidth();
 
 	float top = coordinate.y - (roadWidth / 2.0f);
@@ -35,7 +35,7 @@ void Intersection::draw(Bitmap bitmap) {
 	float midY = (top + bottom) / 2;
 
 	Color color = { 0.5f, 0.5f, 0.5f };
-	bitmap.drawRect(top, left, bottom, right, color);
+	renderer.drawRect(top, left, bottom, right, color);
 
 	float stripeWidth = roadWidth / 20.0f;
 	Color stripeColor = { 1.0f, 1.0f, 1.0f };
@@ -49,30 +49,30 @@ void Intersection::draw(Bitmap bitmap) {
 
 	if (roadCount > 2) {
 		if (topRoad) {
-			bitmap.drawRect(top, left, top + stripeWidth, right, stripeColor);
+			renderer.drawRect(top, left, top + stripeWidth, right, stripeColor);
 		}
 		if (leftRoad) {
-			bitmap.drawRect(top, left, bottom, left + stripeWidth, stripeColor);
+			renderer.drawRect(top, left, bottom, left + stripeWidth, stripeColor);
 		}
 		if (bottomRoad) {
-			bitmap.drawRect(bottom - stripeWidth, left, bottom, right, stripeColor);
+			renderer.drawRect(bottom - stripeWidth, left, bottom, right, stripeColor);
 		}
 		if (rightRoad) {
-			bitmap.drawRect(top, right - stripeWidth, bottom, right, stripeColor);
+			renderer.drawRect(top, right - stripeWidth, bottom, right, stripeColor);
 		}
 	}
 	else {
 		if (topRoad) {
-			bitmap.drawRect(top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			renderer.drawRect(top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
 		}
 		if (leftRoad) {
-			bitmap.drawRect(midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			renderer.drawRect(midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
 		}
 		if (bottomRoad) {
-			bitmap.drawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
+			renderer.drawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
 		}
 		if (rightRoad) {
-			bitmap.drawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
+			renderer.drawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
 		}
 	}
 }

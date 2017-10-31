@@ -2,6 +2,7 @@
 
 #include "Intersection.h"
 #include "Building.h"
+#include "Renderer.h"
 
 struct Map
 {
@@ -20,5 +21,5 @@ struct Map
 	Intersection *getRandomIntersection();
 	Intersection* getIntersectionAtPoint(Point point, float maxDistance);
 
-	void draw(Bitmap bitmap);
+	void draw(Renderer renderer);
 };

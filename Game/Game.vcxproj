@@ -124,6 +124,7 @@
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="PlayerVehicle.cpp" />
     <ClCompile Include="Point.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Road.cpp" />
     <ClCompile Include="Vehicle.cpp" />
   </ItemGroup>
@@ -137,6 +138,7 @@
     <ClInclude Include="Path.h" />
     <ClInclude Include="PlayerVehicle.h" />
     <ClInclude Include="Point.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="Road.h" />
     <ClInclude Include="Vehicle.h" />
   </ItemGroup>

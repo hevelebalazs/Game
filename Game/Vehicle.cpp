@@ -4,7 +4,7 @@
 
 static float PI = 3.14159265358979323f;
 
-void Vehicle::draw(Bitmap bitmap) {
+void Vehicle::draw(Renderer renderer) {
 	Point addWidth = (width / 2.0f) * Point::rotation(angle + PI / 2.0f);
 
 	Point side1 = position + addWidth;
@@ -17,5 +17,5 @@ void Vehicle::draw(Bitmap bitmap) {
 		side2 - addLength, side2 + addLength
 	};
 
-	bitmap.drawQuad(points, color);
+	renderer.drawQuad(points, color);
 }

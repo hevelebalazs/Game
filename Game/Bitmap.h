@@ -18,8 +18,4 @@ struct Bitmap {
 	int height;
 	void *memory;
 	BITMAPINFO info;
-
-	void clear(Color color);
-	void drawRect(float top, float left, float bottom, float right, Color color);
-	void drawQuad(Point points[4], Color color);
 };

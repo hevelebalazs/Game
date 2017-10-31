@@ -1,7 +1,7 @@
 #include "Building.h"
 
-void Building::draw(Bitmap bitmap) {
-	bitmap.drawRect(
+void Building::draw(Renderer renderer) {
+	renderer.drawRect(
 		top, left, bottom, right,
 		color
 	);

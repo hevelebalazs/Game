@@ -1,5 +1,5 @@
 #pragma once
-#include "Bitmap.h"
+#include "Renderer.h"
 #include "Intersection.h"
 #include "Map.h"
 #include "Path.h"
@@ -18,5 +18,5 @@ struct Vehicle {
 
 	Map *map;
 
-	void draw(Bitmap bitmap);
+	void draw(Renderer renderer);
 };

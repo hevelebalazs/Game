@@ -1,5 +1,5 @@
 #pragma once
-#include "Bitmap.h"
+#include "Renderer.h"
 
 struct Building {
 	float top;
@@ -8,5 +8,5 @@ struct Building {
 	float right;
 
 	Color color;
-	void draw(Bitmap bitmap);
+	void draw(Renderer renderer);
 };

@@ -118,7 +118,7 @@ IntersectionPath findConnectingPath(Map map, Intersection *start, Intersection *
 	return result;
 }
 
-void drawIntersectionPath(IntersectionPath path, Bitmap bitmap, float pathWidth) {
+void drawIntersectionPath(IntersectionPath path, Renderer renderer, float pathWidth) {
 	for (int i = 1; i < path.intersectionCount; ++i) {
 		Intersection *prevIntersection = path.intersections[i - 1];
 		Intersection *thisIntersection = path.intersections[i];
@@ -129,14 +129,14 @@ void drawIntersectionPath(IntersectionPath path, Bitmap bitmap, float pathWidth)
 		Color color = { 1.0f, 0.5f, 0.0f };
 
 		if (prevCenter.x == thisCenter.x) {
-			bitmap.drawRect(
+			renderer.drawRect(
 				prevCenter.y, prevCenter.x - (pathWidth / 2.0f),
 				thisCenter.y, thisCenter.x + (pathWidth / 2.0f),
 				color
 			);
 		}
 		else {
-			bitmap.drawRect(
+			renderer.drawRect(
 				prevCenter.y - (pathWidth / 2.0f), prevCenter.x,
 				thisCenter.y + (pathWidth / 2.0f), thisCenter.x,
 				color

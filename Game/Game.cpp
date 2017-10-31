@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "GridMapCreator.h"
 #include "Bitmap.h"
+#include "Renderer.h"
 #include "Path.h"
 #include "Vehicle.h"
 #include "AutoVehicle.h"
@@ -10,7 +11,7 @@
 
 static bool running;
 
-Bitmap globalBitmap;
+Renderer globalRenderer;
 Map globalMap;
 Intersection *globalSelectedIntersection;
 PlayerVehicle globalPlayerVehicle;
@@ -19,7 +20,10 @@ static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
 static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
 
-void WinResize(Bitmap *bitmap, int width, int height) {
+void WinResize(Renderer *renderer, int width, int height) {
+	Bitmap *bitmap = &renderer->bitmap;
+	Camera *camera = &renderer->camera;
+
 	if (bitmap->memory) delete bitmap->memory;
 
 	bitmap->width = width;
@@ -37,7 +41,11 @@ void WinResize(Bitmap *bitmap, int width, int height) {
 
 	bitmap->memory = (void *)(new char[bitmapMemorySize]);
 
-	bitmap->clear({0.0f, 0.0f, 0.0f});
+	camera->pixelCoordRatio = 15.0f;
+	camera->screenSize = Point{ (float)width, (float)height };
+	camera->center = camera->screenSize * 0.5f;
+
+	renderer->clear({0.0f, 0.0f, 0.0f});
 }
 
 static Point WinMousePosition(HWND window) {
@@ -52,17 +60,19 @@ static Point WinMousePosition(HWND window) {
 	return point;
 }
 
-void WinDraw(HWND window, Bitmap bitmap) {
+void WinDraw(HWND window, Renderer renderer) {
 	Point mousePoint = WinMousePosition(window);
 	Intersection *highlightIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
 
-	globalMap.draw(bitmap);
-	globalPlayerVehicle.vehicle.draw(bitmap);
+	globalMap.draw(renderer);
+	globalPlayerVehicle.vehicle.draw(renderer);
 }
 
-void WinUpdate(Bitmap bitmap, HDC context, RECT clientRect) {
+void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
 	int windowWidth = clientRect.right - clientRect.left;
 	int windowHeight = clientRect.bottom - clientRect.top;
+
+	Bitmap bitmap = renderer.bitmap;
 
 	StretchDIBits(context,
 		0, 0, bitmap.width, bitmap.height,
@@ -84,7 +94,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		GetClientRect(window, &clientRect);
 		int width = clientRect.right - clientRect.left;
 		int height = clientRect.bottom - clientRect.top;
-		WinResize(&globalBitmap, width, height);
+		WinResize(&globalRenderer, width, height);
 	}
 
 	case WM_PAINT: {
@@ -94,7 +104,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		RECT clientRect;
 		GetClientRect(window, &clientRect);
 
-		WinUpdate(globalBitmap, context, clientRect);
+		WinUpdate(globalRenderer, context, clientRect);
 
 		EndPaint(window, &paint);
 	} break;
@@ -201,9 +211,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPlayerVehicle.vehicle.position = { (float)width / 2.0f, (float)height / 2.0f };
 	globalPlayerVehicle.vehicle.angle = 0.0f;
 	globalPlayerVehicle.vehicle.color = { 1.0f, 0.0f, 0.0f };
-	globalPlayerVehicle.vehicle.width = 10.0f;
-	globalPlayerVehicle.vehicle.length = 18.0f;
-	globalPlayerVehicle.vehicle.maxSpeed = 100.0f;
+	globalPlayerVehicle.vehicle.width = 5.0f;
+	globalPlayerVehicle.vehicle.length = 8.0f;
+	globalPlayerVehicle.vehicle.maxSpeed = 30.0f;
 
 	timeBeginPeriod(1);
 
@@ -224,14 +234,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 		globalPlayerVehicle.update(globalTargetFrameS);
 
-		WinDraw(window, globalBitmap);
+		globalRenderer.camera.center = globalPlayerVehicle.vehicle.position;
+
+		WinDraw(window, globalRenderer);
 
 		RECT rect;
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
 
-		WinUpdate(globalBitmap, context, rect);
+		WinUpdate(globalRenderer, context, rect);
 		
 		ReleaseDC(window, context);
 

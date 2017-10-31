@@ -1,6 +1,7 @@
 #pragma once
 #include "Map.h"
 #include "Intersection.h"
+#include "Renderer.h"
 
 struct IntersectionPath {
 	Intersection **intersections;
@@ -17,4 +18,4 @@ struct IntersectionPathHelper {
 Road *nextRoadOnPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper);
 Intersection *nextIntersectionOnPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper);
 IntersectionPath findConnectingPath(Map map, Intersection *start, Intersection *finish, IntersectionPathHelper *pathHelper);
-void drawIntersectionPath(IntersectionPath path, Bitmap bitmap, float pathWidth);
+void drawIntersectionPath(IntersectionPath path, Renderer renderer, float pathWidth);

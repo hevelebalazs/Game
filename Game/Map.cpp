@@ -23,20 +23,20 @@ Intersection* Map::getIntersectionAtPoint(Point point, float maxDistance) {
 	return result;
 };
 
-void Map::draw(Bitmap bitmap) {
+void Map::draw(Renderer renderer) {
 	Color color = { 0.0f, 1.0f, 0.0f };
-	bitmap.drawRect(0, 0, height, width, color);
+	renderer.drawRect(0, 0, height, width, color);
 
 	for (int i = 0; i < intersectionCount; ++i) {
-		intersections[i].draw(bitmap);
+		intersections[i].draw(renderer);
 	}
 
 	for (int i = 0; i < roadCount; ++i) {
-		roads[i].draw(bitmap);
+		roads[i].draw(renderer);
 	}
 
 	for (int i = 0; i < buildingCount; ++i) {
-		buildings[i].draw(bitmap);
+		buildings[i].draw(renderer);
 	}
 }
 
