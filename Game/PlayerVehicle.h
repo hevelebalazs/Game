@@ -5,9 +5,14 @@
 struct PlayerVehicle {
 	Vehicle vehicle;
 
-	float turnAngle = 0.0f;
+	float mass;
 
-	float speed;
+	float engineForce;
+	float maxEngineForce;
+	float breakForce;
+
+	float turnAngle;
+
 	Point velocity;
 
 	void update(float seconds);

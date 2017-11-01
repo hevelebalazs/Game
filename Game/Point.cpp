@@ -32,6 +32,10 @@ bool Point::operator==(Point otherPoint) {
 	return x == otherPoint.x && y == otherPoint.y;
 }
 
+float Point::length() {
+	return sqrtf(x * x + y * y);
+}
+
 Point Point::rotation(float angle) {
 	return { cosf(angle), sinf(angle) };
 }

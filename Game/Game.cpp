@@ -41,7 +41,7 @@ void WinResize(Renderer *renderer, int width, int height) {
 
 	bitmap->memory = (void *)(new char[bitmapMemorySize]);
 
-	camera->pixelCoordRatio = 15.0f;
+	camera->pixelCoordRatio = 10.0f;
 	camera->screenSize = Point{ (float)width, (float)height };
 	camera->center = camera->screenSize * 0.5f;
 
@@ -115,7 +115,10 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		switch (keyCode) {
 
 		case 'W': {
-			globalPlayerVehicle.speed = 0.0f;
+			globalPlayerVehicle.engineForce = 0.0f;
+		} break;
+		case 'S': {
+			globalPlayerVehicle.engineForce = 0.0f;
 		} break;
 		case 'A': {
 			globalPlayerVehicle.turnAngle = 0.0f;
@@ -134,7 +137,11 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		switch (keyCode) {
 
 		case 'W': {
-			globalPlayerVehicle.speed = globalPlayerVehicle.vehicle.maxSpeed;
+			globalPlayerVehicle.engineForce = globalPlayerVehicle.maxEngineForce;
+		} break;
+
+		case 'S': {
+			globalPlayerVehicle.engineForce = -globalPlayerVehicle.breakForce;
 		} break;
 
 		case 'A': {
@@ -213,7 +220,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPlayerVehicle.vehicle.color = { 1.0f, 0.0f, 0.0f };
 	globalPlayerVehicle.vehicle.width = 5.0f;
 	globalPlayerVehicle.vehicle.length = 8.0f;
-	globalPlayerVehicle.vehicle.maxSpeed = 30.0f;
+
+	globalPlayerVehicle.mass = 500.0f;
+	globalPlayerVehicle.maxEngineForce = 1000.0f;
+	globalPlayerVehicle.breakForce = 500.0f;
 
 	timeBeginPeriod(1);
 

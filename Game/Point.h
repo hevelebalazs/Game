@@ -12,6 +12,8 @@ struct Point {
 
 	bool operator==(Point otherPoint);
 
+	float length();
+
 	static Point rotation(float angle);
 };
 
