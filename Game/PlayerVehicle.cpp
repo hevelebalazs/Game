@@ -18,6 +18,15 @@ void PlayerVehicle::update(float seconds) {
 
 	Point force = fTraction + fDrag + fRR;
 
-	velocity += ((seconds / 100.0f) * force);
+	force = (1.0f / 50.0f) * force;
+
+	velocity += (seconds * force);
+
+	Point angleRot = Point::rotation(vehicle.angle);
+	Point parallel = dotProduct(velocity, angleRot) * angleRot;
+	Point perpendicular = velocity - parallel;
+
+	velocity = parallel + 0.5f * perpendicular;
+
 	vehicle.position += (seconds * velocity);
 }

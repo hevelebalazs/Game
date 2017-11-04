@@ -47,3 +47,7 @@ Point operator*(float multiplier, Point point) {
 Point operator*(Point point, float multiplier) {
 	return multiplier * point;
 }
+
+float dotProduct(Point point1, Point point2) {
+	return (point1.x * point2.x) + (point1.y * point2.y);
+}

@@ -19,3 +19,5 @@ struct Point {
 
 Point operator*(float multiplier, Point point);
 Point operator*(Point point, float multiplier);
+
+float dotProduct(Point point1, Point point2);
