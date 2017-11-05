@@ -3,6 +3,8 @@
 struct Point {
 	static float distanceSquare(Point point1, Point point2);
 	static float cityDistance(Point point1, Point point2);
+	static float dotProduct(Point point1, Point point2);
+
 	float x;
 	float y;
 	Point operator+(Point otherPoint);
@@ -19,5 +21,3 @@ struct Point {
 
 Point operator*(float multiplier, Point point);
 Point operator*(Point point, float multiplier);
-
-float dotProduct(Point point1, Point point2);

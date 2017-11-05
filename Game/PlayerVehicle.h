@@ -2,6 +2,8 @@
 
 #include "Vehicle.h"
 
+struct PlayerVehicle;
+
 struct PlayerVehicle {
 	Vehicle vehicle;
 

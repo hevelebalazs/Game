@@ -145,12 +145,12 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		} break;
 
 		case 'A': {
-			globalPlayerVehicle.turnAngle = -2.0f;
+			globalPlayerVehicle.turnAngle = -0.75f;
 		} break;
 
 		case 'D': {
-			globalPlayerVehicle.turnAngle = 2.0f;
-		}
+			globalPlayerVehicle.turnAngle = 0.75f;
+		}	
 
 		}
 	} break;
@@ -221,9 +221,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPlayerVehicle.vehicle.width = 5.0f;
 	globalPlayerVehicle.vehicle.length = 8.0f;
 
-	globalPlayerVehicle.mass = 500.0f;
+	globalPlayerVehicle.mass = 200.0f;
 	globalPlayerVehicle.maxEngineForce = 1000.0f;
-	globalPlayerVehicle.breakForce = 500.0f;
+	globalPlayerVehicle.breakForce = 1000.0f;
 
 	timeBeginPeriod(1);
 
