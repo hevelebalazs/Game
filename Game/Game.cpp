@@ -41,7 +41,7 @@ void WinResize(Renderer *renderer, int width, int height) {
 
 	bitmap->memory = (void *)(new char[bitmapMemorySize]);
 
-	camera->pixelCoordRatio = 10.0f;
+	camera->pixelCoordRatio = 1.0f;
 	camera->screenSize = Point{ (float)width, (float)height };
 	camera->center = camera->screenSize * 0.5f;
 
@@ -243,8 +243,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		}
 
 		globalPlayerVehicle.update(globalTargetFrameS);
-
-		globalRenderer.camera.center = globalPlayerVehicle.vehicle.position;
 
 		WinDraw(window, globalRenderer);
 

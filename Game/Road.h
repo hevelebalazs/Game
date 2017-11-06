@@ -17,6 +17,9 @@ struct Road{
 	Point enterPoint(int endPointIndex);
 	Point leavePoint(int endPointIndex);
 
+	float distanceSquareFrom(Point point);
+	Point closestPoint(Point point);
+
 	Intersection *otherIntersection(Intersection*);
 
 	float width;

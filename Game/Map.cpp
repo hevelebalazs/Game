@@ -23,6 +23,23 @@ Intersection* Map::getIntersectionAtPoint(Point point, float maxDistance) {
 	return result;
 };
 
+Road *Map::closestRoad(Point point) {
+	Road *closestRoad = 0;
+	float minDistanceSquare = 0.0f;
+
+	for (int i = 0; i < roadCount; ++i) {
+		Road *road = &roads[i];
+		float distanceSquare = road->distanceSquareFrom(point);
+
+		if (!closestRoad || distanceSquare < minDistanceSquare) {
+			closestRoad = road;
+			minDistanceSquare = distanceSquare;
+		}
+	}
+
+	return closestRoad;
+}
+
 void Map::draw(Renderer renderer) {
 	Color color = { 0.0f, 1.0f, 0.0f };
 	renderer.drawRect(0, 0, height, width, color);

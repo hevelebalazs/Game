@@ -65,6 +65,18 @@ static void generateBuildings(Map *map, BuildArea area, float buildingPadding, f
 		building->top = area.top;
 		building->bottom = area.bottom;
 
+		Point center = {};
+		center.x = (building->left + building->right) * 0.5f;
+		center.y = (building->top + building->bottom) * 0.5f;
+
+		Road *closestRoad = map->closestRoad(center);
+		if (closestRoad) {
+			building->connectRoad = closestRoad->closestPoint(center);
+		}
+		else {
+			building->connectRoad = center;
+		}
+
 		building->color = Color{ 0.0f, 0.0f, 0.0f };
 
 		map->buildingCount++;

@@ -44,6 +44,63 @@ Point Road::leavePoint(int endPointIndex) {
 	return result;
 }
 
+float Road::distanceSquareFrom(Point point) {
+	Point closest = closestPoint(point);
+
+	return Point::distanceSquare(point, closest);
+}
+
+Point Road::closestPoint(Point point) {
+	Point result = {};
+
+	if (endPoint1.x == endPoint2.x) {
+		float minY = endPoint1.y;
+		float maxY = endPoint2.y;
+
+		if (minY > maxY) {
+			float tmp = minY;
+			minY = maxY;
+			maxY = tmp;
+		}
+
+		result.x = endPoint1.x;
+
+		if (minY <= point.y && point.y <= maxY) {
+			result.y = point.y;
+		}
+		else if (point.y < minY) {
+			result.y = minY;
+		}
+		else {
+			result.y = maxY;
+		}
+	}
+	else if (endPoint1.y == endPoint2.y) {
+		float minX = endPoint1.x;
+		float maxX = endPoint2.x;
+
+		if (minX > maxX) {
+			float tmp = minX;
+			minX = maxX;
+			maxX = tmp;
+		}
+
+		result.y = endPoint1.y;
+
+		if (minX <= point.x && point.x <= maxX) {
+			result.x = point.x;
+		}
+		else if (point.x < minX) {
+			result.x = minX;
+		}
+		else {
+			result.y = maxX;
+		}
+	}
+
+	return result;
+}
+
 Intersection* Road::otherIntersection(Intersection *intersection) {
 	if (intersection1 == intersection) return intersection2;
 	else return intersection1;

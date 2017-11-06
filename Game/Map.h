@@ -21,5 +21,7 @@ struct Map
 	Intersection *getRandomIntersection();
 	Intersection* getIntersectionAtPoint(Point point, float maxDistance);
 
+	Road *closestRoad(Point point);
+
 	void draw(Renderer renderer);
 };
