@@ -59,23 +59,12 @@ static void generateBuildings(Map *map, BuildArea area, float buildingPadding, f
 	}
 	else {
 		Building *building = &map->buildings[map->buildingCount];
+		*building = {};
 
 		building->left = area.left;
 		building->right = area.right;
 		building->top = area.top;
 		building->bottom = area.bottom;
-
-		Point center = {};
-		center.x = (building->left + building->right) * 0.5f;
-		center.y = (building->top + building->bottom) * 0.5f;
-
-		Road *closestRoad = map->closestRoad(center);
-		if (closestRoad) {
-			building->connectRoad = closestRoad->closestPoint(center);
-		}
-		else {
-			building->connectRoad = center;
-		}
 
 		building->color = Color{ 0.0f, 0.0f, 0.0f };
 
@@ -349,6 +338,74 @@ Map createGridMap(float width, float height, float intersectionDistance) {
 
 	delete[] gridAreas;
 	delete[] buildAreas;
+
+	for (int i = 0; i < map.buildingCount; ++i) {
+		Building *building = &map.buildings[i];
+
+		Point center = {};
+		center.x = (building->left + building->right) * 0.5f;
+		center.y = (building->top + building->bottom) * 0.5f;
+
+		Road *closestRoad = map.closestRoad(center);
+		if (closestRoad) {
+			building->connectRoad = closestRoad->closestPoint(center);
+		} 
+		else {
+			building->connectRoad = center;
+		}
+	}
+
+	Building::connectRoadWidth = roadWidth / 5.0f;
+
+	for (int i = 0; i < map.buildingCount; ++i) {
+		Building *building = &map.buildings[i];
+
+		Point center = {};
+		center.x = (building->left + building->right) * 0.5f;
+		center.y = (building->top + building->bottom) * 0.5f;
+
+		Road *closestRoad = map.closestRoad(center);
+		if (closestRoad) {
+			building->connectRoad = closestRoad->closestPoint(center);
+
+			building->connectBuilding = center;
+			if (closestRoad->endPoint1.x == closestRoad->endPoint2.x) {
+				building->connectBuilding.y = building->connectRoad.y;
+
+				if (closestRoad->endPoint1.x < center.x) {
+					building->connectBuilding.x = building->left;
+					building->connectRoad.x += closestRoad->width * 0.5f;
+				}
+				else {
+					building->connectBuilding.x = building->right;
+					building->connectRoad.x -= closestRoad->width * 0.5f;
+				}
+			}
+			else if (closestRoad->endPoint1.y == closestRoad->endPoint2.y) {
+				building->connectBuilding.x = building->connectRoad.x;
+
+				if (closestRoad->endPoint1.y < center.y) {
+					building->connectBuilding.y = building->top;
+					building->connectRoad.y += closestRoad->width * 0.5f;
+				}
+				else {
+					building->connectBuilding.y = building->bottom;
+					building->connectRoad.y -= closestRoad->width * 0.5f;
+				}
+			}
+		} else {
+			building->connectRoad = center;
+			building->connectBuilding = center;
+		}
+
+		Building *crossedBuilding = map.crossedBuilding(building->connectBuilding, building->connectRoad, building);
+
+		if (crossedBuilding) {
+			crossedBuilding->roadAround = true;
+
+			building->connectRoad = crossedBuilding->closestCrossPoint(building->connectBuilding, building->connectRoad);
+		}
+	}
 
 	int realIntersectionCount = 0;
 	for (int i = 0; i < intersectionCount; ++i) {

@@ -40,6 +40,21 @@ Road *Map::closestRoad(Point point) {
 	return closestRoad;
 }
 
+// TODO: if there are severeal buildings, return the one closest to one of the points
+Building *Map::crossedBuilding(Point point1, Point point2, Building *excludedBuilding) {
+	for (int i = 0; i < buildingCount; ++i) {
+		Building *building = &buildings[i];
+
+		if (building == excludedBuilding) continue;
+
+		if (building->isCrossed(point1, point2)) {
+			return building;
+		}
+	}
+
+	return 0;
+}
+
 void Map::draw(Renderer renderer) {
 	Color color = { 0.0f, 1.0f, 0.0f };
 	renderer.drawRect(0, 0, height, width, color);

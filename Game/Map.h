@@ -4,8 +4,7 @@
 #include "Building.h"
 #include "Renderer.h"
 
-struct Map
-{
+struct Map {
 	Intersection* intersections;
 	int intersectionCount = 0;
 
@@ -22,6 +21,8 @@ struct Map
 	Intersection* getIntersectionAtPoint(Point point, float maxDistance);
 
 	Road *closestRoad(Point point);
+
+	Building *crossedBuilding(Point point1, Point point2, Building *excludedBuilding);
 
 	void draw(Renderer renderer);
 };
