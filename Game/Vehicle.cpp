@@ -2,20 +2,21 @@
 #include <math.h>
 #include <stdio.h>
 
+// TODO: move this to a math file?
 static float PI = 3.14159265358979323f;
 
-void Vehicle::draw(Renderer renderer) {
-	Point addWidth = (width / 2.0f) * Point::rotation(angle + PI / 2.0f);
+void Vehicle::Draw(Renderer renderer) {
+	Point addWidth = (width / 2.0f) * Point::Rotation(angle + PI / 2.0f);
 
 	Point side1 = position + addWidth;
 	Point side2 = position - addWidth;
 
-	Point addLength = (length / 2.0f) * Point::rotation(angle);
+	Point addLength = (length / 2.0f) * Point::Rotation(angle);
 
 	Point points[4] = {
 		side1 + addLength, side1 - addLength,
 		side2 - addLength, side2 + addLength
 	};
 
-	renderer.drawQuad(points, color);
+	renderer.DrawQuad(points, color);
 }

@@ -8,17 +8,17 @@ struct Camera {
 	Point center;
 	Point screenSize;
 
-	float coordXtoPixel(float coordX);
-	float coordYtoPixel(float coordY);
-	Point pixelToCoord(Point pixel);
-	Point coordToPixel(Point coord);
+	float CoordXtoPixel(float coordX);
+	float CoordYtoPixel(float coordY);
+	Point PixelToCoord(Point pixel);
+	Point CoordToPixel(Point coord);
 };
 
 struct Renderer {
 	Bitmap bitmap;
 	Camera camera;
 
-	void clear(Color color);
-	void drawRect(float top, float left, float bottom, float right, Color color);
-	void drawQuad(Point points[4], Color color);
+	void Clear(Color color);
+	void DrawRect(float top, float left, float bottom, float right, Color color);
+	void DrawQuad(Point points[4], Color color);
 };

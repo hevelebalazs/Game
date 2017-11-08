@@ -12,8 +12,8 @@ struct Intersection {
 	Road* topRoad = 0;
 	Road* bottomRoad = 0;
 
-	float getRoadWidth();
+	float GetRoadWidth();
 
-	void highlight(Renderer renderer, Color color);
-	void draw(Renderer renderer);
+	void Highlight(Renderer renderer, Color color);
+	void Draw(Renderer renderer);
 };

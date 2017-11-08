@@ -13,16 +13,16 @@ static bool running;
 
 Renderer globalRenderer;
 Map globalMap;
-Intersection *globalSelectedIntersection;
+Intersection* globalSelectedIntersection;
 PlayerVehicle globalPlayerVehicle;
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
 static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
 
-void WinResize(Renderer *renderer, int width, int height) {
-	Bitmap *bitmap = &renderer->bitmap;
-	Camera *camera = &renderer->camera;
+void WinResize(Renderer* renderer, int width, int height) {
+	Bitmap* bitmap = &renderer->bitmap;
+	Camera* camera = &renderer->camera;
 
 	if (bitmap->memory) delete bitmap->memory;
 
@@ -45,7 +45,7 @@ void WinResize(Renderer *renderer, int width, int height) {
 	camera->screenSize = Point{ (float)width, (float)height };
 	camera->center = camera->screenSize * 0.5f;
 
-	renderer->clear({0.0f, 0.0f, 0.0f});
+	renderer->Clear({0.0f, 0.0f, 0.0f});
 }
 
 static Point WinMousePosition(HWND window) {
@@ -62,10 +62,10 @@ static Point WinMousePosition(HWND window) {
 
 void WinDraw(HWND window, Renderer renderer) {
 	Point mousePoint = WinMousePosition(window);
-	Intersection *highlightIntersection = globalMap.getIntersectionAtPoint(mousePoint, 20.0f);
+	Intersection *highlightIntersection = globalMap.GetIntersectionAtPoint(mousePoint, 20.0f);
 
-	globalMap.draw(renderer);
-	globalPlayerVehicle.vehicle.draw(renderer);
+	globalMap.Draw(renderer);
+	globalPlayerVehicle.vehicle.Draw(renderer);
 }
 
 void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
@@ -213,7 +213,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-	globalMap = createGridMap((float)width, (float)height, 100);
+	globalMap = CreateGridMap((float)width, (float)height, 100);
 
 	globalPlayerVehicle.vehicle.position = { (float)width / 2.0f, (float)height / 2.0f };
 	globalPlayerVehicle.vehicle.angle = 0.0f;
@@ -242,7 +242,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 			DispatchMessageA(&message);
 		}
 
-		globalPlayerVehicle.update(globalTargetFrameS);
+		globalPlayerVehicle.Update(globalTargetFrameS);
 
 		WinDraw(window, globalRenderer);
 

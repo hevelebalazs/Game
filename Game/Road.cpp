@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
-Point Road::enterPoint(int endPointIndex) {
+Point Road::EnterPoint(int endPointIndex) {
 	Point result = {};
 
 	if (endPointIndex == 1) {
@@ -23,7 +23,7 @@ Point Road::enterPoint(int endPointIndex) {
 	return result;
 }
 
-Point Road::leavePoint(int endPointIndex) {
+Point Road::LeavePoint(int endPointIndex) {
 	Point result = {};
 
 	if (endPointIndex == 1) {
@@ -44,13 +44,13 @@ Point Road::leavePoint(int endPointIndex) {
 	return result;
 }
 
-float Road::distanceSquareFrom(Point point) {
-	Point closest = closestPoint(point);
+float Road::DistanceSquareFrom(Point point) {
+	Point closest = ClosestPoint(point);
 
-	return Point::distanceSquare(point, closest);
+	return Point::DistanceSquare(point, closest);
 }
 
-Point Road::closestPoint(Point point) {
+Point Road::ClosestPoint(Point point) {
 	Point result = {};
 
 	if (endPoint1.x == endPoint2.x) {
@@ -101,12 +101,12 @@ Point Road::closestPoint(Point point) {
 	return result;
 }
 
-Intersection* Road::otherIntersection(Intersection *intersection) {
+Intersection* Road::OtherIntersection(Intersection* intersection) {
 	if (intersection1 == intersection) return intersection2;
 	else return intersection1;
 }
 
-void Road::draw(Renderer renderer) {
+void Road::Draw(Renderer renderer) {
 	float stripeWidth = width / 20.0f;
 
 	float top = 0.0f;
@@ -146,8 +146,8 @@ void Road::draw(Renderer renderer) {
 	}
 
 	Color roadColor = { 0.5f, 0.5f, 0.5f };
-	renderer.drawRect(top, left, bottom, right, roadColor);
+	renderer.DrawRect(top, left, bottom, right, roadColor);
 
 	Color stripeColor = { 1.0f, 1.0f, 1.0f };
-	renderer.drawRect(stripeTop, stripeLeft, stripeBottom, stripeRight, stripeColor);
+	renderer.DrawRect(stripeTop, stripeLeft, stripeBottom, stripeRight, stripeColor);
 }

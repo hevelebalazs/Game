@@ -2,7 +2,7 @@
 
 static float PI = 3.14159265358979323f;
 
-void AutoVehicle::update(float seconds) {
+void AutoVehicle::Update(float seconds) {
 	while (seconds > 0.0f) {
 		if (targetIntersection == 0 || targetIntersection == onIntersection) {
 			seconds = 0.0f;
@@ -11,17 +11,17 @@ void AutoVehicle::update(float seconds) {
 
 			totalSeconds = 0.0f;
 
-			targetIntersection = vehicle.map->getRandomIntersection();
+			targetIntersection = vehicle.map->GetRandomIntersection();
 
 			break;
 		}
 
 		if (onIntersection) {
 			if (nextRoad == 0) {
-				nextRoad = nextRoadOnPath(*vehicle.map, onIntersection, targetIntersection, pathHelper);
+				nextRoad = NextRoadOnPath(*vehicle.map, onIntersection, targetIntersection, pathHelper);
 
-				if (nextRoad->intersection1 == onIntersection) targetPoint = nextRoad->enterPoint(1);
-				else targetPoint = nextRoad->enterPoint(2);
+				if (nextRoad->intersection1 == onIntersection) targetPoint = nextRoad->EnterPoint(1);
+				else targetPoint = nextRoad->EnterPoint(2);
 
 				targetAngle = 0.0f;
 				if (onIntersection->leftRoad == nextRoad) targetAngle = -PI;
@@ -42,7 +42,7 @@ void AutoVehicle::update(float seconds) {
 
 				if (startAngle == targetAngle) {
 					rotationMovement = false;
-					totalSeconds = Point::cityDistance(startPoint, targetPoint) / vehicle.maxSpeed;
+					totalSeconds = Point::CityDistance(startPoint, targetPoint) / vehicle.maxSpeed;
 				}
 				else if (startPoint.x == targetPoint.x) {
 					rotationMovement = true;
@@ -104,7 +104,7 @@ void AutoVehicle::update(float seconds) {
 					if (rotationStartAngle - rotationTargetAngle > PI) rotationStartAngle -= 2 * PI;
 					if (rotationStartAngle - rotationTargetAngle < -PI) rotationStartAngle += 2 * PI;
 
-					rotationPoint = startPoint + rotationSide * Point::rotation(targetAngle);
+					rotationPoint = startPoint + rotationSide * Point::Rotation(targetAngle);
 
 					totalSeconds = (rotationSide * PI / 2.0f) / vehicle.maxSpeed;
 				}
@@ -119,22 +119,22 @@ void AutoVehicle::update(float seconds) {
 				targetAngle = targetAngle;
 
 				if (onRoad->intersection1 == onIntersection) {
-					startPoint = onRoad->enterPoint(1);
+					startPoint = onRoad->EnterPoint(1);
 
-					targetPoint = onRoad->leavePoint(2);
+					targetPoint = onRoad->LeavePoint(2);
 					nextIntersection = onRoad->intersection2;
 				}
 				else if (onRoad->intersection2 == onIntersection) {
-					startPoint = onRoad->enterPoint(2);
+					startPoint = onRoad->EnterPoint(2);
 
-					targetPoint = onRoad->leavePoint(1);
+					targetPoint = onRoad->LeavePoint(1);
 					nextIntersection = onRoad->intersection1;
 				}
 
 				onIntersection = 0;
 				nextRoad = 0;
 
-				totalSeconds = Point::cityDistance(startPoint, targetPoint) / vehicle.maxSpeed;
+				totalSeconds = Point::CityDistance(startPoint, targetPoint) / vehicle.maxSpeed;
 				spentSeconds = 0.0f;
 
 				rotationMovement = false;
@@ -175,7 +175,7 @@ void AutoVehicle::update(float seconds) {
 		else {
 			float rotationAngle = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * (timeRatio);
 
-			vehicle.position = rotationPoint + rotationSide * Point::rotation(rotationAngle);
+			vehicle.position = rotationPoint + rotationSide * Point::Rotation(rotationAngle);
 		}
 	}
 }

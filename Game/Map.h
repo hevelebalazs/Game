@@ -11,18 +11,18 @@ struct Map {
 	Road* roads;
 	int roadCount = 0;
 
-	Building *buildings;
+	Building* buildings;
 	int buildingCount = 0;
 
 	float width = 0;
 	float height = 0;
 
-	Intersection *getRandomIntersection();
-	Intersection* getIntersectionAtPoint(Point point, float maxDistance);
+	Intersection* GetRandomIntersection();
+	Intersection* GetIntersectionAtPoint(Point point, float maxDistance);
 
-	Road *closestRoad(Point point);
+	Road* ClosestRoad(Point point);
 
-	Building *crossedBuilding(Point point1, Point point2, Building *excludedBuilding);
+	Building* CrossedBuilding(Point point1, Point point2, Building* excludedBuilding);
 
-	void draw(Renderer renderer);
+	void Draw(Renderer renderer);
 };

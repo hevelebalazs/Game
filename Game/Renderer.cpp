@@ -1,20 +1,20 @@
 #include "Renderer.h"
 
-float Camera::coordXtoPixel(float coordX) {
+float Camera::CoordXtoPixel(float coordX) {
 	return (0.5f * screenSize.x) + (pixelCoordRatio * (coordX - center.x));
 }
 
-float Camera::coordYtoPixel(float coordY) {
+float Camera::CoordYtoPixel(float coordY) {
 	return (0.5f * screenSize.y) + (pixelCoordRatio * (coordY - center.y));
 }
 
-Point Camera::pixelToCoord(Point pixel) {
+Point Camera::PixelToCoord(Point pixel) {
 	Point screenCenter = 0.5f * screenSize;
 
 	return center + ((1.0f / pixelCoordRatio) * (pixel - screenCenter));
 }
 
-Point Camera::coordToPixel(Point coord) {
+Point Camera::CoordToPixel(Point coord) {
 	Point screenCenter = 0.5f * screenSize;
 
 	return screenCenter + (pixelCoordRatio * (coord - center));
@@ -30,7 +30,7 @@ static unsigned int getColorCode(Color color) {
 	return colorCode;
 }
 
-void Renderer::clear(Color color) {
+void Renderer::Clear(Color color) {
 	unsigned int colorCode = getColorCode(color);
 
 	unsigned int *pixel = (unsigned int*)bitmap.memory;
@@ -42,13 +42,13 @@ void Renderer::clear(Color color) {
 	}
 }
 
-void Renderer::drawRect(float top, float left, float bottom, float right, Color color) {
+void Renderer::DrawRect(float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = getColorCode(color);
 
-	int topPixel = (int)camera.coordYtoPixel(top);
-	int leftPixel = (int)camera.coordXtoPixel(left);
-	int bottomPixel = (int)camera.coordYtoPixel(bottom);
-	int rightPixel = (int)camera.coordXtoPixel(right);
+	int topPixel = (int)camera.CoordYtoPixel(top);
+	int leftPixel = (int)camera.CoordXtoPixel(left);
+	int bottomPixel = (int)camera.CoordYtoPixel(bottom);
+	int rightPixel = (int)camera.CoordXtoPixel(right);
 
 	if (topPixel > bottomPixel) {
 		int tmp = topPixel;
@@ -86,11 +86,11 @@ float turnDirection(Point point1, Point point2, Point point3) {
 	return (dx1 * dy2 - dx2 * dy1);
 }
 
-void Renderer::drawQuad(Point points[4], Color color) {
+void Renderer::DrawQuad(Point points[4], Color color) {
 	unsigned int colorCode = getColorCode(color);
 
 	for (int i = 0; i < 4; ++i) {
-		points[i] = camera.coordToPixel(points[i]);
+		points[i] = camera.CoordToPixel(points[i]);
 	}
 
 	int minX = bitmap.width;

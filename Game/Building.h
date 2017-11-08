@@ -17,8 +17,8 @@ struct Building {
 
 	Color color;
 
-	bool isCrossed(Point point1, Point point2);
-	Point closestCrossPoint(Point closePoint, Point farPoint);
+	bool IsCrossed(Point point1, Point point2);
+	Point ClosestCrossPoint(Point closePoint, Point farPoint);
 
-	void draw(Renderer renderer);
+	void Draw(Renderer renderer);
 };

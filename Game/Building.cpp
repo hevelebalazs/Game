@@ -2,17 +2,18 @@
 
 float Building::connectRoadWidth;
 
-float min2(float x, float y) {
+// TODO: move these to a math file?
+float Min2(float x, float y) {
 	if (x < y) return x;
 	else return y;
 }
 
-float max2(float x, float y) {
+float Max2(float x, float y) {
 	if (x > y) return x;
 	else return y;
 }
 
-bool Building::isCrossed(Point point1, Point point2) {
+bool Building::IsCrossed(Point point1, Point point2) {
 	if (point1.x < left && point2.x < left) return false;
 	if (point1.x > right && point2.x > right) return false;
 	if (point1.y < top && point2.y < top) return false;
@@ -20,7 +21,7 @@ bool Building::isCrossed(Point point1, Point point2) {
 	return true;
 }
 
-Point Building::closestCrossPoint(Point closePoint, Point farPoint) {
+Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
 	Point result = {};
 
 	if (closePoint.x < farPoint.x) {
@@ -43,12 +44,12 @@ Point Building::closestCrossPoint(Point closePoint, Point farPoint) {
 	return result;
 }
 
-void Building::draw(Renderer renderer) {
+void Building::Draw(Renderer renderer) {
 	// TODO: make this a static member of Road?
 	Color roadColor = Color{0.5f, 0.5f, 0.5f};
 	
 	if (roadAround) {
-		renderer.drawRect(
+		renderer.DrawRect(
 			top - connectRoadWidth, left - connectRoadWidth,
 			bottom + connectRoadWidth, right + connectRoadWidth,
 			roadColor
@@ -69,12 +70,12 @@ void Building::draw(Renderer renderer) {
 		point2.y += connectPadding;
 	}
 
-	renderer.drawRect(
+	renderer.DrawRect(
 		point1.y, point1.x, point2.y, point2.x,
 		roadColor
 	);
 
-	renderer.drawRect(
+	renderer.DrawRect(
 		top, left, bottom, right,
 		color
 	);

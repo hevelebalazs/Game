@@ -4,13 +4,13 @@
 struct AutoVehicle {
 	Vehicle vehicle;
 
-	Intersection *targetIntersection;
+	Intersection* targetIntersection;
 
-	Intersection *onIntersection;
-	Road *nextRoad;
+	Intersection* onIntersection;
+	Road* nextRoad;
 
-	Road *onRoad;
-	Intersection *nextIntersection;
+	Road* onRoad;
+	Intersection* nextIntersection;
 
 	Point startPoint;
 	float startAngle;
@@ -21,12 +21,12 @@ struct AutoVehicle {
 	float rotationSide;
 	float rotationStartAngle;
 	float rotationTargetAngle;
-	Point rotationPoint = {};
+	Point rotationPoint;
 
 	float spentSeconds;
 	float totalSeconds;
 
-	IntersectionPathHelper *pathHelper;
+	IntersectionPathHelper* pathHelper;
 
-	void update(float seconds);
+	void Update(float seconds);
 };

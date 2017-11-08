@@ -3,17 +3,16 @@
 #include <stdio.h>
 #include <windows.h>
 
-void PlayerVehicle::update(float seconds) {
-	// vehicle.angle += turnAngle * seconds;
-	Point direction = Point::rotation(vehicle.angle);
+void PlayerVehicle::Update(float seconds) {
+	Point direction = Point::Rotation(vehicle.angle);
 
 	Point frontWheel = (vehicle.length / 2.0f) * direction;
 	Point rearWheel = (-vehicle.length / 2.0f) * direction;
 
-	Point turnDirection = Point::rotation(vehicle.angle + turnAngle);
+	Point turnDirection = Point::Rotation(vehicle.angle + turnAngle);
 
-	frontWheel += turnDirection * seconds * velocity.length();
-	rearWheel += direction * seconds * velocity.length();
+	frontWheel += turnDirection * seconds * velocity.Length();
+	rearWheel += direction * seconds * velocity.Length();
 
 	vehicle.angle = atan2f(frontWheel.y - rearWheel.y, frontWheel.x - rearWheel.x);
 
@@ -21,7 +20,7 @@ void PlayerVehicle::update(float seconds) {
 	float cRR = 12.8f;
 
 	Point fTraction = direction * engineForce;
-	Point fDrag = (-cDrag * velocity.length()) * velocity;
+	Point fDrag = (-cDrag * velocity.Length()) * velocity;
 	Point fRR = (-cRR) * velocity;
 
 	Point force = fTraction + fDrag + fRR;
@@ -30,7 +29,7 @@ void PlayerVehicle::update(float seconds) {
 
 	velocity += (seconds * force);
 
-	Point parallel = Point::dotProduct(velocity, direction) * direction;
+	Point parallel = Point::DotProduct(velocity, direction) * direction;
 	Point perpendicular = velocity - parallel;
 
 	velocity = parallel + 0.95f * perpendicular;

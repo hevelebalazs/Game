@@ -11,18 +11,18 @@ struct Road{
 	Point endPoint1;
 	Point endPoint2;
 
-	Intersection *intersection1;
-	Intersection *intersection2;
+	Intersection* intersection1;
+	Intersection* intersection2;
 
-	Point enterPoint(int endPointIndex);
-	Point leavePoint(int endPointIndex);
+	Point EnterPoint(int endPointIndex);
+	Point LeavePoint(int endPointIndex);
 
-	float distanceSquareFrom(Point point);
-	Point closestPoint(Point point);
+	float DistanceSquareFrom(Point point);
+	Point ClosestPoint(Point point);
 
-	Intersection *otherIntersection(Intersection*);
+	Intersection* OtherIntersection(Intersection*);
 
 	float width;
 	
-	void draw(Renderer renderer);
+	void Draw(Renderer renderer);
 };

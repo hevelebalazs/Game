@@ -16,7 +16,7 @@ struct Vehicle {
 
 	float maxSpeed;
 
-	Map *map;
+	Map* map;
 
-	void draw(Renderer renderer);
+	void Draw(Renderer renderer);
 };

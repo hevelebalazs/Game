@@ -8,7 +8,7 @@ struct Color {
 	float green;
 	float blue;
 
-	static Color random();
+	static Color Random();
 };
 
 struct Bitmap {
@@ -16,6 +16,6 @@ struct Bitmap {
 
 	int width;
 	int height;
-	void *memory;
+	void* memory;
 	BITMAPINFO info;
 };

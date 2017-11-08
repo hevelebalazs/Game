@@ -1,6 +1,6 @@
 #include "Intersection.h"
 
-float Intersection::getRoadWidth() {
+float Intersection::GetRoadWidth() {
 	if (leftRoad) return leftRoad->width;
 	if (rightRoad) return rightRoad->width;
 	if (topRoad) return topRoad->width;
@@ -9,9 +9,9 @@ float Intersection::getRoadWidth() {
 	return 0.0f;
 }
 
-void Intersection::highlight(Renderer renderer, Color color) {
+void Intersection::Highlight(Renderer renderer, Color color) {
 	if (leftRoad || rightRoad || topRoad || bottomRoad) {
-		float roadWidth = getRoadWidth();
+		float roadWidth = GetRoadWidth();
 
 		float stripeWidth = roadWidth / 10.0f;
 		float top = coordinate.y - (roadWidth / 2.0f);
@@ -19,12 +19,12 @@ void Intersection::highlight(Renderer renderer, Color color) {
 		float left = coordinate.x - (roadWidth / 2.0f);
 		float right = coordinate.x + (roadWidth / 2.0f);
 
-		renderer.drawRect(top, left, bottom, right, color);
+		renderer.DrawRect(top, left, bottom, right, color);
 	}
 }
 
-void Intersection::draw(Renderer renderer) {
-	float roadWidth = getRoadWidth();
+void Intersection::Draw(Renderer renderer) {
+	float roadWidth = GetRoadWidth();
 
 	float top = coordinate.y - (roadWidth / 2.0f);
 	float bottom = coordinate.y + (roadWidth / 2.0f);
@@ -35,7 +35,7 @@ void Intersection::draw(Renderer renderer) {
 	float midY = (top + bottom) / 2;
 
 	Color color = { 0.5f, 0.5f, 0.5f };
-	renderer.drawRect(top, left, bottom, right, color);
+	renderer.DrawRect(top, left, bottom, right, color);
 
 	float stripeWidth = roadWidth / 20.0f;
 	Color stripeColor = { 1.0f, 1.0f, 1.0f };
@@ -49,30 +49,30 @@ void Intersection::draw(Renderer renderer) {
 
 	if (roadCount > 2) {
 		if (topRoad) {
-			renderer.drawRect(top, left, top + stripeWidth, right, stripeColor);
+			renderer.DrawRect(top, left, top + stripeWidth, right, stripeColor);
 		}
 		if (leftRoad) {
-			renderer.drawRect(top, left, bottom, left + stripeWidth, stripeColor);
+			renderer.DrawRect(top, left, bottom, left + stripeWidth, stripeColor);
 		}
 		if (bottomRoad) {
-			renderer.drawRect(bottom - stripeWidth, left, bottom, right, stripeColor);
+			renderer.DrawRect(bottom - stripeWidth, left, bottom, right, stripeColor);
 		}
 		if (rightRoad) {
-			renderer.drawRect(top, right - stripeWidth, bottom, right, stripeColor);
+			renderer.DrawRect(top, right - stripeWidth, bottom, right, stripeColor);
 		}
 	}
 	else {
 		if (topRoad) {
-			renderer.drawRect(top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			renderer.DrawRect(top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
 		}
 		if (leftRoad) {
-			renderer.drawRect(midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			renderer.DrawRect(midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
 		}
 		if (bottomRoad) {
-			renderer.drawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
+			renderer.DrawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
 		}
 		if (rightRoad) {
-			renderer.drawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
+			renderer.DrawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
 		}
 	}
 }
