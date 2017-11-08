@@ -42,6 +42,7 @@ void Renderer::Clear(Color color) {
 	}
 }
 
+// TODO: make this function take two points instead of four floats?
 void Renderer::DrawRect(float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = getColorCode(color);
 

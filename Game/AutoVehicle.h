@@ -1,3 +1,4 @@
+/*
 #pragma once
 #include "Vehicle.h"
 
@@ -30,3 +31,4 @@ struct AutoVehicle {
 
 	void Update(float seconds);
 };
+*/

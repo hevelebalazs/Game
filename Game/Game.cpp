@@ -16,6 +16,10 @@ Map globalMap;
 Intersection* globalSelectedIntersection;
 PlayerVehicle globalPlayerVehicle;
 
+Building* globalSelectedBuilding;
+Building* globalHighlightedBuilding;
+Path globalBuildingPath;
+
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
 static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
@@ -66,6 +70,21 @@ void WinDraw(HWND window, Renderer renderer) {
 
 	globalMap.Draw(renderer);
 	globalPlayerVehicle.vehicle.Draw(renderer);
+
+	if (globalSelectedBuilding) {
+		Color highlightColor = {1.0f, 0.0f, 0.0f};
+		globalSelectedBuilding->HighLight(globalRenderer, highlightColor);
+	}
+
+	if (globalHighlightedBuilding) {
+		Color highlightColor = {1.0f, 0.5f, 0.0f};
+		globalHighlightedBuilding->HighLight(globalRenderer, highlightColor);
+	}
+
+	if (globalBuildingPath.nodeCount > 0) {
+		Color color = {1.0f, 0.0f, 0.0f};
+		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
+	}
 }
 
 void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
@@ -237,12 +256,24 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	while (running) {
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
 			if (message.message == WM_QUIT) running = false;
+			else if (message.message == WM_LBUTTONDOWN) {
+				globalSelectedBuilding = globalHighlightedBuilding;
+			}
 
 			TranslateMessage(&message);
 			DispatchMessageA(&message);
 		}
 
 		globalPlayerVehicle.Update(globalTargetFrameS);
+
+		Point mousePosition = WinMousePosition(window);
+		globalHighlightedBuilding = globalMap.GetBuildingAtPoint(mousePosition);
+
+		if (globalSelectedBuilding && globalHighlightedBuilding && globalSelectedBuilding != globalHighlightedBuilding) {
+			ClearPath(&globalBuildingPath);
+
+			globalBuildingPath = ConnectBuildings(&globalMap, globalSelectedBuilding, globalHighlightedBuilding);
+		}
 
 		WinDraw(window, globalRenderer);
 

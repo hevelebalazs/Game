@@ -349,12 +349,12 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		center.x = (building->left + building->right) * 0.5f;
 		center.y = (building->top + building->bottom) * 0.5f;
 
-		Road *closestRoad = map.ClosestRoad(center);
+		Road* closestRoad = map.ClosestRoad(center);
 		if (closestRoad) {
-			building->connectRoad = closestRoad->ClosestPoint(center);
+			building->connectPointFar = closestRoad->ClosestPoint(center);
 		} 
 		else {
-			building->connectRoad = center;
+			building->connectPointFar = center;
 		}
 	}
 
@@ -369,44 +369,49 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 		Road* closestRoad = map.ClosestRoad(center);
 		if (closestRoad) {
-			building->connectRoad = closestRoad->ClosestPoint(center);
+			building->connectPointFar = closestRoad->ClosestPoint(center);
 
-			building->connectBuilding = center;
+			building->connectRoad = closestRoad;
+
+			building->connectPointClose = center;
 			if (closestRoad->endPoint1.x == closestRoad->endPoint2.x) {
-				building->connectBuilding.y = building->connectRoad.y;
+				building->connectPointClose.y = building->connectPointFar.y;
 
 				if (closestRoad->endPoint1.x < center.x) {
-					building->connectBuilding.x = building->left;
-					building->connectRoad.x += closestRoad->width * 0.5f;
+					building->connectPointClose.x = building->left;
+					building->connectPointFar.x += closestRoad->width * 0.5f;
 				}
 				else {
-					building->connectBuilding.x = building->right;
-					building->connectRoad.x -= closestRoad->width * 0.5f;
+					building->connectPointClose.x = building->right;
+					building->connectPointFar.x -= closestRoad->width * 0.5f;
 				}
 			}
 			else if (closestRoad->endPoint1.y == closestRoad->endPoint2.y) {
-				building->connectBuilding.x = building->connectRoad.x;
+				building->connectPointClose.x = building->connectPointFar.x;
 
 				if (closestRoad->endPoint1.y < center.y) {
-					building->connectBuilding.y = building->top;
-					building->connectRoad.y += closestRoad->width * 0.5f;
+					building->connectPointClose.y = building->top;
+					building->connectPointFar.y += closestRoad->width * 0.5f;
 				}
 				else {
-					building->connectBuilding.y = building->bottom;
-					building->connectRoad.y -= closestRoad->width * 0.5f;
+					building->connectPointClose.y = building->bottom;
+					building->connectPointFar.y -= closestRoad->width * 0.5f;
 				}
 			}
 		} else {
-			building->connectRoad = center;
-			building->connectBuilding = center;
+			building->connectPointFar = center;
+			building->connectPointClose = center;
 		}
 
-		Building* crossedBuilding = map.CrossedBuilding(building->connectBuilding, building->connectRoad, building);
+		Building* crossedBuilding = map.CrossedBuilding(building->connectPointClose, building->connectPointFar, building);
 
 		if (crossedBuilding) {
 			crossedBuilding->roadAround = true;
 
-			building->connectRoad = crossedBuilding->ClosestCrossPoint(building->connectBuilding, building->connectRoad);
+			building->connectPointFar = crossedBuilding->ClosestCrossPoint(building->connectPointClose, building->connectPointFar);
+
+			building->connectRoad = 0;
+			building->connectBuilding = crossedBuilding;
 		}
 	}
 

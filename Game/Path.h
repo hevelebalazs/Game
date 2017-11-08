@@ -1,21 +1,37 @@
 #pragma once
 #include "Map.h"
+#include "Road.h"
 #include "Intersection.h"
+#include "Building.h"
 #include "Renderer.h"
 
-struct IntersectionPath {
-	Intersection** intersections;
-	int intersectionCount;
+enum PathNodeType {
+	PATH_NODE_ROAD,
+	PATH_NODE_INTERSECTION,
+	PATH_NODE_BUILDING
 };
 
-struct IntersectionPathHelper {
-	int* indexes;
-	int* isHelper;
-	int* source;
-	int count;
+struct PathMemory {
+
 };
 
-Road* NextRoadOnPath(Map map, Intersection* start, Intersection* finish, IntersectionPathHelper* pathHelper);
-Intersection *NextIntersectionOnPath(Map map, Intersection* start, Intersection* finish, IntersectionPathHelper* pathHelper);
-IntersectionPath FindConnectingPath(Map map, Intersection* start, Intersection* finish, IntersectionPathHelper* pathHelper);
-void DrawIntersectionPath(IntersectionPath path, Renderer renderer, float pathWidth);
+// TODO: should this be a linked list element?
+struct PathNode {
+	PathNodeType type;
+
+	union {
+		Road* road;
+		Intersection* intersection;
+		Building* building;
+	};
+};
+
+struct Path {
+	int nodeCount;
+	PathNode *nodes;
+};
+
+Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd);
+void ClearPath(Path* path);
+
+void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth);

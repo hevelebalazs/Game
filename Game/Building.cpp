@@ -13,6 +13,20 @@ float Max2(float x, float y) {
 	else return y;
 }
 
+Road* Building::GetConnectedRoad() {
+	Building* building = this;
+
+	while (building->connectBuilding) building = building->connectBuilding;
+
+	return building->connectRoad;
+}
+
+bool Building::IsPointInside(Point point) {
+	if (point.x < left || point.x > right) return false;
+	if (point.y < top || point.y > bottom) return false;
+	return true;
+}
+
 bool Building::IsCrossed(Point point1, Point point2) {
 	if (point1.x < left && point2.x < left) return false;
 	if (point1.x > right && point2.x > right) return false;
@@ -44,7 +58,18 @@ Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
 	return result;
 }
 
+void Building::HighLight(Renderer renderer, Color color) {
+	renderer.DrawRect(
+		top, left, bottom, right,
+		color
+	);
+}
+
 void Building::Draw(Renderer renderer) {
+	if (top > bottom || left > right) {
+		color = Color{0.0f, 0.0f, 1.0f};
+	}
+
 	// TODO: make this a static member of Road?
 	Color roadColor = Color{0.5f, 0.5f, 0.5f};
 	
@@ -58,14 +83,14 @@ void Building::Draw(Renderer renderer) {
 
 	float connectPadding = connectRoadWidth * 0.5f;
 
-	Point point1 = connectBuilding;
-	Point point2 = connectRoad;
+	Point point1 = connectPointClose;
+	Point point2 = connectPointFar;
 
-	if (connectBuilding.x == connectRoad.x) {
+	if (connectPointClose.x == connectPointFar.x) {
 		point1.x -= connectPadding;
 		point2.x += connectPadding;
 	}
-	else if (connectBuilding.y == connectRoad.y) {
+	else if (connectPointClose.y == connectPointFar.y) {
 		point1.y -= connectPadding;
 		point2.y += connectPadding;
 	}

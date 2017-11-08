@@ -23,6 +23,7 @@ struct Map {
 	Road* ClosestRoad(Point point);
 
 	Building* CrossedBuilding(Point point1, Point point2, Building* excludedBuilding);
+	Building* GetBuildingAtPoint(Point point);
 
 	void Draw(Renderer renderer);
 };

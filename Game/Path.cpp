@@ -1,146 +1,274 @@
 #include "Path.h"
 
-void AddIntersectionPathHelper(Map map, Intersection* intersection, int sourceIndex, IntersectionPathHelper* pathHelper) {
-	int intersectionIndex = (int)(intersection - map.intersections);
+// TODO: make this library work with pre-allocated memory
+#include <stdlib.h>
 
-	if (!pathHelper->isHelper[intersectionIndex]) {
-		pathHelper->isHelper[intersectionIndex] = 1;
-		pathHelper->indexes[pathHelper->count++] = intersectionIndex;
-		pathHelper->source[intersectionIndex] = sourceIndex;
+#include <stdio.h>
+#include <windows.h>
+
+static Path EmptyPath() {
+	Path path = {};
+	return path;
+}
+
+static void PushNode(Path* path, PathNode node) {
+	// TODO: create a resizable template array
+	path->nodes = (PathNode*)realloc(path->nodes, (path->nodeCount + 1) * sizeof(PathNode));
+	path->nodes[path->nodeCount] = node;
+	path->nodeCount++;
+}
+
+static PathNode RoadNode(Road* road) {
+	PathNode node = {};
+	node.type = PATH_NODE_ROAD;
+	node.road = road;
+	return node;
+}
+
+static PathNode IntersectionNode(Intersection* intersection) {
+	PathNode node = {};
+	node.type = PATH_NODE_INTERSECTION;
+	node.intersection = intersection;
+	return node;
+}
+
+static PathNode BuildingNode(Building* building) {
+	PathNode node = {};
+	node.type = PATH_NODE_BUILDING;
+	node.building = building;
+	return node;
+}
+
+static void PushRoad(Path* path, Road* road) {
+	PathNode node = RoadNode(road);
+
+	PushNode(path, node);
+}
+
+static void PushIntersection(Path* path, Intersection* intersection) {
+	PathNode node = IntersectionNode(intersection);
+
+	PushNode(path, node);
+}
+
+static void PushBuilding(Path* path, Building* building) {
+	PathNode node = BuildingNode(building);
+
+	PushNode(path, node);
+}
+
+static void PushFromBuildingToRoad(Path* path, Building* building) {
+	while (building->connectBuilding) {
+		PushBuilding(path, building);
+		building = building->connectBuilding;
+	}
+
+	PushBuilding(path, building);
+}
+
+static void InvertSegment(Path* path, int startIndex, int endIndex) {
+	while (startIndex < endIndex) {
+		PathNode tmpNode = path->nodes[startIndex];
+		path->nodes[startIndex] = path->nodes[endIndex];
+		path->nodes[endIndex] = tmpNode;
+
+		++startIndex;
+		--endIndex;
 	}
 }
 
-static void BuildUpPathHelper(Map map, Intersection* start, Intersection* finish, IntersectionPathHelper* pathHelper) {
-	for (int i = 0; i < map.intersectionCount; ++i) pathHelper->isHelper[i] = 0;
+static void PushFromRoadToBuilding(Path* path, Building *building) {
+	int startIndex = path->nodeCount;
+	PushFromBuildingToRoad(path, building);
+	int endIndex = path->nodeCount - 1;
 
-	int startIndex = (int)(start - map.intersections);
-	pathHelper->count = 0;
-	pathHelper->indexes[pathHelper->count++] = startIndex;
-	pathHelper->isHelper[startIndex] = 1;
-	pathHelper->source[startIndex] = -1;
+	InvertSegment(path, startIndex, endIndex);
+}
 
-	int intersection1Index = 0;
-	Intersection* intersection1 = 0;
+struct PathHelper {
+	PathNode* nodes;
+	int nodeCount;
 
-	for (int i = 0; i < pathHelper->count; ++i) {
-		intersection1Index = pathHelper->indexes[i];
-		intersection1 = &map.intersections[intersection1Index];
+	int* isIntersectionHelper;
+	int* isRoadHelper;
+	int* sourceIndex;
+};
 
-		if (intersection1->topRoad) {
-			Intersection* intersection2 = intersection1->topRoad->OtherIntersection(intersection1);
-			AddIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
+static void AddRoadToHelper(Map* map, Road* road, int sourceIndex, PathHelper* pathHelper) {
+	int roadIndex = (int)(road - map->roads);
 
-			if (intersection2 == finish) break;
-		}
+	if (pathHelper->isRoadHelper[roadIndex] == 0) {
+		pathHelper->isRoadHelper[roadIndex] = 1;
 
-		if (intersection1->bottomRoad) {
-			Intersection* intersection2 = intersection1->bottomRoad->OtherIntersection(intersection1);
-			AddIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
-
-			if (intersection2 == finish) break;
-		}
-
-		if (intersection1->leftRoad) {
-			Intersection* intersection2 = intersection1->leftRoad->OtherIntersection(intersection1);
-			AddIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
-
-			if (intersection2 == finish) break;
-
-		}
-
-		if (intersection1->rightRoad) {
-			Intersection* intersection2 = intersection1->rightRoad->OtherIntersection(intersection1);
-			AddIntersectionPathHelper(map, intersection2, intersection1Index, pathHelper);
-
-			if (intersection2 == finish) break;
-		}
+		pathHelper->nodes[pathHelper->nodeCount] = RoadNode(road);
+		pathHelper->sourceIndex[pathHelper->nodeCount] = sourceIndex;
+		pathHelper->nodeCount++;
 	}
 }
 
-Road* NextRoadOnPath(Map map, Intersection* start, Intersection* finish, IntersectionPathHelper* pathHelper) {
-	Intersection *nextIntersection = NextIntersectionOnPath(map, start, finish, pathHelper);
+static void AddIntersectionToHelper(Map* map, Intersection* intersection, int sourceIndex, PathHelper* pathHelper) {
+	int intersectionIndex = (int)(intersection - map->intersections);
 
-	Road* road = 0;
+	if (pathHelper->isIntersectionHelper[intersectionIndex] == 0) {
+		pathHelper->isIntersectionHelper[intersectionIndex] = 1;
 
-	if (start->leftRoad && start->leftRoad->OtherIntersection(start) == nextIntersection) {
-		road = start->leftRoad;
+		pathHelper->nodes[pathHelper->nodeCount] = IntersectionNode(intersection);
+		pathHelper->sourceIndex[pathHelper->nodeCount] = sourceIndex;
+		pathHelper->nodeCount++;
 	}
-	else if (start->rightRoad && start->rightRoad->OtherIntersection(start) == nextIntersection) {
-		road = start->rightRoad;
-	}
-	else if (start->topRoad && start->topRoad->OtherIntersection(start) == nextIntersection) {
-		road = start->topRoad;
-	}
-	else if (start->bottomRoad && start->bottomRoad->OtherIntersection(start) == nextIntersection) {
-		road = start->bottomRoad;
-	}
-
-	return road;
 }
 
-Intersection* NextIntersectionOnPath(Map map, Intersection* start, Intersection* finish, IntersectionPathHelper* pathHelper) {
-	BuildUpPathHelper(map, start, finish, pathHelper);
+static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* roadEnd) {
+	int maxNodeCount = (map->roadCount + map->intersectionCount);
 
-	int startIndex = (int)(start - map.intersections);
-	int intersectionIndex = pathHelper->indexes[pathHelper->count - 1];
+	// TODO: make sure the memory for these arrays is always pre-allocated
+	PathHelper helper;
+	helper.nodes = new PathNode[maxNodeCount];
+	helper.isIntersectionHelper = new int[map->intersectionCount];
+	helper.isRoadHelper = new int[map->roadCount];
+	helper.sourceIndex = new int[maxNodeCount];
 
-	while (pathHelper->source[intersectionIndex] != startIndex) {
-		intersectionIndex = pathHelper->source[intersectionIndex];
+	for (int i = 0; i < map->intersectionCount; ++i) helper.isIntersectionHelper[i] = 0;
+	for (int i = 0; i < map->roadCount; ++i) helper.isRoadHelper[i] = 0;
+
+	helper.nodeCount = 0;
+	helper.sourceIndex[helper.nodeCount] = -1;
+	helper.nodes[helper.nodeCount] = RoadNode(roadStart);
+	helper.nodeCount++;
+
+	for (int i = 0; i < helper.nodeCount; ++i) {
+		PathNode node = helper.nodes[i];
+
+		if (node.type == PATH_NODE_ROAD) {
+			Road* road = node.road;
+
+			AddIntersectionToHelper(map, road->intersection1, i, &helper);
+			AddIntersectionToHelper(map, road->intersection2, i, &helper);
+		}
+		else if (node.type == PATH_NODE_INTERSECTION) {
+			Intersection* intersection = node.intersection;
+
+			if (intersection->leftRoad) {
+				AddRoadToHelper(map, intersection->leftRoad, i, &helper);
+
+				if (intersection->leftRoad == roadEnd) break;
+			}
+
+			if (intersection->rightRoad) {
+				AddRoadToHelper(map, intersection->rightRoad, i, &helper);
+
+				if (intersection->rightRoad == roadEnd) break;
+			}
+
+			if (intersection->topRoad) {
+				AddRoadToHelper(map, intersection->topRoad, i, &helper);
+
+				if (intersection->topRoad == roadEnd) break;
+			}
+
+			if (intersection->bottomRoad) {
+				AddRoadToHelper(map, intersection->bottomRoad, i, &helper);
+
+				if (intersection->bottomRoad == roadEnd) break;
+			}
+		}
 	}
 
-	return &map.intersections[intersectionIndex];
+	int startIndex = path->nodeCount;
+
+	int nodeIndex = helper.nodeCount - 1;
+	while (nodeIndex > -1) {
+		PathNode node = helper.nodes[nodeIndex];
+
+		PushNode(path, node);
+
+		nodeIndex = helper.sourceIndex[nodeIndex];
+	}
+
+	int endIndex = path->nodeCount - 1;
+
+	InvertSegment(path, startIndex, endIndex);
+
+	delete[] helper.nodes;
+	delete[] helper.isIntersectionHelper;
+	delete[] helper.isRoadHelper;
 }
 
-IntersectionPath FindConnectingPath(Map map, Intersection* start, Intersection* finish, IntersectionPathHelper* pathHelper) {
-	BuildUpPathHelper(map, start, finish, pathHelper);
+Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd) {
+	Path path = EmptyPath();
 
-	IntersectionPath result = {};
+	PushFromBuildingToRoad(&path, buildingStart);
 
-	int intersectionIndex = pathHelper->indexes[pathHelper->count - 1];
-	Intersection* intersection = &map.intersections[intersectionIndex];
+	Road* roadStart = buildingStart->GetConnectedRoad();
+	Road* roadEnd = buildingEnd->GetConnectedRoad();
 
-	if (intersection == finish) {
-		int count = 0;
-		while (intersectionIndex > -1) {
-			pathHelper->indexes[count++] = intersectionIndex;
-			intersectionIndex = pathHelper->source[intersectionIndex];
-		}
+	PushFromRoadToRoad(&path, map, roadStart, roadEnd);
 
-		result.intersectionCount = count;
-		result.intersections = new Intersection*[count];
+	PushFromRoadToBuilding(&path, buildingEnd);
 
-		for (int i = 0; i < count; ++i) {
-			int index = pathHelper->indexes[i];
-			result.intersections[i] = &map.intersections[index];
-		}
-	}
-
-	return result;
+	return path;
 }
 
-void DrawIntersectionPath(IntersectionPath path, Renderer renderer, float pathWidth) {
-	for (int i = 1; i < path.intersectionCount; ++i) {
-		Intersection* prevIntersection = path.intersections[i - 1];
-		Intersection* thisIntersection = path.intersections[i];
+void ClearPath(Path* path) {
+	free(path->nodes);
+	path->nodes = 0;
+	path->nodeCount = 0;
+}
 
-		Point prevCenter = prevIntersection->coordinate;
-		Point thisCenter = thisIntersection->coordinate;
-
-		Color color = { 1.0f, 0.5f, 0.0f };
-
-		if (prevCenter.x == thisCenter.x) {
-			renderer.DrawRect(
-				prevCenter.y, prevCenter.x - (pathWidth / 2.0f),
-				thisCenter.y, thisCenter.x + (pathWidth / 2.0f),
-				color
-			);
-		}
-		else {
-			renderer.DrawRect(
-				prevCenter.y - (pathWidth / 2.0f), prevCenter.x,
-				thisCenter.y + (pathWidth / 2.0f), thisCenter.x,
-				color
-			);
-		}
+static void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float width) {
+	if (point1.x == point2.x) {
+		point1.x -= width * 0.5f;
+		point2.x += width * 0.5f;
 	}
+	
+	if (point1.y == point2.y) {
+		point1.y -= width * 0.5f;
+		point2.y += width * 0.5f;
+	}
+
+	renderer.DrawRect(
+		point1.y, point1.x,
+		point2.y, point2.x,
+		color
+	);
+}
+
+void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
+	Point prevPoint = {};
+
+	int intersectionCount = 0;
+
+	for (int i = 0; i < path->nodeCount; ++i) {
+		PathNode *thisNode = &path->nodes[i];
+		PathNode *nextNode = 0;
+
+		Point thisPoint = prevPoint;
+
+		if (i < path->nodeCount - 1) nextNode = &path->nodes[i + 1];
+
+		if (thisNode->type == PATH_NODE_BUILDING) {
+			Building* building = thisNode->building;
+			DrawGridLine(renderer, building->connectPointClose, building->connectPointFar, color, lineWidth);
+
+			thisPoint = building->connectPointFar;
+		}
+		else if (thisNode->type == PATH_NODE_INTERSECTION) {
+			Intersection* intersection = thisNode->intersection;
+
+			thisPoint = intersection->coordinate;
+		}
+		else if (thisNode->type == PATH_NODE_ROAD) {
+
+		}
+
+		if (i > 0) {
+			DrawGridLine(renderer, prevPoint, thisPoint, color, lineWidth);
+		}
+
+		prevPoint = thisPoint;
+	}
+
+	char log[256];
+	sprintf_s(log, "Number of intersections: %i\n", intersectionCount);
+	OutputDebugStringA(log);
 }

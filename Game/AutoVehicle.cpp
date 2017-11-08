@@ -1,3 +1,5 @@
+// TODO: reimplement this using the new path
+/*
 #include "AutoVehicle.h"
 
 static float PI = 3.14159265358979323f;
@@ -179,3 +181,4 @@ void AutoVehicle::Update(float seconds) {
 		}
 	}
 }
+*/

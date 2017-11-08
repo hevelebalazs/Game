@@ -12,7 +12,7 @@ Intersection* Map::GetRandomIntersection() {
 Intersection* Map::GetIntersectionAtPoint(Point point, float maxDistance) {
 	float maxDistanceSquare = maxDistance * maxDistance;
 
-	Intersection *result = 0;
+	Intersection* result = 0;
 
 	for (int i = 0; i < intersectionCount; ++i) {
 		float distanceSquare = Point::DistanceSquare(point, intersections[i].coordinate);
@@ -38,6 +38,18 @@ Road* Map::ClosestRoad(Point point) {
 	}
 
 	return closestRoad;
+}
+
+Building* Map::GetBuildingAtPoint(Point point) {
+	Building* result = 0;
+
+	for (int i = 0; i < buildingCount; ++i) {
+		Building* building = &buildings[i];
+
+		if (building->IsPointInside(point)) result = building;
+	}
+
+	return result;
 }
  
 // TODO: if there are severeal buildings, return the one closest to one of the points
