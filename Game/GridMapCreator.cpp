@@ -370,6 +370,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		Road* closestRoad = map.ClosestRoad(center);
 		if (closestRoad) {
 			building->connectPointFar = closestRoad->ClosestPoint(center);
+			building->connectPointFarShow = building->connectPointFar;
 
 			building->connectRoad = closestRoad;
 
@@ -379,11 +380,11 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 				if (closestRoad->endPoint1.x < center.x) {
 					building->connectPointClose.x = building->left;
-					building->connectPointFar.x += closestRoad->width * 0.5f;
+					building->connectPointFarShow.x += closestRoad->width * 0.5f;
 				}
 				else {
 					building->connectPointClose.x = building->right;
-					building->connectPointFar.x -= closestRoad->width * 0.5f;
+					building->connectPointFarShow.x -= closestRoad->width * 0.5f;
 				}
 			}
 			else if (closestRoad->endPoint1.y == closestRoad->endPoint2.y) {
@@ -391,15 +392,16 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 				if (closestRoad->endPoint1.y < center.y) {
 					building->connectPointClose.y = building->top;
-					building->connectPointFar.y += closestRoad->width * 0.5f;
+					building->connectPointFarShow.y += closestRoad->width * 0.5f;
 				}
 				else {
 					building->connectPointClose.y = building->bottom;
-					building->connectPointFar.y -= closestRoad->width * 0.5f;
+					building->connectPointFarShow.y -= closestRoad->width * 0.5f;
 				}
 			}
 		} else {
 			building->connectPointFar = center;
+			building->connectPointFarShow = center;
 			building->connectPointClose = center;
 		}
 
@@ -409,6 +411,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 			crossedBuilding->roadAround = true;
 
 			building->connectPointFar = crossedBuilding->ClosestCrossPoint(building->connectPointClose, building->connectPointFar);
+			building->connectPointFarShow = building->connectPointFar;
 
 			building->connectRoad = 0;
 			building->connectBuilding = crossedBuilding;

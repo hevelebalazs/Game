@@ -84,13 +84,13 @@ void Building::Draw(Renderer renderer) {
 	float connectPadding = connectRoadWidth * 0.5f;
 
 	Point point1 = connectPointClose;
-	Point point2 = connectPointFar;
+	Point point2 = connectPointFarShow;
 
-	if (connectPointClose.x == connectPointFar.x) {
+	if (connectPointClose.x == connectPointFarShow.x) {
 		point1.x -= connectPadding;
 		point2.x += connectPadding;
 	}
-	else if (connectPointClose.y == connectPointFar.y) {
+	else if (connectPointClose.y == connectPointFarShow.y) {
 		point1.y -= connectPadding;
 		point2.y += connectPadding;
 	}

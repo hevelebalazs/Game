@@ -14,6 +14,7 @@ struct Building {
 	bool roadAround;
 
 	Point connectPointClose;
+	Point connectPointFarShow;
 	Point connectPointFar;
 
 	Road* connectRoad;

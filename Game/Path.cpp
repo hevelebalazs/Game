@@ -233,14 +233,112 @@ static void DrawGridLine(Renderer renderer, Point point1, Point point2, Color co
 	);
 }
 
+void DrawCounterCWLineAroundBuilding(Renderer renderer, Building* building, 
+									 Point pointFrom, Point pointTo,
+									 Color color, float lineWidth
+) {
+	Point topLeft = {building->left, building->top};
+	Point topRight = {building->right, building->top};
+	Point bottomLeft = {building->left, building->bottom};
+	Point bottomRight = {building->right, building->bottom};
+
+	// left segment
+	if (pointTo.x == building->left) {
+		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
+		return;
+	}
+
+	if (pointFrom.x == building->left) {
+		DrawGridLine(renderer, pointFrom, bottomLeft, color, lineWidth);
+		pointFrom = bottomLeft;
+	}
+
+	// bottom segment
+	if (pointTo.y == building->bottom) {
+		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
+		return;
+	}
+
+	if (pointFrom.y == building->bottom) {
+		DrawGridLine(renderer, pointFrom, bottomRight, color, lineWidth);
+		pointFrom = bottomRight;
+	}
+
+	// right segment
+	if (pointTo.x == building->right) {
+		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
+		return;
+	}
+
+	if (pointFrom.x == building->right) {
+		DrawGridLine(renderer, pointFrom, topRight, color, lineWidth);
+		pointFrom = topRight;
+	}
+
+	// top segment
+	if (pointTo.y == building->top) {
+		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
+		return;
+	}
+
+	if (pointFrom.x == building->top) {
+		DrawGridLine(renderer, pointFrom, topLeft, color, lineWidth);
+		pointFrom = topLeft;
+	}
+}
+
+float PointDistance(Building* building, Point point) {
+	float buildingWidth = building->right - building->left;
+	float buildingHeight = building->bottom - building->top;
+
+	if (point.x == building->left) {
+		return (point.y - building->top);
+	}
+	else if (point.y == building->bottom) {
+		return buildingHeight + (point.x - building->left);
+	}
+	else if (point.x == building->right) {
+		return buildingHeight + buildingWidth + (building->bottom - point.y);
+	}
+	else if (point.y == building->top) {
+		return buildingHeight + buildingWidth + buildingHeight + (building->right - point.x);
+	}
+	else {
+		return buildingHeight + buildingWidth + buildingHeight + buildingWidth;
+	}
+}
+
+void DrawLineAroundBuilding(Renderer renderer, Building* building, Point pointFrom, Point pointTo, Color color, float lineWidth) {
+
+	float buildingWidth = building->right - building->left;
+	float buildingHeight = building->bottom - building->top;
+
+	float distFrom = PointDistance(building, pointFrom);
+	float distTo = PointDistance(building, pointTo);
+
+	if (distFrom < distTo) {
+		DrawCounterCWLineAroundBuilding(renderer, building, pointFrom, pointTo, color, lineWidth);
+	}
+	else {
+		// TODO: is this possible without the epsilon value?
+		Point topLeft1 = Point{building->left + 0.01f, building->top};
+		Point topLeft2 = Point{building->left, building->top + 0.01f};
+
+		DrawCounterCWLineAroundBuilding(renderer, building, pointFrom, topLeft1, color, lineWidth);
+		DrawCounterCWLineAroundBuilding(renderer, building, topLeft2, pointTo, color, lineWidth);
+	}
+}
+
 void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
 	Point prevPoint = {};
 
 	int intersectionCount = 0;
 
+	PathNode* prevNode = 0;
+
 	for (int i = 0; i < path->nodeCount; ++i) {
-		PathNode *thisNode = &path->nodes[i];
-		PathNode *nextNode = 0;
+		PathNode* thisNode = &path->nodes[i];
+		PathNode* nextNode = 0;
 
 		Point thisPoint = prevPoint;
 
@@ -248,27 +346,44 @@ void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
 
 		if (thisNode->type == PATH_NODE_BUILDING) {
 			Building* building = thisNode->building;
-			DrawGridLine(renderer, building->connectPointClose, building->connectPointFar, color, lineWidth);
 
-			thisPoint = building->connectPointFar;
+			DrawGridLine(renderer, building->connectPointFar, building->connectPointClose, color, lineWidth);
+
+			if (prevNode && prevNode->type == PATH_NODE_BUILDING) {
+				Building* prevBuilding = prevNode->building;
+
+				if (building->connectBuilding == prevBuilding) {
+					DrawLineAroundBuilding(
+						renderer, 
+						prevBuilding, prevBuilding->connectPointClose, building->connectPointFar,
+						color, lineWidth
+					);
+				}
+				else if (prevBuilding->connectBuilding == building) {
+					DrawLineAroundBuilding(
+						renderer,
+						building, prevBuilding->connectPointFar, building->connectPointClose,
+						color, lineWidth
+					);
+				}
+			}
 		}
 		else if (thisNode->type == PATH_NODE_INTERSECTION) {
-			Intersection* intersection = thisNode->intersection;
-
-			thisPoint = intersection->coordinate;
 		}
 		else if (thisNode->type == PATH_NODE_ROAD) {
+			if (prevNode && nextNode) {
+				Point point1 = {};
+				if (prevNode->type == PATH_NODE_BUILDING) point1 = prevNode->building->connectPointFar;
+				else if (prevNode->type == PATH_NODE_INTERSECTION) point1 = prevNode->intersection->coordinate;
 
+				Point point2 = {};
+				if (nextNode->type == PATH_NODE_BUILDING) point2 = nextNode->building->connectPointFar;
+				else if (nextNode->type == PATH_NODE_INTERSECTION) point2 = nextNode->intersection->coordinate;
+
+				DrawGridLine(renderer, point1, point2, color, lineWidth);
+			}
 		}
 
-		if (i > 0) {
-			DrawGridLine(renderer, prevPoint, thisPoint, color, lineWidth);
-		}
-
-		prevPoint = thisPoint;
+		prevNode = thisNode;
 	}
-
-	char log[256];
-	sprintf_s(log, "Number of intersections: %i\n", intersectionCount);
-	OutputDebugStringA(log);
 }

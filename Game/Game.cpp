@@ -72,17 +72,17 @@ void WinDraw(HWND window, Renderer renderer) {
 	globalPlayerVehicle.vehicle.Draw(renderer);
 
 	if (globalSelectedBuilding) {
-		Color highlightColor = {1.0f, 0.0f, 0.0f};
+		Color highlightColor = {0.0f, 1.0f, 1.0f};
 		globalSelectedBuilding->HighLight(globalRenderer, highlightColor);
 	}
 
 	if (globalHighlightedBuilding) {
-		Color highlightColor = {1.0f, 0.5f, 0.0f};
+		Color highlightColor = {0.0f, 1.0f, 1.0f};
 		globalHighlightedBuilding->HighLight(globalRenderer, highlightColor);
 	}
 
 	if (globalBuildingPath.nodeCount > 0) {
-		Color color = {1.0f, 0.0f, 0.0f};
+		Color color = {0.0f, 1.0f, 1.0f};
 		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
 	}
 }
