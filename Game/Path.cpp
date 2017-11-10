@@ -6,6 +6,17 @@
 #include <stdio.h>
 #include <windows.h>
 
+// TODO: should the helper be attached to the map?
+PathHelper PathHelperForMap(Map* map) {
+	PathHelper helper;
+	helper.nodes = new PathNode[map->intersectionCount + map->roadCount];
+	helper.isIntersectionHelper = new int[map->intersectionCount];
+	helper.isRoadHelper = new int[map->roadCount];
+	helper.sourceIndex = new int[map->intersectionCount + map->roadCount];
+
+	return helper;
+}
+
 static Path EmptyPath() {
 	Path path = {};
 	return path;
@@ -85,15 +96,6 @@ static void PushFromRoadToBuilding(Path* path, Building *building) {
 	InvertSegment(path, startIndex, endIndex);
 }
 
-struct PathHelper {
-	PathNode* nodes;
-	int nodeCount;
-
-	int* isIntersectionHelper;
-	int* isRoadHelper;
-	int* sourceIndex;
-};
-
 static void AddRoadToHelper(Map* map, Road* road, int sourceIndex, PathHelper* pathHelper) {
 	int roadIndex = (int)(road - map->roads);
 
@@ -118,56 +120,49 @@ static void AddIntersectionToHelper(Map* map, Intersection* intersection, int so
 	}
 }
 
-static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* roadEnd) {
+static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* roadEnd, PathHelper* helper) {
 	int maxNodeCount = (map->roadCount + map->intersectionCount);
 
-	// TODO: make sure the memory for these arrays is always pre-allocated
-	PathHelper helper;
-	helper.nodes = new PathNode[maxNodeCount];
-	helper.isIntersectionHelper = new int[map->intersectionCount];
-	helper.isRoadHelper = new int[map->roadCount];
-	helper.sourceIndex = new int[maxNodeCount];
+	for (int i = 0; i < map->intersectionCount; ++i) helper->isIntersectionHelper[i] = 0;
+	for (int i = 0; i < map->roadCount; ++i) helper->isRoadHelper[i] = 0;
 
-	for (int i = 0; i < map->intersectionCount; ++i) helper.isIntersectionHelper[i] = 0;
-	for (int i = 0; i < map->roadCount; ++i) helper.isRoadHelper[i] = 0;
+	helper->nodeCount = 0;
+	helper->sourceIndex[helper->nodeCount] = -1;
+	helper->nodes[helper->nodeCount] = RoadNode(roadStart);
+	helper->nodeCount++;
 
-	helper.nodeCount = 0;
-	helper.sourceIndex[helper.nodeCount] = -1;
-	helper.nodes[helper.nodeCount] = RoadNode(roadStart);
-	helper.nodeCount++;
-
-	for (int i = 0; i < helper.nodeCount; ++i) {
-		PathNode node = helper.nodes[i];
+	for (int i = 0; i < helper->nodeCount; ++i) {
+		PathNode node = helper->nodes[i];
 
 		if (node.type == PATH_NODE_ROAD) {
 			Road* road = node.road;
 
-			AddIntersectionToHelper(map, road->intersection1, i, &helper);
-			AddIntersectionToHelper(map, road->intersection2, i, &helper);
+			AddIntersectionToHelper(map, road->intersection1, i, helper);
+			AddIntersectionToHelper(map, road->intersection2, i, helper);
 		}
 		else if (node.type == PATH_NODE_INTERSECTION) {
 			Intersection* intersection = node.intersection;
 
 			if (intersection->leftRoad) {
-				AddRoadToHelper(map, intersection->leftRoad, i, &helper);
+				AddRoadToHelper(map, intersection->leftRoad, i, helper);
 
 				if (intersection->leftRoad == roadEnd) break;
 			}
 
 			if (intersection->rightRoad) {
-				AddRoadToHelper(map, intersection->rightRoad, i, &helper);
+				AddRoadToHelper(map, intersection->rightRoad, i, helper);
 
 				if (intersection->rightRoad == roadEnd) break;
 			}
 
 			if (intersection->topRoad) {
-				AddRoadToHelper(map, intersection->topRoad, i, &helper);
+				AddRoadToHelper(map, intersection->topRoad, i, helper);
 
 				if (intersection->topRoad == roadEnd) break;
 			}
 
 			if (intersection->bottomRoad) {
-				AddRoadToHelper(map, intersection->bottomRoad, i, &helper);
+				AddRoadToHelper(map, intersection->bottomRoad, i, helper);
 
 				if (intersection->bottomRoad == roadEnd) break;
 			}
@@ -176,25 +171,22 @@ static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* road
 
 	int startIndex = path->nodeCount;
 
-	int nodeIndex = helper.nodeCount - 1;
+	int nodeIndex = helper->nodeCount - 1;
 	while (nodeIndex > -1) {
-		PathNode node = helper.nodes[nodeIndex];
+		PathNode node = helper->nodes[nodeIndex];
 
 		PushNode(path, node);
 
-		nodeIndex = helper.sourceIndex[nodeIndex];
+		nodeIndex = helper->sourceIndex[nodeIndex];
 	}
 
 	int endIndex = path->nodeCount - 1;
 
 	InvertSegment(path, startIndex, endIndex);
-
-	delete[] helper.nodes;
-	delete[] helper.isIntersectionHelper;
-	delete[] helper.isRoadHelper;
 }
 
-Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd) {
+// TODO: make sure path does not go out into the road if it does not need to
+Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd, PathHelper* helper) {
 	Path path = EmptyPath();
 
 	PushFromBuildingToRoad(&path, buildingStart);
@@ -202,7 +194,7 @@ Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd) 
 	Road* roadStart = buildingStart->GetConnectedRoad();
 	Road* roadEnd = buildingEnd->GetConnectedRoad();
 
-	PushFromRoadToRoad(&path, map, roadStart, roadEnd);
+	PushFromRoadToRoad(&path, map, roadStart, roadEnd, helper);
 
 	PushFromRoadToBuilding(&path, buildingEnd);
 
@@ -219,11 +211,29 @@ static void DrawGridLine(Renderer renderer, Point point1, Point point2, Color co
 	if (point1.x == point2.x) {
 		point1.x -= width * 0.5f;
 		point2.x += width * 0.5f;
+
+		if (point1.y < point2.y) {
+			point1.y -= width * 0.5f;
+			point2.y += width * 0.5f;
+		}
+		else {
+			point1.y += width * 0.5f;
+			point2.y -= width * 0.5f;
+		}
 	}
 	
 	if (point1.y == point2.y) {
 		point1.y -= width * 0.5f;
 		point2.y += width * 0.5f;
+
+		if (point1.x < point2.x) {
+			point1.x -= width * 0.5f;
+			point2.x += width * 0.5f;
+		}
+		else {
+			point1.x += width * 0.5f;
+			point2.x -= width * 0.5f;
+		}
 	}
 
 	renderer.DrawRect(
@@ -233,99 +243,35 @@ static void DrawGridLine(Renderer renderer, Point point1, Point point2, Color co
 	);
 }
 
-void DrawCounterCWLineAroundBuilding(Renderer renderer, Building* building, 
-									 Point pointFrom, Point pointTo,
-									 Color color, float lineWidth
-) {
-	Point topLeft = {building->left, building->top};
-	Point topRight = {building->right, building->top};
-	Point bottomLeft = {building->left, building->bottom};
-	Point bottomRight = {building->right, building->bottom};
-
-	// left segment
-	if (pointTo.x == building->left) {
-		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
-		return;
+Point NextPointAroundBuilding(Building* building, Point startPoint, Point targetPoint) {
+	if (startPoint.x == building->left && startPoint.y < building->bottom) {
+		if (targetPoint.x == building->left && targetPoint.y > startPoint.y) return targetPoint;
+		else return Point{building->left, building->bottom};
 	}
-
-	if (pointFrom.x == building->left) {
-		DrawGridLine(renderer, pointFrom, bottomLeft, color, lineWidth);
-		pointFrom = bottomLeft;
+	else if (startPoint.y == building->bottom && startPoint.x < building->right) {
+		if (targetPoint.y == building->bottom && targetPoint.x > startPoint.x) return targetPoint;
+		else return Point{building->right, building->bottom};
 	}
-
-	// bottom segment
-	if (pointTo.y == building->bottom) {
-		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
-		return;
+	else if (startPoint.x == building->right && startPoint.y > building->top) {
+		if (targetPoint.x == building->right && targetPoint.y < startPoint.y) return targetPoint;
+		else return Point{building->right, building->top};
 	}
-
-	if (pointFrom.y == building->bottom) {
-		DrawGridLine(renderer, pointFrom, bottomRight, color, lineWidth);
-		pointFrom = bottomRight;
-	}
-
-	// right segment
-	if (pointTo.x == building->right) {
-		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
-		return;
-	}
-
-	if (pointFrom.x == building->right) {
-		DrawGridLine(renderer, pointFrom, topRight, color, lineWidth);
-		pointFrom = topRight;
-	}
-
-	// top segment
-	if (pointTo.y == building->top) {
-		DrawGridLine(renderer, pointFrom, pointTo, color, lineWidth);
-		return;
-	}
-
-	if (pointFrom.x == building->top) {
-		DrawGridLine(renderer, pointFrom, topLeft, color, lineWidth);
-		pointFrom = topLeft;
-	}
-}
-
-float PointDistance(Building* building, Point point) {
-	float buildingWidth = building->right - building->left;
-	float buildingHeight = building->bottom - building->top;
-
-	if (point.x == building->left) {
-		return (point.y - building->top);
-	}
-	else if (point.y == building->bottom) {
-		return buildingHeight + (point.x - building->left);
-	}
-	else if (point.x == building->right) {
-		return buildingHeight + buildingWidth + (building->bottom - point.y);
-	}
-	else if (point.y == building->top) {
-		return buildingHeight + buildingWidth + buildingHeight + (building->right - point.x);
+	else if (startPoint.y == building->top && startPoint.x > building->left) {
+		if (targetPoint.y == building->top && targetPoint.x < startPoint.x) return targetPoint;
+		else return Point{building->left, building->top};
 	}
 	else {
-		return buildingHeight + buildingWidth + buildingHeight + buildingWidth;
+		return targetPoint;
 	}
 }
 
 void DrawLineAroundBuilding(Renderer renderer, Building* building, Point pointFrom, Point pointTo, Color color, float lineWidth) {
+	while ((pointFrom.x != pointTo.x) || (pointFrom.y != pointTo.y)) {
+		Point nextPoint = NextPointAroundBuilding(building, pointFrom, pointTo);
 
-	float buildingWidth = building->right - building->left;
-	float buildingHeight = building->bottom - building->top;
+		DrawGridLine(renderer, pointFrom, nextPoint, color, lineWidth);
 
-	float distFrom = PointDistance(building, pointFrom);
-	float distTo = PointDistance(building, pointTo);
-
-	if (distFrom < distTo) {
-		DrawCounterCWLineAroundBuilding(renderer, building, pointFrom, pointTo, color, lineWidth);
-	}
-	else {
-		// TODO: is this possible without the epsilon value?
-		Point topLeft1 = Point{building->left + 0.01f, building->top};
-		Point topLeft2 = Point{building->left, building->top + 0.01f};
-
-		DrawCounterCWLineAroundBuilding(renderer, building, pointFrom, topLeft1, color, lineWidth);
-		DrawCounterCWLineAroundBuilding(renderer, building, topLeft2, pointTo, color, lineWidth);
+		pointFrom = nextPoint;
 	}
 }
 

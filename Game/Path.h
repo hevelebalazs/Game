@@ -31,7 +31,18 @@ struct Path {
 	PathNode *nodes;
 };
 
-Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd);
+struct PathHelper {
+	PathNode* nodes;
+	int nodeCount;
+
+	int* isIntersectionHelper;
+	int* isRoadHelper;
+	int* sourceIndex;
+};
+
+PathHelper PathHelperForMap(Map* map);
+
+Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd, PathHelper* helper);
 void ClearPath(Path* path);
 
 void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth);

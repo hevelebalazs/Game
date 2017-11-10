@@ -26,7 +26,7 @@ static float RandomBetween(float left, float right) {
 	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
 }
 
-static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, float minBuildingSide) {
+static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, float minBuildingSide, float maxBuildingSide) {
 	area.left += RandomBetween(0.0f, buildingPadding);
 	area.right -= RandomBetween(0.0f, buildingPadding);
 	area.top += RandomBetween(0.0f, buildingPadding);
@@ -38,25 +38,29 @@ static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, f
 	if (areaWidth < buildingPadding) return;
 	if (areaHeight < buildingPadding) return;
 
-	if ((areaWidth >= buildingPadding + 2 * minBuildingSide) && (RandomBetween(0.0f, 1.0f) < 0.5f)) {
+	if ((areaWidth > maxBuildingSide) || 
+		((areaWidth >= buildingPadding + 2 * minBuildingSide) && (RandomBetween(0.0f, 1.0f) < 0.5f))
+	) {
 		BuildArea areaLeft = area;
 		areaLeft.right = ((area.left + area.right) / 2.0f);
 		
 		BuildArea areaRight = area;
 		areaRight.left = ((area.left + area.right) / 2.0f);
 
-		GenerateBuildings(map, areaLeft, buildingPadding, minBuildingSide);
-		GenerateBuildings(map, areaRight, buildingPadding, minBuildingSide);
+		GenerateBuildings(map, areaLeft, buildingPadding, minBuildingSide, maxBuildingSide);
+		GenerateBuildings(map, areaRight, buildingPadding, minBuildingSide, maxBuildingSide);
 	}
-	else if ((areaHeight >= buildingPadding + 2 * minBuildingSide) && (RandomBetween(0.0f, 1.0f) < 0.5f)) {
+	else if ((areaHeight > maxBuildingSide) ||
+		((areaHeight >= buildingPadding + 2 * minBuildingSide) && (RandomBetween(0.0f, 1.0f) < 0.5f))
+	){
 		BuildArea areaTop = area;
 		areaTop.bottom = ((area.top + area.bottom) / 2.0f);
 
 		BuildArea areaBottom = area;
 		areaBottom.top = ((area.top + area.bottom) / 2.0f);
 
-		GenerateBuildings(map, areaTop, buildingPadding, minBuildingSide);
-		GenerateBuildings(map, areaBottom, buildingPadding, minBuildingSide);
+		GenerateBuildings(map, areaTop, buildingPadding, minBuildingSide, maxBuildingSide);
+		GenerateBuildings(map, areaBottom, buildingPadding, minBuildingSide, maxBuildingSide);
 	}
 	else {
 		Building *building = &map->buildings[map->buildingCount];
@@ -336,7 +340,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	}
 
 	for (int i = 0; i < buildAreaCount; ++i) {
-		GenerateBuildings(&map, buildAreas[i], buildingPadding, intersectionDistance / 4.0f);
+		GenerateBuildings(&map, buildAreas[i], buildingPadding, intersectionDistance / 4.0f, intersectionDistance * 2.0f);
 	}
 
 	delete[] gridAreas;

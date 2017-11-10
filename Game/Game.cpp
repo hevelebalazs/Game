@@ -18,7 +18,10 @@ PlayerVehicle globalPlayerVehicle;
 
 Building* globalSelectedBuilding;
 Building* globalHighlightedBuilding;
+
+PathHelper globalPathHelper;
 Path globalBuildingPath;
+
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
@@ -233,6 +236,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
 	globalMap = CreateGridMap((float)width, (float)height, 100);
+	globalPathHelper = PathHelperForMap(&globalMap);
 
 	globalPlayerVehicle.vehicle.position = { (float)width / 2.0f, (float)height / 2.0f };
 	globalPlayerVehicle.vehicle.angle = 0.0f;
@@ -272,7 +276,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		if (globalSelectedBuilding && globalHighlightedBuilding && globalSelectedBuilding != globalHighlightedBuilding) {
 			ClearPath(&globalBuildingPath);
 
-			globalBuildingPath = ConnectBuildings(&globalMap, globalSelectedBuilding, globalHighlightedBuilding);
+			globalBuildingPath = ConnectBuildings(&globalMap, globalSelectedBuilding, globalHighlightedBuilding, &globalPathHelper);
 		}
 
 		WinDraw(window, globalRenderer);
