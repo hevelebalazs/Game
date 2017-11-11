@@ -1,6 +1,5 @@
 #include "Path.h"
 
-// TODO: make this library work with pre-allocated memory
 #include <stdlib.h>
 
 #include <stdio.h>
@@ -131,6 +130,11 @@ static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* road
 	helper->nodes[helper->nodeCount] = RoadNode(roadStart);
 	helper->nodeCount++;
 
+	if (roadStart == roadEnd) {
+		PushRoad(path, roadStart);
+		return;
+	}
+
 	for (int i = 0; i < helper->nodeCount; ++i) {
 		PathNode node = helper->nodes[i];
 
@@ -185,18 +189,78 @@ static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* road
 	InvertSegment(path, startIndex, endIndex);
 }
 
+Building* CommonAncestor(Building* building1, Building* building2) {
+	while (building1->connectTreeHeight != building2->connectTreeHeight) {
+		if (building1->connectTreeHeight > building2->connectTreeHeight) {
+			building1 = building1->connectBuilding;
+		}
+		if (building2->connectTreeHeight > building1->connectTreeHeight) {
+			building2 = building2->connectBuilding;
+		}
+	}
+
+	while (building1 || building2) {
+		if (building1 == building2) return building1;
+
+		building1 = building1->connectBuilding;
+		building2 = building2->connectBuilding;
+	}
+
+	return 0;
+}
+
+static void PushDownTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
+	while (buildingStart != buildingEnd) {
+		PushBuilding(path, buildingStart);
+
+		buildingStart = buildingStart->connectBuilding;
+	}
+
+	PushBuilding(path, buildingEnd);
+}
+
+static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
+	int startIndex = path->nodeCount;
+
+	PushDownTheTree(path, buildingEnd, buildingStart);
+
+	int endIndex = path->nodeCount - 1;
+
+	InvertSegment(path, startIndex, endIndex);
+}
+
 // TODO: make sure path does not go out into the road if it does not need to
 Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd, PathHelper* helper) {
 	Path path = EmptyPath();
 
-	PushFromBuildingToRoad(&path, buildingStart);
+	// NOTE: if the buildings have a common ancestor in the connection tree,
+	//		 there is no need to go out to the road
+	Building* commonAncestor = CommonAncestor(buildingStart, buildingEnd);
 
-	Road* roadStart = buildingStart->GetConnectedRoad();
-	Road* roadEnd = buildingEnd->GetConnectedRoad();
+	if (commonAncestor) {
+		if (commonAncestor == buildingEnd) {
+			PushDownTheTree(&path, buildingStart, buildingEnd);
+		}
+		else if (commonAncestor == buildingStart) {
+			PushUpTheTree(&path, buildingStart, buildingEnd);
+		}
+		else {
+			PushDownTheTree(&path, buildingStart, commonAncestor);
+			// NOTE: making sure commonAncestor does not get into the path twice
+			path.nodeCount--;
+			PushUpTheTree(&path, commonAncestor, buildingEnd);
+		}
+	}
+	else {
+		PushFromBuildingToRoad(&path, buildingStart);
 
-	PushFromRoadToRoad(&path, map, roadStart, roadEnd, helper);
+		Road* roadStart = buildingStart->GetConnectedRoad();
+		Road* roadEnd = buildingEnd->GetConnectedRoad();
 
-	PushFromRoadToBuilding(&path, buildingEnd);
+		PushFromRoadToRoad(&path, map, roadStart, roadEnd, helper);
+
+		PushFromRoadToBuilding(&path, buildingEnd);
+	}
 
 	return path;
 }
@@ -293,11 +357,31 @@ void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
 		if (thisNode->type == PATH_NODE_BUILDING) {
 			Building* building = thisNode->building;
 
-			DrawGridLine(renderer, building->connectPointFar, building->connectPointClose, color, lineWidth);
+			Building* prevBuilding = 0;
+			if (prevNode && prevNode->type == PATH_NODE_BUILDING) prevBuilding = prevNode->building;
 
-			if (prevNode && prevNode->type == PATH_NODE_BUILDING) {
-				Building* prevBuilding = prevNode->building;
+			Building* nextBuilding = 0;
+			if (nextNode && nextNode->type == PATH_NODE_BUILDING) nextBuilding = nextNode->building;
 
+			bool goOut = true;
+
+			if (prevBuilding && prevBuilding->connectBuilding == building && !nextNode) goOut = false;
+			if (nextBuilding && nextBuilding->connectBuilding == building && !prevNode) goOut = false;
+			if ((nextBuilding && nextBuilding->connectBuilding == building) &&
+				(prevBuilding && prevBuilding->connectBuilding == building)) 
+			{
+				DrawLineAroundBuilding(
+					renderer,
+					building, prevBuilding->connectPointFar, nextBuilding->connectPointFar,
+					color, lineWidth
+				);
+
+				continue;
+			}
+
+			if (goOut) DrawGridLine(renderer, building->connectPointFar, building->connectPointClose, color, lineWidth);
+
+			if (prevBuilding) {
 				if (building->connectBuilding == prevBuilding) {
 					DrawLineAroundBuilding(
 						renderer, 

@@ -63,7 +63,7 @@ static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, f
 		GenerateBuildings(map, areaBottom, buildingPadding, minBuildingSide, maxBuildingSide);
 	}
 	else {
-		Building *building = &map->buildings[map->buildingCount];
+		Building* building = &map->buildings[map->buildingCount];
 		*building = {};
 
 		building->left = area.left;
@@ -132,6 +132,18 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 	road->width = roadWidth;
 }
 
+// TODO: can the recursion cause any performance or memory issue?
+static void CalculateTreeHeight(Building* building) {
+	if (building->connectBuilding) {
+		CalculateTreeHeight(building->connectBuilding);
+
+		building->connectTreeHeight = building->connectBuilding->connectTreeHeight + 1;
+	}
+	else {
+		building->connectTreeHeight = 1;
+	}
+}
+
 Map CreateGridMap(float width, float height, float intersectionDistance) {
 	Map map;
 
@@ -144,7 +156,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	float rightOffset = width - ((float)(colCount - 1) * intersectionDistance);
 	float bottomOffset = height - ((float)(rowCount - 1) * intersectionDistance);
 
-	Point leftTop = { rightOffset / 2.0f, bottomOffset / 2.0f };
+	Point leftTop = {rightOffset / 2.0f, bottomOffset / 2.0f};
 
 	int intersectionCount = colCount * rowCount;
 
@@ -154,14 +166,14 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	int intersectionIndex = 0;
 	for (int row = 0; row < rowCount; ++row) {
 		for (int col = 0; col < colCount; ++col) {
-			map.intersections[intersectionIndex].coordinate = 
-				leftTop + (Point{ (float)col, (float)row } * (float)intersectionDistance);
+			map.intersections[intersectionIndex].coordinate =
+				leftTop + (Point{(float)col, (float)row} *(float)intersectionDistance);
 
 			++intersectionIndex;
 		}
 	}
 
-	GridPosition* connectedPositions= new GridPosition[intersectionCount];
+	GridPosition* connectedPositions = new GridPosition[intersectionCount];
 	int connectedCount = 0;
 
 	int maxRoadCount = colCount * (rowCount - 1) + (colCount - 1) * rowCount;
@@ -174,11 +186,11 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	srand((unsigned int)time(0));
 
 	float roadWidth = intersectionDistance / 5;
-	
+
 	int startRow = rand() % rowCount;
 	int startCol = rand() % colCount;
 
-	connectedPositions[connectedCount++] = { startRow, startCol };
+	connectedPositions[connectedCount++] = {startRow, startCol};
 
 	while (createdRoadCount < roadCount) {
 		GridPosition startPosition = connectedPositions[rand() % connectedCount];
@@ -222,7 +234,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 			if (!endIntersection->bottomRoad && !endIntersection->topRoad &&
 				!endIntersection->leftRoad && !endIntersection->rightRoad) {
 				endConnected = false;
-				connectedPositions[connectedCount++] = { endPosition.row, endPosition.col };
+				connectedPositions[connectedCount++] = {endPosition.row, endPosition.col};
 			}
 			else {
 				endConnected = true;
@@ -233,7 +245,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 			startIntersection = endIntersection;
 			startPosition = endPosition;
-			
+
 			if (endConnected) {
 				if (rand() % 2 < 1) break;
 			}
@@ -307,15 +319,15 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 					}
 				}
 			}
-			else if(isNewBuilding) {
+			else if (isNewBuilding) {
 				createArea = true;
 			}
 
 			if (createArea) {
-				if (!roadAbove && areaAbove && 
-					areaAbove->left == newArea.left && 
+				if (!roadAbove && areaAbove &&
+					areaAbove->left == newArea.left &&
 					areaAbove->right == newArea.right
-				) {
+					) {
 					areaAbove->bottom += intersectionDistance;
 
 					gridAreas[(row) * (colCount + 1) + (col - 1)] = areaAbove;
@@ -340,7 +352,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	}
 
 	for (int i = 0; i < buildAreaCount; ++i) {
-		GenerateBuildings(&map, buildAreas[i], buildingPadding, intersectionDistance / 4.0f, intersectionDistance * 2.0f);
+		GenerateBuildings(&map, buildAreas[i], buildingPadding, intersectionDistance * 0.25f, intersectionDistance * 1.0f);
 	}
 
 	delete[] gridAreas;
@@ -356,7 +368,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		Road* closestRoad = map.ClosestRoad(center);
 		if (closestRoad) {
 			building->connectPointFar = closestRoad->ClosestPoint(center);
-		} 
+		}
 		else {
 			building->connectPointFar = center;
 		}
@@ -403,7 +415,8 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 					building->connectPointFarShow.y -= closestRoad->width * 0.5f;
 				}
 			}
-		} else {
+		}
+		else {
 			building->connectPointFar = center;
 			building->connectPointFarShow = center;
 			building->connectPointClose = center;
@@ -419,6 +432,14 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 			building->connectRoad = 0;
 			building->connectBuilding = crossedBuilding;
+		}
+	}
+
+	for (int i = 0; i < map.buildingCount; ++i) {
+		Building* building = &map.buildings[i];
+
+		if (building->connectTreeHeight == 0) {
+			CalculateTreeHeight(building);
 		}
 	}
 

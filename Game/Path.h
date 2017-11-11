@@ -11,10 +11,6 @@ enum PathNodeType {
 	PATH_NODE_BUILDING
 };
 
-struct PathMemory {
-
-};
-
 // TODO: should this be a linked list element?
 struct PathNode {
 	PathNodeType type;

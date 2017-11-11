@@ -84,7 +84,7 @@ void WinDraw(HWND window, Renderer renderer) {
 		globalHighlightedBuilding->HighLight(globalRenderer, highlightColor);
 	}
 
-	if (globalBuildingPath.nodeCount > 0) {
+	if (globalBuildingPath.nodeCount > 0 && globalSelectedBuilding && globalHighlightedBuilding) {
 		Color color = {0.0f, 1.0f, 1.0f};
 		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
 	}

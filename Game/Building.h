@@ -17,6 +17,8 @@ struct Building {
 	Point connectPointFarShow;
 	Point connectPointFar;
 
+	int connectTreeHeight;
+
 	Road* connectRoad;
 	Building* connectBuilding;
 

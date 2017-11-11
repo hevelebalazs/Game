@@ -23,6 +23,7 @@ Intersection* Map::GetIntersectionAtPoint(Point point, float maxDistance) {
 	return result;
 };
 
+// TODO: make this so that it returns an intersection if it is closer than the closest point
 Road* Map::ClosestRoad(Point point) {
 	Road* closestRoad = 0;
 	float minDistanceSquare = 0.0f;
