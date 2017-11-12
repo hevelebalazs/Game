@@ -383,6 +383,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		center.x = (building->left + building->right) * 0.5f;
 		center.y = (building->top + building->bottom) * 0.5f;
 
+		// TODO: check for the closest intersection if no such road was found?
 		Road* closestRoad = map.ClosestRoad(center);
 		if (closestRoad) {
 			building->connectPointFar = closestRoad->ClosestPoint(center);
@@ -422,7 +423,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 			building->connectPointClose = center;
 		}
 
-		Building* crossedBuilding = map.CrossedBuilding(building->connectPointClose, building->connectPointFar, building);
+		Building* crossedBuilding = map.ClosestCrossedBuilding(building->connectPointClose, building->connectPointFar, building);
 
 		if (crossedBuilding) {
 			crossedBuilding->roadAround = true;

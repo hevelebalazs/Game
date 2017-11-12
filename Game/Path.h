@@ -20,6 +20,12 @@ struct PathNode {
 		Intersection* intersection;
 		Building* building;
 	};
+
+	PathNode* next;
+
+	Point StartPoint();
+	Point NextPoint(Point pointFrom);
+	bool IsEndPoint(Point point);
 };
 
 struct Path {

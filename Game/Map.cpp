@@ -23,18 +23,28 @@ Intersection* Map::GetIntersectionAtPoint(Point point, float maxDistance) {
 	return result;
 };
 
-// TODO: make this so that it returns an intersection if it is closer than the closest point
 Road* Map::ClosestRoad(Point point) {
 	Road* closestRoad = 0;
 	float minDistanceSquare = 0.0f;
 
 	for (int i = 0; i < roadCount; ++i) {
 		Road* road = &roads[i];
-		float distanceSquare = road->DistanceSquareFrom(point);
 
-		if (!closestRoad || distanceSquare < minDistanceSquare) {
-			closestRoad = road;
-			minDistanceSquare = distanceSquare;
+		bool betweenX =
+			((road->endPoint1.x <= point.x) && (point.x <= road->endPoint2.x)) ||
+			((road->endPoint2.x <= point.x) && (point.x <= road->endPoint1.x));
+
+		bool betweenY =
+			((road->endPoint1.y <= point.y) && (point.y <= road->endPoint2.y)) ||
+			((road->endPoint2.y <= point.y) && (point.y <= road->endPoint1.y));
+
+		if (betweenX || betweenY) {
+			float distanceSquare = road->DistanceSquareFrom(point);
+
+			if (!closestRoad || distanceSquare < minDistanceSquare) {
+				closestRoad = road;
+				minDistanceSquare = distanceSquare;
+			}
 		}
 	}
 
@@ -53,19 +63,28 @@ Building* Map::GetBuildingAtPoint(Point point) {
 	return result;
 }
  
-// TODO: if there are severeal buildings, return the one closest to one of the points
-Building* Map::CrossedBuilding(Point point1, Point point2, Building *excludedBuilding) {
+Building* Map::ClosestCrossedBuilding(Point pointClose, Point pointFar, Building *excludedBuilding) {
+	Building* result = 0;
+	float minDistanceSquare = 0.0f;
+
 	for (int i = 0; i < buildingCount; ++i) {
 		Building *building = &buildings[i];
 
 		if (building == excludedBuilding) continue;
 
-		if (building->IsCrossed(point1, point2)) {
-			return building;
+		if (building->IsCrossed(pointClose, pointFar)) {
+			Point closestCrossPoint = building->ClosestCrossPoint(pointClose, pointFar);
+
+			float distanceSquare = Point::DistanceSquare(pointClose, closestCrossPoint);
+
+			if (result == 0 || distanceSquare < minDistanceSquare) {
+				result = building;
+				minDistanceSquare = distanceSquare;
+			}
 		}
 	}
 
-	return 0;
+	return result;
 }
 
 void Map::Draw(Renderer renderer) {

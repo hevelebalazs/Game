@@ -23,6 +23,7 @@ static Path EmptyPath() {
 
 static void PushNode(Path* path, PathNode node) {
 	// TODO: create a resizable template array
+	//       or should this be preallocated?
 	path->nodes = (PathNode*)realloc(path->nodes, (path->nodeCount + 1) * sizeof(PathNode));
 	path->nodes[path->nodeCount] = node;
 	path->nodeCount++;
@@ -229,12 +230,11 @@ static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildin
 	InvertSegment(path, startIndex, endIndex);
 }
 
-// TODO: make sure path does not go out into the road if it does not need to
 Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd, PathHelper* helper) {
 	Path path = EmptyPath();
 
 	// NOTE: if the buildings have a common ancestor in the connection tree,
-	//		 there is no need to go out to the road
+	//       there is no need to go out to the road
 	Building* commonAncestor = CommonAncestor(buildingStart, buildingEnd);
 
 	if (commonAncestor) {
@@ -261,6 +261,12 @@ Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd, 
 
 		PushFromRoadToBuilding(&path, buildingEnd);
 	}
+
+	for (int i = 0; i < path.nodeCount - 1; ++i) {
+		path.nodes[i].next = &path.nodes[i + 1];
+	}
+
+	path.nodes[path.nodeCount - 1].next = 0;
 
 	return path;
 }
@@ -329,91 +335,135 @@ Point NextPointAroundBuilding(Building* building, Point startPoint, Point target
 	}
 }
 
-void DrawLineAroundBuilding(Renderer renderer, Building* building, Point pointFrom, Point pointTo, Color color, float lineWidth) {
-	while ((pointFrom.x != pointTo.x) || (pointFrom.y != pointTo.y)) {
-		Point nextPoint = NextPointAroundBuilding(building, pointFrom, pointTo);
+Point PathNode::StartPoint() {
+	Point point = {};
 
-		DrawGridLine(renderer, pointFrom, nextPoint, color, lineWidth);
-
-		pointFrom = nextPoint;
+	if (type == PATH_NODE_BUILDING) {
+		point = {
+			(building->left + building->right) * 0.5f,
+			(building->top + building->bottom) * 0.5f
+		};
 	}
+
+	return point;
+}
+
+Point PathNode::NextPoint(Point startPoint) {
+	Point nextPoint = {};
+
+	if (type == PATH_NODE_BUILDING) {
+		if (!next) {
+			nextPoint = building->connectPointClose;
+		}
+		else if (next->type == PATH_NODE_BUILDING) {
+			Building* nextBuilding = next->building;
+
+			if (building->connectBuilding == nextBuilding) {
+				if (startPoint == building->connectPointClose) {
+					nextPoint = building->connectPointFar;
+				}
+				else {
+					nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
+				}
+			}
+			else if (nextBuilding->connectBuilding == building) {
+				if (startPoint == building->connectPointFar) {
+					nextPoint = building->connectPointClose;
+				}
+				else {
+					nextPoint = NextPointAroundBuilding(building, startPoint, nextBuilding->connectPointFar);
+				}
+			}
+		}
+		else if (next->type == PATH_NODE_ROAD) {
+			if (startPoint == building->connectPointClose) {
+				nextPoint = building->connectPointFar;
+			}
+			else {
+				nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
+			}
+		}
+		else if (next->type == PATH_NODE_INTERSECTION) {
+			// TODO: implement this if buildings are connected to intersections
+		}
+	}
+	else if (type == PATH_NODE_ROAD) {
+		if (!next) {
+			// NOTE: a path should not end in a road
+		}
+		else if (next->type == PATH_NODE_BUILDING) {
+			nextPoint = next->building->connectPointFar;
+		}
+		else if (next->type == PATH_NODE_INTERSECTION) {
+			nextPoint = next->intersection->coordinate;
+		}
+	}
+	else if (type == PATH_NODE_INTERSECTION) {
+		nextPoint = intersection->coordinate;
+
+		if (next && next->type == PATH_NODE_BUILDING) {
+			// TODO: implement this if buildings are connected to intersections
+		}
+	}
+
+	return nextPoint;
+}
+
+bool PathNode::IsEndPoint(Point point) {
+	bool result = false;
+
+	if (type == PATH_NODE_BUILDING) {
+		if (!next) {
+			result = (point == building->connectPointClose);
+		}
+		else if (next->type == PATH_NODE_BUILDING) {
+			Building* nextBuilding = next->building;
+
+			if (building->connectBuilding == nextBuilding) result = (point == building->connectPointFar);
+			else if (nextBuilding->connectBuilding == building) result = (point == nextBuilding->connectPointFar);
+		}
+		else if (next->type == PATH_NODE_ROAD) {
+			result = (point == building->connectPointFar);
+		}
+	}
+	else if (type == PATH_NODE_ROAD) {
+		if (!next) {
+			// NOTE: path should not end with a road
+		}
+		else if (next->type == PATH_NODE_BUILDING) {
+			result = (point == next->building->connectPointFar);
+		}
+		else if (next->type == PATH_NODE_INTERSECTION) {
+			result = (point == next->intersection->coordinate);
+		}
+	}
+	else if (type == PATH_NODE_INTERSECTION) {
+		result = (point == intersection->coordinate);
+
+		if (next && next->type == PATH_NODE_BUILDING) {
+			// TODO: implement this if buildings are connected to intersections
+		}
+	}
+
+	return result;
 }
 
 void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
-	Point prevPoint = {};
+	if (path->nodeCount > 0) {
+		PathNode* node = &path->nodes[0];
+		Point point = node->StartPoint();
 
-	int intersectionCount = 0;
-
-	PathNode* prevNode = 0;
-
-	for (int i = 0; i < path->nodeCount; ++i) {
-		PathNode* thisNode = &path->nodes[i];
-		PathNode* nextNode = 0;
-
-		Point thisPoint = prevPoint;
-
-		if (i < path->nodeCount - 1) nextNode = &path->nodes[i + 1];
-
-		if (thisNode->type == PATH_NODE_BUILDING) {
-			Building* building = thisNode->building;
-
-			Building* prevBuilding = 0;
-			if (prevNode && prevNode->type == PATH_NODE_BUILDING) prevBuilding = prevNode->building;
-
-			Building* nextBuilding = 0;
-			if (nextNode && nextNode->type == PATH_NODE_BUILDING) nextBuilding = nextNode->building;
-
-			bool goOut = true;
-
-			if (prevBuilding && prevBuilding->connectBuilding == building && !nextNode) goOut = false;
-			if (nextBuilding && nextBuilding->connectBuilding == building && !prevNode) goOut = false;
-			if ((nextBuilding && nextBuilding->connectBuilding == building) &&
-				(prevBuilding && prevBuilding->connectBuilding == building)) 
-			{
-				DrawLineAroundBuilding(
-					renderer,
-					building, prevBuilding->connectPointFar, nextBuilding->connectPointFar,
-					color, lineWidth
-				);
-
-				continue;
+		while (node) {
+			if (node->IsEndPoint(point)) {
+				node = node->next;
 			}
+			else {
+				Point nextPoint = node->NextPoint(point);
 
-			if (goOut) DrawGridLine(renderer, building->connectPointFar, building->connectPointClose, color, lineWidth);
+				DrawGridLine(renderer, point, nextPoint, color, lineWidth);
 
-			if (prevBuilding) {
-				if (building->connectBuilding == prevBuilding) {
-					DrawLineAroundBuilding(
-						renderer, 
-						prevBuilding, prevBuilding->connectPointClose, building->connectPointFar,
-						color, lineWidth
-					);
-				}
-				else if (prevBuilding->connectBuilding == building) {
-					DrawLineAroundBuilding(
-						renderer,
-						building, prevBuilding->connectPointFar, building->connectPointClose,
-						color, lineWidth
-					);
-				}
+				point = nextPoint;
 			}
 		}
-		else if (thisNode->type == PATH_NODE_INTERSECTION) {
-		}
-		else if (thisNode->type == PATH_NODE_ROAD) {
-			if (prevNode && nextNode) {
-				Point point1 = {};
-				if (prevNode->type == PATH_NODE_BUILDING) point1 = prevNode->building->connectPointFar;
-				else if (prevNode->type == PATH_NODE_INTERSECTION) point1 = prevNode->intersection->coordinate;
-
-				Point point2 = {};
-				if (nextNode->type == PATH_NODE_BUILDING) point2 = nextNode->building->connectPointFar;
-				else if (nextNode->type == PATH_NODE_INTERSECTION) point2 = nextNode->intersection->coordinate;
-
-				DrawGridLine(renderer, point1, point2, color, lineWidth);
-			}
-		}
-
-		prevNode = thisNode;
 	}
 }

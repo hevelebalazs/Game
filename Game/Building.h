@@ -24,6 +24,7 @@ struct Building {
 
 	Color color;
 
+
 	Road* GetConnectedRoad();
 
 	bool IsPointInside(Point point);

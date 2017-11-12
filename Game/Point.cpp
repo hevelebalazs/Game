@@ -33,7 +33,7 @@ Point Point::operator-=(Point otherPoint) {
 }
 
 bool Point::operator==(Point otherPoint) {
-	return x == otherPoint.x && y == otherPoint.y;
+	return (x == otherPoint.x) && (y == otherPoint.y);
 }
 
 float Point::Length() {
