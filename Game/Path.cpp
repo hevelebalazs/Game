@@ -339,10 +339,7 @@ Point PathNode::StartPoint() {
 	Point point = {};
 
 	if (type == PATH_NODE_BUILDING) {
-		point = {
-			(building->left + building->right) * 0.5f,
-			(building->top + building->bottom) * 0.5f
-		};
+		point = building->connectPointClose;
 	}
 
 	return point;

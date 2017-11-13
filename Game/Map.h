@@ -22,6 +22,7 @@ struct Map {
 
 	Road* ClosestRoad(Point point);
 
+	Building* GetRandomBuilding();
 	Building* ClosestCrossedBuilding(Point point1, Point point2, Building* excludedBuilding);
 	Building* GetBuildingAtPoint(Point point);
 

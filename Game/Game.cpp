@@ -8,6 +8,7 @@
 #include "Vehicle.h"
 #include "AutoVehicle.h"
 #include "PlayerVehicle.h"
+#include "Human.h"
 
 static bool running;
 
@@ -22,6 +23,7 @@ Building* globalHighlightedBuilding;
 PathHelper globalPathHelper;
 Path globalBuildingPath;
 
+Human globalHuman;
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
@@ -72,7 +74,6 @@ void WinDraw(HWND window, Renderer renderer) {
 	Intersection *highlightIntersection = globalMap.GetIntersectionAtPoint(mousePoint, 20.0f);
 
 	globalMap.Draw(renderer);
-	globalPlayerVehicle.vehicle.Draw(renderer);
 
 	if (globalSelectedBuilding) {
 		Color highlightColor = {0.0f, 1.0f, 1.0f};
@@ -88,6 +89,9 @@ void WinDraw(HWND window, Renderer renderer) {
 		Color color = {0.0f, 1.0f, 1.0f};
 		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
 	}
+
+	globalPlayerVehicle.vehicle.Draw(renderer);
+	globalHuman.Draw(renderer);
 }
 
 void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
@@ -233,6 +237,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	RECT rect;
 	GetClientRect(window, &rect);
 
+	// TODO: create a GameInit function
+	// TODO: create a GameState struct for the globals?
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
 	globalMap = CreateGridMap((float)width, (float)height, 100);
@@ -247,6 +253,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPlayerVehicle.mass = 200.0f;
 	globalPlayerVehicle.maxEngineForce = 1000.0f;
 	globalPlayerVehicle.breakForce = 1000.0f;
+
+	Building* targetBuilding = globalMap.GetRandomBuilding();
+
+	globalHuman.map = &globalMap;
+	globalHuman.moveTargetBuilding = targetBuilding;
+	globalHuman.position = targetBuilding->connectPointClose;
+	globalHuman.moveHelper = &globalPathHelper;
 
 	timeBeginPeriod(1);
 
@@ -268,7 +281,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 			DispatchMessageA(&message);
 		}
 
+		// TODO: create a GameUpdate function
 		globalPlayerVehicle.Update(globalTargetFrameS);
+		globalHuman.Update(globalTargetFrameS);
 
 		Point mousePosition = WinMousePosition(window);
 		globalHighlightedBuilding = globalMap.GetBuildingAtPoint(mousePosition);

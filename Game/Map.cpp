@@ -62,6 +62,12 @@ Building* Map::GetBuildingAtPoint(Point point) {
 
 	return result;
 }
+
+Building* Map::GetRandomBuilding() {
+	int buildingIndex = rand() % buildingCount;
+
+	return &buildings[buildingIndex];
+}
  
 Building* Map::ClosestCrossedBuilding(Point pointClose, Point pointFar, Building *excludedBuilding) {
 	Building* result = 0;
