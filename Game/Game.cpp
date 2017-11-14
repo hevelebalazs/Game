@@ -23,7 +23,8 @@ Building* globalHighlightedBuilding;
 PathHelper globalPathHelper;
 Path globalBuildingPath;
 
-Human globalHuman;
+Human globalHumans[100];
+int globalHumanCount = 1;
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
@@ -91,7 +92,12 @@ void WinDraw(HWND window, Renderer renderer) {
 	}
 
 	globalPlayerVehicle.vehicle.Draw(renderer);
-	globalHuman.Draw(renderer);
+
+	for (int i = 0; i < globalHumanCount; ++i) {
+		Human* human = &globalHumans[i];
+
+		human->Draw(renderer);
+	}
 }
 
 void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
@@ -254,12 +260,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalPlayerVehicle.maxEngineForce = 1000.0f;
 	globalPlayerVehicle.breakForce = 1000.0f;
 
-	Building* targetBuilding = globalMap.GetRandomBuilding();
+	for (int i = 0; i < globalHumanCount; ++i) {
+		Human* human = &globalHumans[i];
 
-	globalHuman.map = &globalMap;
-	globalHuman.moveTargetBuilding = targetBuilding;
-	globalHuman.position = targetBuilding->connectPointClose;
-	globalHuman.moveHelper = &globalPathHelper;
+		Building* targetBuilding = globalMap.GetRandomBuilding();
+
+		human->map = &globalMap;
+		human->moveTargetBuilding = targetBuilding;
+		human->position = targetBuilding->connectPointClose;
+		human->moveHelper = &globalPathHelper;
+	}
 
 	timeBeginPeriod(1);
 
@@ -283,7 +293,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 		// TODO: create a GameUpdate function
 		globalPlayerVehicle.Update(globalTargetFrameS);
-		globalHuman.Update(globalTargetFrameS);
+
+		for (int i = 0; i < globalHumanCount; ++i) {
+			Human* human = &globalHumans[i];
+
+			human->Update(globalTargetFrameS);
+		}
 
 		Point mousePosition = WinMousePosition(window);
 		globalHighlightedBuilding = globalMap.GetBuildingAtPoint(mousePosition);
@@ -291,7 +306,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		if (globalSelectedBuilding && globalHighlightedBuilding && globalSelectedBuilding != globalHighlightedBuilding) {
 			ClearPath(&globalBuildingPath);
 
-			globalBuildingPath = ConnectBuildings(&globalMap, globalSelectedBuilding, globalHighlightedBuilding, &globalPathHelper);
+			// TODO: create a function for these?
+			MapElem selectedBuildingElem = {};
+			selectedBuildingElem.type = MapElemType::BUILDING;
+			selectedBuildingElem.building = globalSelectedBuilding;
+
+			MapElem highlightedBuildingElem = {};
+			highlightedBuildingElem.type = MapElemType::BUILDING;
+			highlightedBuildingElem.building = globalHighlightedBuilding;
+
+			globalBuildingPath = ConnectElems(&globalMap, selectedBuildingElem, highlightedBuildingElem, &globalPathHelper);
 		}
 
 		WinDraw(window, globalRenderer);

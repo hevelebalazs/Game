@@ -5,21 +5,9 @@
 #include "Building.h"
 #include "Renderer.h"
 
-enum PathNodeType {
-	PATH_NODE_ROAD,
-	PATH_NODE_INTERSECTION,
-	PATH_NODE_BUILDING
-};
-
 // TODO: should this be a linked list element?
 struct PathNode {
-	PathNodeType type;
-
-	union {
-		Road* road;
-		Intersection* intersection;
-		Building* building;
-	};
+	MapElem elem;
 
 	PathNode* next;
 
@@ -44,7 +32,8 @@ struct PathHelper {
 
 PathHelper PathHelperForMap(Map* map);
 
-Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd, PathHelper* helper);
+Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper);
+
 void ClearPath(Path* path);
 
 void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth);

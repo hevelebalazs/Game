@@ -13,12 +13,93 @@ float Max2(float x, float y) {
 	else return y;
 }
 
-Road* Building::GetConnectedRoad() {
-	Building* building = this;
+// TODO: should this be a real function in GridMapCreator.cpp?
+void Building::ConnectTo(MapElem elem) {
+	Point center = {(left + right) * 0.5f, (top + bottom) * 0.5f};
 
-	while (building->connectBuilding) building = building->connectBuilding;
+	if (elem.type == MapElemType::NONE) {
+		// TODO: should this ever happen?
+	}
+	else if (elem.type == MapElemType::ROAD) {
+		Road* road = elem.road;
 
-	return building->connectRoad;
+		if (road->endPoint1.x == road->endPoint2.x) {
+			connectPointFar.x = road->endPoint1.x;
+			connectPointFar.y = center.y;
+			connectPointFarShow.y = center.y;
+			connectPointClose.y = center.y;
+			
+			if (right < road->endPoint1.y && right < road->endPoint2.y) {
+				connectPointFarShow.x = road->endPoint1.x - (road->width * 0.5f);
+				connectPointClose.x = right;
+			}
+			else {
+				connectPointFarShow.x = road->endPoint1.x + (road->width * 0.5f);
+				connectPointClose.x = left;
+			}
+		}
+		else if (road->endPoint2.y == road->endPoint2.y) {
+			connectPointFar.y = road->endPoint1.y;
+			connectPointFar.x = center.x;
+			connectPointFarShow.x = center.x;
+			connectPointClose.x = center.x;
+
+			if (bottom < road->endPoint1.x && bottom < road->endPoint2.x) {
+				connectPointFarShow.y = road->endPoint1.y - (road->width * 0.5f);
+				connectPointClose.y = bottom;
+			}
+			else {
+				connectPointFarShow.y = road->endPoint1.y + (road->width * 0.5f);
+				connectPointClose.y = top;
+			}
+		}
+	}
+	else if (elem.type == MapElemType::INTERSECTION) {
+		Intersection* intersection = elem.intersection;
+
+		float halfRoadWidth = intersection->GetRoadWidth() * 0.5f;
+
+		if ((intersection->coordinate.x - halfRoadWidth <= center.x) && (center.x <= intersection->coordinate.x + halfRoadWidth)) {
+			connectPointFar.y = intersection->coordinate.y;
+			connectPointFar.x = center.x;
+			connectPointFarShow.x = center.x;
+			connectPointClose.x = center.x;
+
+			if (center.y > intersection->coordinate.y) {
+				connectPointFarShow.y = connectPointFar.y + halfRoadWidth;
+				connectPointClose.y = top;
+			}
+			else {
+				connectPointFarShow.y = connectPointFar.y - halfRoadWidth;
+				connectPointClose.y = bottom;
+			}
+		}
+		else {
+			connectPointFar.x = intersection->coordinate.x;
+			connectPointFar.y = center.y;
+			connectPointFarShow.y = center.y;
+			connectPointClose.y = center.y;
+
+			if (center.x > intersection->coordinate.x) {
+				connectPointFarShow.x = connectPointFar.x + halfRoadWidth;
+				connectPointClose.x = left;
+			}
+			else {
+				connectPointFarShow.x = connectPointFar.x - halfRoadWidth;
+				connectPointClose.x = right;
+			}
+		}
+	}
+	else if (elem.type == MapElemType::BUILDING) {
+		Building* building = elem.building;
+
+		if (building->connectElem.type > 4) throw 1;
+
+		connectPointFar = building->ClosestCrossPoint(connectPointClose, connectPointFar);
+		connectPointFarShow = connectPointFar;
+	}
+
+	connectElem = elem;
 }
 
 bool Building::IsPointInside(Point point) {

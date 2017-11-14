@@ -3,6 +3,7 @@
 #include "Intersection.h"
 #include "Building.h"
 #include "Renderer.h"
+#include "MapElem.h"
 
 struct Map {
 	Intersection* intersections;
@@ -20,7 +21,7 @@ struct Map {
 	Intersection* GetRandomIntersection();
 	Intersection* GetIntersectionAtPoint(Point point, float maxDistance);
 
-	Road* ClosestRoad(Point point);
+	MapElem ClosestRoadOrIntersection(Point point);
 
 	Building* GetRandomBuilding();
 	Building* ClosestCrossedBuilding(Point point1, Point point2, Building* excludedBuilding);

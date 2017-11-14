@@ -134,10 +134,12 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 
 // TODO: can the recursion cause any performance or memory issue?
 static void CalculateTreeHeight(Building* building) {
-	if (building->connectBuilding) {
-		CalculateTreeHeight(building->connectBuilding);
+	if (building->connectElem.type == MapElemType::BUILDING) {
+		Building* connectBuilding = building->connectElem.building;
 
-		building->connectTreeHeight = building->connectBuilding->connectTreeHeight + 1;
+		CalculateTreeHeight(connectBuilding);
+
+		building->connectTreeHeight = connectBuilding->connectTreeHeight + 1;
 	}
 	else {
 		building->connectTreeHeight = 1;
@@ -365,74 +367,24 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		center.x = (building->left + building->right) * 0.5f;
 		center.y = (building->top + building->bottom) * 0.5f;
 
-		Road* closestRoad = map.ClosestRoad(center);
-		if (closestRoad) {
-			building->connectPointFar = closestRoad->ClosestPoint(center);
-		}
-		else {
-			building->connectPointFar = center;
-		}
-	}
+		MapElem closestElem = map.ClosestRoadOrIntersection(center);
+		building->connectElem = closestElem;
 
-	Building::connectRoadWidth = roadWidth / 5.0f;
+		if (closestElem.type > 4) throw 1;
+		if (closestElem.type == MapElemType::BUILDING) throw 1;
 
-	for (int i = 0; i < map.buildingCount; ++i) {
-		Building* building = &map.buildings[i];
-
-		Point center = {};
-		center.x = (building->left + building->right) * 0.5f;
-		center.y = (building->top + building->bottom) * 0.5f;
-
-		// TODO: check for the closest intersection if no such road was found?
-		Road* closestRoad = map.ClosestRoad(center);
-		if (closestRoad) {
-			building->connectPointFar = closestRoad->ClosestPoint(center);
-			building->connectPointFarShow = building->connectPointFar;
-
-			building->connectRoad = closestRoad;
-
-			building->connectPointClose = center;
-			if (closestRoad->endPoint1.x == closestRoad->endPoint2.x) {
-				building->connectPointClose.y = building->connectPointFar.y;
-
-				if (closestRoad->endPoint1.x < center.x) {
-					building->connectPointClose.x = building->left;
-					building->connectPointFarShow.x += closestRoad->width * 0.5f;
-				}
-				else {
-					building->connectPointClose.x = building->right;
-					building->connectPointFarShow.x -= closestRoad->width * 0.5f;
-				}
-			}
-			else if (closestRoad->endPoint1.y == closestRoad->endPoint2.y) {
-				building->connectPointClose.x = building->connectPointFar.x;
-
-				if (closestRoad->endPoint1.y < center.y) {
-					building->connectPointClose.y = building->top;
-					building->connectPointFarShow.y += closestRoad->width * 0.5f;
-				}
-				else {
-					building->connectPointClose.y = building->bottom;
-					building->connectPointFarShow.y -= closestRoad->width * 0.5f;
-				}
-			}
-		}
-		else {
-			building->connectPointFar = center;
-			building->connectPointFarShow = center;
-			building->connectPointClose = center;
-		}
+		building->ConnectTo(closestElem);
 
 		Building* crossedBuilding = map.ClosestCrossedBuilding(building->connectPointClose, building->connectPointFar, building);
-
 		if (crossedBuilding) {
-			crossedBuilding->roadAround = true;
+			// TODO: create a function for this?
+			MapElem elem = {};
+			elem.type = MapElemType::BUILDING;
+			elem.building = crossedBuilding;
 
-			building->connectPointFar = crossedBuilding->ClosestCrossPoint(building->connectPointClose, building->connectPointFar);
-			building->connectPointFarShow = building->connectPointFar;
+			if (crossedBuilding->connectElem.type > 4) throw 1;
 
-			building->connectRoad = 0;
-			building->connectBuilding = crossedBuilding;
+			// building->ConnectTo(elem);
 		}
 	}
 

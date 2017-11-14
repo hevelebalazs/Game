@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 Intersection* Map::GetRandomIntersection() {
 	int intersectionIndex = rand() % intersectionCount;
@@ -23,7 +24,10 @@ Intersection* Map::GetIntersectionAtPoint(Point point, float maxDistance) {
 	return result;
 };
 
-Road* Map::ClosestRoad(Point point) {
+MapElem Map::ClosestRoadOrIntersection(Point point) {
+	MapElem result = {};
+	result.type = MapElemType::NONE;
+
 	Road* closestRoad = 0;
 	float minDistanceSquare = 0.0f;
 
@@ -44,11 +48,36 @@ Road* Map::ClosestRoad(Point point) {
 			if (!closestRoad || distanceSquare < minDistanceSquare) {
 				closestRoad = road;
 				minDistanceSquare = distanceSquare;
+
+				result.type = MapElemType::ROAD;
+				result.road = road;
 			}
 		}
 	}
 
-	return closestRoad;
+	Intersection* closestIntersection = 0;
+	for (int i = 0; i < roadCount; ++i) {
+		Intersection* intersection = &intersections[i];
+
+		float halfRoadWidth = intersection->GetRoadWidth() * 0.5f;
+
+		bool betweenX = (fabsf(intersection->coordinate.x - point.x) <= halfRoadWidth);
+		bool betweenY = (fabsf(intersection->coordinate.y - point.y) <= halfRoadWidth);
+
+		if (betweenX || betweenY) {
+			float distanceSquare = Point::DistanceSquare(intersection->coordinate, point);
+
+			if ((!closestRoad && !closestIntersection) || distanceSquare < minDistanceSquare) {
+				closestIntersection = intersection;
+				minDistanceSquare = distanceSquare;
+
+				result.type = MapElemType::INTERSECTION;
+				result.intersection = intersection;
+			}
+		}
+	}
+
+	return result;
 }
 
 Building* Map::GetBuildingAtPoint(Point point) {

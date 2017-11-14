@@ -16,17 +16,31 @@ void Human::Update(float seconds) {
 			Building* nextBuilding = map->GetRandomBuilding();
 			ClearPath(&movePath);
 
-			movePath = ConnectBuildings(map, moveTargetBuilding, nextBuilding, moveHelper);
+			// TODO: create functions to create these?
+			MapElem targetElem = {};
+			targetElem.type = MapElemType::BUILDING;
+			targetElem.building = moveTargetBuilding;
+
+			MapElem nextElem = {};
+			targetElem.type = MapElemType::BUILDING;
+			targetElem.building = nextBuilding;
+
+			movePath = ConnectElems(map, targetElem, nextElem, moveHelper);
 
 			// TODO: can the path have 0 elements if the two buildings are the same?
-			moveNode = &movePath.nodes[0];
+			if (movePath.nodeCount == 0) {
+				moveNode = 0;
+			}
+			else {
+				moveNode = &movePath.nodes[0];
 
-			moveStartPoint = moveNode->StartPoint();
-			moveEndPoint = moveNode->NextPoint(moveStartPoint);
+				moveStartPoint = moveNode->StartPoint();
+				moveEndPoint = moveNode->NextPoint(moveStartPoint);
 
-			InitMovement();
+				InitMovement();
 
-			moveTargetBuilding = nextBuilding;
+				moveTargetBuilding = nextBuilding;
+			}
 		}
 		
 		if (moveNode) {

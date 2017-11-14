@@ -22,6 +22,8 @@ static Path EmptyPath() {
 }
 
 static void PushNode(Path* path, PathNode node) {
+	if (node.elem.type > 4) throw 1;
+
 	// TODO: create a resizable template array
 	//       or should this be preallocated?
 	path->nodes = (PathNode*)realloc(path->nodes, (path->nodeCount + 1) * sizeof(PathNode));
@@ -29,24 +31,36 @@ static void PushNode(Path* path, PathNode node) {
 	path->nodeCount++;
 }
 
+static PathNode ElemNode(MapElem elem) {
+	PathNode node = {};
+	node.elem = elem;
+	return node;
+}
+
+static void PushElem(Path* path, MapElem elem) {
+	PathNode node = ElemNode(elem);
+
+	PushNode(path, node);
+}
+
 static PathNode RoadNode(Road* road) {
 	PathNode node = {};
-	node.type = PATH_NODE_ROAD;
-	node.road = road;
+	node.elem.type = MapElemType::ROAD;
+	node.elem.road = road;
 	return node;
 }
 
 static PathNode IntersectionNode(Intersection* intersection) {
 	PathNode node = {};
-	node.type = PATH_NODE_INTERSECTION;
-	node.intersection = intersection;
+	node.elem.type = MapElemType::INTERSECTION;
+	node.elem.intersection = intersection;
 	return node;
 }
 
 static PathNode BuildingNode(Building* building) {
 	PathNode node = {};
-	node.type = PATH_NODE_BUILDING;
-	node.building = building;
+	node.elem.type = MapElemType::BUILDING;
+	node.elem.building = building;
 	return node;
 }
 
@@ -68,15 +82,6 @@ static void PushBuilding(Path* path, Building* building) {
 	PushNode(path, node);
 }
 
-static void PushFromBuildingToRoad(Path* path, Building* building) {
-	while (building->connectBuilding) {
-		PushBuilding(path, building);
-		building = building->connectBuilding;
-	}
-
-	PushBuilding(path, building);
-}
-
 static void InvertSegment(Path* path, int startIndex, int endIndex) {
 	while (startIndex < endIndex) {
 		PathNode tmpNode = path->nodes[startIndex];
@@ -88,9 +93,18 @@ static void InvertSegment(Path* path, int startIndex, int endIndex) {
 	}
 }
 
-static void PushFromRoadToBuilding(Path* path, Building *building) {
+static void PushFromBuildingToRoadElem(Path* path, Building* building) {
+	while (building->connectElem.type == MapElemType::BUILDING) {
+		PushBuilding(path, building);
+		building = building->connectElem.building;
+	}
+
+	PushBuilding(path, building);
+}
+
+static void PushFromRoadElemToBuilding(Path* path, Building *building) {
 	int startIndex = path->nodeCount;
-	PushFromBuildingToRoad(path, building);
+	PushFromBuildingToRoadElem(path, building);
 	int endIndex = path->nodeCount - 1;
 
 	InvertSegment(path, startIndex, endIndex);
@@ -120,55 +134,61 @@ static void AddIntersectionToHelper(Map* map, Intersection* intersection, int so
 	}
 }
 
-static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* roadEnd, PathHelper* helper) {
-	int maxNodeCount = (map->roadCount + map->intersectionCount);
-
+static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper) {
 	for (int i = 0; i < map->intersectionCount; ++i) helper->isIntersectionHelper[i] = 0;
 	for (int i = 0; i < map->roadCount; ++i) helper->isRoadHelper[i] = 0;
 
 	helper->nodeCount = 0;
 	helper->sourceIndex[helper->nodeCount] = -1;
-	helper->nodes[helper->nodeCount] = RoadNode(roadStart);
+	helper->nodes[helper->nodeCount] = ElemNode(elemStart);
 	helper->nodeCount++;
 
-	if (roadStart == roadEnd) {
-		PushRoad(path, roadStart);
+	if (elemStart.address == elemEnd.address) {
+		PushElem(path, elemStart);
 		return;
 	}
 
+	Road* roadEnd = 0;
+	if (elemEnd.type == MapElemType::ROAD) roadEnd = elemEnd.road;
+
+	Intersection* intersectionEnd = 0;
+	if (elemEnd.type == MapElemType::INTERSECTION) intersectionEnd = elemEnd.intersection;
+
 	for (int i = 0; i < helper->nodeCount; ++i) {
 		PathNode node = helper->nodes[i];
+		MapElem elem = node.elem;
 
-		if (node.type == PATH_NODE_ROAD) {
-			Road* road = node.road;
+		if (elem.type > 4) throw 1;
+
+		if (elem.type == MapElemType::ROAD) {
+			Road* road = elem.road;
 
 			AddIntersectionToHelper(map, road->intersection1, i, helper);
+			if (road->intersection1 == intersectionEnd) break;
+
 			AddIntersectionToHelper(map, road->intersection2, i, helper);
+			if (road->intersection2 == intersectionEnd) break;
 		}
-		else if (node.type == PATH_NODE_INTERSECTION) {
-			Intersection* intersection = node.intersection;
+		else if (elem.type == MapElemType::INTERSECTION) {
+			Intersection* intersection = elem.intersection;
 
 			if (intersection->leftRoad) {
 				AddRoadToHelper(map, intersection->leftRoad, i, helper);
-
 				if (intersection->leftRoad == roadEnd) break;
 			}
 
 			if (intersection->rightRoad) {
 				AddRoadToHelper(map, intersection->rightRoad, i, helper);
-
 				if (intersection->rightRoad == roadEnd) break;
 			}
 
 			if (intersection->topRoad) {
 				AddRoadToHelper(map, intersection->topRoad, i, helper);
-
 				if (intersection->topRoad == roadEnd) break;
 			}
 
 			if (intersection->bottomRoad) {
 				AddRoadToHelper(map, intersection->bottomRoad, i, helper);
-
 				if (intersection->bottomRoad == roadEnd) break;
 			}
 		}
@@ -193,18 +213,18 @@ static void PushFromRoadToRoad(Path* path, Map* map, Road* roadStart, Road* road
 Building* CommonAncestor(Building* building1, Building* building2) {
 	while (building1->connectTreeHeight != building2->connectTreeHeight) {
 		if (building1->connectTreeHeight > building2->connectTreeHeight) {
-			building1 = building1->connectBuilding;
+			building1 = building1->connectElem.building;
 		}
 		if (building2->connectTreeHeight > building1->connectTreeHeight) {
-			building2 = building2->connectBuilding;
+			building2 = building2->connectElem.building;
 		}
 	}
 
 	while (building1 || building2) {
 		if (building1 == building2) return building1;
 
-		building1 = building1->connectBuilding;
-		building2 = building2->connectBuilding;
+		building1 = building1->connectElem.building;
+		building2 = building2->connectElem.building;
 	}
 
 	return 0;
@@ -214,7 +234,7 @@ static void PushDownTheTree(Path* path, Building* buildingStart, Building* build
 	while (buildingStart != buildingEnd) {
 		PushBuilding(path, buildingStart);
 
-		buildingStart = buildingStart->connectBuilding;
+		buildingStart = buildingStart->connectElem.building;
 	}
 
 	PushBuilding(path, buildingEnd);
@@ -230,38 +250,74 @@ static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildin
 	InvertSegment(path, startIndex, endIndex);
 }
 
-Path ConnectBuildings(Map* map, Building* buildingStart, Building* buildingEnd, PathHelper* helper) {
+MapElem GetConnectRoadElem(Building* building) {
+	Building* result = building;
+
+	while (result->connectElem.type == MapElemType::BUILDING) {
+		result = result->connectElem.building;
+	}
+
+	if (result->connectElem.type > 4) throw 1;
+
+	return result->connectElem;
+}
+
+Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper) {
 	Path path = EmptyPath();
 
-	// NOTE: if the buildings have a common ancestor in the connection tree,
-	//       there is no need to go out to the road
-	Building* commonAncestor = CommonAncestor(buildingStart, buildingEnd);
+	if (elemStart.type == MapElemType::BUILDING && elemEnd.type == MapElemType::BUILDING) {
+		Building* buildingStart = elemStart.building;
+		Building* buildingEnd = elemEnd.building;
 
-	if (commonAncestor) {
-		if (commonAncestor == buildingEnd) {
-			PushDownTheTree(&path, buildingStart, buildingEnd);
+		// NOTE: if the buildingss have a common ancestor in the connection tree,
+		//       there is no need to go out to the road
+		Building* commonAncestor = CommonAncestor(buildingStart, buildingEnd);
+
+		if (commonAncestor) {
+			if (commonAncestor == buildingEnd) {
+				PushDownTheTree(&path, buildingStart, buildingEnd);
+			}
+			else if (commonAncestor == buildingStart) {
+				PushUpTheTree(&path, buildingStart, buildingEnd);
+			}
+			else {
+				PushDownTheTree(&path, buildingStart, commonAncestor);
+				// NOTE: making sure commonAncestor does not get into the path twice
+				path.nodeCount--;
+				PushUpTheTree(&path, commonAncestor, buildingEnd);
+			}
+
+			return path;
 		}
-		else if (commonAncestor == buildingStart) {
-			PushUpTheTree(&path, buildingStart, buildingEnd);
-		}
-		else {
-			PushDownTheTree(&path, buildingStart, commonAncestor);
-			// NOTE: making sure commonAncestor does not get into the path twice
-			path.nodeCount--;
-			PushUpTheTree(&path, commonAncestor, buildingEnd);
-		}
+	}
+
+	MapElem roadElemStart = {};
+	if (elemStart.type == MapElemType::BUILDING) {
+		PushFromBuildingToRoadElem(&path, elemStart.building);
+
+		roadElemStart = GetConnectRoadElem(elemStart.building);
 	}
 	else {
-		PushFromBuildingToRoad(&path, buildingStart);
-
-		Road* roadStart = buildingStart->GetConnectedRoad();
-		Road* roadEnd = buildingEnd->GetConnectedRoad();
-
-		PushFromRoadToRoad(&path, map, roadStart, roadEnd, helper);
-
-		PushFromRoadToBuilding(&path, buildingEnd);
+		roadElemStart = elemStart;
 	}
 
+	MapElem roadElemEnd = {};
+	if (elemEnd.type == MapElemType::BUILDING) {
+		roadElemEnd = GetConnectRoadElem(elemEnd.building);
+	}
+	else {
+		roadElemEnd = elemEnd;
+	}
+
+	if (roadElemStart.type > 4) throw 1;
+	if (roadElemEnd.type > 4) throw 1;
+
+	PushConnectRoadElems(&path, map, roadElemStart, roadElemEnd, helper);
+
+	if (elemEnd.type == MapElemType::BUILDING) {
+		PushFromRoadElemToBuilding(&path, elemEnd.building);
+	}
+	
 	for (int i = 0; i < path.nodeCount - 1; ++i) {
 		path.nodes[i].next = &path.nodes[i + 1];
 	}
@@ -338,24 +394,28 @@ Point NextPointAroundBuilding(Building* building, Point startPoint, Point target
 Point PathNode::StartPoint() {
 	Point point = {};
 
-	if (type == PATH_NODE_BUILDING) {
-		point = building->connectPointClose;
+	if (elem.type == MapElemType::BUILDING) {
+		point = elem.building->connectPointClose;
 	}
 
 	return point;
 }
 
 Point PathNode::NextPoint(Point startPoint) {
+	if (elem.type > 4) throw 1;
+
 	Point nextPoint = {};
 
-	if (type == PATH_NODE_BUILDING) {
+	if (elem.type == MapElemType::BUILDING) {
+		Building* building = elem.building;
+
 		if (!next) {
 			nextPoint = building->connectPointClose;
 		}
-		else if (next->type == PATH_NODE_BUILDING) {
-			Building* nextBuilding = next->building;
+		else if (next->elem.type == MapElemType::BUILDING) {
+			Building* nextBuilding = next->elem.building;
 
-			if (building->connectBuilding == nextBuilding) {
+			if (elem.building->connectElem.building == nextBuilding) {
 				if (startPoint == building->connectPointClose) {
 					nextPoint = building->connectPointFar;
 				}
@@ -363,7 +423,7 @@ Point PathNode::NextPoint(Point startPoint) {
 					nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
 				}
 			}
-			else if (nextBuilding->connectBuilding == building) {
+			else if (nextBuilding->connectElem.building == building) {
 				if (startPoint == building->connectPointFar) {
 					nextPoint = building->connectPointClose;
 				}
@@ -372,7 +432,7 @@ Point PathNode::NextPoint(Point startPoint) {
 				}
 			}
 		}
-		else if (next->type == PATH_NODE_ROAD) {
+		else if (next->elem.type == MapElemType::ROAD) {
 			if (startPoint == building->connectPointClose) {
 				nextPoint = building->connectPointFar;
 			}
@@ -380,26 +440,33 @@ Point PathNode::NextPoint(Point startPoint) {
 				nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
 			}
 		}
-		else if (next->type == PATH_NODE_INTERSECTION) {
-			// TODO: implement this if buildings are connected to intersections
+		else if (next->elem.type == MapElemType::INTERSECTION) {
+			if (startPoint == building->connectPointClose) {
+				nextPoint = building->connectPointFar;
+			}
+			else {
+				nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
+			}
 		}
 	}
-	else if (type == PATH_NODE_ROAD) {
+	else if (elem.type == MapElemType::ROAD) {
 		if (!next) {
 			// NOTE: a path should not end in a road
 		}
-		else if (next->type == PATH_NODE_BUILDING) {
-			nextPoint = next->building->connectPointFar;
+		else if (next->elem.type == MapElemType::BUILDING) {
+			nextPoint = next->elem.building->connectPointFar;
 		}
-		else if (next->type == PATH_NODE_INTERSECTION) {
-			nextPoint = next->intersection->coordinate;
+		else if (next->elem.type == MapElemType::INTERSECTION) {
+			nextPoint = next->elem.intersection->coordinate;
 		}
 	}
-	else if (type == PATH_NODE_INTERSECTION) {
+	else if (elem.type == MapElemType::INTERSECTION) {
+		Intersection* intersection = elem.intersection;
+
 		nextPoint = intersection->coordinate;
 
-		if (next && next->type == PATH_NODE_BUILDING) {
-			// TODO: implement this if buildings are connected to intersections
+		if (next && next->elem.type == MapElemType::BUILDING) {
+			nextPoint = next->elem.building->connectPointFar;
 		}
 	}
 
@@ -409,36 +476,40 @@ Point PathNode::NextPoint(Point startPoint) {
 bool PathNode::IsEndPoint(Point point) {
 	bool result = false;
 
-	if (type == PATH_NODE_BUILDING) {
+	if (elem.type == MapElemType::BUILDING) {
+		Building* building = elem.building;
+
 		if (!next) {
 			result = (point == building->connectPointClose);
 		}
-		else if (next->type == PATH_NODE_BUILDING) {
-			Building* nextBuilding = next->building;
+		else if (next->elem.type == MapElemType::BUILDING) {
+			Building* nextBuilding = next->elem.building;
 
-			if (building->connectBuilding == nextBuilding) result = (point == building->connectPointFar);
-			else if (nextBuilding->connectBuilding == building) result = (point == nextBuilding->connectPointFar);
+			if (building->connectElem.building == nextBuilding) result = (point == building->connectPointFar);
+			else if (nextBuilding->connectElem.building == building) result = (point == nextBuilding->connectPointFar);
 		}
-		else if (next->type == PATH_NODE_ROAD) {
+		else if (next->elem.type == MapElemType::ROAD) {
 			result = (point == building->connectPointFar);
 		}
 	}
-	else if (type == PATH_NODE_ROAD) {
+	else if (elem.type == MapElemType::ROAD) {
 		if (!next) {
 			// NOTE: path should not end with a road
 		}
-		else if (next->type == PATH_NODE_BUILDING) {
-			result = (point == next->building->connectPointFar);
+		else if (next->elem.type == MapElemType::BUILDING) {
+			result = (point == next->elem.building->connectPointFar);
 		}
-		else if (next->type == PATH_NODE_INTERSECTION) {
-			result = (point == next->intersection->coordinate);
+		else if (next->elem.type == MapElemType::INTERSECTION) {
+			result = (point == next->elem.intersection->coordinate);
 		}
 	}
-	else if (type == PATH_NODE_INTERSECTION) {
+	else if (elem.type == MapElemType::INTERSECTION) {
+		Intersection* intersection = elem.intersection;
+
 		result = (point == intersection->coordinate);
 
-		if (next && next->type == PATH_NODE_BUILDING) {
-			// TODO: implement this if buildings are connected to intersections
+		if (next && next->elem.type == MapElemType::BUILDING) {
+			result = (point == next->elem.building->connectPointFar);
 		}
 	}
 
