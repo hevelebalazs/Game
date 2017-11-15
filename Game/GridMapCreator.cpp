@@ -360,48 +360,12 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	delete[] gridAreas;
 	delete[] buildAreas;
 
-	for (int i = 0; i < map.buildingCount; ++i) {
-		Building* building = &map.buildings[i];
-
-		Point center = {};
-		center.x = (building->left + building->right) * 0.5f;
-		center.y = (building->top + building->bottom) * 0.5f;
-
-		MapElem closestElem = map.ClosestRoadOrIntersection(center);
-		building->connectElem = closestElem;
-
-		if (closestElem.type > 4) throw 1;
-		if (closestElem.type == MapElemType::BUILDING) throw 1;
-
-		building->ConnectTo(closestElem);
-
-		Building* crossedBuilding = map.ClosestCrossedBuilding(building->connectPointClose, building->connectPointFar, building);
-		if (crossedBuilding) {
-			// TODO: create a function for this?
-			MapElem elem = {};
-			elem.type = MapElemType::BUILDING;
-			elem.building = crossedBuilding;
-
-			if (crossedBuilding->connectElem.type > 4) throw 1;
-
-			// building->ConnectTo(elem);
-		}
-	}
-
-	for (int i = 0; i < map.buildingCount; ++i) {
-		Building* building = &map.buildings[i];
-
-		if (building->connectTreeHeight == 0) {
-			CalculateTreeHeight(building);
-		}
-	}
-
 	int realIntersectionCount = 0;
 	for (int i = 0; i < intersectionCount; ++i) {
 		Intersection* oldIntersection = &map.intersections[i];
 		Intersection* newIntersection = &map.intersections[realIntersectionCount];
 		int isIntersectionReal = 0;
-		
+
 		if (oldIntersection->leftRoad) {
 			if (oldIntersection->leftRoad->intersection1 == oldIntersection) {
 				oldIntersection->leftRoad->intersection1 = newIntersection;
@@ -449,6 +413,39 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	}
 
 	map.intersectionCount = realIntersectionCount;
+
+	Building::connectRoadWidth = roadWidth / 5.0f;
+
+	for (int i = 0; i < map.buildingCount; ++i) {
+		Building* building = &map.buildings[i];
+
+		Point center = {};
+		center.x = (building->left + building->right) * 0.5f;
+		center.y = (building->top + building->bottom) * 0.5f;
+
+		MapElem closestElem = map.ClosestRoadOrIntersection(center);
+		building->ConnectTo(closestElem);
+
+		Building* crossedBuilding = map.ClosestCrossedBuilding(building->connectPointClose, building->connectPointFar, building);
+		if (crossedBuilding) {
+			crossedBuilding->roadAround = 1;
+
+			// TODO: create a function for this?
+			MapElem elem = {};
+			elem.type = MapElemType::BUILDING;
+			elem.building = crossedBuilding;
+
+			building->ConnectTo(elem);
+		}
+	}
+
+	for (int i = 0; i < map.buildingCount; ++i) {
+		Building* building = &map.buildings[i];
+
+		if (building->connectTreeHeight == 0) {
+			CalculateTreeHeight(building);
+		}
+	}
 
 	return map;
 }

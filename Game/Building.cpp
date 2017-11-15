@@ -1,4 +1,5 @@
 #include "Building.h"
+#include <math.h>
 
 float Building::connectRoadWidth;
 
@@ -29,7 +30,7 @@ void Building::ConnectTo(MapElem elem) {
 			connectPointFarShow.y = center.y;
 			connectPointClose.y = center.y;
 			
-			if (right < road->endPoint1.y && right < road->endPoint2.y) {
+			if (right < road->endPoint1.x) {
 				connectPointFarShow.x = road->endPoint1.x - (road->width * 0.5f);
 				connectPointClose.x = right;
 			}
@@ -38,13 +39,13 @@ void Building::ConnectTo(MapElem elem) {
 				connectPointClose.x = left;
 			}
 		}
-		else if (road->endPoint2.y == road->endPoint2.y) {
+		else if (road->endPoint1.y == road->endPoint2.y) {
 			connectPointFar.y = road->endPoint1.y;
 			connectPointFar.x = center.x;
 			connectPointFarShow.x = center.x;
 			connectPointClose.x = center.x;
 
-			if (bottom < road->endPoint1.x && bottom < road->endPoint2.x) {
+			if (bottom < road->endPoint1.y) {
 				connectPointFarShow.y = road->endPoint1.y - (road->width * 0.5f);
 				connectPointClose.y = bottom;
 			}
@@ -59,7 +60,12 @@ void Building::ConnectTo(MapElem elem) {
 
 		float halfRoadWidth = intersection->GetRoadWidth() * 0.5f;
 
-		if ((intersection->coordinate.x - halfRoadWidth <= center.x) && (center.x <= intersection->coordinate.x + halfRoadWidth)) {
+		bool betweenX = (fabsf(center.x - intersection->coordinate.x) <= halfRoadWidth);
+		bool betweenY = (fabsf(center.y - intersection->coordinate.y) <= halfRoadWidth);
+
+		if (!betweenX && !betweenY) throw 1;
+
+		if (betweenX) {
 			connectPointFar.y = intersection->coordinate.y;
 			connectPointFar.x = center.x;
 			connectPointFarShow.x = center.x;
@@ -74,7 +80,7 @@ void Building::ConnectTo(MapElem elem) {
 				connectPointClose.y = bottom;
 			}
 		}
-		else {
+		else if (betweenY) {
 			connectPointFar.x = intersection->coordinate.x;
 			connectPointFar.y = center.y;
 			connectPointFarShow.y = center.y;
@@ -92,8 +98,6 @@ void Building::ConnectTo(MapElem elem) {
 	}
 	else if (elem.type == MapElemType::BUILDING) {
 		Building* building = elem.building;
-
-		if (building->connectElem.type > 4) throw 1;
 
 		connectPointFar = building->ClosestCrossPoint(connectPointClose, connectPointFar);
 		connectPointFarShow = connectPointFar;
@@ -147,10 +151,6 @@ void Building::HighLight(Renderer renderer, Color color) {
 }
 
 void Building::Draw(Renderer renderer) {
-	if (top > bottom || left > right) {
-		color = Color{0.0f, 0.0f, 1.0f};
-	}
-
 	// TODO: make this a static member of Road?
 	Color roadColor = Color{0.5f, 0.5f, 0.5f};
 	

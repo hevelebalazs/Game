@@ -1,3 +1,4 @@
+
 #include "Map.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +57,7 @@ MapElem Map::ClosestRoadOrIntersection(Point point) {
 	}
 
 	Intersection* closestIntersection = 0;
-	for (int i = 0; i < roadCount; ++i) {
+	for (int i = 0; i < intersectionCount; ++i) {
 		Intersection* intersection = &intersections[i];
 
 		float halfRoadWidth = intersection->GetRoadWidth() * 0.5f;

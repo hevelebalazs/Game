@@ -22,8 +22,8 @@ void Human::Update(float seconds) {
 			targetElem.building = moveTargetBuilding;
 
 			MapElem nextElem = {};
-			targetElem.type = MapElemType::BUILDING;
-			targetElem.building = nextBuilding;
+			nextElem.type = MapElemType::BUILDING;
+			nextElem.building = nextBuilding;
 
 			movePath = ConnectElems(map, targetElem, nextElem, moveHelper);
 
@@ -70,6 +70,8 @@ void Human::Update(float seconds) {
 			}
 		}
 	}
+
+	if (moveEndPoint.x == 0.0f && moveEndPoint.y == 0.0f) throw 1;
 }
 
 void Human::Draw(Renderer renderer) {

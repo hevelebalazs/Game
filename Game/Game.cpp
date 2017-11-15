@@ -15,7 +15,6 @@ static bool running;
 Renderer globalRenderer;
 Map globalMap;
 Intersection* globalSelectedIntersection;
-PlayerVehicle globalPlayerVehicle;
 
 Building* globalSelectedBuilding;
 Building* globalHighlightedBuilding;
@@ -24,7 +23,7 @@ PathHelper globalPathHelper;
 Path globalBuildingPath;
 
 Human globalHumans[100];
-int globalHumanCount = 1;
+int globalHumanCount = 100;
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
@@ -91,8 +90,6 @@ void WinDraw(HWND window, Renderer renderer) {
 		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
 	}
 
-	globalPlayerVehicle.vehicle.Draw(renderer);
-
 	for (int i = 0; i < globalHumanCount; ++i) {
 		Human* human = &globalHumans[i];
 
@@ -142,49 +139,9 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	} break;
 
 	case WM_KEYUP: {
-		WPARAM keyCode = wparam;
-
-		switch (keyCode) {
-
-		case 'W': {
-			globalPlayerVehicle.engineForce = 0.0f;
-		} break;
-		case 'S': {
-			globalPlayerVehicle.engineForce = 0.0f;
-		} break;
-		case 'A': {
-			globalPlayerVehicle.turnAngle = 0.0f;
-		} break;
-
-		case 'D': {
-			globalPlayerVehicle.turnAngle = 0.0f;
-		}
-
-		}
 	} break;
 
 	case WM_KEYDOWN: {
-		WPARAM keyCode = wparam;
-
-		switch (keyCode) {
-
-		case 'W': {
-			globalPlayerVehicle.engineForce = globalPlayerVehicle.maxEngineForce;
-		} break;
-
-		case 'S': {
-			globalPlayerVehicle.engineForce = -globalPlayerVehicle.breakForce;
-		} break;
-
-		case 'A': {
-			globalPlayerVehicle.turnAngle = -0.75f;
-		} break;
-
-		case 'D': {
-			globalPlayerVehicle.turnAngle = 0.75f;
-		}	
-
-		}
 	} break;
 
 	case WM_DESTROY: {
@@ -250,16 +207,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	globalMap = CreateGridMap((float)width, (float)height, 100);
 	globalPathHelper = PathHelperForMap(&globalMap);
 
-	globalPlayerVehicle.vehicle.position = { (float)width / 2.0f, (float)height / 2.0f };
-	globalPlayerVehicle.vehicle.angle = 0.0f;
-	globalPlayerVehicle.vehicle.color = { 1.0f, 0.0f, 0.0f };
-	globalPlayerVehicle.vehicle.width = 5.0f;
-	globalPlayerVehicle.vehicle.length = 8.0f;
-
-	globalPlayerVehicle.mass = 200.0f;
-	globalPlayerVehicle.maxEngineForce = 1000.0f;
-	globalPlayerVehicle.breakForce = 1000.0f;
-
 	for (int i = 0; i < globalHumanCount; ++i) {
 		Human* human = &globalHumans[i];
 
@@ -292,8 +239,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		}
 
 		// TODO: create a GameUpdate function
-		globalPlayerVehicle.Update(globalTargetFrameS);
-
 		for (int i = 0; i < globalHumanCount; ++i) {
 			Human* human = &globalHumans[i];
 
