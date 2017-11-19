@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BuildingType.h"
 #include "Renderer.h"
 #include "Point.h"
 #include "Road.h"
@@ -10,6 +11,8 @@ struct MapElem;
 
 struct Building {
 	static float connectRoadWidth;
+
+	BuildingType type;
 
 	float top;
 	float left;
@@ -25,8 +28,6 @@ struct Building {
 	int connectTreeHeight;
 
 	MapElem connectElem;
-
-	Color color;
 
 	void ConnectTo(MapElem elem);
 

@@ -71,8 +71,6 @@ static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, f
 		building->top = area.top;
 		building->bottom = area.bottom;
 
-		building->color = Color{ 0.0f, 0.0f, 0.0f };
-
 		map->buildingCount++;
 	}
 }
@@ -445,6 +443,8 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		if (building->connectTreeHeight == 0) {
 			CalculateTreeHeight(building);
 		}
+
+		building->type = (BuildingType)(rand() % 4);
 	}
 
 	return map;

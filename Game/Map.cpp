@@ -98,6 +98,31 @@ Building* Map::GetRandomBuilding() {
 
 	return &buildings[buildingIndex];
 }
+
+Building* Map::GetClosestBuilding(Point point, BuildingType type) {
+	Building* result = 0;
+	float minDistanceSquare = 0.0f;
+
+	for (int i = 0; i < buildingCount; ++i) {
+		Building* building = &buildings[i];
+		if (building->type != type) continue;
+
+		// TODO: make a function for this, since it is used a lot?
+		Point center = {
+			(building->left + building->right) * 0.5f,
+			(building->top + building->bottom) * 0.5f
+		};
+
+		float distanceSquare = Point::DistanceSquare(point, center);
+
+		if (!result || distanceSquare < minDistanceSquare) {
+			result = building;
+			minDistanceSquare = distanceSquare;
+		}
+	}
+
+	return result;
+}
  
 Building* Map::ClosestCrossedBuilding(Point pointClose, Point pointFar, Building *excludedBuilding) {
 	Building* result = 0;

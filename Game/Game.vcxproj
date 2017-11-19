@@ -133,6 +133,7 @@
     <ClInclude Include="AutoVehicle.h" />
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Building.h" />
+    <ClInclude Include="BuildingType.h" />
     <ClInclude Include="GridMapCreator.h" />
     <ClInclude Include="Human.h" />
     <ClInclude Include="Intersection.h" />

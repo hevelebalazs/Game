@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Intersection.h"
+#include "BuildingType.h"
 #include "Building.h"
 #include "Renderer.h"
 #include "MapElem.h"
@@ -24,6 +25,7 @@ struct Map {
 	MapElem ClosestRoadOrIntersection(Point point);
 
 	Building* GetRandomBuilding();
+	Building* GetClosestBuilding(Point point, BuildingType type);
 	Building* ClosestCrossedBuilding(Point point1, Point point2, Building* excludedBuilding);
 	Building* GetBuildingAtPoint(Point point);
 

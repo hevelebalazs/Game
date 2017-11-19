@@ -13,6 +13,16 @@ struct Human {
 
 	Point position;
 
+	float needRed;
+	float needGreen;
+	float needBlue;
+
+	float needRedSpeed;
+	float needGreenSpeed;
+	float needBlueSpeed;
+
+	Building* inBuilding;
+
 	Path movePath;
 	// TODO: does this belong to this struct?
 	//       or should it be passed to Update?
@@ -24,6 +34,7 @@ struct Human {
 	float moveTotalSeconds;
 	float moveSeconds;
 
+	void MoveToBuilding(Building* building);
 	void InitMovement();
 
 	void Update(float seconds);

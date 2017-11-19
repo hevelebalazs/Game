@@ -181,6 +181,30 @@ void Building::Draw(Renderer renderer) {
 		roadColor
 	);
 
+	Color color = {};
+
+	switch (type) {
+		case BLACK: {
+				color = Color{0.0f, 0.0f, 0.0f};
+				break;
+			}
+
+		case RED: {
+				color = Color{0.5f, 0.0f, 0.0f};
+				break;
+			}
+
+		case GREEN: {
+				color = Color{0.0f, 0.5f, 0.0f};
+				break;
+			}
+
+		case BLUE: {
+				color = Color{0.0f, 0.0f, 0.5f};
+				break;
+			}
+	}
+
 	renderer.DrawRect(
 		top, left, bottom, right,
 		color

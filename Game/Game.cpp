@@ -160,6 +160,11 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	return result;
 }
 
+// TODO: move this to a math file?
+static float RandomBetween(float left, float right) {
+	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
 	WNDCLASS windowClass = {};
@@ -210,12 +215,21 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	for (int i = 0; i < globalHumanCount; ++i) {
 		Human* human = &globalHumans[i];
 
-		Building* targetBuilding = globalMap.GetRandomBuilding();
+		Building* building = globalMap.GetRandomBuilding();
 
 		human->map = &globalMap;
-		human->moveTargetBuilding = targetBuilding;
-		human->position = targetBuilding->connectPointClose;
+		human->inBuilding = building;
+		// human->moveTargetBuilding = targetBuilding;
+		human->position = building->connectPointClose;
 		human->moveHelper = &globalPathHelper;
+
+		human->needRed = RandomBetween(0.0f, 100.0f);
+		human->needGreen = RandomBetween(0.0f, 100.0f);
+		human->needBlue = RandomBetween(0.0f, 100.0f);
+
+		human->needRedSpeed = RandomBetween(1.0f, 5.0f);
+		human->needGreenSpeed = RandomBetween(1.0f, 5.0f);
+		human->needBlueSpeed = RandomBetween(1.0f, 5.0f);
 	}
 
 	timeBeginPeriod(1);
