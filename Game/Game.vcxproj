@@ -114,6 +114,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AutoHuman.cpp" />
     <ClCompile Include="AutoVehicle.cpp" />
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="Building.cpp" />
@@ -123,6 +124,7 @@
     <ClCompile Include="Intersection.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Path.cpp" />
+    <ClCompile Include="PlayerHuman.cpp" />
     <ClCompile Include="PlayerVehicle.cpp" />
     <ClCompile Include="Point.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -130,6 +132,7 @@
     <ClCompile Include="Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AutoHuman.h" />
     <ClInclude Include="AutoVehicle.h" />
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Building.h" />
@@ -140,6 +143,7 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapElem.h" />
     <ClInclude Include="Path.h" />
+    <ClInclude Include="PlayerHuman.h" />
     <ClInclude Include="PlayerVehicle.h" />
     <ClInclude Include="Point.h" />
     <ClInclude Include="Renderer.h" />

@@ -57,6 +57,12 @@
     <ClCompile Include="Human.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="AutoHuman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerHuman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Intersection.h">
@@ -102,6 +108,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BuildingType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AutoHuman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerHuman.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

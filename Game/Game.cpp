@@ -1,14 +1,19 @@
+// TODO: separate Windows and Game layers
+
 #include <Windows.h>
 #include <math.h>
 #include <stdio.h>
-#include "GridMapCreator.h"
-#include "Bitmap.h"
-#include "Renderer.h"
-#include "Path.h"
-#include "Vehicle.h"
+
+#include "AutoHuman.h"
 #include "AutoVehicle.h"
-#include "PlayerVehicle.h"
+#include "Bitmap.h"
+#include "GridMapCreator.h"
 #include "Human.h"
+#include "Path.h"
+#include "PlayerHuman.h"
+#include "PlayerVehicle.h"
+#include "Renderer.h"
+#include "Vehicle.h"
 
 static bool running;
 
@@ -22,8 +27,10 @@ Building* globalHighlightedBuilding;
 PathHelper globalPathHelper;
 Path globalBuildingPath;
 
-Human globalHumans[100];
-int globalHumanCount = 100;
+AutoHuman globalAutoHumans[100];
+int globalAutoHumanCount = 100;
+
+PlayerHuman globalPlayerHuman;
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
@@ -69,32 +76,13 @@ static Point WinMousePosition(HWND window) {
 	return point;
 }
 
+void GameDraw(Renderer renderer);
+
 void WinDraw(HWND window, Renderer renderer) {
 	Point mousePoint = WinMousePosition(window);
 	Intersection *highlightIntersection = globalMap.GetIntersectionAtPoint(mousePoint, 20.0f);
 
-	globalMap.Draw(renderer);
-
-	if (globalSelectedBuilding) {
-		Color highlightColor = {0.0f, 1.0f, 1.0f};
-		globalSelectedBuilding->HighLight(globalRenderer, highlightColor);
-	}
-
-	if (globalHighlightedBuilding) {
-		Color highlightColor = {0.0f, 1.0f, 1.0f};
-		globalHighlightedBuilding->HighLight(globalRenderer, highlightColor);
-	}
-
-	if (globalBuildingPath.nodeCount > 0 && globalSelectedBuilding && globalHighlightedBuilding) {
-		Color color = {0.0f, 1.0f, 1.0f};
-		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
-	}
-
-	for (int i = 0; i < globalHumanCount; ++i) {
-		Human* human = &globalHumans[i];
-
-		human->Draw(renderer);
-	}
+	GameDraw(renderer);
 }
 
 void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
@@ -118,43 +106,91 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	LRESULT result = 0;
 
 	switch (message) {
-	case WM_SIZE: {
-		RECT clientRect;
-		GetClientRect(window, &clientRect);
-		int width = clientRect.right - clientRect.left;
-		int height = clientRect.bottom - clientRect.top;
-		WinResize(&globalRenderer, width, height);
-	}
+		case WM_SIZE: {
+			RECT clientRect;
+			GetClientRect(window, &clientRect);
+			int width = clientRect.right - clientRect.left;
+			int height = clientRect.bottom - clientRect.top;
+			WinResize(&globalRenderer, width, height);
+			break;
+		}
 
-	case WM_PAINT: {
-		PAINTSTRUCT paint;
-		HDC context = BeginPaint(window, &paint);
+		case WM_PAINT: {
+			PAINTSTRUCT paint;
+			HDC context = BeginPaint(window, &paint);
 		
-		RECT clientRect;
-		GetClientRect(window, &clientRect);
+			RECT clientRect;
+			GetClientRect(window, &clientRect);
 
-		WinUpdate(globalRenderer, context, clientRect);
+			WinUpdate(globalRenderer, context, clientRect);
 
-		EndPaint(window, &paint);
-	} break;
+			EndPaint(window, &paint);
+			break;
+		}
 
-	case WM_KEYUP: {
-	} break;
+		case WM_KEYUP: {
+			WPARAM keyCode = wparam;
 
-	case WM_KEYDOWN: {
-	} break;
+			switch (keyCode) {
+				case 'W': {
+					globalPlayerHuman.moveUp = false;
+					break;
+				}
+				case 'S': {
+					globalPlayerHuman.moveDown = false;
+					break;
+				}
+				case 'A': {
+					globalPlayerHuman.moveLeft = false;
+					break;
+				}
+				case 'D': {
+					globalPlayerHuman.moveRight = false;
+					break;
+				}
+			}
+			break;
+		}
 
-	case WM_DESTROY: {
-		running = false;
-	} break;
+		case WM_KEYDOWN: {
+			WPARAM keyCode = wparam;
 
-	case WM_CLOSE: {
-		running = false;
-	} break;
+			switch (keyCode) {
+				case 'W': {
+					globalPlayerHuman.moveUp = true;
+					break;
+				}
+				case 'S': {
+					globalPlayerHuman.moveDown = true;
+					break;
+				}
+				case 'A': {
+					globalPlayerHuman.moveLeft = true;
+					break;
+				}
+				case 'D': {
+					globalPlayerHuman.moveRight = true;
+					break;
+				}
+			}
 
-	default: {
-		result = DefWindowProc(window, message, wparam, lparam);
-	} break;
+			break;
+		}
+
+		case WM_DESTROY: {
+			running = false;
+			break;
+		}
+
+		case WM_CLOSE: {
+			running = false;
+			break;
+		}
+
+		default: {
+			result = DefWindowProc(window, message, wparam, lparam);
+			break;
+		}
 	}
 
 	return result;
@@ -165,6 +201,94 @@ static float RandomBetween(float left, float right) {
 	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
 }
 
+static void GameInit(int windowWidth, int windowHeight) {
+	globalMap = CreateGridMap((float)windowWidth, (float)windowHeight, 100);
+	globalPathHelper = PathHelperForMap(&globalMap);
+
+	for (int i = 0; i < globalAutoHumanCount; ++i) {
+		AutoHuman* autoHuman = &globalAutoHumans[i];
+		Human* human = &autoHuman->human;
+
+		Building* building = globalMap.GetRandomBuilding();
+
+		human->map = &globalMap;
+		autoHuman->inBuilding = building;
+		human->position = building->connectPointClose;
+		autoHuman->moveHelper = &globalPathHelper;
+
+		human->needRed = RandomBetween(0.0f, 100.0f);
+		human->needGreen = RandomBetween(0.0f, 100.0f);
+		human->needBlue = RandomBetween(0.0f, 100.0f);
+
+		autoHuman->needRedSpeed = RandomBetween(1.0f, 5.0f);
+		autoHuman->needGreenSpeed = RandomBetween(1.0f, 5.0f);
+		autoHuman->needBlueSpeed = RandomBetween(1.0f, 5.0f);
+	}
+
+	globalPlayerHuman.human.position = Point{(float)windowWidth, (float)windowHeight} * 0.5f;
+
+	globalRenderer.camera.pixelCoordRatio = 10.0f;
+}
+
+// TODO: pass seconds to this function
+// TODO: get rid of the mousePosition parameter?
+static void GameUpdate(Point mousePosition) {
+	for (int i = 0; i < globalAutoHumanCount; ++i) {
+		AutoHuman* human = &globalAutoHumans[i];
+
+		human->Update(globalTargetFrameS);
+	}
+
+	globalPlayerHuman.Update(globalTargetFrameS);
+
+	globalHighlightedBuilding = globalMap.GetBuildingAtPoint(mousePosition);
+
+	if (globalSelectedBuilding && globalHighlightedBuilding && globalSelectedBuilding != globalHighlightedBuilding) {
+		ClearPath(&globalBuildingPath);
+
+		// TODO: create a function for these?
+		MapElem selectedBuildingElem = {};
+		selectedBuildingElem.type = MapElemType::BUILDING;
+		selectedBuildingElem.building = globalSelectedBuilding;
+
+		MapElem highlightedBuildingElem = {};
+		highlightedBuildingElem.type = MapElemType::BUILDING;
+		highlightedBuildingElem.building = globalHighlightedBuilding;
+
+		globalBuildingPath = ConnectElems(&globalMap, selectedBuildingElem, highlightedBuildingElem, &globalPathHelper);
+	}
+
+	globalRenderer.camera.center = globalPlayerHuman.human.position;
+}
+
+static void GameDraw(Renderer renderer) {
+	globalMap.Draw(renderer);
+
+	if (globalSelectedBuilding) {
+		Color highlightColor = {0.0f, 1.0f, 1.0f};
+		globalSelectedBuilding->HighLight(globalRenderer, highlightColor);
+	}
+
+	if (globalHighlightedBuilding) {
+		Color highlightColor = {0.0f, 1.0f, 1.0f};
+		globalHighlightedBuilding->HighLight(globalRenderer, highlightColor);
+	}
+
+	if (globalBuildingPath.nodeCount > 0 && globalSelectedBuilding && globalHighlightedBuilding) {
+		Color color = {0.0f, 1.0f, 1.0f};
+		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
+	}
+
+	for (int i = 0; i < globalAutoHumanCount; ++i) {
+		Human* human = &globalAutoHumans[i].human;
+
+		human->Draw(renderer);
+	}
+
+	globalPlayerHuman.human.Draw(renderer);
+}
+
+// TODO: create a GameState struct for the globals?
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
 	WNDCLASS windowClass = {};
@@ -205,32 +329,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	RECT rect;
 	GetClientRect(window, &rect);
 
-	// TODO: create a GameInit function
-	// TODO: create a GameState struct for the globals?
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-	globalMap = CreateGridMap((float)width, (float)height, 100);
-	globalPathHelper = PathHelperForMap(&globalMap);
 
-	for (int i = 0; i < globalHumanCount; ++i) {
-		Human* human = &globalHumans[i];
-
-		Building* building = globalMap.GetRandomBuilding();
-
-		human->map = &globalMap;
-		human->inBuilding = building;
-		// human->moveTargetBuilding = targetBuilding;
-		human->position = building->connectPointClose;
-		human->moveHelper = &globalPathHelper;
-
-		human->needRed = RandomBetween(0.0f, 100.0f);
-		human->needGreen = RandomBetween(0.0f, 100.0f);
-		human->needBlue = RandomBetween(0.0f, 100.0f);
-
-		human->needRedSpeed = RandomBetween(1.0f, 5.0f);
-		human->needGreenSpeed = RandomBetween(1.0f, 5.0f);
-		human->needBlueSpeed = RandomBetween(1.0f, 5.0f);
-	}
+	GameInit(width, height);
 
 	timeBeginPeriod(1);
 
@@ -252,30 +354,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 			DispatchMessageA(&message);
 		}
 
-		// TODO: create a GameUpdate function
-		for (int i = 0; i < globalHumanCount; ++i) {
-			Human* human = &globalHumans[i];
-
-			human->Update(globalTargetFrameS);
-		}
-
 		Point mousePosition = WinMousePosition(window);
-		globalHighlightedBuilding = globalMap.GetBuildingAtPoint(mousePosition);
-
-		if (globalSelectedBuilding && globalHighlightedBuilding && globalSelectedBuilding != globalHighlightedBuilding) {
-			ClearPath(&globalBuildingPath);
-
-			// TODO: create a function for these?
-			MapElem selectedBuildingElem = {};
-			selectedBuildingElem.type = MapElemType::BUILDING;
-			selectedBuildingElem.building = globalSelectedBuilding;
-
-			MapElem highlightedBuildingElem = {};
-			highlightedBuildingElem.type = MapElemType::BUILDING;
-			highlightedBuildingElem.building = globalHighlightedBuilding;
-
-			globalBuildingPath = ConnectElems(&globalMap, selectedBuildingElem, highlightedBuildingElem, &globalPathHelper);
-		}
+		GameUpdate(mousePosition);
 
 		WinDraw(window, globalRenderer);
 
