@@ -26,6 +26,7 @@ struct Map {
 
 	Building* GetRandomBuilding();
 	Building* GetClosestBuilding(Point point, BuildingType type);
+	BuildingCrossInfo ClosestExtBuildingCrossInfo(Point point1, Point point2, float radius);
 	Building* ClosestCrossedBuilding(Point point1, Point point2, Building* excludedBuilding);
 	Building* GetBuildingAtPoint(Point point);
 

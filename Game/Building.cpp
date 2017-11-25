@@ -1,5 +1,7 @@
-#include "Building.h"
 #include <math.h>
+
+#include "Building.h"
+#include "Geometry.h"
 
 float Building::connectRoadWidth;
 
@@ -112,32 +114,123 @@ bool Building::IsPointInside(Point point) {
 	return true;
 }
 
+static bool IsTouching(Building* building, Point point) {
+	if (point.x == building->left) return true;
+	if (point.x == building->right) return true;
+	if (point.y == building->top) return true;
+	if (point.y == building->bottom) return true;
+
+	return false;
+}
+
+// TODO: can this be merged with ClosestCrossPoint?
 bool Building::IsCrossed(Point point1, Point point2) {
-	if (point1.x < left && point2.x < left) return false;
-	if (point1.x > right && point2.x > right) return false;
-	if (point1.y < top && point2.y < top) return false;
-	if (point1.y > bottom && point2.y > bottom) return false;
-	return true;
+	if (IsTouching(this, point1)) return true;
+	if (IsTouching(this, point2)) return true;
+
+	Point topLeft = {left, top};
+	Point topRight = {right, top};
+	Point bottomLeft = {left, bottom};
+	Point bottomRight = {right, bottom};
+
+	if (DoLinesCross(topLeft, topRight, point1, point2)) return true;
+	if (DoLinesCross(topRight, bottomRight, point1, point2)) return true;
+	if (DoLinesCross(bottomRight, bottomLeft, point1, point2)) return true;
+	if (DoLinesCross(bottomLeft, topLeft, point1, point2)) return true;
+
+	return false;
+}
+
+BuildingCrossInfo Building::ExtClosestCrossInfo(Point closePoint, Point farPoint, float radius) {
+	BuildingCrossInfo result = {};
+	float minDistanceSquare = 0.0f;
+	bool foundAny = false;
+
+	Point topLeft     = {left  - radius, top    - radius};
+	Point topRight    = {right + radius, top    - radius};
+	Point bottomLeft  = {left  - radius, bottom + radius};
+	Point bottomRight = {right + radius, bottom + radius};
+	Point points[5] = {topLeft, topRight, bottomRight, bottomLeft, topLeft};
+
+	for (int i = 0; i < 4; ++i) {
+		Point corner1 = points[i];
+		Point corner2 = points[i + 1];
+
+		if (DoLinesCross(corner1, corner2, closePoint, farPoint)) {
+			Point intersection = LineIntersection(corner1, corner2, closePoint, farPoint);
+			float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+
+			if (foundAny == false || distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				foundAny = true;
+
+				result.building = this;
+				result.crossPoint = intersection;
+				result.corner1 = corner1;
+				result.corner2 = corner2;
+			}
+		}
+	}
+
+	return result;
 }
 
 Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
 	Point result = {};
+	float minDistanceSquare = 0.0f;
+	bool foundAny = false;
 
-	if (closePoint.x < farPoint.x) {
-		result.x = left;
-		result.y = closePoint.y;
+	Point topLeft = {left, top};
+	Point topRight = {right, top};
+	Point bottomLeft = {left, bottom};
+	Point bottomRight = {right, bottom};
+
+	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) {
+		Point intersection = LineIntersection(topLeft, topRight, closePoint, farPoint);
+		intersection.y = top;
+		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
 	}
-	else if (closePoint.x > farPoint.x) {
-		result.x = right;
-		result.y = closePoint.y;
+
+	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) {
+		Point intersection = LineIntersection(topRight, bottomRight, closePoint, farPoint);
+		intersection.x = right;
+		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
 	}
-	else if (closePoint.y < farPoint.y) {
-		result.x = closePoint.x;
-		result.y = top;
+
+	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) {
+		Point intersection = LineIntersection(bottomRight, bottomLeft, closePoint, farPoint);
+		intersection.y = bottom;
+		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
 	}
-	else if (closePoint.y > farPoint.y) {
-		result.x = closePoint.x;
-		result.y = bottom;
+
+	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) {
+		Point intersection = LineIntersection(bottomLeft, topLeft, closePoint, farPoint);
+		intersection.x = left;
+		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
 	}
 
 	return result;

@@ -4,16 +4,23 @@
 #include "Renderer.h"
 #include "Point.h"
 #include "Road.h"
-#include "Map.h"
 #include "MapElem.h"
 
 struct MapElem;
+
+struct BuildingCrossInfo {
+	Building* building;
+	Point crossPoint;
+	Point corner1;
+	Point corner2;
+};
 
 struct Building {
 	static float connectRoadWidth;
 
 	BuildingType type;
 
+	// TODO: save four corner points instead
 	float top;
 	float left;
 	float bottom;
@@ -33,6 +40,7 @@ struct Building {
 
 	bool IsPointInside(Point point);
 	bool IsCrossed(Point point1, Point point2);
+	BuildingCrossInfo ExtClosestCrossInfo(Point closePoint, Point farPoint, float radius);
 	Point ClosestCrossPoint(Point closePoint, Point farPoint);
 
 	void HighLight(Renderer renderer, Color color);

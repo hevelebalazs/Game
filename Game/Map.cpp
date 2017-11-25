@@ -123,13 +123,35 @@ Building* Map::GetClosestBuilding(Point point, BuildingType type) {
 
 	return result;
 }
- 
+
+BuildingCrossInfo Map::ClosestExtBuildingCrossInfo(Point closePoint, Point farPoint, float radius) {
+	BuildingCrossInfo result = {};
+	float minDistanceSquare = 0.0f;
+
+	for (int i = 0; i < buildingCount; ++i) {
+		Building* building = &buildings[i];
+
+		BuildingCrossInfo crossInfo = building->ExtClosestCrossInfo(closePoint, farPoint, radius);
+		if (crossInfo.building) {
+			// TODO: is it a problem that this distanceSquare is calculated twice?
+			float distanceSquare = Point::DistanceSquare(closePoint, crossInfo.crossPoint);
+
+			if (!result.building || distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				result = crossInfo;
+			}
+		}
+	}
+	
+	return result;
+}
+
 Building* Map::ClosestCrossedBuilding(Point pointClose, Point pointFar, Building *excludedBuilding) {
 	Building* result = 0;
 	float minDistanceSquare = 0.0f;
 
 	for (int i = 0; i < buildingCount; ++i) {
-		Building *building = &buildings[i];
+		Building* building = &buildings[i];
 
 		if (building == excludedBuilding) continue;
 

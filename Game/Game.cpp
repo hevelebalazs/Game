@@ -226,6 +226,7 @@ static void GameInit(int windowWidth, int windowHeight) {
 	}
 
 	globalPlayerHuman.human.position = Point{(float)windowWidth, (float)windowHeight} * 0.5f;
+	globalPlayerHuman.human.map = &globalMap;
 
 	globalRenderer.camera.pixelCoordRatio = 10.0f;
 }

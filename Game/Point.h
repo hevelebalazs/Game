@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: rename this to Vector
 struct Point {
 	static float DistanceSquare(Point point1, Point point2);
 	static float CityDistance(Point point1, Point point2);

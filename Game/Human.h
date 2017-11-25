@@ -7,6 +7,7 @@
 #include "Path.h"
 
 struct Human {
+	static float radius;
 	static float moveSpeed;
 
 	float needRed;
