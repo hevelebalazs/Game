@@ -12,7 +12,6 @@ static void MoveHuman(Human* human, Point moveVector) {
 	while (distanceToGo > 0.0f) {
 		Point pointToGo = human->position + moveVector;
 
-		// TODO: create a function that returns all collision info (building, wall, intersection point)
 		BuildingCrossInfo crossInfo = human->map->ClosestExtBuildingCrossInfo(human->position, pointToGo, human->radius);
 
 		Building* crossedBuilding = crossInfo.building;

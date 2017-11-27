@@ -412,6 +412,12 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 	map.intersectionCount = realIntersectionCount;
 
+	for (int i = 0; i < map.intersectionCount; ++i) {
+		Intersection* intersection = &map.intersections[i];
+
+		intersection->InitTrafficLights();
+	}
+
 	Building::connectRoadWidth = roadWidth / 5.0f;
 
 	for (int i = 0; i < map.buildingCount; ++i) {

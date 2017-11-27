@@ -1,5 +1,120 @@
 #include "Intersection.h"
 
+float TrafficLight::radius = 0.5f;
+float TrafficLight::switchTime = 3.0f;
+
+void TrafficLight::Start() {
+	color = TrafficLight_Green;
+	timeLeft = TrafficLight::switchTime;
+}
+
+void TrafficLight::Update(float seconds) {
+	if (color == TrafficLight_Green) {
+		timeLeft -= seconds;
+
+		if (timeLeft < 0.0f) color = TrafficLight_Red;
+	}
+}
+
+void TrafficLight::Draw(Renderer renderer) {
+	Color drawColor = {};
+
+	if (color == TrafficLight_Green)    drawColor = {0.0f, 1.0f, 0.0f};
+	else if (color == TrafficLight_Red) drawColor = {1.0f, 0.0f, 0.0f};
+
+	renderer.DrawRect(
+		position.y - radius, position.x - radius,
+		position.y + radius, position.x + radius,
+		drawColor
+	);
+}
+
+void Intersection::InitTrafficLights() {
+	int roadCount = 0;
+	if (leftRoad)   roadCount++;
+	if (rightRoad)  roadCount++;
+	if (topRoad)    roadCount++;
+	if (bottomRoad) roadCount++;
+
+	if (roadCount <= 2) return;
+
+	float roadWidth = this->GetRoadWidth();
+
+	if (leftRoad)   leftTrafficLight.position   = {coordinate.x - roadWidth * 0.5f,  coordinate.y + roadWidth * 0.25f};
+	if (rightRoad)  rightTrafficLight.position  = {coordinate.x + roadWidth * 0.5f,  coordinate.y - roadWidth * 0.25f};
+	if (topRoad)    topTrafficLight.position    = {coordinate.x - roadWidth * 0.25f, coordinate.y - roadWidth * 0.5f};
+	if (bottomRoad) bottomTrafficLight.position = {coordinate.x + roadWidth * 0.25f, coordinate.y + roadWidth * 0.5f};
+
+	if (leftRoad)   leftTrafficLight.color   = TrafficLight_Red;
+	if (rightRoad)  rightTrafficLight.color  = TrafficLight_Red;
+	if (topRoad)    topTrafficLight.color    = TrafficLight_Red;
+	if (bottomRoad) bottomTrafficLight.color = TrafficLight_Red;
+
+	if (leftRoad)        leftTrafficLight.Start();
+	else if (topRoad)    topTrafficLight.Start();
+	else if (rightRoad)  rightTrafficLight.Start();
+	else if (bottomRoad) bottomTrafficLight.Start();
+}
+
+void Intersection::UpdateTrafficLights(float seconds) {
+	int roadCount = 0;
+	if (leftRoad)   roadCount++;
+	if (rightRoad)  roadCount++;
+	if (topRoad)    roadCount++;
+	if (bottomRoad) roadCount++;
+
+	if (roadCount <= 2) return;
+
+	// TODO: this is total nuts, update this to arrays as soon as possible!
+	if (leftRoad && leftTrafficLight.color == TrafficLight_Green) {
+		leftTrafficLight.Update(seconds);
+		if (leftTrafficLight.color == TrafficLight_Red) {
+			if (topRoad)         topTrafficLight.Start();
+			else if (rightRoad)  rightTrafficLight.Start();
+			else if (bottomRoad) bottomTrafficLight.Start();
+		}
+	}
+	else if (topRoad && topTrafficLight.color == TrafficLight_Green) {
+		topTrafficLight.Update(seconds);
+		if (topTrafficLight.color == TrafficLight_Red) {
+			if (rightRoad)       rightTrafficLight.Start();
+			else if (bottomRoad) bottomTrafficLight.Start();
+			else if (leftRoad)   leftTrafficLight.Start();
+		}
+	}
+	else if (rightRoad && rightTrafficLight.color == TrafficLight_Green) {
+		rightTrafficLight.Update(seconds);
+		if (rightTrafficLight.color == TrafficLight_Red) {
+			if (bottomRoad)    bottomTrafficLight.Start();
+			else if (leftRoad) leftTrafficLight.Start();
+			else if (topRoad)  topTrafficLight.Start();
+		}
+	}
+	else if (bottomRoad && bottomTrafficLight.color == TrafficLight_Green) {
+		bottomTrafficLight.Update(seconds);
+		if (bottomTrafficLight.color == TrafficLight_Red) {
+			if (leftRoad)       leftTrafficLight.Start();
+			else if (topRoad)   topTrafficLight.Start();
+			else if (rightRoad) rightTrafficLight.Start();
+		}
+	}
+}
+
+void Intersection::DrawTrafficLights(Renderer renderer) {
+	int roadCount = 0;
+	if (leftRoad)   roadCount++;
+	if (rightRoad)  roadCount++;
+	if (topRoad)    roadCount++;
+	if (bottomRoad) roadCount++;
+
+	if (roadCount <= 2) return;
+
+	if (leftRoad)   leftTrafficLight.Draw(renderer);
+	if (rightRoad)  rightTrafficLight.Draw(renderer);
+	if (topRoad)    topTrafficLight.Draw(renderer);
+	if (bottomRoad) bottomTrafficLight.Draw(renderer);
+}
+
 float Intersection::GetRoadWidth() {
 	if (leftRoad) return leftRoad->width;
 	if (rightRoad) return rightRoad->width;

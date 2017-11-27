@@ -38,7 +38,7 @@ void AutoHuman::MoveToBuilding(Building* building) {
 }
 
 void AutoHuman::Update(float seconds) {
-	if (inBuilding && inBuilding->type == BuildingType::RED) {
+	if (inBuilding && inBuilding->type == BuildingType_Red) {
 		human.needRed -= 10.0f * seconds;
 		if (human.needRed < 0.0f) human.needRed = 0.0f;
 	}
@@ -47,7 +47,7 @@ void AutoHuman::Update(float seconds) {
 		if (human.needRed > 100.0f) human.needRed = 100.0f;
 	}
 
-	if (inBuilding && inBuilding->type == BuildingType::GREEN) {
+	if (inBuilding && inBuilding->type == BuildingType_Green) {
 		human.needGreen -= 10.0f * seconds;
 		if (human.needGreen < 0.0f) human.needGreen = 0.0f;
 	}
@@ -56,7 +56,7 @@ void AutoHuman::Update(float seconds) {
 		if (human.needGreen > 100.0f) human.needGreen = 100.0f;
 	}
 
-	if (inBuilding && inBuilding->type == BuildingType::BLUE) {
+	if (inBuilding && inBuilding->type == BuildingType_Blue) {
 		human.needBlue -= 10.0f * seconds;
 		if (human.needBlue < 0.0f) human.needBlue = 0.0f;
 	}
@@ -106,13 +106,13 @@ void AutoHuman::Update(float seconds) {
 		Building* targetBuilding = 0;
 
 		if (human.needRed == 100.0f) {
-			targetBuilding = human.map->GetClosestBuilding(human.position, BuildingType::RED);
+			targetBuilding = human.map->GetClosestBuilding(human.position, BuildingType_Red);
 		}
 		else if (human.needGreen == 100.0f) {
-			targetBuilding = human.map->GetClosestBuilding(human.position, BuildingType::GREEN);
+			targetBuilding = human.map->GetClosestBuilding(human.position, BuildingType_Green);
 		}
 		else if (human.needBlue == 100.0f) {
-			targetBuilding = human.map->GetClosestBuilding(human.position, BuildingType::BLUE);
+			targetBuilding = human.map->GetClosestBuilding(human.position, BuildingType_Blue);
 		}
 		else if (human.needRed == 0.0f || human.needGreen == 0.0f || human.needBlue == 0.0f) {
 

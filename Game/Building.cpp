@@ -277,22 +277,22 @@ void Building::Draw(Renderer renderer) {
 	Color color = {};
 
 	switch (type) {
-		case BLACK: {
+		case BuildingType_Black: {
 				color = Color{0.0f, 0.0f, 0.0f};
 				break;
 			}
 
-		case RED: {
+		case BuildingType_Red: {
 				color = Color{0.5f, 0.0f, 0.0f};
 				break;
 			}
 
-		case GREEN: {
+		case BuildingType_Green: {
 				color = Color{0.0f, 0.5f, 0.0f};
 				break;
 			}
 
-		case BLUE: {
+		case BuildingType_Blue: {
 				color = Color{0.0f, 0.0f, 0.5f};
 				break;
 			}

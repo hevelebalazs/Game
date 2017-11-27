@@ -1,8 +1,8 @@
 #pragma once
 
 enum BuildingType {
-	BLACK,
-	RED,
-	GREEN,
-	BLUE
+	BuildingType_Black,
+	BuildingType_Red,
+	BuildingType_Green,
+	BuildingType_Blue
 };

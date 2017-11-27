@@ -185,5 +185,9 @@ void Map::Draw(Renderer renderer) {
 	for (int i = 0; i < buildingCount; ++i) {
 		buildings[i].Draw(renderer);
 	}
+
+	for (int i = 0; i < intersectionCount; ++i) {
+		intersections[i].DrawTrafficLights(renderer);
+	}
 }
 

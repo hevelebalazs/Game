@@ -240,6 +240,12 @@ static void GameUpdate(Point mousePosition) {
 		human->Update(globalTargetFrameS);
 	}
 
+	for (int i = 0; i < globalMap.intersectionCount; ++i) {
+		Intersection* intersection = &globalMap.intersections[i];
+
+		intersection->UpdateTrafficLights(globalTargetFrameS);
+	}
+
 	globalPlayerHuman.Update(globalTargetFrameS);
 
 	globalHighlightedBuilding = globalMap.GetBuildingAtPoint(mousePosition);
