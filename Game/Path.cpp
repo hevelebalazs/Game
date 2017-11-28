@@ -452,6 +452,8 @@ Point PathNode::NextPoint(Point startPoint) {
 		}
 	}
 	else if (elem.type == MapElemType::ROAD) {
+		Road* road = elem.road;
+
 		if (!next) {
 			// NOTE: a path should not end in a road
 		}
@@ -459,7 +461,11 @@ Point PathNode::NextPoint(Point startPoint) {
 			nextPoint = next->elem.building->connectPointFar;
 		}
 		else if (next->elem.type == MapElemType::INTERSECTION) {
-			nextPoint = next->elem.intersection->coordinate;
+			Intersection* intersection = next->elem.intersection;
+
+			if (intersection == road->intersection1) nextPoint = road->endPoint1;
+			else if (intersection == road->intersection2) nextPoint = road->endPoint2;
+			else nextPoint = next->elem.intersection->coordinate;
 		}
 	}
 	else if (elem.type == MapElemType::INTERSECTION) {
@@ -510,6 +516,8 @@ bool PathNode::IsEndPoint(Point point) {
 		}
 	}
 	else if (elem.type == MapElemType::ROAD) {
+		Road* road = elem.road;
+		
 		if (!next) {
 			// NOTE: path should not end with a road
 		}
@@ -517,7 +525,11 @@ bool PathNode::IsEndPoint(Point point) {
 			result = (point == next->elem.building->connectPointFar);
 		}
 		else if (next->elem.type == MapElemType::INTERSECTION) {
-			result = (point == next->elem.intersection->coordinate);
+			Intersection* intersection = next->elem.intersection;
+
+			if (intersection == road->intersection1) result = (point == road->endPoint1);
+			else if (intersection == road->intersection2) result = (point == road->endPoint2);
+			else result = (point == intersection->coordinate);
 		}
 	}
 	else if (elem.type == MapElemType::INTERSECTION) {

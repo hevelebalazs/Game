@@ -1,34 +1,26 @@
-/*
 #pragma once
+
+#include "Path.h"
 #include "Vehicle.h"
 
 struct AutoVehicle {
 	Vehicle vehicle;
 
-	Intersection* targetIntersection;
+	Building* inBuilding;
 
-	Intersection* onIntersection;
-	Road* nextRoad;
+	Path movePath;
+	// TODO: does this belong to this struct?
+	//       or should it be passed to Update?
+	PathHelper* moveHelper;
+	PathNode* moveNode;
+	Building* moveTargetBuilding;
+	Point moveStartPoint;
+	Point moveEndPoint;
+	float moveTotalSeconds;
+	float moveSeconds;
 
-	Road* onRoad;
-	Intersection* nextIntersection;
-
-	Point startPoint;
-	float startAngle;
-	Point targetPoint;
-	float targetAngle;
-
-	bool rotationMovement;
-	float rotationSide;
-	float rotationStartAngle;
-	float rotationTargetAngle;
-	Point rotationPoint;
-
-	float spentSeconds;
-	float totalSeconds;
-
-	IntersectionPathHelper* pathHelper;
+	void MoveToBuilding(Building* building);
+	void InitMovement();
 
 	void Update(float seconds);
 };
-*/

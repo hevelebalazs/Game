@@ -1,184 +1,108 @@
-// TODO: reimplement this using the new path
-/*
+// TODO: rename "Vehicle" to "Car" because it sounds cooler?
 #include "AutoVehicle.h"
+#include "MapElem.h"
 
-static float PI = 3.14159265358979323f;
+void AutoVehicle::InitMovement() {
+	float moveDistance = Point::CityDistance(moveStartPoint, moveEndPoint);
 
-void AutoVehicle::Update(float seconds) {
-	while (seconds > 0.0f) {
-		if (targetIntersection == 0 || targetIntersection == onIntersection) {
-			seconds = 0.0f;
-			startPoint = vehicle.position;
-			targetPoint = vehicle.position;
+	moveTotalSeconds = (moveDistance / vehicle.maxSpeed);
+	moveSeconds = 0.0f;
+}
 
-			totalSeconds = 0.0f;
+void AutoVehicle::MoveToBuilding(Building* building) {
+	ClearPath(&movePath);
 
-			targetIntersection = vehicle.map->GetRandomIntersection();
+	// TODO: create functions to create these?
+	MapElem targetElem = {};
+	targetElem.type = MapElemType::BUILDING;
+	targetElem.building = inBuilding;
 
-			break;
-		}
+	MapElem nextElem = {};
+	nextElem.type = MapElemType::BUILDING;
+	nextElem.building = building;
 
-		if (onIntersection) {
-			if (nextRoad == 0) {
-				nextRoad = NextRoadOnPath(*vehicle.map, onIntersection, targetIntersection, pathHelper);
+	movePath = ConnectElems(vehicle.map, targetElem, nextElem, moveHelper);
 
-				if (nextRoad->intersection1 == onIntersection) targetPoint = nextRoad->EnterPoint(1);
-				else targetPoint = nextRoad->EnterPoint(2);
+	// TODO: can the path have 0 elements if the two buildings are the same?
+	if (movePath.nodeCount == 0) {
+		moveNode = 0;
+	}
+	else {
+		moveNode = &movePath.nodes[0];
 
-				targetAngle = 0.0f;
-				if (onIntersection->leftRoad == nextRoad) targetAngle = -PI;
-				else if (onIntersection->rightRoad == nextRoad) targetAngle = 0.0f;
-				else if (onIntersection->topRoad == nextRoad) targetAngle = -PI / 2.0f;
-				else if (onIntersection->bottomRoad == nextRoad) targetAngle = PI / 2.0f;
+		moveStartPoint = moveNode->StartPoint();
+		moveEndPoint = moveNode->NextPoint(moveStartPoint);
 
-				startAngle = vehicle.angle;
-				startPoint = vehicle.position;
+		InitMovement();
 
-				while (startAngle - targetAngle > PI) {
-					startAngle -= 2 * PI;
-				}
-
-				while (startAngle - targetAngle < -PI) {
-					startAngle += 2 * PI;
-				}
-
-				if (startAngle == targetAngle) {
-					rotationMovement = false;
-					totalSeconds = Point::CityDistance(startPoint, targetPoint) / vehicle.maxSpeed;
-				}
-				else if (startPoint.x == targetPoint.x) {
-					rotationMovement = true;
-
-					rotationPoint.x = startPoint.x;
-					rotationPoint.y = (startPoint.y + targetPoint.y) / 2.0f;
-
-					rotationSide = fabsf(startPoint.y - targetPoint.y) / 2.0f;
-
-					if (startPoint.y > targetPoint.y) {
-						rotationStartAngle = PI / 2.0f;
-						rotationTargetAngle = -PI / 2.0f;
-
-						startAngle = 0.0f;
-						targetAngle = -PI;
-					}
-					else {
-						rotationStartAngle = -PI / 2.0f;
-						rotationTargetAngle = -3.0f * PI / 2.0f;
-
-						startAngle = PI;
-						targetAngle = 0.0f;
-					}
-
-					totalSeconds = (rotationSide * PI) / vehicle.maxSpeed;
-				}
-				else if (startPoint.y == targetPoint.y) {
-					rotationMovement = true;
-
-					rotationPoint.y = startPoint.y;
-					rotationPoint.x = (startPoint.x + targetPoint.x) / 2.0f;
-
-					rotationSide = fabsf(startPoint.x - targetPoint.x) / 2.0f;
-
-					if (startPoint.x > targetPoint.x) {
-						rotationStartAngle = 0.0f;
-						rotationTargetAngle = -PI;
-
-						startAngle = 3.0f * PI / 2.0f;
-						targetAngle = PI / 2.0f;
-					}
-					else {
-						rotationStartAngle = PI;
-						rotationTargetAngle = 0.0f;
-
-						startAngle = PI / 2.0f;
-						targetAngle = -PI / 2.0f;
-					}
-
-					totalSeconds = (rotationSide * PI) / vehicle.maxSpeed;
-				}
-				else {
-					rotationMovement = true;
-					rotationSide = fabsf(startPoint.x - targetPoint.x);
-
-					rotationTargetAngle = startAngle;
-					rotationStartAngle = targetAngle + PI;
-
-					if (rotationStartAngle - rotationTargetAngle > PI) rotationStartAngle -= 2 * PI;
-					if (rotationStartAngle - rotationTargetAngle < -PI) rotationStartAngle += 2 * PI;
-
-					rotationPoint = startPoint + rotationSide * Point::Rotation(targetAngle);
-
-					totalSeconds = (rotationSide * PI / 2.0f) / vehicle.maxSpeed;
-				}
-
-				spentSeconds = 0.0f;
-			}
-
-			if (totalSeconds == spentSeconds) {
-				onRoad = nextRoad;
-
-				startAngle = targetAngle;
-				targetAngle = targetAngle;
-
-				if (onRoad->intersection1 == onIntersection) {
-					startPoint = onRoad->EnterPoint(1);
-
-					targetPoint = onRoad->LeavePoint(2);
-					nextIntersection = onRoad->intersection2;
-				}
-				else if (onRoad->intersection2 == onIntersection) {
-					startPoint = onRoad->EnterPoint(2);
-
-					targetPoint = onRoad->LeavePoint(1);
-					nextIntersection = onRoad->intersection1;
-				}
-
-				onIntersection = 0;
-				nextRoad = 0;
-
-				totalSeconds = Point::CityDistance(startPoint, targetPoint) / vehicle.maxSpeed;
-				spentSeconds = 0.0f;
-
-				rotationMovement = false;
-			}
-		}
-		else if (onRoad) {
-			if (totalSeconds == spentSeconds) {
-				onIntersection = nextIntersection;
-				nextRoad = 0;
-
-				startPoint = targetPoint;
-
-				startAngle = targetAngle;
-
-				onRoad = 0;
-				nextIntersection = 0;
-			}
-		}
-
-		if (spentSeconds + seconds > totalSeconds) {
-			seconds -= (totalSeconds - spentSeconds);
-			spentSeconds = totalSeconds;
-		}
-		else {
-			spentSeconds += seconds;
-			seconds = 0.0;
-		}
-
-		float timeRatio = 0.0f;
-
-		if (totalSeconds > 0.0f) timeRatio = (spentSeconds / totalSeconds);
-
-		vehicle.angle = startAngle + (targetAngle - startAngle) * (timeRatio);
-
-		if (rotationMovement == false) {
-			vehicle.position = startPoint + (targetPoint - startPoint) * timeRatio;
-		}
-		else {
-			float rotationAngle = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * (timeRatio);
-
-			vehicle.position = rotationPoint + rotationSide * Point::Rotation(rotationAngle);
-		}
+		moveTargetBuilding = building;
 	}
 }
-*/
+
+void AutoVehicle::Update(float seconds) {
+	if (moveTargetBuilding) {
+		// TODO: should there be a limit on the iteration number?
+		while (seconds > 0.0f) {
+			if (!moveNode) {
+				inBuilding = moveTargetBuilding;
+				moveTargetBuilding = 0;
+				break;
+			}
+
+			if (moveNode) {
+				moveSeconds += seconds;
+
+				if (moveSeconds >= moveTotalSeconds) {
+					seconds = moveSeconds - moveTotalSeconds;
+					moveStartPoint = moveEndPoint;
+
+					if (moveNode->IsEndPoint(moveEndPoint)) {
+						PathNode* nextNode = moveNode->next;
+
+						if (nextNode) {
+							MapElem nextElem = nextNode->elem;
+							MapElem moveElem = moveNode->elem;
+
+							if (moveElem.type == MapElemType::ROAD && nextElem.type == MapElemType::INTERSECTION) {
+								Road* road = moveElem.road;
+								Intersection* intersection = nextElem.intersection;
+								TrafficLight* trafficLight = 0;
+
+								if (intersection->leftRoad == road)        trafficLight = &intersection->leftTrafficLight;
+								else if (intersection->rightRoad == road)  trafficLight = &intersection->rightTrafficLight;
+								else if (intersection->topRoad == road)    trafficLight = &intersection->topTrafficLight;
+								else if (intersection->bottomRoad == road) trafficLight = &intersection->bottomTrafficLight;
+
+								if (trafficLight && trafficLight->color == TrafficLight_Red) {
+									moveSeconds = 0.0f;
+									moveTotalSeconds = 0.0f;
+									break;
+								}
+							}
+						}
+
+						moveNode = moveNode->next;
+
+						if (!moveNode) continue;
+					}
+					else {
+						moveEndPoint = moveNode->NextPoint(moveStartPoint);
+
+						InitMovement();
+					}
+				}
+				else {
+					seconds = 0.0f;
+
+					float moveRatio = 1.0f - (moveSeconds / moveTotalSeconds);
+
+					vehicle.position = (moveRatio)* moveStartPoint + (1.0f - moveRatio) * moveEndPoint;
+				}
+			}
+		}
+	}
+	else {
+		Building* targetBuilding = vehicle.map->GetRandomBuilding();
+		MoveToBuilding(targetBuilding);
+	}
+}

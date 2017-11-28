@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: rewrite this to "MapElem_Road" style
 enum MapElemType {
 	NONE,
 	ROAD,

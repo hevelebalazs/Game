@@ -1,6 +1,6 @@
 #include "Intersection.h"
 
-float TrafficLight::radius = 0.5f;
+float TrafficLight::radius = 2.0f;
 float TrafficLight::switchTime = 3.0f;
 
 void TrafficLight::Start() {

@@ -97,7 +97,7 @@ void AutoHuman::Update(float seconds) {
 
 					float moveRatio = 1.0f - (moveSeconds / moveTotalSeconds);
 
-					human.position = (moveRatio)* moveStartPoint + (1.0f - moveRatio) * moveEndPoint;
+					human.position = (moveRatio) * moveStartPoint + (1.0f - moveRatio) * moveEndPoint;
 				}
 			}
 		}

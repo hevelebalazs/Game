@@ -27,8 +27,7 @@ Building* globalHighlightedBuilding;
 PathHelper globalPathHelper;
 Path globalBuildingPath;
 
-AutoHuman globalAutoHumans[100];
-int globalAutoHumanCount = 100;
+AutoVehicle globalAutoVehicle;
 
 PlayerHuman globalPlayerHuman;
 
@@ -205,28 +204,19 @@ static void GameInit(int windowWidth, int windowHeight) {
 	globalMap = CreateGridMap((float)windowWidth, (float)windowHeight, 100);
 	globalPathHelper = PathHelperForMap(&globalMap);
 
-	for (int i = 0; i < globalAutoHumanCount; ++i) {
-		AutoHuman* autoHuman = &globalAutoHumans[i];
-		Human* human = &autoHuman->human;
-
-		Building* building = globalMap.GetRandomBuilding();
-
-		human->map = &globalMap;
-		autoHuman->inBuilding = building;
-		human->position = building->connectPointClose;
-		autoHuman->moveHelper = &globalPathHelper;
-
-		human->needRed = RandomBetween(0.0f, 100.0f);
-		human->needGreen = RandomBetween(0.0f, 100.0f);
-		human->needBlue = RandomBetween(0.0f, 100.0f);
-
-		autoHuman->needRedSpeed = RandomBetween(1.0f, 5.0f);
-		autoHuman->needGreenSpeed = RandomBetween(1.0f, 5.0f);
-		autoHuman->needBlueSpeed = RandomBetween(1.0f, 5.0f);
-	}
-
 	globalPlayerHuman.human.position = Point{(float)windowWidth, (float)windowHeight} * 0.5f;
 	globalPlayerHuman.human.map = &globalMap;
+
+	Building* randomBuilding = globalMap.GetRandomBuilding();
+	globalAutoVehicle.vehicle.angle = 0.0f;
+	globalAutoVehicle.vehicle.color = Color{1.0f, 0.0f, 0.0f};
+	globalAutoVehicle.vehicle.position = randomBuilding->connectPointClose;
+	globalAutoVehicle.vehicle.length = 7.5f;
+	globalAutoVehicle.vehicle.width = 7.5f;
+	globalAutoVehicle.vehicle.map = &globalMap;
+	globalAutoVehicle.vehicle.maxSpeed = 30.0f;
+	globalAutoVehicle.inBuilding = randomBuilding;
+	globalAutoVehicle.moveHelper = &globalPathHelper;
 
 	globalRenderer.camera.pixelCoordRatio = 10.0f;
 }
@@ -234,17 +224,13 @@ static void GameInit(int windowWidth, int windowHeight) {
 // TODO: pass seconds to this function
 // TODO: get rid of the mousePosition parameter?
 static void GameUpdate(Point mousePosition) {
-	for (int i = 0; i < globalAutoHumanCount; ++i) {
-		AutoHuman* human = &globalAutoHumans[i];
-
-		human->Update(globalTargetFrameS);
-	}
-
 	for (int i = 0; i < globalMap.intersectionCount; ++i) {
 		Intersection* intersection = &globalMap.intersections[i];
 
 		intersection->UpdateTrafficLights(globalTargetFrameS);
 	}
+
+	globalAutoVehicle.Update(globalTargetFrameS);
 
 	globalPlayerHuman.Update(globalTargetFrameS);
 
@@ -265,7 +251,7 @@ static void GameUpdate(Point mousePosition) {
 		globalBuildingPath = ConnectElems(&globalMap, selectedBuildingElem, highlightedBuildingElem, &globalPathHelper);
 	}
 
-	globalRenderer.camera.center = globalPlayerHuman.human.position;
+	globalRenderer.camera.center = globalAutoVehicle.vehicle.position;
 }
 
 static void GameDraw(Renderer renderer) {
@@ -286,11 +272,7 @@ static void GameDraw(Renderer renderer) {
 		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
 	}
 
-	for (int i = 0; i < globalAutoHumanCount; ++i) {
-		Human* human = &globalAutoHumans[i].human;
-
-		human->Draw(renderer);
-	}
+	globalAutoVehicle.vehicle.Draw(renderer);
 
 	globalPlayerHuman.human.Draw(renderer);
 }
