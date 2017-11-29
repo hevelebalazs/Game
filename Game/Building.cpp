@@ -298,6 +298,10 @@ void Building::Draw(Renderer renderer) {
 			}
 	}
 
+	// DEBUG
+	if (connectElem.type == MapElemType::INTERSECTION) color = Color{1.0f, 0.0f, 0.0f};
+	else color = Color{0.0f, 0.0f, 0.0f};
+
 	renderer.DrawRect(
 		top, left, bottom, right,
 		color

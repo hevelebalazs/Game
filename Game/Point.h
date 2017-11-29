@@ -22,3 +22,8 @@ struct Point {
 
 Point operator*(float multiplier, Point point);
 Point operator*(Point point, float multiplier);
+
+struct DirectedPoint {
+	Point position;
+	Point direction;
+};

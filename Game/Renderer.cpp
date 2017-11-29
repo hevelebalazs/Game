@@ -1,3 +1,5 @@
+#include "Geometry.h"
+#include "Point.h"
 #include "Renderer.h"
 
 float Camera::CoordXtoPixel(float coordX) {
@@ -42,6 +44,23 @@ void Renderer::Clear(Color color) {
 	}
 }
 
+void Renderer::DrawLine(Point point1, Point point2, Color color, float lineWidth) {
+	Point direction = PointDirection(point2, point1);
+
+	float tmp = direction.x;
+	direction.x = -direction.y;
+	direction.y = tmp;
+
+	float halfLineWidth = lineWidth * 0.5f;
+	Point drawPoints[4] = {};
+
+	drawPoints[0] = point1 - (halfLineWidth * direction);
+	drawPoints[1] = point1 + (halfLineWidth * direction);
+	drawPoints[2] = point2 + (halfLineWidth * direction);
+	drawPoints[3] = point2 - (halfLineWidth * direction);
+	this->DrawQuad(drawPoints, color);
+}
+
 // TODO: make this function take two points instead of four floats?
 void Renderer::DrawRect(float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = getColorCode(color);
@@ -77,6 +96,7 @@ void Renderer::DrawRect(float top, float left, float bottom, float right, Color 
 	}
 }
 
+// TODO: this is defined in Geometry, use that
 float turnDirection(Point point1, Point point2, Point point3) {
 	float dx1 = point2.x - point1.x;
 	float dy1 = point2.y - point1.y;

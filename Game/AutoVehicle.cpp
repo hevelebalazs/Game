@@ -1,9 +1,13 @@
 // TODO: rename "Vehicle" to "Car" because it sounds cooler?
 #include "AutoVehicle.h"
+#include "Geometry.h"
 #include "MapElem.h"
 
 void AutoVehicle::InitMovement() {
-	float moveDistance = Point::CityDistance(moveStartPoint, moveEndPoint);
+	moveBezier4 = TurnBezier4(moveStartPoint, moveEndPoint);
+
+	// TODO: is this distance close enough?
+	float moveDistance = PointDistance(moveStartPoint.position, moveEndPoint.position);
 
 	moveTotalSeconds = (moveDistance / vehicle.maxSpeed);
 	moveSeconds = 0.0f;
@@ -30,8 +34,8 @@ void AutoVehicle::MoveToBuilding(Building* building) {
 	else {
 		moveNode = &movePath.nodes[0];
 
-		moveStartPoint = moveNode->StartPoint();
-		moveEndPoint = moveNode->NextPoint(moveStartPoint);
+		moveStartPoint = moveNode->StartDirectedPoint();
+		moveEndPoint = moveNode->NextDirectedPoint(moveStartPoint);
 
 		InitMovement();
 
@@ -53,10 +57,11 @@ void AutoVehicle::Update(float seconds) {
 				moveSeconds += seconds;
 
 				if (moveSeconds >= moveTotalSeconds) {
-					seconds = moveSeconds - moveTotalSeconds;
 					moveStartPoint = moveEndPoint;
 
-					if (moveNode->IsEndPoint(moveEndPoint)) {
+					seconds = moveSeconds - moveTotalSeconds;
+
+					if (moveNode->IsEndPoint(moveStartPoint.position)) {
 						PathNode* nextNode = moveNode->next;
 
 						if (nextNode) {
@@ -86,7 +91,13 @@ void AutoVehicle::Update(float seconds) {
 						if (!moveNode) continue;
 					}
 					else {
-						moveEndPoint = moveNode->NextPoint(moveStartPoint);
+						/*
+						DirectedPoint point = {};
+						point.position = vehicle.position;
+						point.direction = Point::Rotation(vehicle.angle);
+						*/
+
+						moveEndPoint = moveNode->NextDirectedPoint(moveStartPoint);
 
 						InitMovement();
 					}
@@ -94,9 +105,10 @@ void AutoVehicle::Update(float seconds) {
 				else {
 					seconds = 0.0f;
 
-					float moveRatio = 1.0f - (moveSeconds / moveTotalSeconds);
+					float moveRatio = (moveSeconds / moveTotalSeconds);
 
-					vehicle.position = (moveRatio)* moveStartPoint + (1.0f - moveRatio) * moveEndPoint;
+					DirectedPoint position = Bezier4DirectedPoint(moveBezier4, moveRatio);
+					vehicle.MoveTo(position);
 				}
 			}
 		}

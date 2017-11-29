@@ -13,7 +13,11 @@ struct PathNode {
 
 	Point StartPoint();
 	Point NextPoint(Point pointFrom);
+	DirectedPoint StartDirectedPoint();
+	DirectedPoint NextDirectedPoint(DirectedPoint pointFrom);
+
 	bool IsEndPoint(Point point);
+	bool IsEndDirectedPoint(DirectedPoint point);
 };
 
 struct Path {
@@ -37,3 +41,4 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 void ClearPath(Path* path);
 
 void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth);
+void DrawBezierPath(Path* path, Renderer renderer, Color color, float lineWidth);

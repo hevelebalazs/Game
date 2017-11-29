@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Bezier.h"
 #include "Path.h"
 #include "Vehicle.h"
 
@@ -14,8 +15,10 @@ struct AutoVehicle {
 	PathHelper* moveHelper;
 	PathNode* moveNode;
 	Building* moveTargetBuilding;
-	Point moveStartPoint;
-	Point moveEndPoint;
+
+	DirectedPoint moveStartPoint;
+	DirectedPoint moveEndPoint;
+	Bezier4 moveBezier4;
 	float moveTotalSeconds;
 	float moveSeconds;
 

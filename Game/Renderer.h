@@ -19,6 +19,7 @@ struct Renderer {
 	Camera camera;
 
 	void Clear(Color color);
+	void DrawLine(Point point1, Point point2, Color color, float lineWidth);
 	void DrawRect(float top, float left, float bottom, float right, Color color);
 	void DrawQuad(Point points[4], Color color);
 };

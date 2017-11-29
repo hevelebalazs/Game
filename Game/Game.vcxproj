@@ -116,6 +116,7 @@
   <ItemGroup>
     <ClCompile Include="AutoHuman.cpp" />
     <ClCompile Include="AutoVehicle.cpp" />
+    <ClCompile Include="Bezier.cpp" />
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="Building.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -135,6 +136,7 @@
   <ItemGroup>
     <ClInclude Include="AutoHuman.h" />
     <ClInclude Include="AutoVehicle.h" />
+    <ClInclude Include="Bezier.h" />
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Building.h" />
     <ClInclude Include="BuildingType.h" />

@@ -7,6 +7,8 @@
 
 struct Vehicle {
 	Point position;
+	
+	// TODO: change this to Point "direction"?
 	float angle;
 
 	Color color;
@@ -17,6 +19,8 @@ struct Vehicle {
 	float maxSpeed;
 
 	Map* map;
+
+	void MoveTo(DirectedPoint point);
 
 	void Draw(Renderer renderer);
 };

@@ -1,9 +1,16 @@
-#include "Vehicle.h"
 #include <math.h>
 #include <stdio.h>
 
+#include "Geometry.h"
+#include "Vehicle.h"
+
 // TODO: move this to a math file?
 static float PI = 3.14159265358979323f;
+
+void Vehicle::MoveTo(DirectedPoint point) {
+	position = point.position;
+	angle = VectorAngle(point.direction);
+}
 
 void Vehicle::Draw(Renderer renderer) {
 	Point addWidth = (width / 2.0f) * Point::Rotation(angle + PI / 2.0f);

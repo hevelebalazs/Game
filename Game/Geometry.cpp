@@ -9,6 +9,17 @@ float PointDistance(Point point1, Point point2) {
 	return sqrtf((dx * dx) + (dy * dy));
 }
 
+float VectorAngle(Point vector) {
+	return atan2f(vector.y, vector.x);
+}
+
+Point PointDirection(Point startPoint, Point endPoint) {
+	Point vector = {endPoint.x - startPoint.x, endPoint.y - startPoint.y};
+	vector = NormalVector(vector);
+
+	return vector;
+}
+
 bool TurnsRight(Point point1, Point point2, Point point3) {
 	float dx1 = point2.x - point1.x;
 	float dy1 = point2.y - point1.y;

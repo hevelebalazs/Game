@@ -27,7 +27,7 @@ Building* globalHighlightedBuilding;
 PathHelper globalPathHelper;
 Path globalBuildingPath;
 
-AutoVehicle globalAutoVehicle;
+// AutoVehicle globalAutoVehicle;
 
 PlayerHuman globalPlayerHuman;
 
@@ -63,6 +63,7 @@ void WinResize(Renderer* renderer, int width, int height) {
 	renderer->Clear({0.0f, 0.0f, 0.0f});
 }
 
+// TODO: move this through camera
 static Point WinMousePosition(HWND window) {
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
@@ -79,7 +80,9 @@ void GameDraw(Renderer renderer);
 
 void WinDraw(HWND window, Renderer renderer) {
 	Point mousePoint = WinMousePosition(window);
-	Intersection *highlightIntersection = globalMap.GetIntersectionAtPoint(mousePoint, 20.0f);
+
+	// TODO: should this be here?
+	Intersection* highlightIntersection = globalMap.GetIntersectionAtPoint(mousePoint, 20.0f);
 
 	GameDraw(renderer);
 }
@@ -208,17 +211,19 @@ static void GameInit(int windowWidth, int windowHeight) {
 	globalPlayerHuman.human.map = &globalMap;
 
 	Building* randomBuilding = globalMap.GetRandomBuilding();
+	/*
 	globalAutoVehicle.vehicle.angle = 0.0f;
 	globalAutoVehicle.vehicle.color = Color{1.0f, 0.0f, 0.0f};
 	globalAutoVehicle.vehicle.position = randomBuilding->connectPointClose;
 	globalAutoVehicle.vehicle.length = 7.5f;
-	globalAutoVehicle.vehicle.width = 7.5f;
+	globalAutoVehicle.vehicle.width = 5.0f;
 	globalAutoVehicle.vehicle.map = &globalMap;
 	globalAutoVehicle.vehicle.maxSpeed = 30.0f;
 	globalAutoVehicle.inBuilding = randomBuilding;
 	globalAutoVehicle.moveHelper = &globalPathHelper;
+	*/
 
-	globalRenderer.camera.pixelCoordRatio = 10.0f;
+	globalRenderer.camera.pixelCoordRatio = 1.0f;
 }
 
 // TODO: pass seconds to this function
@@ -230,7 +235,7 @@ static void GameUpdate(Point mousePosition) {
 		intersection->UpdateTrafficLights(globalTargetFrameS);
 	}
 
-	globalAutoVehicle.Update(globalTargetFrameS);
+	// globalAutoVehicle.Update(globalTargetFrameS);
 
 	globalPlayerHuman.Update(globalTargetFrameS);
 
@@ -251,7 +256,7 @@ static void GameUpdate(Point mousePosition) {
 		globalBuildingPath = ConnectElems(&globalMap, selectedBuildingElem, highlightedBuildingElem, &globalPathHelper);
 	}
 
-	globalRenderer.camera.center = globalAutoVehicle.vehicle.position;
+	// globalRenderer.camera.center = globalAutoVehicle.vehicle.position;
 }
 
 static void GameDraw(Renderer renderer) {
@@ -269,10 +274,10 @@ static void GameDraw(Renderer renderer) {
 
 	if (globalBuildingPath.nodeCount > 0 && globalSelectedBuilding && globalHighlightedBuilding) {
 		Color color = {0.0f, 1.0f, 1.0f};
-		DrawPath(&globalBuildingPath, globalRenderer, color, 5.0f);
+		DrawBezierPath(&globalBuildingPath, globalRenderer, color, 3.0f);
 	}
 
-	globalAutoVehicle.vehicle.Draw(renderer);
+	// globalAutoVehicle.vehicle.Draw(renderer);
 
 	globalPlayerHuman.human.Draw(renderer);
 }
