@@ -34,8 +34,8 @@ void AutoVehicle::MoveToBuilding(Building* building) {
 	else {
 		moveNode = &movePath.nodes[0];
 
-		moveStartPoint = moveNode->StartDirectedPoint();
-		moveEndPoint = moveNode->NextDirectedPoint(moveStartPoint);
+		moveStartPoint = moveNode->StartPoint();
+		moveEndPoint = moveNode->NextPoint(moveStartPoint);
 
 		InitMovement();
 
@@ -54,6 +54,44 @@ void AutoVehicle::Update(float seconds) {
 			}
 
 			if (moveNode) {
+				bool stop = false;
+
+				if (moveNode->IsEndPoint(moveEndPoint)) {
+					PathNode* nextNode = moveNode->next;
+
+					if (nextNode) {
+						MapElem moveElem = moveNode->elem;
+						MapElem nextElem = nextNode->elem;
+
+						if (moveElem.type == MapElemType::ROAD && nextElem.type == MapElemType::INTERSECTION) {
+							Road* road = moveElem.road;
+							Intersection* intersection = nextElem.intersection;
+							TrafficLight* trafficLight = 0;
+
+							if (intersection->leftRoad == road)        trafficLight = &intersection->leftTrafficLight;
+							else if (intersection->rightRoad == road)  trafficLight = &intersection->rightTrafficLight;
+							else if (intersection->topRoad == road)    trafficLight = &intersection->topTrafficLight;
+							else if (intersection->bottomRoad == road) trafficLight = &intersection->bottomTrafficLight;
+
+							if ((trafficLight && trafficLight->color == TrafficLight_Red) || 
+								(trafficLight && trafficLight->color == TrafficLight_Yellow)
+							) {
+								stop = true;
+							}
+						}
+					}
+				}
+
+				if (stop) {
+					// TODO: use distance square here?
+					float distanceLeft = PointDistance(vehicle.position, moveEndPoint.position);
+
+					// TODO: introduce a "stopDistance" variable?
+					if (distanceLeft < vehicle.length * 0.5f) {
+						break;
+					}
+				}
+
 				moveSeconds += seconds;
 
 				if (moveSeconds >= moveTotalSeconds) {
@@ -61,43 +99,13 @@ void AutoVehicle::Update(float seconds) {
 
 					seconds = moveSeconds - moveTotalSeconds;
 
-					if (moveNode->IsEndPoint(moveStartPoint.position)) {
-						PathNode* nextNode = moveNode->next;
-
-						if (nextNode) {
-							MapElem nextElem = nextNode->elem;
-							MapElem moveElem = moveNode->elem;
-
-							if (moveElem.type == MapElemType::ROAD && nextElem.type == MapElemType::INTERSECTION) {
-								Road* road = moveElem.road;
-								Intersection* intersection = nextElem.intersection;
-								TrafficLight* trafficLight = 0;
-
-								if (intersection->leftRoad == road)        trafficLight = &intersection->leftTrafficLight;
-								else if (intersection->rightRoad == road)  trafficLight = &intersection->rightTrafficLight;
-								else if (intersection->topRoad == road)    trafficLight = &intersection->topTrafficLight;
-								else if (intersection->bottomRoad == road) trafficLight = &intersection->bottomTrafficLight;
-
-								if (trafficLight && trafficLight->color == TrafficLight_Red) {
-									moveSeconds = 0.0f;
-									moveTotalSeconds = 0.0f;
-									break;
-								}
-							}
-						}
-
+					if (moveNode->IsEndPoint(moveStartPoint)) {
 						moveNode = moveNode->next;
 
 						if (!moveNode) continue;
 					}
 					else {
-						/*
-						DirectedPoint point = {};
-						point.position = vehicle.position;
-						point.direction = Point::Rotation(vehicle.angle);
-						*/
-
-						moveEndPoint = moveNode->NextDirectedPoint(moveStartPoint);
+						moveEndPoint = moveNode->NextPoint(moveStartPoint);
 
 						InitMovement();
 					}

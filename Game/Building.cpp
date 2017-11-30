@@ -255,24 +255,7 @@ void Building::Draw(Renderer renderer) {
 		);
 	}
 
-	float connectPadding = connectRoadWidth * 0.5f;
-
-	Point point1 = connectPointClose;
-	Point point2 = connectPointFarShow;
-
-	if (connectPointClose.x == connectPointFarShow.x) {
-		point1.x -= connectPadding;
-		point2.x += connectPadding;
-	}
-	else if (connectPointClose.y == connectPointFarShow.y) {
-		point1.y -= connectPadding;
-		point2.y += connectPadding;
-	}
-
-	renderer.DrawRect(
-		point1.y, point1.x, point2.y, point2.x,
-		roadColor
-	);
+	renderer.DrawLine(connectPointClose, connectPointFarShow, roadColor, connectRoadWidth);
 
 	Color color = {};
 
@@ -299,8 +282,15 @@ void Building::Draw(Renderer renderer) {
 	}
 
 	// DEBUG
-	if (connectElem.type == MapElemType::INTERSECTION) color = Color{1.0f, 0.0f, 0.0f};
-	else color = Color{0.0f, 0.0f, 0.0f};
+	if (connectElem.type == MapElemType::INTERSECTION) {
+		color = Color{1.0f, 0.0f, 0.0f};
+	}
+	else if (connectElem.type == MapElemType::BUILDING) {
+		color = Color{0.0f, 0.0f, 1.0f};
+	}
+	else {
+		color = Color{0.0f, 0.0f, 0.0f};
+	}
 
 	renderer.DrawRect(
 		top, left, bottom, right,

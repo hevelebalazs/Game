@@ -393,106 +393,7 @@ Point NextPointAroundBuilding(Building* building, Point startPoint, Point target
 	}
 }
 
-Point PathNode::StartPoint() {
-	Point point = {};
-
-	if (elem.type == MapElemType::BUILDING) {
-		point = elem.building->connectPointClose;
-	}
-	else if (elem.type == MapElemType::INTERSECTION) {
-		point = elem.intersection->coordinate;
-	}
-
-	return point;
-}
-
-Point PathNode::NextPoint(Point startPoint) {
-	Point nextPoint = {};
-
-	if (elem.type == MapElemType::BUILDING) {
-		Building* building = elem.building;
-
-		if (!next) {
-			nextPoint = building->connectPointClose;
-		}
-		else if (next->elem.type == MapElemType::BUILDING) {
-			Building* nextBuilding = next->elem.building;
-
-			if (elem.building->connectElem.building == nextBuilding) {
-				if (startPoint == building->connectPointClose) {
-					nextPoint = building->connectPointFar;
-				}
-				else {
-					nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
-				}
-			}
-			else if (nextBuilding->connectElem.building == building) {
-				if (startPoint == building->connectPointFar) {
-					nextPoint = building->connectPointClose;
-				}
-				else {
-					nextPoint = NextPointAroundBuilding(building, startPoint, nextBuilding->connectPointFar);
-				}
-			}
-		}
-		else if (next->elem.type == MapElemType::ROAD) {
-			if (startPoint == building->connectPointClose) {
-				nextPoint = building->connectPointFar;
-			}
-			else {
-				nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
-			}
-		}
-		else if (next->elem.type == MapElemType::INTERSECTION) {
-			if (startPoint == building->connectPointClose) {
-				nextPoint = building->connectPointFar;
-			}
-			else {
-				nextPoint = NextPointAroundBuilding(building, startPoint, building->connectPointClose);
-			}
-		}
-	}
-	else if (elem.type == MapElemType::ROAD) {
-		Road* road = elem.road;
-
-		if (!next) {
-			// NOTE: a path should not end in a road
-		}
-		else if (next->elem.type == MapElemType::BUILDING) {
-			nextPoint = next->elem.building->connectPointFar;
-		}
-		else if (next->elem.type == MapElemType::INTERSECTION) {
-			Intersection* intersection = next->elem.intersection;
-
-			if (intersection == road->intersection1) nextPoint = road->endPoint1;
-			else if (intersection == road->intersection2) nextPoint = road->endPoint2;
-			else nextPoint = next->elem.intersection->coordinate;
-		}
-	}
-	else if (elem.type == MapElemType::INTERSECTION) {
-		Intersection* intersection = elem.intersection;
-
-		if (next && next->elem.type == MapElemType::BUILDING) {
-			Building* nextBuilding = next->elem.building;
-
-			nextPoint = nextBuilding->connectPointFar;
-		}
-		else if (next && next->elem.type == MapElemType::ROAD) {
-			Road* road = next->elem.road;
-
-			if (road->intersection1 == intersection) nextPoint = road->endPoint1;
-			else if (road->intersection2 == intersection) nextPoint = road->endPoint2;
-			else nextPoint = intersection->coordinate;
-		}
-		else {
-			nextPoint = intersection->coordinate;
-		}
-	}
-
-	return nextPoint;
-}
-
-DirectedPoint PathNode::StartDirectedPoint() {
+DirectedPoint PathNode::StartPoint() {
 	Point position = {};
 	Point direction = {};
 
@@ -513,7 +414,7 @@ DirectedPoint PathNode::StartDirectedPoint() {
 	return result;
 }
 
-DirectedPoint PathNode::NextDirectedPoint(DirectedPoint startPoint) {
+DirectedPoint PathNode::NextPoint(DirectedPoint startPoint) {
 	Point position = {};
 	Point direction = {};
 
@@ -539,7 +440,7 @@ DirectedPoint PathNode::NextDirectedPoint(DirectedPoint startPoint) {
 				}
 			}
 			else if (nextBuilding->connectElem.building == building) {
-				if (startPosition == building->connectPointFar) {
+				if (startPosition == building->connectPointFar || startPosition == building->connectPointFarShow) {
 					position = building->connectPointClose;
 				}
 				else {
@@ -665,73 +566,7 @@ DirectedPoint PathNode::NextDirectedPoint(DirectedPoint startPoint) {
 	return result;
 }
 
-bool PathNode::IsEndPoint(Point point) {
-	bool result = false;
-
-	if (elem.type == MapElemType::BUILDING) {
-		Building* building = elem.building;
-
-		if (!next) {
-			result = (point == building->connectPointClose);
-		}
-		else if (next->elem.type == MapElemType::BUILDING) {
-			Building* nextBuilding = next->elem.building;
-
-			if (building->connectElem.type == MapElemType::BUILDING && building->connectElem.building == nextBuilding) {
-				result = (point == building->connectPointFar);
-			}
-			else if (nextBuilding->connectElem.type == MapElemType::BUILDING && nextBuilding->connectElem.building == building) {
-				result = (point == nextBuilding->connectPointFar);
-			}
-		}
-		else if (next->elem.type == MapElemType::ROAD) {
-			result = (point == building->connectPointFar);
-		}
-		else if (next->elem.type == MapElemType::INTERSECTION) {
-			result = (point == building->connectPointFar);
-		}
-	}
-	else if (elem.type == MapElemType::ROAD) {
-		Road* road = elem.road;
-		
-		if (!next) {
-			// NOTE: path should not end with a road
-		}
-		else if (next->elem.type == MapElemType::BUILDING) {
-			result = (point == next->elem.building->connectPointFar);
-		}
-		else if (next->elem.type == MapElemType::INTERSECTION) {
-			Intersection* intersection = next->elem.intersection;
-
-			if (intersection == road->intersection1) result = (point == road->endPoint1);
-			else if (intersection == road->intersection2) result = (point == road->endPoint2);
-			else result = (point == intersection->coordinate);
-		}
-	}
-	else if (elem.type == MapElemType::INTERSECTION) {
-		Intersection* intersection = elem.intersection;
-
-		if (next && next->elem.type == MapElemType::BUILDING) {
-			Building* building = next->elem.building;
-
-			result = (point == building->connectPointFar);
-		}
-		else if (next && next->elem.type == MapElemType::ROAD) {
-			Road* road = next->elem.road;
-
-			if (road->intersection1 == intersection) result = (point == road->endPoint1);
-			else if (road->intersection2 == intersection) result = (point == road->endPoint2);
-			else result = (point == intersection->coordinate);
-		}
-		else {
-			result = (point == intersection->coordinate);
-		}
-	}
-
-	return result;
-}
-
-bool PathNode::IsEndDirectedPoint(DirectedPoint point) {
+bool PathNode::IsEndPoint(DirectedPoint point) {
 	Point position = point.position;
 	Point direction = point.direction;
 
@@ -824,16 +659,16 @@ bool PathNode::IsEndDirectedPoint(DirectedPoint point) {
 void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
 	if (path->nodeCount > 0) {
 		PathNode* node = &path->nodes[0];
-		Point point = node->StartPoint();
+		DirectedPoint point = node->StartPoint();
 
 		while (node) {
 			if (node->IsEndPoint(point)) {
 				node = node->next;
 			}
 			else {
-				Point nextPoint = node->NextPoint(point);
+				DirectedPoint nextPoint = node->NextPoint(point);
 
-				DrawGridLine(renderer, point, nextPoint, color, lineWidth);
+				DrawGridLine(renderer, point.position, nextPoint.position, color, lineWidth);
 
 				point = nextPoint;
 			}
@@ -845,14 +680,14 @@ void DrawBezierPath(Path* path, Renderer renderer, Color color, float lineWidth)
 	Bezier4 bezier4 = {};
 	if (path->nodeCount > 0) {
 		PathNode* node = &path->nodes[0];
-		DirectedPoint point = node->StartDirectedPoint();
+		DirectedPoint point = node->StartPoint();
 
 		while (node) {
-			if (node->IsEndDirectedPoint(point)) {
+			if (node->IsEndPoint(point)) {
 				node = node->next;
 			}
 			else {
-				DirectedPoint nextPoint = node->NextDirectedPoint(point);
+				DirectedPoint nextPoint = node->NextPoint(point);
 				bezier4 = TurnBezier4(point, nextPoint);
 				DrawBezier4(bezier4, renderer, color, lineWidth, 3);
 

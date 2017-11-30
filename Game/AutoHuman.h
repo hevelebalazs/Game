@@ -17,8 +17,8 @@ struct AutoHuman {
 	PathHelper* moveHelper;
 	PathNode* moveNode;
 	Building* moveTargetBuilding;
-	Point moveStartPoint;
-	Point moveEndPoint;
+	DirectedPoint moveStartPoint;
+	DirectedPoint moveEndPoint;
 	float moveTotalSeconds;
 	float moveSeconds;
 

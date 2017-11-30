@@ -11,13 +11,10 @@ struct PathNode {
 
 	PathNode* next;
 
-	Point StartPoint();
-	Point NextPoint(Point pointFrom);
-	DirectedPoint StartDirectedPoint();
-	DirectedPoint NextDirectedPoint(DirectedPoint pointFrom);
+	DirectedPoint StartPoint();
+	DirectedPoint NextPoint(DirectedPoint pointFrom);
 
-	bool IsEndPoint(Point point);
-	bool IsEndDirectedPoint(DirectedPoint point);
+	bool IsEndPoint(DirectedPoint point);
 };
 
 struct Path {

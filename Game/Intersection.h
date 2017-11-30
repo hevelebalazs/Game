@@ -7,12 +7,14 @@ struct Road;
 
 enum TrafficLightColor {
 	TrafficLight_Red,
+	TrafficLight_Yellow,
 	TrafficLight_Green
 };
 
 struct TrafficLight {
 	static float radius;
 	static float switchTime;
+	static float yellowTime;
 
 	Point position;
 	TrafficLightColor color;

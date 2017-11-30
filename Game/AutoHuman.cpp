@@ -1,7 +1,7 @@
 #include "AutoHuman.h"
 
 void AutoHuman::InitMovement() {
-	float moveDistance = Point::CityDistance(moveStartPoint, moveEndPoint);
+	float moveDistance = Point::CityDistance(moveStartPoint.position, moveEndPoint.position);
 
 	moveTotalSeconds = (moveDistance / human.moveSpeed);
 	moveSeconds = 0.0f;
@@ -97,7 +97,7 @@ void AutoHuman::Update(float seconds) {
 
 					float moveRatio = 1.0f - (moveSeconds / moveTotalSeconds);
 
-					human.position = (moveRatio) * moveStartPoint + (1.0f - moveRatio) * moveEndPoint;
+					human.position = (moveRatio) * moveStartPoint.position + (1.0f - moveRatio) * moveEndPoint.position;
 				}
 			}
 		}

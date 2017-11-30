@@ -2,6 +2,7 @@
 
 float TrafficLight::radius = 2.0f;
 float TrafficLight::switchTime = 3.0f;
+float TrafficLight::yellowTime = 1.0f;
 
 void TrafficLight::Start() {
 	color = TrafficLight_Green;
@@ -12,15 +13,37 @@ void TrafficLight::Update(float seconds) {
 	if (color == TrafficLight_Green) {
 		timeLeft -= seconds;
 
-		if (timeLeft < 0.0f) color = TrafficLight_Red;
+		if (timeLeft < 0.0f) {
+			timeLeft += yellowTime;
+			color = TrafficLight_Yellow;
+		}
+	}
+	else if (color == TrafficLight_Yellow) {
+		timeLeft -= seconds;
+
+		if (timeLeft < 0.0f) {
+			color = TrafficLight_Red;
+		}
 	}
 }
 
 void TrafficLight::Draw(Renderer renderer) {
 	Color drawColor = {};
 
-	if (color == TrafficLight_Green)    drawColor = {0.0f, 1.0f, 0.0f};
-	else if (color == TrafficLight_Red) drawColor = {1.0f, 0.0f, 0.0f};
+	switch (color) {
+		case TrafficLight_Green: {
+			drawColor = {0.0f, 1.0f, 0.0f}; 
+			break;
+		}
+		case TrafficLight_Yellow: {
+			drawColor = {1.0f, 1.0f, 0.0f};
+			break;
+		}
+		case TrafficLight_Red: {
+			drawColor = {1.0f, 0.0f, 0.0f};
+			break;
+		}
+	}
 
 	renderer.DrawRect(
 		position.y - radius, position.x - radius,
@@ -65,8 +88,9 @@ void Intersection::UpdateTrafficLights(float seconds) {
 
 	if (roadCount <= 2) return;
 
+	// TODO: introduce an "active" member?
 	// TODO: this is total nuts, update this to arrays as soon as possible!
-	if (leftRoad && leftTrafficLight.color == TrafficLight_Green) {
+	if (leftRoad && leftTrafficLight.color != TrafficLight_Red) {
 		leftTrafficLight.Update(seconds);
 		if (leftTrafficLight.color == TrafficLight_Red) {
 			if (topRoad)         topTrafficLight.Start();
@@ -74,7 +98,7 @@ void Intersection::UpdateTrafficLights(float seconds) {
 			else if (bottomRoad) bottomTrafficLight.Start();
 		}
 	}
-	else if (topRoad && topTrafficLight.color == TrafficLight_Green) {
+	else if (topRoad && topTrafficLight.color != TrafficLight_Red) {
 		topTrafficLight.Update(seconds);
 		if (topTrafficLight.color == TrafficLight_Red) {
 			if (rightRoad)       rightTrafficLight.Start();
@@ -82,7 +106,7 @@ void Intersection::UpdateTrafficLights(float seconds) {
 			else if (leftRoad)   leftTrafficLight.Start();
 		}
 	}
-	else if (rightRoad && rightTrafficLight.color == TrafficLight_Green) {
+	else if (rightRoad && rightTrafficLight.color != TrafficLight_Red) {
 		rightTrafficLight.Update(seconds);
 		if (rightTrafficLight.color == TrafficLight_Red) {
 			if (bottomRoad)    bottomTrafficLight.Start();
@@ -90,7 +114,7 @@ void Intersection::UpdateTrafficLights(float seconds) {
 			else if (topRoad)  topTrafficLight.Start();
 		}
 	}
-	else if (bottomRoad && bottomTrafficLight.color == TrafficLight_Green) {
+	else if (bottomRoad && bottomTrafficLight.color != TrafficLight_Red) {
 		bottomTrafficLight.Update(seconds);
 		if (bottomTrafficLight.color == TrafficLight_Red) {
 			if (leftRoad)       leftTrafficLight.Start();
