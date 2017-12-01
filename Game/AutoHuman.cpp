@@ -12,11 +12,11 @@ void AutoHuman::MoveToBuilding(Building* building) {
 
 	// TODO: create functions to create these?
 	MapElem targetElem = {};
-	targetElem.type = MapElemType::BUILDING;
+	targetElem.type = MapElemBuilding;
 	targetElem.building = inBuilding;
 
 	MapElem nextElem = {};
-	nextElem.type = MapElemType::BUILDING;
+	nextElem.type = MapElemBuilding;
 	nextElem.building = building;
 
 	movePath = ConnectElems(human.map, targetElem, nextElem, moveHelper);

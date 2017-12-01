@@ -132,7 +132,7 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 
 // TODO: can the recursion cause any performance or memory issue?
 static void CalculateTreeHeight(Building* building) {
-	if (building->connectElem.type == MapElemType::BUILDING) {
+	if (building->connectElem.type == MapElemBuilding) {
 		Building* connectBuilding = building->connectElem.building;
 
 		CalculateTreeHeight(connectBuilding);
@@ -436,7 +436,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 			// TODO: create a function for this?
 			MapElem elem = {};
-			elem.type = MapElemType::BUILDING;
+			elem.type = MapElemBuilding;
 			elem.building = crossedBuilding;
 
 			building->ConnectTo(elem);

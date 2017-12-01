@@ -27,7 +27,7 @@ Intersection* Map::GetIntersectionAtPoint(Point point, float maxDistance) {
 
 MapElem Map::ClosestRoadOrIntersection(Point point) {
 	MapElem result = {};
-	result.type = MapElemType::NONE;
+	result.type = MapElemNone;
 
 	Road* closestRoad = 0;
 	float minDistanceSquare = 0.0f;
@@ -50,7 +50,7 @@ MapElem Map::ClosestRoadOrIntersection(Point point) {
 				closestRoad = road;
 				minDistanceSquare = distanceSquare;
 
-				result.type = MapElemType::ROAD;
+				result.type = MapElemRoad;
 				result.road = road;
 			}
 		}
@@ -72,7 +72,7 @@ MapElem Map::ClosestRoadOrIntersection(Point point) {
 				closestIntersection = intersection;
 				minDistanceSquare = distanceSquare;
 
-				result.type = MapElemType::INTERSECTION;
+				result.type = MapElemIntersection;
 				result.intersection = intersection;
 			}
 		}

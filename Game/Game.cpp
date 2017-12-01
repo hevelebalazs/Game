@@ -228,7 +228,7 @@ static void GameInit(int windowWidth, int windowHeight) {
 		autoVehicle->moveHelper = &globalPathHelper;
 	}
 
-	globalRenderer.camera.pixelCoordRatio = 10.0f;
+	globalRenderer.camera.pixelCoordRatio = 1.0f;
 }
 
 // TODO: pass seconds to this function
@@ -254,17 +254,17 @@ static void GameUpdate(Point mousePosition) {
 
 		// TODO: create a function for these?
 		MapElem selectedBuildingElem = {};
-		selectedBuildingElem.type = MapElemType::BUILDING;
+		selectedBuildingElem.type = MapElemBuilding;
 		selectedBuildingElem.building = globalSelectedBuilding;
 
 		MapElem highlightedBuildingElem = {};
-		highlightedBuildingElem.type = MapElemType::BUILDING;
+		highlightedBuildingElem.type = MapElemBuilding;
 		highlightedBuildingElem.building = globalHighlightedBuilding;
 
 		globalBuildingPath = ConnectElems(&globalMap, selectedBuildingElem, highlightedBuildingElem, &globalPathHelper);
 	}
 
-	globalRenderer.camera.center = globalAutoVehicles[0].vehicle.position;
+	// globalRenderer.camera.center = globalAutoVehicles[0].vehicle.position;
 }
 
 static void GameDraw(Renderer renderer) {

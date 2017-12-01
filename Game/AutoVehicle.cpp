@@ -18,11 +18,11 @@ void AutoVehicle::MoveToBuilding(Building* building) {
 
 	// TODO: create functions to create these?
 	MapElem targetElem = {};
-	targetElem.type = MapElemType::BUILDING;
+	targetElem.type = MapElemBuilding;
 	targetElem.building = inBuilding;
 
 	MapElem nextElem = {};
-	nextElem.type = MapElemType::BUILDING;
+	nextElem.type = MapElemBuilding;
 	nextElem.building = building;
 
 	movePath = ConnectElems(vehicle.map, targetElem, nextElem, moveHelper);
@@ -63,7 +63,7 @@ void AutoVehicle::Update(float seconds) {
 						MapElem moveElem = moveNode->elem;
 						MapElem nextElem = nextNode->elem;
 
-						if (moveElem.type == MapElemType::ROAD && nextElem.type == MapElemType::INTERSECTION) {
+						if (moveElem.type == MapElemRoad && nextElem.type == MapElemIntersection) {
 							Road* road = moveElem.road;
 							Intersection* intersection = nextElem.intersection;
 							TrafficLight* trafficLight = 0;

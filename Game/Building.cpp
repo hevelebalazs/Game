@@ -20,10 +20,10 @@ float Max2(float x, float y) {
 void Building::ConnectTo(MapElem elem) {
 	Point center = {(left + right) * 0.5f, (top + bottom) * 0.5f};
 
-	if (elem.type == MapElemType::NONE) {
+	if (elem.type == MapElemNone) {
 		// TODO: should this ever happen?
 	}
-	else if (elem.type == MapElemType::ROAD) {
+	else if (elem.type == MapElemRoad) {
 		Road* road = elem.road;
 
 		if (road->endPoint1.x == road->endPoint2.x) {
@@ -57,7 +57,7 @@ void Building::ConnectTo(MapElem elem) {
 			}
 		}
 	}
-	else if (elem.type == MapElemType::INTERSECTION) {
+	else if (elem.type == MapElemIntersection) {
 		Intersection* intersection = elem.intersection;
 
 		float halfRoadWidth = intersection->GetRoadWidth() * 0.5f;
@@ -98,7 +98,7 @@ void Building::ConnectTo(MapElem elem) {
 			}
 		}
 	}
-	else if (elem.type == MapElemType::BUILDING) {
+	else if (elem.type == MapElemBuilding) {
 		Building* building = elem.building;
 
 		connectPointFar = building->ClosestCrossPoint(connectPointClose, connectPointFar);
@@ -282,10 +282,10 @@ void Building::Draw(Renderer renderer) {
 	}
 
 	// DEBUG
-	if (connectElem.type == MapElemType::INTERSECTION) {
+	if (connectElem.type == MapElemIntersection) {
 		color = Color{1.0f, 0.0f, 0.0f};
 	}
-	else if (connectElem.type == MapElemType::BUILDING) {
+	else if (connectElem.type == MapElemBuilding) {
 		color = Color{0.0f, 0.0f, 1.0f};
 	}
 	else {
