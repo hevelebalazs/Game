@@ -3,6 +3,8 @@
 #include "Building.h"
 #include "Geometry.h"
 
+extern float entranceWidth = 10.0f;
+
 float Building::connectRoadWidth;
 
 // TODO: move these to a math file?
@@ -16,9 +18,10 @@ float Max2(float x, float y) {
 	else return y;
 }
 
+// TODO: rewrite this using vector maths
 // TODO: should this be a real function in GridMapCreator.cpp?
-void Building::ConnectTo(MapElem elem) {
-	Point center = {(left + right) * 0.5f, (top + bottom) * 0.5f};
+void ConnectBuildingToElem(Building* building, MapElem elem) {
+	Point center = {(building->left + building->right) * 0.5f, (building->top + building->bottom) * 0.5f};
 
 	if (elem.type == MapElemNone) {
 		// TODO: should this ever happen?
@@ -27,40 +30,40 @@ void Building::ConnectTo(MapElem elem) {
 		Road* road = elem.road;
 
 		if (road->endPoint1.x == road->endPoint2.x) {
-			connectPointFar.x = road->endPoint1.x;
-			connectPointFar.y = center.y;
-			connectPointFarShow.y = center.y;
-			connectPointClose.y = center.y;
+			building->connectPointFar.x = road->endPoint1.x;
+			building->connectPointFar.y = center.y;
+			building->connectPointFarShow.y = center.y;
+			building->connectPointClose.y = center.y;
 			
-			if (right < road->endPoint1.x) {
-				connectPointFarShow.x = road->endPoint1.x - (road->width * 0.5f);
-				connectPointClose.x = right;
+			if (building->right < road->endPoint1.x) {
+				building->connectPointFarShow.x = road->endPoint1.x - (road->width * 0.5f);
+				building->connectPointClose.x = building->right;
 			}
 			else {
-				connectPointFarShow.x = road->endPoint1.x + (road->width * 0.5f);
-				connectPointClose.x = left;
+				building->connectPointFarShow.x = road->endPoint1.x + (road->width * 0.5f);
+				building->connectPointClose.x = building->left;
 			}
 		}
 		else if (road->endPoint1.y == road->endPoint2.y) {
-			connectPointFar.y = road->endPoint1.y;
-			connectPointFar.x = center.x;
-			connectPointFarShow.x = center.x;
-			connectPointClose.x = center.x;
+			building->connectPointFar.y = road->endPoint1.y;
+			building->connectPointFar.x = center.x;
+			building->connectPointFarShow.x = center.x;
+			building->connectPointClose.x = center.x;
 
-			if (bottom < road->endPoint1.y) {
-				connectPointFarShow.y = road->endPoint1.y - (road->width * 0.5f);
-				connectPointClose.y = bottom;
+			if (building->bottom < road->endPoint1.y) {
+				building->connectPointFarShow.y = road->endPoint1.y - (road->width * 0.5f);
+				building->connectPointClose.y = building->bottom;
 			}
 			else {
-				connectPointFarShow.y = road->endPoint1.y + (road->width * 0.5f);
-				connectPointClose.y = top;
+				building->connectPointFarShow.y = road->endPoint1.y + (road->width * 0.5f);
+				building->connectPointClose.y = building->top;
 			}
 		}
 	}
 	else if (elem.type == MapElemIntersection) {
 		Intersection* intersection = elem.intersection;
 
-		float halfRoadWidth = intersection->GetRoadWidth() * 0.5f;
+		float halfRoadWidth = GetIntersectionRoadWidth(*intersection) * 0.5f;
 
 		bool betweenX = (fabsf(center.x - intersection->coordinate.x) <= halfRoadWidth);
 		bool betweenY = (fabsf(center.y - intersection->coordinate.y) <= halfRoadWidth);
@@ -68,70 +71,82 @@ void Building::ConnectTo(MapElem elem) {
 		if (!betweenX && !betweenY) throw 1;
 
 		if (betweenX) {
-			connectPointFar.y = intersection->coordinate.y;
-			connectPointFar.x = center.x;
-			connectPointFarShow.x = center.x;
-			connectPointClose.x = center.x;
+			building->connectPointFar.y = intersection->coordinate.y;
+			building->connectPointFar.x = center.x;
+			building->connectPointFarShow.x = center.x;
+			building->connectPointClose.x = center.x;
 
 			if (center.y > intersection->coordinate.y) {
-				connectPointFarShow.y = connectPointFar.y + halfRoadWidth;
-				connectPointClose.y = top;
+				building->connectPointFarShow.y = building->connectPointFar.y + halfRoadWidth;
+				building->connectPointClose.y = building->top;
 			}
 			else {
-				connectPointFarShow.y = connectPointFar.y - halfRoadWidth;
-				connectPointClose.y = bottom;
+				building->connectPointFarShow.y = building->connectPointFar.y - halfRoadWidth;
+				building->connectPointClose.y = building->bottom;
 			}
 		}
 		else if (betweenY) {
-			connectPointFar.x = intersection->coordinate.x;
-			connectPointFar.y = center.y;
-			connectPointFarShow.y = center.y;
-			connectPointClose.y = center.y;
+			building->connectPointFar.x = intersection->coordinate.x;
+			building->connectPointFar.y = center.y;
+			building->connectPointFarShow.y = center.y;
+			building->connectPointClose.y = center.y;
 
 			if (center.x > intersection->coordinate.x) {
-				connectPointFarShow.x = connectPointFar.x + halfRoadWidth;
-				connectPointClose.x = left;
+				building->connectPointFarShow.x = building->connectPointFar.x + halfRoadWidth;
+				building->connectPointClose.x = building->left;
 			}
 			else {
-				connectPointFarShow.x = connectPointFar.x - halfRoadWidth;
-				connectPointClose.x = right;
+				building->connectPointFarShow.x = building->connectPointFar.x - halfRoadWidth;
+				building->connectPointClose.x = building->right;
 			}
 		}
 	}
 	else if (elem.type == MapElemBuilding) {
-		Building* building = elem.building;
+		Building* connectBuilding = elem.building;
 
-		connectPointFar = building->ClosestCrossPoint(connectPointClose, connectPointFar);
-		connectPointFarShow = connectPointFar;
+		building->connectPointFar = ClosestBuildingCrossPoint(*connectBuilding, building->connectPointClose, building->connectPointFar);
+		building->connectPointFarShow = building->connectPointFar;
 	}
 
-	connectElem = elem;
+	building->connectElem = elem;
+
+	building->entrancePoint1 = building->connectPointClose;
+	building->entrancePoint2 = building->connectPointClose;
+
+	if (building->connectPointClose.x == building->left || building->connectPointClose.x == building->right) {
+		building->entrancePoint1.y -= entranceWidth * 0.5f;
+		building->entrancePoint2.y += entranceWidth * 0.5f;
+	}
+	else if (building->connectPointClose.y == building->top || building->connectPointClose.y == building->bottom) {
+		building->entrancePoint1.x -= entranceWidth * 0.5f;
+		building->entrancePoint2.x += entranceWidth * 0.5f;
+	}
 }
 
-bool Building::IsPointInside(Point point) {
-	if (point.x < left || point.x > right) return false;
-	if (point.y < top || point.y > bottom) return false;
+bool IsPointInBuilding(Point point, Building building) {
+	if (point.x < building.left || point.x > building.right) return false;
+	if (point.y < building.top || point.y > building.bottom) return false;
 	return true;
 }
 
-static bool IsTouching(Building* building, Point point) {
-	if (point.x == building->left) return true;
-	if (point.x == building->right) return true;
-	if (point.y == building->top) return true;
-	if (point.y == building->bottom) return true;
+static bool IsPointOnEdge(Point point, Building building) {
+	if (point.x == building.left) return true;
+	if (point.x == building.right) return true;
+	if (point.y == building.top) return true;
+	if (point.y == building.bottom) return true;
 
 	return false;
 }
 
 // TODO: can this be merged with ClosestCrossPoint?
-bool Building::IsCrossed(Point point1, Point point2) {
-	if (IsTouching(this, point1)) return true;
-	if (IsTouching(this, point2)) return true;
+bool IsBuildingCrossed(Building building, Point point1, Point point2) {
+	if (IsPointOnEdge(point1, building)) return true;
+	if (IsPointOnEdge(point2, building)) return true;
 
-	Point topLeft = {left, top};
-	Point topRight = {right, top};
-	Point bottomLeft = {left, bottom};
-	Point bottomRight = {right, bottom};
+	Point topLeft     = {building.left,  building.top};
+	Point topRight    = {building.right, building.top};
+	Point bottomLeft  = {building.left,  building.bottom};
+	Point bottomRight = {building.right, building.bottom};
 
 	if (DoLinesCross(topLeft, topRight, point1, point2)) return true;
 	if (DoLinesCross(topRight, bottomRight, point1, point2)) return true;
@@ -141,15 +156,15 @@ bool Building::IsCrossed(Point point1, Point point2) {
 	return false;
 }
 
-BuildingCrossInfo Building::ExtClosestCrossInfo(Point closePoint, Point farPoint, float radius) {
+BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float radius, Point closePoint, Point farPoint) {
 	BuildingCrossInfo result = {};
 	float minDistanceSquare = 0.0f;
 	bool foundAny = false;
 
-	Point topLeft     = {left  - radius, top    - radius};
-	Point topRight    = {right + radius, top    - radius};
-	Point bottomLeft  = {left  - radius, bottom + radius};
-	Point bottomRight = {right + radius, bottom + radius};
+	Point topLeft     = {building->left  - radius, building->top    - radius};
+	Point topRight    = {building->right + radius, building->top    - radius};
+	Point bottomLeft  = {building->left  - radius, building->bottom + radius};
+	Point bottomRight = {building->right + radius, building->bottom + radius};
 	Point points[5] = {topLeft, topRight, bottomRight, bottomLeft, topLeft};
 
 	for (int i = 0; i < 4; ++i) {
@@ -158,13 +173,13 @@ BuildingCrossInfo Building::ExtClosestCrossInfo(Point closePoint, Point farPoint
 
 		if (DoLinesCross(corner1, corner2, closePoint, farPoint)) {
 			Point intersection = LineIntersection(corner1, corner2, closePoint, farPoint);
-			float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+			float distanceSquare = DistanceSquare(closePoint, intersection);
 
 			if (foundAny == false || distanceSquare < minDistanceSquare) {
 				minDistanceSquare = distanceSquare;
 				foundAny = true;
 
-				result.building = this;
+				result.building = building;
 				result.crossPoint = intersection;
 				result.corner1 = corner1;
 				result.corner2 = corner2;
@@ -172,23 +187,150 @@ BuildingCrossInfo Building::ExtClosestCrossInfo(Point closePoint, Point farPoint
 		}
 	}
 
+	Point inTopLeft = {building->left + radius, building->top + radius};
+	Point inTopRight = {building->right - radius, building->top + radius};
+	Point inBottomLeft = {building->left + radius, building->bottom - radius};
+	Point inBottomRight = {building->right - radius, building->bottom - radius};
+	Point inPoints[5] = {inTopLeft, inTopRight, inBottomRight, inBottomLeft, inTopLeft};
+
+	for (int i = 0; i < 4; ++i) {
+		Point inCorner1 = inPoints[i];
+		Point inCorner2 = inPoints[i + 1];
+
+		if (DoLinesCross(inCorner1, inCorner2, closePoint, farPoint)) {
+			Point intersection = LineIntersection(inCorner1, inCorner2, closePoint, farPoint);
+			float distanceSquare = DistanceSquare(closePoint, intersection);
+
+			if (foundAny == false || distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				foundAny = true;
+
+				result.building = building;
+				result.crossPoint = intersection;
+				result.corner1 = inCorner1;
+				result.corner2 = inCorner2;
+			}
+		}
+	}
+
+	// TODO: create directed points for entrance points that point outside of the building
+	Point entrancePointOut1 = building->entrancePoint1;
+	Point entrancePointOut2 = building->entrancePoint2;
+	Point entrancePointIn1 = building->entrancePoint1;
+	Point entrancePointIn2 = building->entrancePoint2;
+	
+	if (building->entrancePoint1.x == building->left) {
+		entrancePointOut1.x -= radius;
+		entrancePointOut2.x -= radius;
+		entrancePointIn1.x += radius;
+		entrancePointIn2.x += radius;
+	}
+	else if (building->entrancePoint1.x == building->right) {
+		entrancePointOut1.x += radius;
+		entrancePointOut2.x += radius;
+		entrancePointIn1.x -= radius;
+		entrancePointIn2.x -= radius;
+	}
+	else if (building->entrancePoint1.y == building->top) {
+		entrancePointOut1.y -= radius;
+		entrancePointOut2.y -= radius;
+		entrancePointIn1.y += radius;
+		entrancePointIn2.y += radius;
+	}
+	else if (building->entrancePoint1.y == building->bottom) {
+		entrancePointOut1.y += radius;
+		entrancePointOut2.y += radius;
+		entrancePointIn1.y -= radius;
+		entrancePointIn2.y -= radius;
+	}
+
+	Point entranceSide11 = building->entrancePoint1;
+	Point entranceSide12 = building->entrancePoint1;
+	Point entranceSide21 = building->entrancePoint2;
+	Point entranceSide22 = building->entrancePoint2;
+
+	if (building->entrancePoint1.x == building->left || building->entrancePoint1.x == building->right) {
+		if (building->entrancePoint1.y < building->entrancePoint2.y) {
+			entranceSide11.y += radius;
+			entranceSide12.y += radius;
+			entranceSide21.y -= radius;
+			entranceSide22.y -= radius;
+		}
+		else {
+			entranceSide11.y -= radius;
+			entranceSide12.y -= radius;
+			entranceSide21.y += radius;
+			entranceSide22.y += radius;
+		}
+
+		entranceSide11.x -= radius;
+		entranceSide12.x += radius;
+
+		entranceSide21.x -= radius;
+		entranceSide22.x += radius;
+	}
+	else if (building->entrancePoint1.y == building->top || building->entrancePoint1.y == building->bottom) {
+		if (building->entrancePoint1.x < building->entrancePoint2.x) {
+			entranceSide11.x += radius;
+			entranceSide12.x += radius;
+			entranceSide21.x -= radius;
+			entranceSide22.x -= radius;
+		}
+		else {
+			entranceSide11.x -= radius;
+			entranceSide12.x -= radius;
+			entranceSide21.x += radius;
+			entranceSide22.x += radius;
+		}
+
+		entranceSide11.y -= radius;
+		entranceSide12.y += radius;
+
+		entranceSide21.y -= radius;
+		entranceSide22.y += radius;
+	}
+
+	if (DoLinesCross(entranceSide11, entranceSide12, closePoint, farPoint)) {
+		result.building = building;
+		result.corner1 = entranceSide11;
+		result.corner2 = entranceSide12;
+		result.entrance = EntranceSide;
+	}
+	else if (DoLinesCross(entranceSide21, entranceSide22, closePoint, farPoint)) {
+		result.building = building;
+		result.corner1 = entranceSide21;
+		result.corner2 = entranceSide22;
+		result.entrance = EntranceSide;
+	}
+	else if (foundAny) {
+		if (DoLinesCross(entrancePointOut1, entrancePointOut2, closePoint, farPoint)) {
+			result.entrance = EntranceOut;
+		}
+		else if (DoLinesCross(entrancePointIn1, entrancePointIn2, closePoint, farPoint)) {
+			result.entrance = EntranceIn;
+		}
+		else {
+			result.entrance = EntranceNone;
+		}
+	}
+
 	return result;
 }
 
-Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
+Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPoint) {
 	Point result = {};
 	float minDistanceSquare = 0.0f;
 	bool foundAny = false;
 
-	Point topLeft = {left, top};
-	Point topRight = {right, top};
-	Point bottomLeft = {left, bottom};
-	Point bottomRight = {right, bottom};
+	Point topLeft     = {building.left,  building.top};
+	Point topRight    = {building.right, building.top};
+	Point bottomLeft  = {building.left,  building.bottom};
+	Point bottomRight = {building.right, building.bottom};
 
 	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) {
 		Point intersection = LineIntersection(topLeft, topRight, closePoint, farPoint);
-		intersection.y = top;
-		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+		intersection.y = building.top;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) {
 			minDistanceSquare = distanceSquare;
@@ -199,8 +341,8 @@ Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
 
 	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) {
 		Point intersection = LineIntersection(topRight, bottomRight, closePoint, farPoint);
-		intersection.x = right;
-		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+		intersection.x = building.right;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) {
 			minDistanceSquare = distanceSquare;
@@ -211,8 +353,8 @@ Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
 
 	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) {
 		Point intersection = LineIntersection(bottomRight, bottomLeft, closePoint, farPoint);
-		intersection.y = bottom;
-		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+		intersection.y = building.bottom;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) {
 			minDistanceSquare = distanceSquare;
@@ -223,8 +365,8 @@ Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
 
 	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) {
 		Point intersection = LineIntersection(bottomLeft, topLeft, closePoint, farPoint);
-		intersection.x = left;
-		float distanceSquare = Point::DistanceSquare(closePoint, intersection);
+		intersection.x = building.left;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) {
 			minDistanceSquare = distanceSquare;
@@ -236,30 +378,18 @@ Point Building::ClosestCrossPoint(Point closePoint, Point farPoint) {
 	return result;
 }
 
-void Building::HighLight(Renderer renderer, Color color) {
-	renderer.DrawRect(
-		top, left, bottom, right,
+void HighLightBuilding(Renderer renderer, Building building, Color color) {
+	DrawRect(
+		renderer,
+		building.top, building.left, building.bottom, building.right,
 		color
 	);
 }
 
-void Building::Draw(Renderer renderer) {
-	// TODO: make this a static member of Road?
-	Color roadColor = Color{0.5f, 0.5f, 0.5f};
-	
-	if (roadAround) {
-		renderer.DrawRect(
-			top - connectRoadWidth, left - connectRoadWidth,
-			bottom + connectRoadWidth, right + connectRoadWidth,
-			roadColor
-		);
-	}
-
-	renderer.DrawLine(connectPointClose, connectPointFarShow, roadColor, connectRoadWidth);
-
+void DrawBuilding(Renderer renderer, Building building) {
 	Color color = {};
 
-	switch (type) {
+	switch (building.type) {
 		case BuildingType_Black: {
 				color = Color{0.0f, 0.0f, 0.0f};
 				break;
@@ -281,19 +411,36 @@ void Building::Draw(Renderer renderer) {
 			}
 	}
 
-	// DEBUG
-	if (connectElem.type == MapElemIntersection) {
-		color = Color{1.0f, 0.0f, 0.0f};
-	}
-	else if (connectElem.type == MapElemBuilding) {
-		color = Color{0.0f, 0.0f, 1.0f};
-	}
-	else {
-		color = Color{0.0f, 0.0f, 0.0f};
-	}
-
-	renderer.DrawRect(
-		top, left, bottom, right,
+	DrawRect(
+		renderer,
+		building.top, building.left, building.bottom, building.right,
 		color
 	);
+
+	float entranceLineWidth = 0.8f;
+	Color entranceColor = Color{
+		color.red * 0.5f, 
+		color.green * 0.5f, 
+		color.blue * 0.5f
+	};
+
+	DrawLine(renderer, building.entrancePoint1, building.entrancePoint2, entranceColor, entranceLineWidth);
+}
+
+void DrawConnectRoad(Renderer renderer, Building building) {
+	// TODO: make this a static member of Road?
+	Color roadColor = Color{0.5f, 0.5f, 0.5f};
+
+	float roadWidth = building.connectRoadWidth;
+
+	if (building.roadAround) {
+		DrawRect(
+			renderer,
+			building.top - roadWidth, building.left - roadWidth,
+			building.bottom + roadWidth, building.right + roadWidth,
+			roadColor
+		);
+	}
+
+	DrawLine(renderer, building.connectPointClose, building.connectPointFarShow, roadColor, building.connectRoadWidth);
 }

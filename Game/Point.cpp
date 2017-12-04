@@ -1,53 +1,27 @@
 #include "Point.h"
 #include <math.h>
 
-float Point::DistanceSquare(Point point1, Point point2) {
-	return (point1.x - point2.x) * (point1.x - point2.x) +
-		(point1.y - point2.y) * (point1.y - point2.y);
+Point PointSum(Point point1, Point point2) {
+	Point result = {};
+	result.x = (point1.x + point2.x);
+	result.y = (point1.y + point2.y);
+	return result;
 }
 
-float Point::CityDistance(Point point1, Point point2) {
-	return fabsf(point1.x - point2.x) + fabsf(point1.y - point2.y);
+Point PointDiff(Point point1, Point point2) {
+	Point result = {};
+	result.x = (point1.x - point2.x);
+	result.y = (point1.y - point2.y);
+	return result;
 }
 
-float Point::DotProduct(Point point1, Point point2) {
-	return (point1.x * point2.x) + (point1.y * point2.y);
+Point PointProd(float times, Point point) {
+	Point result = {};
+	result.x = (times * point.x);
+	result.y = (times * point.y);
+	return result;
 }
 
-Point Point::operator+(Point otherPoint) {
-	return { x + otherPoint.x, y + otherPoint.y };
-}
-
-Point Point::operator-(Point otherPoint) {
-	return { x - otherPoint.x, y - otherPoint.y };
-}
-
-Point Point::operator+=(Point otherPoint) {
-	*this = (*this + otherPoint);
-	return (*this);
-}
-
-Point Point::operator-=(Point otherPoint) {
-	(*this) = (*this - otherPoint);
-	return (*this);
-}
-
-bool Point::operator==(Point otherPoint) {
-	return (x == otherPoint.x) && (y == otherPoint.y);
-}
-
-float Point::Length() {
-	return sqrtf(x * x + y * y);
-}
-
-Point Point::Rotation(float angle) {
-	return { cosf(angle), sinf(angle) };
-}
-
-Point operator*(float multiplier, Point point) {
-	return { multiplier * point.x, multiplier * point.y };
-}
-
-Point operator*(Point point, float multiplier) {
-	return multiplier * point;
+bool PointEqual(Point point1, Point point2) {
+	return ((point1.x == point2.x) && (point1.y == point2.y));
 }

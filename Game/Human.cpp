@@ -1,16 +1,20 @@
 #include "Human.h"
 
 float Human::radius = 1.0f;
-float Human::moveSpeed = 10.0f;
+float Human::moveSpeed = 30.0f;
 
-void Human::Draw(Renderer renderer) {
+void DrawHuman(Renderer renderer, Human human) {
 	Color color = Color {
-		needRed / 100.0f,
-		needGreen / 100.0f,
-		needBlue / 100.0f
+		human.needRed / 100.0f,
+		human.needGreen / 100.0f,
+		human.needBlue / 100.0f
 	};
 
-	renderer.DrawRect(
+	float radius = human.radius;
+	Point position = human.position;
+
+	DrawRect(
+		renderer,
 		position.y - radius, position.x - radius,
 		position.y + radius, position.x + radius,
 		color

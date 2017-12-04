@@ -3,60 +3,64 @@
 #include "Geometry.h"
 #include "MapElem.h"
 
-void AutoVehicle::InitMovement() {
-	moveBezier4 = TurnBezier4(moveStartPoint, moveEndPoint);
+void InitAutoVehicleMovement(AutoVehicle* autoVehicle) {
+	autoVehicle->moveBezier4 = TurnBezier4(autoVehicle->moveStartPoint, autoVehicle->moveEndPoint);
 
 	// TODO: is this distance close enough?
-	float moveDistance = PointDistance(moveStartPoint.position, moveEndPoint.position);
+	float moveDistance = Distance(autoVehicle->moveStartPoint.position, autoVehicle->moveEndPoint.position);
 
-	moveTotalSeconds = (moveDistance / vehicle.maxSpeed);
-	moveSeconds = 0.0f;
+	autoVehicle->moveTotalSeconds = (moveDistance / autoVehicle->vehicle.maxSpeed);
+	autoVehicle->moveSeconds = 0.0f;
 }
 
-void AutoVehicle::MoveToBuilding(Building* building) {
-	ClearPath(&movePath);
+void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building) {
+	ClearPath(&autoVehicle->movePath);
 
 	// TODO: create functions to create these?
 	MapElem targetElem = {};
 	targetElem.type = MapElemBuilding;
-	targetElem.building = inBuilding;
+	targetElem.building = autoVehicle->inBuilding;
 
 	MapElem nextElem = {};
 	nextElem.type = MapElemBuilding;
 	nextElem.building = building;
 
-	movePath = ConnectElems(vehicle.map, targetElem, nextElem, moveHelper);
+	autoVehicle->movePath = ConnectElems(autoVehicle->vehicle.map, targetElem, nextElem, autoVehicle->moveHelper);
 
 	// TODO: can the path have 0 elements if the two buildings are the same?
-	if (movePath.nodeCount == 0) {
-		moveNode = 0;
+	if (autoVehicle->movePath.nodeCount == 0) {
+		autoVehicle->moveNode = 0;
 	}
 	else {
-		moveNode = &movePath.nodes[0];
+		autoVehicle->moveNode = &autoVehicle->movePath.nodes[0];
 
-		moveStartPoint = moveNode->StartPoint();
-		moveEndPoint = moveNode->NextPoint(moveStartPoint);
+		autoVehicle->moveStartPoint = StartNodePoint(autoVehicle->moveNode);
+		autoVehicle->moveEndPoint = NextNodePoint(autoVehicle->moveNode, autoVehicle->moveStartPoint);
 
-		InitMovement();
+		InitAutoVehicleMovement(autoVehicle);
 
-		moveTargetBuilding = building;
+		autoVehicle->moveTargetBuilding = building;
 	}
 }
 
-void AutoVehicle::Update(float seconds) {
-	if (moveTargetBuilding) {
+void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds) {
+	Vehicle* vehicle = &autoVehicle->vehicle;
+
+	if (autoVehicle->moveTargetBuilding) {
 		// TODO: should there be a limit on the iteration number?
 		while (seconds > 0.0f) {
+			PathNode* moveNode = autoVehicle->moveNode;
+
 			if (!moveNode) {
-				inBuilding = moveTargetBuilding;
-				moveTargetBuilding = 0;
+				autoVehicle->inBuilding = autoVehicle->moveTargetBuilding;
+				autoVehicle->moveTargetBuilding = 0;
 				break;
 			}
 
 			if (moveNode) {
 				bool stop = false;
 
-				if (moveNode->IsEndPoint(moveEndPoint)) {
+				if (IsNodeEndPoint(moveNode, autoVehicle->moveEndPoint)) {
 					PathNode* nextNode = moveNode->next;
 
 					if (nextNode) {
@@ -84,45 +88,46 @@ void AutoVehicle::Update(float seconds) {
 
 				if (stop) {
 					// TODO: use distance square here?
-					float distanceLeft = PointDistance(vehicle.position, moveEndPoint.position);
+					float distanceLeft = Distance(vehicle->position, autoVehicle->moveEndPoint.position);
 
 					// TODO: introduce a "stopDistance" variable?
-					if (distanceLeft < vehicle.length * 0.5f) {
+					if (distanceLeft < vehicle->length * 0.5f) {
 						break;
 					}
 				}
 
-				moveSeconds += seconds;
+				autoVehicle->moveSeconds += seconds;
 
-				if (moveSeconds >= moveTotalSeconds) {
-					moveStartPoint = moveEndPoint;
+				if (autoVehicle->moveSeconds >= autoVehicle->moveTotalSeconds) {
+					autoVehicle->moveStartPoint = autoVehicle->moveEndPoint;
 
-					seconds = moveSeconds - moveTotalSeconds;
+					seconds = autoVehicle->moveSeconds - autoVehicle->moveTotalSeconds;
 
-					if (moveNode->IsEndPoint(moveStartPoint)) {
+					if (IsNodeEndPoint(moveNode, autoVehicle->moveStartPoint)) {
 						moveNode = moveNode->next;
+						autoVehicle->moveNode = moveNode;
 
 						if (!moveNode) continue;
 					}
 					else {
-						moveEndPoint = moveNode->NextPoint(moveStartPoint);
+						autoVehicle->moveEndPoint = NextNodePoint(moveNode, autoVehicle->moveStartPoint);
 
-						InitMovement();
+						InitAutoVehicleMovement(autoVehicle);
 					}
 				}
 				else {
 					seconds = 0.0f;
 
-					float moveRatio = (moveSeconds / moveTotalSeconds);
+					float moveRatio = (autoVehicle->moveSeconds / autoVehicle->moveTotalSeconds);
 
-					DirectedPoint position = Bezier4DirectedPoint(moveBezier4, moveRatio);
-					vehicle.MoveTo(position);
+					DirectedPoint position = Bezier4DirectedPoint(autoVehicle->moveBezier4, moveRatio);
+					MoveVehicle(vehicle, position);
 				}
 			}
 		}
 	}
 	else {
-		Building* targetBuilding = vehicle.map->GetRandomBuilding();
-		MoveToBuilding(targetBuilding);
+		Building* targetBuilding = RandomBuilding(*vehicle->map);
+		MoveAutoVehicleToBuilding(autoVehicle, targetBuilding);
 	}
 }

@@ -14,15 +14,10 @@ struct Road{
 	Intersection* intersection1;
 	Intersection* intersection2;
 
-	Point EnterPoint(int endPointIndex);
-	Point LeavePoint(int endPointIndex);
-
-	float DistanceSquareFrom(Point point);
-	Point ClosestPoint(Point point);
-
-	Intersection* OtherIntersection(Intersection*);
-
 	float width;
-	
-	void Draw(Renderer renderer);
 };
+
+float DistanceSquareFromRoad(Road road, Point point);
+Point ClosestRoadPoint(Road road, Point point);
+
+void DrawRoad(Renderer renderer, Road road);

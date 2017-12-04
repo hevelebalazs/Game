@@ -1,29 +1,17 @@
 #pragma once
 
-// TODO: rename this to Vector
+// TODO: rename this to Vector?
 struct Point {
-	static float DistanceSquare(Point point1, Point point2);
-	static float CityDistance(Point point1, Point point2);
-	static float DotProduct(Point point1, Point point2);
-
 	float x;
 	float y;
-	Point operator+(Point otherPoint);
-	Point operator-(Point otherPoint);
-	Point operator+=(Point otherPoint);
-	Point operator-=(Point otherPoint);
-
-	bool operator==(Point otherPoint);
-
-	float Length();
-
-	static Point Rotation(float angle);
 };
-
-Point operator*(float multiplier, Point point);
-Point operator*(Point point, float multiplier);
 
 struct DirectedPoint {
 	Point position;
 	Point direction;
 };
+
+Point PointSum(Point point1, Point point2);
+Point PointDiff(Point point1, Point point2);
+Point PointProd(float times, Point point);
+bool PointEqual(Point point1, Point point2);

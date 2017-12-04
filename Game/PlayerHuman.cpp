@@ -6,65 +6,83 @@
 static void MoveHuman(Human* human, Point moveVector) {
 	Map* map = human->map;
 
-	float distanceToGo = moveVector.Length();
+	float distanceToGo = VectorLength(moveVector);
 
 	// TODO: should there be a limit on the iteration number?
 	while (distanceToGo > 0.0f) {
-		Point pointToGo = human->position + moveVector;
+		bool go = true;
 
-		BuildingCrossInfo crossInfo = human->map->ClosestExtBuildingCrossInfo(human->position, pointToGo, human->radius);
+		Point pointToGo = PointSum(human->position, moveVector);
+
+		BuildingCrossInfo crossInfo = ClosestExtBuildingCrossInfo(*human->map, human->radius, human->position, pointToGo);
 
 		Building* crossedBuilding = crossInfo.building;
 
 		if (crossedBuilding) {
-			Point intersectionPoint = crossedBuilding->ClosestCrossPoint(human->position, pointToGo);
+			if (crossInfo.entrance == EntranceOut) {
+				if (human->inBuilding == crossedBuilding) human->inBuilding = 0;
+				else human->inBuilding = crossedBuilding;
+			}
+			else if (crossInfo.entrance == EntranceIn) {
+				go = true;
+			}
+			else if (crossInfo.entrance == EntranceSide) {
+				distanceToGo = 0.0f;
+				go = false;
+			}
+			else {
+				Point intersectionPoint = ClosestBuildingCrossPoint(*crossedBuilding, human->position, pointToGo);
 
-			// TODO: create a proper collision system
-			float distanceTaken = PointDistance(human->position, intersectionPoint);
+				// TODO: create a proper collision system
+				float distanceTaken = Distance(human->position, intersectionPoint);
 
-			Point moveNormal = moveVector * (1.0f / moveVector.Length());
+				Point moveNormal = PointProd(1.0f / VectorLength(moveVector), moveVector);
 
-			Point wallDirection = crossInfo.corner1 - crossInfo.corner2;
-			moveVector = ParallelVector(moveVector, wallDirection);
+				Point wallDirection = PointDiff(crossInfo.corner1, crossInfo.corner2);
+				moveVector = ParallelVector(moveVector, wallDirection);
 
-			distanceToGo = moveVector.Length();
+				distanceToGo = VectorLength(moveVector);
+
+				go = false;
+			}
 		}
-		else {
+
+		if (go) {
 			human->position = pointToGo;
 			distanceToGo = 0.0f;
 		}
 	}
 }
 
-void PlayerHuman::Update(float seconds) {
-	moveDirection = Point {0.0f, 0.0f};
+void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds) {
+	playerHuman->moveDirection = Point {0.0f, 0.0f};
 
 	bool moveX = false;
 	bool moveY = false;
 
-	if (moveLeft) {
-		moveDirection.x = -1.0f;
+	if (playerHuman->moveLeft) {
+		playerHuman->moveDirection.x = -1.0f;
 		moveX = true;
 	}
 
-	if (moveRight) {
-		moveDirection.x = 1.0f;
+	if (playerHuman->moveRight) {
+		playerHuman->moveDirection.x = 1.0f;
 		moveX = true;
 	}
 
-	if (moveUp) {
-		moveDirection.y = -1.0f;
+	if (playerHuman->moveUp) {
+		playerHuman->moveDirection.y = -1.0f;
 		moveY = true;
 	}
 
-	if (moveDown) {
-		moveDirection.y = 1.0f;
+	if (playerHuman->moveDown) {
+		playerHuman->moveDirection.y = 1.0f;
 		moveY = true;
 	}
 
-	if (moveX && moveY) moveDirection = moveDirection * (1.0f / sqrtf(2.0f));
+	if (moveX && moveY) playerHuman->moveDirection = PointProd(1.0f / sqrtf(2.0f), playerHuman->moveDirection);
 
-	Point moveVector = (Human::moveSpeed * seconds) * moveDirection;
+	Point moveVector = PointProd(Human::moveSpeed * seconds, playerHuman->moveDirection);
 
-	MoveHuman(&human, moveVector);
+	MoveHuman(&playerHuman->human, moveVector);
 }

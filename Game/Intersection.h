@@ -19,10 +19,6 @@ struct TrafficLight {
 	Point position;
 	TrafficLightColor color;
 	float timeLeft;
-
-	void Start();
-	void Update(float seconds);
-	void Draw(Renderer renderer);
 };
 
 struct Intersection {
@@ -40,13 +36,12 @@ struct Intersection {
 	TrafficLight rightTrafficLight;
 	TrafficLight topTrafficLight;
 	TrafficLight bottomTrafficLight;
-
-	float GetRoadWidth();
-
-	void InitTrafficLights();
-	void UpdateTrafficLights(float seconds);
-	void DrawTrafficLights(Renderer renderer);
-
-	void Highlight(Renderer renderer, Color color);
-	void Draw(Renderer renderer);
 };
+
+float GetIntersectionRoadWidth(Intersection intersection);
+void InitTrafficLights(Intersection* intersection);
+void UpdateTrafficLights(Intersection* intersection, float seconds);
+void DrawTrafficLights(Renderer renderer, Intersection intersection);
+
+void HighlightIntersection(Renderer renderer, Intersection intersection, Color color);
+void DrawIntersection(Renderer renderer, Intersection intersection);

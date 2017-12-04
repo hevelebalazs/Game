@@ -8,13 +8,7 @@
 // TODO: should this be a linked list element?
 struct PathNode {
 	MapElem elem;
-
 	PathNode* next;
-
-	DirectedPoint StartPoint();
-	DirectedPoint NextPoint(DirectedPoint pointFrom);
-
-	bool IsEndPoint(DirectedPoint point);
 };
 
 struct Path {
@@ -30,6 +24,10 @@ struct PathHelper {
 	int* isRoadHelper;
 	int* sourceIndex;
 };
+
+DirectedPoint StartNodePoint(PathNode* node);
+DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint);
+bool IsNodeEndPoint(PathNode* node, DirectedPoint point);
 
 PathHelper PathHelperForMap(Map* map);
 

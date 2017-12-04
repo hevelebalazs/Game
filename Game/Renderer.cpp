@@ -2,24 +2,24 @@
 #include "Point.h"
 #include "Renderer.h"
 
-float Camera::CoordXtoPixel(float coordX) {
-	return (0.5f * screenSize.x) + (pixelCoordRatio * (coordX - center.x));
+float CoordXtoPixel(Camera camera, float coordX) {
+	return (0.5f * camera.screenSize.x) + (camera.pixelCoordRatio * (coordX - camera.center.x));
 }
 
-float Camera::CoordYtoPixel(float coordY) {
-	return (0.5f * screenSize.y) + (pixelCoordRatio * (coordY - center.y));
+float CoordYtoPixel(Camera camera, float coordY) {
+	return (0.5f * camera.screenSize.y) + (camera.pixelCoordRatio * (coordY - camera.center.y));
 }
 
-Point Camera::PixelToCoord(Point pixel) {
-	Point screenCenter = 0.5f * screenSize;
+Point PixelToCoord(Camera camera, Point pixel) {
+	Point screenCenter = PointProd(0.5f, camera.screenSize);
 
-	return center + ((1.0f / pixelCoordRatio) * (pixel - screenCenter));
+	return PointSum(camera.center, PointProd(1.0f / camera.pixelCoordRatio, PointDiff(pixel, screenCenter)));
 }
 
-Point Camera::CoordToPixel(Point coord) {
-	Point screenCenter = 0.5f * screenSize;
+Point CoordToPixel(Camera camera, Point coord) {
+	Point screenCenter = PointProd(0.5f, camera.screenSize);
 
-	return screenCenter + (pixelCoordRatio * (coord - center));
+	return PointSum(screenCenter, PointProd(camera.pixelCoordRatio, PointDiff(coord, camera.center)));
 }
 
 static unsigned int getColorCode(Color color) {
@@ -32,19 +32,19 @@ static unsigned int getColorCode(Color color) {
 	return colorCode;
 }
 
-void Renderer::Clear(Color color) {
+void ClearScreen(Renderer renderer, Color color) {
 	unsigned int colorCode = getColorCode(color);
 
-	unsigned int *pixel = (unsigned int*)bitmap.memory;
-	for (int row = 0; row < bitmap.height; ++row) {
-		for (int col = 0; col < bitmap.width; ++col) {
+	unsigned int *pixel = (unsigned int*)renderer.bitmap.memory;
+	for (int row = 0; row < renderer.bitmap.height; ++row) {
+		for (int col = 0; col < renderer.bitmap.width; ++col) {
 			*pixel = colorCode;
 			++pixel;
 		}
 	}
 }
 
-void Renderer::DrawLine(Point point1, Point point2, Color color, float lineWidth) {
+void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth) {
 	Point direction = PointDirection(point2, point1);
 
 	float tmp = direction.x;
@@ -54,21 +54,22 @@ void Renderer::DrawLine(Point point1, Point point2, Color color, float lineWidth
 	float halfLineWidth = lineWidth * 0.5f;
 	Point drawPoints[4] = {};
 
-	drawPoints[0] = point1 - (halfLineWidth * direction);
-	drawPoints[1] = point1 + (halfLineWidth * direction);
-	drawPoints[2] = point2 + (halfLineWidth * direction);
-	drawPoints[3] = point2 - (halfLineWidth * direction);
-	this->DrawQuad(drawPoints, color);
+	drawPoints[0] = PointDiff(point1, PointProd(halfLineWidth, direction));
+	drawPoints[1] = PointSum (point1, PointProd(halfLineWidth, direction));
+	drawPoints[2] = PointSum (point2, PointProd(halfLineWidth, direction));
+	drawPoints[3] = PointDiff(point2, PointProd(halfLineWidth, direction));
+	DrawQuad(renderer, drawPoints, color);
 }
 
 // TODO: make this function take two points instead of four floats?
-void Renderer::DrawRect(float top, float left, float bottom, float right, Color color) {
+void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = getColorCode(color);
 
-	int topPixel = (int)camera.CoordYtoPixel(top);
-	int leftPixel = (int)camera.CoordXtoPixel(left);
-	int bottomPixel = (int)camera.CoordYtoPixel(bottom);
-	int rightPixel = (int)camera.CoordXtoPixel(right);
+	Camera camera = renderer.camera;
+	int topPixel =    (int)CoordYtoPixel(camera, top);
+	int leftPixel =   (int)CoordXtoPixel(camera, left);
+	int bottomPixel = (int)CoordYtoPixel(camera, bottom);
+	int rightPixel =  (int)CoordXtoPixel(camera, right);
 
 	if (topPixel > bottomPixel) {
 		int tmp = topPixel;
@@ -81,6 +82,8 @@ void Renderer::DrawRect(float top, float left, float bottom, float right, Color 
 		leftPixel = rightPixel;
 		rightPixel = tmp;
 	}
+
+	Bitmap bitmap = renderer.bitmap;
 
 	if (topPixel < 0) topPixel = 0;
 	if (bottomPixel >= bitmap.height) bottomPixel = bitmap.height - 1;
@@ -107,13 +110,14 @@ float turnDirection(Point point1, Point point2, Point point3) {
 	return (dx1 * dy2 - dx2 * dy1);
 }
 
-void Renderer::DrawQuad(Point points[4], Color color) {
+void DrawQuad(Renderer renderer, Point points[4], Color color) {
 	unsigned int colorCode = getColorCode(color);
 
 	for (int i = 0; i < 4; ++i) {
-		points[i] = camera.CoordToPixel(points[i]);
+		points[i] = CoordToPixel(renderer.camera, points[i]);
 	}
 
+	Bitmap bitmap = renderer.bitmap;
 	int minX = bitmap.width;
 	int minY = bitmap.height;
 	int maxX = 0;

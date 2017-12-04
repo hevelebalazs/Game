@@ -7,6 +7,7 @@
 #include "Path.h"
 
 struct Human {
+	// TODO: remove globals from struct
 	static float radius;
 	static float moveSpeed;
 
@@ -15,8 +16,9 @@ struct Human {
 	float needBlue;
 
 	Map* map;
+	Building* inBuilding;
 
 	Point position;
-
-	void Draw(Renderer renderer);
 };
+
+void DrawHuman(Renderer renderer, Human human);

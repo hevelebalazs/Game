@@ -2,15 +2,32 @@
 
 #include "Geometry.h"
 
-float PointDistance(Point point1, Point point2) {
+float DistanceSquare(Point point1, Point point2) {
+	return (point1.x - point2.x) * (point1.x - point2.x) +
+		(point1.y - point2.y) * (point1.y - point2.y);
+}
+
+float CityDistance(Point point1, Point point2) {
+	return fabsf(point1.x - point2.x) + fabsf(point1.y - point2.y);
+}
+
+float Distance(Point point1, Point point2) {
 	float dx = (point1.x - point2.x);
 	float dy = (point1.y - point2.y);
 
 	return sqrtf((dx * dx) + (dy * dy));
 }
 
+float VectorLength(Point vector) {
+	return sqrtf((vector.x * vector.x) + (vector.y * vector.y));
+}
+
 float VectorAngle(Point vector) {
 	return atan2f(vector.y, vector.x);
+}
+
+Point RotationVector(float angle) {
+	return Point{cosf(angle), sinf(angle)};
 }
 
 Point PointDirection(Point startPoint, Point endPoint) {
@@ -76,18 +93,18 @@ float DotProduct(Point vector1, Point vector2) {
 }
 
 Point NormalVector(Point vector) {
-	float length = vector.Length();
+	float length = VectorLength(vector);
 
 	if (length == 0.0f) return vector;
 
-	return vector * (1.0f / length);
+	return PointProd(1.0f / length, vector);
 }
 
 // TODO: create a version of this where base is unit length?
 Point ParallelVector(Point vector, Point base) {
 	Point unitBase = NormalVector(base);
 
-	Point result = DotProduct(vector, unitBase) * unitBase;
+	Point result = PointProd(DotProduct(vector, unitBase), unitBase);
 
 	return result;
 }

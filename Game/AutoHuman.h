@@ -21,9 +21,7 @@ struct AutoHuman {
 	DirectedPoint moveEndPoint;
 	float moveTotalSeconds;
 	float moveSeconds;
-
-	void MoveToBuilding(Building* building);
-	void InitMovement();
-
-	void Update(float seconds);
 };
+
+void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building);
+void UpdateAutoHuman(float seconds);

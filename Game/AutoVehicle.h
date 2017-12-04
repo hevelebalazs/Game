@@ -21,9 +21,7 @@ struct AutoVehicle {
 	Bezier4 moveBezier4;
 	float moveTotalSeconds;
 	float moveSeconds;
-
-	void MoveToBuilding(Building* building);
-	void InitMovement();
-
-	void Update(float seconds);
 };
+
+void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building);
+void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds);

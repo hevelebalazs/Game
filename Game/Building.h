@@ -6,16 +6,27 @@
 #include "Road.h"
 #include "MapElem.h"
 
+extern float entranceWidth;
+
 struct MapElem;
+
+enum EntranceInfo {
+	EntranceNone,
+	EntranceOut,
+	EntranceIn,
+	EntranceSide
+};
 
 struct BuildingCrossInfo {
 	Building* building;
 	Point crossPoint;
 	Point corner1;
 	Point corner2;
+	EntranceInfo entrance;
 };
 
 struct Building {
+	// TODO: remove global from struct
 	static float connectRoadWidth;
 
 	BuildingType type;
@@ -32,17 +43,20 @@ struct Building {
 	Point connectPointFarShow;
 	Point connectPointFar;
 
+	Point entrancePoint1;
+	Point entrancePoint2;
+
 	int connectTreeHeight;
 
 	MapElem connectElem;
-
-	void ConnectTo(MapElem elem);
-
-	bool IsPointInside(Point point);
-	bool IsCrossed(Point point1, Point point2);
-	BuildingCrossInfo ExtClosestCrossInfo(Point closePoint, Point farPoint, float radius);
-	Point ClosestCrossPoint(Point closePoint, Point farPoint);
-
-	void HighLight(Renderer renderer, Color color);
-	void Draw(Renderer renderer);
 };
+
+void ConnectBuildingToElem(Building* building, MapElem elem);
+bool IsPointInBuilding(Point point, Building building);
+bool IsBuildingCrossed(Building building, Point point1, Point point2);
+BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float extRadius, Point closePoint, Point farPoint);
+Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPoint);
+
+void HighLightBuilding(Renderer renderer, Building building, Color color);
+void DrawBuilding(Renderer renderer, Building building);
+void DrawConnectRoad(Renderer renderer, Building building);

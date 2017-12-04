@@ -18,17 +18,17 @@ struct Map {
 
 	float width = 0;
 	float height = 0;
-
-	Intersection* GetRandomIntersection();
-	Intersection* GetIntersectionAtPoint(Point point, float maxDistance);
-
-	MapElem ClosestRoadOrIntersection(Point point);
-
-	Building* GetRandomBuilding();
-	Building* GetClosestBuilding(Point point, BuildingType type);
-	BuildingCrossInfo ClosestExtBuildingCrossInfo(Point point1, Point point2, float radius);
-	Building* ClosestCrossedBuilding(Point point1, Point point2, Building* excludedBuilding);
-	Building* GetBuildingAtPoint(Point point);
-
-	void Draw(Renderer renderer);
 };
+
+Intersection* RandomIntersection(Map map);
+Intersection* IntersectionAtPoint(Map map, Point point, float maxDistance);
+
+MapElem ClosestRoadOrIntersection(Map map, Point point);
+
+Building* RandomBuilding(Map map);
+Building* ClosestBuilding(Map map, Point point, BuildingType type);
+BuildingCrossInfo ClosestExtBuildingCrossInfo(Map map, float radius, Point closePoint, Point farPoint);
+Building* ClosestCrossedBuilding(Map map, Point point1, Point point2, Building* excludedBuilding);
+Building* BuildingAtPoint(Map map, Point point);
+
+void DrawMap(Renderer renderer, Map map);

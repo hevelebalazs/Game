@@ -5,27 +5,35 @@
 Bezier4 TurnBezier4(DirectedPoint startPoint, DirectedPoint endPoint) {
 	Bezier4 result = {};
 
-	float turnRatio = PointDistance(startPoint.position, endPoint.position) * 0.33f;
+	float turnRatio = Distance(startPoint.position, endPoint.position) * 0.33f;
 
 	result.points[0] = startPoint.position;
-	result.points[1] = startPoint.position + (turnRatio * startPoint.direction);
-	result.points[2] = endPoint.position - (turnRatio * endPoint.direction);
+	result.points[1] = PointSum(startPoint.position, PointProd(turnRatio, startPoint.direction));
+	result.points[2] = PointDiff(endPoint.position, PointProd(turnRatio, endPoint.direction));
 	result.points[3] = endPoint.position;
 
+	return result;
+}
+
+static Point Bezier4Interpolation(Point point1, float ratio1, Point point2, float ratio2) {
+	Point part1 = PointProd(ratio1, point1);
+	Point part2 = PointProd(ratio2, point2);
+
+	Point result = PointSum(part1, part2);
 	return result;
 }
 
 Point Bezier4Point(Bezier4 bezier4, float ratio) {
 	float ratio2 = (1.0f - ratio);
 
-	Point p12 = ratio2 * bezier4.points[0] + ratio * bezier4.points[1];
-	Point p23 = ratio2 * bezier4.points[1] + ratio * bezier4.points[2];
-	Point p34 = ratio2 * bezier4.points[2] + ratio * bezier4.points[3];
+	Point p12 = Bezier4Interpolation(bezier4.points[0], ratio2, bezier4.points[1], ratio);
+	Point p23 = Bezier4Interpolation(bezier4.points[1], ratio2, bezier4.points[2], ratio);
+	Point p34 = Bezier4Interpolation(bezier4.points[2], ratio2, bezier4.points[3], ratio);
 
-	Point p123 = ratio2 * p12 + ratio * p23;
-	Point p234 = ratio2 * p23 + ratio * p34;
+	Point p123 = Bezier4Interpolation(p12, ratio2, p23, ratio);
+	Point p234 = Bezier4Interpolation(p23, ratio2, p34, ratio);
 
-	Point p1234 = ratio2 * p123 + ratio * p234;
+	Point p1234 = Bezier4Interpolation(p123, ratio2, p234, ratio);
 
 	return p1234;
 }
@@ -33,14 +41,14 @@ Point Bezier4Point(Bezier4 bezier4, float ratio) {
 DirectedPoint Bezier4DirectedPoint(Bezier4 bezier4, float ratio) {
 	float ratio2 = (1.0f - ratio);
 
-	Point p12 = ratio2 * bezier4.points[0] + ratio * bezier4.points[1];
-	Point p23 = ratio2 * bezier4.points[1] + ratio * bezier4.points[2];
-	Point p34 = ratio2 * bezier4.points[2] + ratio * bezier4.points[3];
+	Point p12 = Bezier4Interpolation(bezier4.points[0], ratio2, bezier4.points[1], ratio);
+	Point p23 = Bezier4Interpolation(bezier4.points[1], ratio2, bezier4.points[2], ratio);
+	Point p34 = Bezier4Interpolation(bezier4.points[2], ratio2, bezier4.points[3], ratio);
 
-	Point p123 = ratio2 * p12 + ratio * p23;
-	Point p234 = ratio2 * p23 + ratio * p34;
+	Point p123 = Bezier4Interpolation(p12, ratio2, p23, ratio);
+	Point p234 = Bezier4Interpolation(p23, ratio2, p34, ratio);
 
-	Point p1234 = ratio2 * p123 + ratio * p234;
+	Point p1234 = Bezier4Interpolation(p123, ratio2, p234, ratio);
 
 	DirectedPoint result = {};
 	result.position = p1234;
@@ -56,7 +64,7 @@ void DrawBezier4(Bezier4 bezier4, Renderer renderer, Color color, float lineWidt
 		float ratio = ((float)i) / ((float)segmentCount);
 		Point nextPoint = Bezier4Point(bezier4, ratio);
 
-		renderer.DrawLine(point, nextPoint, color, lineWidth);
+		DrawLine(renderer, point, nextPoint, color, lineWidth);
 
 		point = nextPoint;
 	}

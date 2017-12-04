@@ -4,33 +4,33 @@ float TrafficLight::radius = 2.0f;
 float TrafficLight::switchTime = 3.0f;
 float TrafficLight::yellowTime = 1.0f;
 
-void TrafficLight::Start() {
-	color = TrafficLight_Green;
-	timeLeft = TrafficLight::switchTime;
+static void StartTrafficLight(TrafficLight* trafficLight) {
+	trafficLight->color = TrafficLight_Green;
+	trafficLight->timeLeft = TrafficLight::switchTime;
 }
 
-void TrafficLight::Update(float seconds) {
-	if (color == TrafficLight_Green) {
-		timeLeft -= seconds;
+static void UpdateTrafficLight(TrafficLight* trafficLight, float seconds) {
+	if (trafficLight->color == TrafficLight_Green) {
+		trafficLight->timeLeft -= seconds;
 
-		if (timeLeft < 0.0f) {
-			timeLeft += yellowTime;
-			color = TrafficLight_Yellow;
+		if (trafficLight->timeLeft < 0.0f) {
+			trafficLight->timeLeft += TrafficLight::yellowTime;
+			trafficLight->color = TrafficLight_Yellow;
 		}
 	}
-	else if (color == TrafficLight_Yellow) {
-		timeLeft -= seconds;
+	else if (trafficLight->color == TrafficLight_Yellow) {
+		trafficLight->timeLeft -= seconds;
 
-		if (timeLeft < 0.0f) {
-			color = TrafficLight_Red;
+		if (trafficLight->timeLeft < 0.0f) {
+			trafficLight->color = TrafficLight_Red;
 		}
 	}
 }
 
-void TrafficLight::Draw(Renderer renderer) {
+static void DrawTrafficLight(Renderer renderer, TrafficLight trafficLight) {
 	Color drawColor = {};
 
-	switch (color) {
+	switch (trafficLight.color) {
 		case TrafficLight_Green: {
 			drawColor = {0.0f, 1.0f, 0.0f}; 
 			break;
@@ -45,173 +45,191 @@ void TrafficLight::Draw(Renderer renderer) {
 		}
 	}
 
-	renderer.DrawRect(
+	Point position = trafficLight.position;
+	float radius = trafficLight.radius;
+
+	DrawRect(
+		renderer,
 		position.y - radius, position.x - radius,
 		position.y + radius, position.x + radius,
 		drawColor
 	);
 }
 
-void Intersection::InitTrafficLights() {
+void InitTrafficLights(Intersection* intersection) {
 	int roadCount = 0;
-	if (leftRoad)   roadCount++;
-	if (rightRoad)  roadCount++;
-	if (topRoad)    roadCount++;
-	if (bottomRoad) roadCount++;
+	if (intersection->leftRoad)   roadCount++;
+	if (intersection->rightRoad)  roadCount++;
+	if (intersection->topRoad)    roadCount++;
+	if (intersection->bottomRoad) roadCount++;
 
 	if (roadCount <= 2) return;
 
-	float roadWidth = this->GetRoadWidth();
+	float roadWidth = GetIntersectionRoadWidth(*intersection);
 
-	if (leftRoad)   leftTrafficLight.position   = {coordinate.x - roadWidth * 0.5f,  coordinate.y + roadWidth * 0.25f};
-	if (rightRoad)  rightTrafficLight.position  = {coordinate.x + roadWidth * 0.5f,  coordinate.y - roadWidth * 0.25f};
-	if (topRoad)    topTrafficLight.position    = {coordinate.x - roadWidth * 0.25f, coordinate.y - roadWidth * 0.5f};
-	if (bottomRoad) bottomTrafficLight.position = {coordinate.x + roadWidth * 0.25f, coordinate.y + roadWidth * 0.5f};
+	Point coordinate = intersection->coordinate;
 
-	if (leftRoad)   leftTrafficLight.color   = TrafficLight_Red;
-	if (rightRoad)  rightTrafficLight.color  = TrafficLight_Red;
-	if (topRoad)    topTrafficLight.color    = TrafficLight_Red;
-	if (bottomRoad) bottomTrafficLight.color = TrafficLight_Red;
+	if (intersection->leftRoad) {
+		intersection->leftTrafficLight.position = {coordinate.x - roadWidth * 0.5f,  coordinate.y + roadWidth * 0.25f};
+	}
+	if (intersection->rightRoad) {
+		intersection->rightTrafficLight.position = {coordinate.x + roadWidth * 0.5f,  coordinate.y - roadWidth * 0.25f};
+	}
+	if (intersection->topRoad) {
+		intersection->topTrafficLight.position = {coordinate.x - roadWidth * 0.25f, coordinate.y - roadWidth * 0.5f};
+	}
+	if (intersection->bottomRoad) {
+		intersection->bottomTrafficLight.position = {coordinate.x + roadWidth * 0.25f, coordinate.y + roadWidth * 0.5f};
+	}
 
-	if (leftRoad)        leftTrafficLight.Start();
-	else if (topRoad)    topTrafficLight.Start();
-	else if (rightRoad)  rightTrafficLight.Start();
-	else if (bottomRoad) bottomTrafficLight.Start();
+	if (intersection->leftRoad)   intersection->leftTrafficLight.color   = TrafficLight_Red;
+	if (intersection->rightRoad)  intersection->rightTrafficLight.color  = TrafficLight_Red;
+	if (intersection->topRoad)    intersection->topTrafficLight.color    = TrafficLight_Red;
+	if (intersection->bottomRoad) intersection->bottomTrafficLight.color = TrafficLight_Red;
+
+	if (intersection->leftRoad)        StartTrafficLight(&intersection->leftTrafficLight);
+	else if (intersection->topRoad)    StartTrafficLight(&intersection->topTrafficLight);
+	else if (intersection->rightRoad)  StartTrafficLight(&intersection->rightTrafficLight);
+	else if (intersection->bottomRoad) StartTrafficLight(&intersection->bottomTrafficLight);
 }
 
-void Intersection::UpdateTrafficLights(float seconds) {
+void UpdateTrafficLights(Intersection* intersection, float seconds) {
 	int roadCount = 0;
-	if (leftRoad)   roadCount++;
-	if (rightRoad)  roadCount++;
-	if (topRoad)    roadCount++;
-	if (bottomRoad) roadCount++;
+	if (intersection->leftRoad)   roadCount++;
+	if (intersection->rightRoad)  roadCount++;
+	if (intersection->topRoad)    roadCount++;
+	if (intersection->bottomRoad) roadCount++;
 
 	if (roadCount <= 2) return;
 
 	// TODO: introduce an "active" member?
 	// TODO: this is total nuts, update this to arrays as soon as possible!
-	if (leftRoad && leftTrafficLight.color != TrafficLight_Red) {
-		leftTrafficLight.Update(seconds);
-		if (leftTrafficLight.color == TrafficLight_Red) {
-			if (topRoad)         topTrafficLight.Start();
-			else if (rightRoad)  rightTrafficLight.Start();
-			else if (bottomRoad) bottomTrafficLight.Start();
+	if (intersection->leftRoad && intersection->leftTrafficLight.color != TrafficLight_Red) {
+		UpdateTrafficLight(&intersection->leftTrafficLight, seconds);
+		if (intersection->leftTrafficLight.color == TrafficLight_Red) {
+			if (intersection->topRoad)         StartTrafficLight(&intersection->topTrafficLight);
+			else if (intersection->rightRoad)  StartTrafficLight(&intersection->rightTrafficLight);
+			else if (intersection->bottomRoad) StartTrafficLight(&intersection->bottomTrafficLight);
 		}
 	}
-	else if (topRoad && topTrafficLight.color != TrafficLight_Red) {
-		topTrafficLight.Update(seconds);
-		if (topTrafficLight.color == TrafficLight_Red) {
-			if (rightRoad)       rightTrafficLight.Start();
-			else if (bottomRoad) bottomTrafficLight.Start();
-			else if (leftRoad)   leftTrafficLight.Start();
+	else if (intersection->topRoad && intersection->topTrafficLight.color != TrafficLight_Red) {
+		UpdateTrafficLight(&intersection->topTrafficLight, seconds);
+		if (intersection->topTrafficLight.color == TrafficLight_Red) {
+			if (intersection->rightRoad)       StartTrafficLight(&intersection->rightTrafficLight);
+			else if (intersection->bottomRoad) StartTrafficLight(&intersection->bottomTrafficLight);
+			else if (intersection->leftRoad)   StartTrafficLight(&intersection->leftTrafficLight);
 		}
 	}
-	else if (rightRoad && rightTrafficLight.color != TrafficLight_Red) {
-		rightTrafficLight.Update(seconds);
-		if (rightTrafficLight.color == TrafficLight_Red) {
-			if (bottomRoad)    bottomTrafficLight.Start();
-			else if (leftRoad) leftTrafficLight.Start();
-			else if (topRoad)  topTrafficLight.Start();
+	else if (intersection->rightRoad && intersection->rightTrafficLight.color != TrafficLight_Red) {
+		UpdateTrafficLight(&intersection->rightTrafficLight, seconds);
+		if (intersection->rightTrafficLight.color == TrafficLight_Red) {
+			if (intersection->bottomRoad)    StartTrafficLight(&intersection->bottomTrafficLight);
+			else if (intersection->leftRoad) StartTrafficLight(&intersection->leftTrafficLight);
+			else if (intersection->topRoad)  StartTrafficLight(&intersection->topTrafficLight);
 		}
 	}
-	else if (bottomRoad && bottomTrafficLight.color != TrafficLight_Red) {
-		bottomTrafficLight.Update(seconds);
-		if (bottomTrafficLight.color == TrafficLight_Red) {
-			if (leftRoad)       leftTrafficLight.Start();
-			else if (topRoad)   topTrafficLight.Start();
-			else if (rightRoad) rightTrafficLight.Start();
+	else if (intersection->bottomRoad && intersection->bottomTrafficLight.color != TrafficLight_Red) {
+		UpdateTrafficLight(&intersection->bottomTrafficLight, seconds);
+		if (intersection->bottomTrafficLight.color == TrafficLight_Red) {
+			if (intersection->leftRoad)       StartTrafficLight(&intersection->leftTrafficLight);
+			else if (intersection->topRoad)   StartTrafficLight(&intersection->topTrafficLight);
+			else if (intersection->rightRoad) StartTrafficLight(&intersection->rightTrafficLight);
 		}
 	}
 }
 
-void Intersection::DrawTrafficLights(Renderer renderer) {
+void DrawTrafficLights(Renderer renderer, Intersection intersection) {
 	int roadCount = 0;
-	if (leftRoad)   roadCount++;
-	if (rightRoad)  roadCount++;
-	if (topRoad)    roadCount++;
-	if (bottomRoad) roadCount++;
+	if (intersection.leftRoad)   roadCount++;
+	if (intersection.rightRoad)  roadCount++;
+	if (intersection.topRoad)    roadCount++;
+	if (intersection.bottomRoad) roadCount++;
 
 	if (roadCount <= 2) return;
 
-	if (leftRoad)   leftTrafficLight.Draw(renderer);
-	if (rightRoad)  rightTrafficLight.Draw(renderer);
-	if (topRoad)    topTrafficLight.Draw(renderer);
-	if (bottomRoad) bottomTrafficLight.Draw(renderer);
+	if (intersection.leftRoad)   DrawTrafficLight(renderer, intersection.leftTrafficLight);
+	if (intersection.rightRoad)  DrawTrafficLight(renderer, intersection.rightTrafficLight);
+	if (intersection.topRoad)    DrawTrafficLight(renderer, intersection.topTrafficLight);
+	if (intersection.bottomRoad) DrawTrafficLight(renderer, intersection.bottomTrafficLight);
 }
 
-float Intersection::GetRoadWidth() {
-	if (leftRoad) return leftRoad->width;
-	if (rightRoad) return rightRoad->width;
-	if (topRoad) return topRoad->width;
-	if (bottomRoad) return bottomRoad->width;
+float GetIntersectionRoadWidth(Intersection intersection) {
+	if (intersection.leftRoad)   return intersection.leftRoad->width;
+	if (intersection.rightRoad)  return intersection.rightRoad->width;
+	if (intersection.topRoad)    return intersection.topRoad->width;
+	if (intersection.bottomRoad) return intersection.bottomRoad->width;
 
 	return 0.0f;
 }
 
-void Intersection::Highlight(Renderer renderer, Color color) {
-	if (leftRoad || rightRoad || topRoad || bottomRoad) {
-		float roadWidth = GetRoadWidth();
+void HighlightIntersection(Renderer renderer, Intersection intersection, Color color) {
+	if (intersection.leftRoad || intersection.rightRoad || intersection.topRoad || intersection.bottomRoad) {
+		float roadWidth = GetIntersectionRoadWidth(intersection);
+
+		Point coordinate = intersection.coordinate;
 
 		float stripeWidth = roadWidth / 10.0f;
-		float top = coordinate.y - (roadWidth / 2.0f);
+		float top =    coordinate.y - (roadWidth / 2.0f);
 		float bottom = coordinate.y + (roadWidth / 2.0f);
-		float left = coordinate.x - (roadWidth / 2.0f);
-		float right = coordinate.x + (roadWidth / 2.0f);
+		float left =   coordinate.x - (roadWidth / 2.0f);
+		float right =  coordinate.x + (roadWidth / 2.0f);
 
-		renderer.DrawRect(top, left, bottom, right, color);
+		DrawRect(renderer, top, left, bottom, right, color);
 	}
 }
 
-void Intersection::Draw(Renderer renderer) {
-	float roadWidth = GetRoadWidth();
+void DrawIntersection(Renderer renderer, Intersection intersection) {
+	float roadWidth = GetIntersectionRoadWidth(intersection);
 
-	float top = coordinate.y - (roadWidth / 2.0f);
+	Point coordinate = intersection.coordinate;
+
+	float top    = coordinate.y - (roadWidth / 2.0f);
 	float bottom = coordinate.y + (roadWidth / 2.0f);
-	float left = coordinate.x - (roadWidth / 2.0f);
-	float right = coordinate.x + (roadWidth / 2.0f);
+	float left   = coordinate.x - (roadWidth / 2.0f);
+	float right  = coordinate.x + (roadWidth / 2.0f);
 
 	float midX = (left + right) / 2;
 	float midY = (top + bottom) / 2;
 
 	Color color = { 0.5f, 0.5f, 0.5f };
-	renderer.DrawRect(top, left, bottom, right, color);
+	DrawRect(renderer, top, left, bottom, right, color);
 
 	float stripeWidth = roadWidth / 20.0f;
 	Color stripeColor = { 1.0f, 1.0f, 1.0f };
 
 	int roadCount = 0;
 
-	if (topRoad) roadCount++;
-	if (leftRoad) roadCount++;
-	if (bottomRoad) roadCount++;
-	if (rightRoad) roadCount++;
+	if (intersection.topRoad) roadCount++;
+	if (intersection.leftRoad) roadCount++;
+	if (intersection.bottomRoad) roadCount++;
+	if (intersection.rightRoad) roadCount++;
 
 	if (roadCount > 2) {
-		if (topRoad) {
-			renderer.DrawRect(top, left, top + stripeWidth, right, stripeColor);
+		if (intersection.topRoad) {
+			DrawRect(renderer, top, left, top + stripeWidth, right, stripeColor);
 		}
-		if (leftRoad) {
-			renderer.DrawRect(top, left, bottom, left + stripeWidth, stripeColor);
+		if (intersection.leftRoad) {
+			DrawRect(renderer, top, left, bottom, left + stripeWidth, stripeColor);
 		}
-		if (bottomRoad) {
-			renderer.DrawRect(bottom - stripeWidth, left, bottom, right, stripeColor);
+		if (intersection.bottomRoad) {
+			DrawRect(renderer, bottom - stripeWidth, left, bottom, right, stripeColor);
 		}
-		if (rightRoad) {
-			renderer.DrawRect(top, right - stripeWidth, bottom, right, stripeColor);
+		if (intersection.rightRoad) {
+			DrawRect(renderer, top, right - stripeWidth, bottom, right, stripeColor);
 		}
 	}
 	else {
-		if (topRoad) {
-			renderer.DrawRect(top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+		if (intersection.topRoad) {
+			DrawRect(renderer, top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
 		}
-		if (leftRoad) {
-			renderer.DrawRect(midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+		if (intersection.leftRoad) {
+			DrawRect(renderer, midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
 		}
-		if (bottomRoad) {
-			renderer.DrawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
+		if (intersection.bottomRoad) {
+			DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
 		}
-		if (rightRoad) {
-			renderer.DrawRect(midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
+		if (intersection.rightRoad) {
+			DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
 		}
 	}
 }

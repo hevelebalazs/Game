@@ -19,8 +19,7 @@ struct Vehicle {
 	float maxSpeed;
 
 	Map* map;
-
-	void MoveTo(DirectedPoint point);
-
-	void Draw(Renderer renderer);
 };
+
+void MoveVehicle(Vehicle* vehicle, DirectedPoint point);
+void DrawVehicle(Renderer renderer, Vehicle vehicle);

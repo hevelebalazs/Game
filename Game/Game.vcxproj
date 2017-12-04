@@ -132,6 +132,7 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Road.cpp" />
     <ClCompile Include="Vehicle.cpp" />
+    <ClCompile Include="Windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AutoHuman.h" />
@@ -153,6 +154,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Road.h" />
     <ClInclude Include="Vehicle.h" />
+    <ClInclude Include="Windows.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

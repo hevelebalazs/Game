@@ -1,38 +1,41 @@
-#include "PlayerVehicle.h"
-
 #include <stdio.h>
 #include <windows.h>
 
+#include "Geometry.h"
+#include "PlayerVehicle.h"
+
 void PlayerVehicle::Update(float seconds) {
-	Point direction = Point::Rotation(vehicle.angle);
+	float speed = VectorLength(velocity);
 
-	Point frontWheel = (vehicle.length / 2.0f) * direction;
-	Point rearWheel = (-vehicle.length / 2.0f) * direction;
+	Point direction = RotationVector(vehicle.angle);
 
-	Point turnDirection = Point::Rotation(vehicle.angle + turnAngle);
+	Point frontWheel = PointProd(vehicle.length * 0.5f, direction);
+	Point rearWheel = PointProd(-vehicle.length * 0.5f, direction);
 
-	frontWheel += turnDirection * seconds * velocity.Length();
-	rearWheel += direction * seconds * velocity.Length();
+	Point turnDirection = RotationVector(vehicle.angle + turnAngle);
+
+	frontWheel = PointSum(frontWheel, PointProd(seconds * speed, turnDirection));
+	rearWheel = PointSum(rearWheel, PointProd(seconds * speed, direction));
 
 	vehicle.angle = atan2f(frontWheel.y - rearWheel.y, frontWheel.x - rearWheel.x);
 
 	float cDrag = 0.4257f;
 	float cRR = 12.8f;
 
-	Point fTraction = direction * engineForce;
-	Point fDrag = (-cDrag * velocity.Length()) * velocity;
-	Point fRR = (-cRR) * velocity;
+	Point fTraction = PointProd(engineForce, direction);
+	Point fDrag = PointProd(-cDrag * speed, velocity);
+	Point fRR = PointProd(-cRR, velocity);
 
-	Point force = fTraction + fDrag + fRR;
+	Point force = PointSum(PointSum(fTraction, fDrag), fRR);
 
-	force = (1.0f / 50.0f) * force;
+	force = PointProd((1.0f / 50.0f), force);
 
-	velocity += (seconds * force);
+	velocity = PointSum(velocity, PointProd(seconds, force));
 
-	Point parallel = Point::DotProduct(velocity, direction) * direction;
-	Point perpendicular = velocity - parallel;
+	Point parallel = PointProd(DotProduct(velocity, direction), direction);
+	Point perpendicular = PointDiff(velocity, parallel);
 
-	velocity = parallel + 0.95f * perpendicular;
+	velocity = PointSum(parallel, PointProd(0.95f, perpendicular));
 
-	vehicle.position += (seconds * velocity);
+	vehicle.position = PointSum(vehicle.position, PointProd(seconds, velocity));
 }

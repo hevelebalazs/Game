@@ -7,19 +7,19 @@ struct Camera {
 	float pixelCoordRatio;
 	Point center;
 	Point screenSize;
-
-	float CoordXtoPixel(float coordX);
-	float CoordYtoPixel(float coordY);
-	Point PixelToCoord(Point pixel);
-	Point CoordToPixel(Point coord);
 };
 
 struct Renderer {
 	Bitmap bitmap;
 	Camera camera;
-
-	void Clear(Color color);
-	void DrawLine(Point point1, Point point2, Color color, float lineWidth);
-	void DrawRect(float top, float left, float bottom, float right, Color color);
-	void DrawQuad(Point points[4], Color color);
 };
+
+float CoordXtoPixel(Camera camera, float coordX);
+float CoordYtoPixel(Camera camera, float coordY);
+Point PixelToCoord(Camera camera, Point pixel);
+Point CoordToPixel(Camera camera, Point coord);
+
+void ClearScreen(Renderer renderer, Color color);
+void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
+void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color);
+void DrawQuad(Renderer renderer, Point points[4], Color color);

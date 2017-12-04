@@ -166,8 +166,10 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	int intersectionIndex = 0;
 	for (int row = 0; row < rowCount; ++row) {
 		for (int col = 0; col < colCount; ++col) {
-			map.intersections[intersectionIndex].coordinate =
-				leftTop + (Point{(float)col, (float)row} *(float)intersectionDistance);
+			map.intersections[intersectionIndex].coordinate = PointSum(
+				leftTop,
+				PointProd((float)intersectionDistance, Point{(float)col, (float)row})
+			);
 
 			++intersectionIndex;
 		}
@@ -415,7 +417,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	for (int i = 0; i < map.intersectionCount; ++i) {
 		Intersection* intersection = &map.intersections[i];
 
-		intersection->InitTrafficLights();
+		InitTrafficLights(intersection);
 	}
 
 	Building::connectRoadWidth = roadWidth / 5.0f;
@@ -427,10 +429,10 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		center.x = (building->left + building->right) * 0.5f;
 		center.y = (building->top + building->bottom) * 0.5f;
 
-		MapElem closestElem = map.ClosestRoadOrIntersection(center);
-		building->ConnectTo(closestElem);
+		MapElem closestElem = ClosestRoadOrIntersection(map, center);
+		ConnectBuildingToElem(building, closestElem);
 
-		Building* crossedBuilding = map.ClosestCrossedBuilding(building->connectPointClose, building->connectPointFar, building);
+		Building* crossedBuilding = ClosestCrossedBuilding(map, building->connectPointClose, building->connectPointFar, building);
 		if (crossedBuilding) {
 			crossedBuilding->roadAround = 1;
 
@@ -439,7 +441,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 			elem.type = MapElemBuilding;
 			elem.building = crossedBuilding;
 
-			building->ConnectTo(elem);
+			ConnectBuildingToElem(building, elem);
 		}
 	}
 

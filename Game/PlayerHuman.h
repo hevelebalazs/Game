@@ -12,6 +12,6 @@ struct PlayerHuman {
 	bool moveRight;
 
 	Point moveDirection;
-
-	void Update(float seconds);
 };
+
+void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds);
