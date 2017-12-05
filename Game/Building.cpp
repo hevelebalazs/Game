@@ -4,6 +4,7 @@
 #include "Geometry.h"
 
 extern float entranceWidth = 10.0f;
+extern float wallWidth = 2.0f;
 
 float Building::connectRoadWidth;
 
@@ -16,6 +17,82 @@ float Min2(float x, float y) {
 float Max2(float x, float y) {
 	if (x > y) return x;
 	else return y;
+}
+
+static Line ConnectingLine(Point point1, Point point2) {
+	Line result = {};
+	result.p1 = point1;
+	result.p2 = point2;
+	return result;
+}
+
+void GenerateBuildingInside(Building* building) {
+	BuildingInside* inside = new BuildingInside;
+	building->inside = inside;
+
+	inside->wallCount = 4;
+	inside->walls = new Line[inside->wallCount];
+
+	float halfWallWidth = wallWidth * 0.5f;
+
+	inside->walls[0].x1 = building->left;
+	inside->walls[0].y1 = building->top + halfWallWidth;
+	inside->walls[0].x2 = building->right;
+	inside->walls[0].y2 = building->top + halfWallWidth;
+
+	inside->walls[1].x1 = building->right - halfWallWidth;
+	inside->walls[1].y1 = building->top;
+	inside->walls[1].x2 = building->right - halfWallWidth;
+	inside->walls[1].y2 = building->bottom;
+
+	inside->walls[2].x1 = building->right;
+	inside->walls[2].y1 = building->bottom - halfWallWidth;
+	inside->walls[2].x2 = building->left;
+	inside->walls[2].y2 = building->bottom - halfWallWidth;
+
+	inside->walls[3].x1 = building->left + halfWallWidth;
+	inside->walls[3].y1 = building->bottom;
+	inside->walls[3].x2 = building->left + halfWallWidth;
+	inside->walls[3].y2 = building->top;
+
+	int roomRows = 3;
+	int roomCols = 3;
+	inside->roomCount = (roomRows * roomCols);
+	inside->rooms = new Room[inside->roomCount];
+
+	float roomWidth = (building->right - building->left) / ((float)roomCols);
+	float roomHeight = (building->bottom - building->top) / ((float)roomRows);
+
+	// TODO: use relative positions inside building?
+	int roomId = 0;
+	for (int row = 0; row < roomRows; ++row) {
+		for (int col = 0; col < roomCols; ++col) {
+			Room* room = &inside->rooms[roomId];
+
+			room->left   = building->left + (col * roomWidth);
+			room->right  = building->left + ((col + 1) * roomWidth);
+			room->top    = building->top + (row * roomHeight);
+			room->bottom = building->top + ((row + 1) * roomHeight);
+
+			roomId++;
+		}
+	}
+}
+
+Room* GetRoom(Building* building, Point position) {
+	Room* result = 0;
+
+	BuildingInside* inside = building->inside;
+	for (int i = 0; i < inside->roomCount; ++i) {
+		Room* room = &inside->rooms[i];
+
+		if ((room->left < position.x && position.x <= room->right) &&
+			(room->top < position.y && position.y <= room->bottom)) { 
+			result = room;
+		}
+	}
+
+	return result;
 }
 
 // TODO: rewrite this using vector maths
@@ -161,9 +238,9 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float radius, 
 	float minDistanceSquare = 0.0f;
 	bool foundAny = false;
 
-	Point topLeft     = {building->left  - radius, building->top    - radius};
-	Point topRight    = {building->right + radius, building->top    - radius};
-	Point bottomLeft  = {building->left  - radius, building->bottom + radius};
+	Point topLeft = {building->left - radius, building->top - radius};
+	Point topRight = {building->right + radius, building->top - radius};
+	Point bottomLeft = {building->left - radius, building->bottom + radius};
 	Point bottomRight = {building->right + radius, building->bottom + radius};
 	Point points[5] = {topLeft, topRight, bottomRight, bottomLeft, topLeft};
 
@@ -218,7 +295,7 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float radius, 
 	Point entrancePointOut2 = building->entrancePoint2;
 	Point entrancePointIn1 = building->entrancePoint1;
 	Point entrancePointIn2 = building->entrancePoint2;
-	
+
 	if (building->entrancePoint1.x == building->left) {
 		entrancePointOut1.x -= radius;
 		entrancePointOut2.x -= radius;
@@ -322,9 +399,9 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 	float minDistanceSquare = 0.0f;
 	bool foundAny = false;
 
-	Point topLeft     = {building.left,  building.top};
-	Point topRight    = {building.right, building.top};
-	Point bottomLeft  = {building.left,  building.bottom};
+	Point topLeft = {building.left,  building.top};
+	Point topRight = {building.right, building.top};
+	Point bottomLeft = {building.left,  building.bottom};
 	Point bottomRight = {building.right, building.bottom};
 
 	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) {
@@ -425,6 +502,52 @@ void DrawBuilding(Renderer renderer, Building building) {
 	};
 
 	DrawLine(renderer, building.entrancePoint1, building.entrancePoint2, entranceColor, entranceLineWidth);
+}
+
+void DrawBuildingInside(Renderer renderer, Building building) {
+	Color color = {};
+
+	switch (building.type) {
+		case BuildingType_Black: {
+			color = Color{0.0f, 0.0f, 0.0f};
+			break;
+		}
+
+		case BuildingType_Red: {
+			color = Color{0.5f, 0.0f, 0.0f};
+			break;
+		}
+
+		case BuildingType_Green: {
+			color = Color{0.0f, 0.5f, 0.0f};
+			break;
+		}
+
+		case BuildingType_Blue: {
+			color = Color{0.0f, 0.0f, 0.5f};
+			break;
+		}
+	}
+
+	Color wallColor = Color{
+		color.red + 0.25f,
+		color.green + 0.25f,
+		color.blue + 0.25f
+	};
+
+	DrawRect(renderer, building.top, building.left, building.bottom, building.right, color);
+
+	BuildingInside* inside = building.inside;
+
+	for (int i = 0; i < inside->wallCount; ++i) {
+		Line wall = inside->walls[i];
+
+		DrawLine(renderer, wall.p1, wall.p2, wallColor, wallWidth);
+	}
+}
+
+void HighLightRoom(Renderer renderer, Room room, Color color) {
+	DrawRect(renderer, room.top, room.left, room.bottom, room.right, color);
 }
 
 void DrawConnectRoad(Renderer renderer, Building building) {

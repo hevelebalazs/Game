@@ -453,6 +453,8 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		}
 
 		building->type = (BuildingType)(rand() % 4);
+
+		GenerateBuildingInside(building);
 	}
 
 	return map;

@@ -30,6 +30,7 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 		autoVehicle->moveHelper = &gameState->pathHelper;
 	}
 
+	gameState->renderer.camera.zoomSpeed = 10.0f;
 	gameState->renderer.camera.pixelCoordRatio = 10.0f;
 }
 
@@ -65,7 +66,17 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 		gameState->buildingPath = ConnectElems(&gameState->map, selectedBuildingElem, highlightedBuildingElem, &gameState->pathHelper);
 	}
 
-	gameState->renderer.camera.center = gameState->playerHuman.human.position;
+	Camera* camera = &gameState->renderer.camera;
+	camera->center = gameState->playerHuman.human.position;
+
+	if (gameState->playerHuman.human.inBuilding) {
+		camera->zoomTargetRatio = 20.0f;
+	}
+	else {
+		camera->zoomTargetRatio = 10.0f;
+	}
+
+	UpdateCamera(camera, seconds);
 }
 
 void GameDraw(GameState* gameState) {
@@ -76,7 +87,11 @@ void GameDraw(GameState* gameState) {
 
 	Building* inBuilding = gameState->playerHuman.human.inBuilding;
 	if (inBuilding) {
-		DrawBuilding(renderer, *inBuilding);
+		DrawBuildingInside(renderer, *inBuilding);
+
+		Color highlight = Color{1.0f, 0.5f, 0.0f};
+		Room* inRoom = GetRoom(inBuilding, gameState->playerHuman.human.position);
+		if (inRoom) HighLightRoom(renderer, *inRoom, highlight);
 	}
 	else {
 		DrawMap(renderer, gameState->map);

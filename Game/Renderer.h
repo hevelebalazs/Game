@@ -7,12 +7,18 @@ struct Camera {
 	float pixelCoordRatio;
 	Point center;
 	Point screenSize;
+
+	float zoomSpeed;
+	float zoomTargetRatio;
 };
 
 struct Renderer {
 	Bitmap bitmap;
 	Camera camera;
 };
+
+void SmoothZoom(Camera* camera, float pixelCoordRatio);
+void UpdateCamera(Camera* camera, float seconds);
 
 float CoordXtoPixel(Camera camera, float coordX);
 float CoordYtoPixel(Camera camera, float coordY);

@@ -2,6 +2,28 @@
 #include "Point.h"
 #include "Renderer.h"
 
+void SmoothZoom(Camera* camera, float pixelCoordRatio) {
+	camera->zoomTargetRatio = pixelCoordRatio;
+}
+
+void UpdateCamera(Camera* camera, float seconds) {
+	if (camera->pixelCoordRatio == camera->zoomTargetRatio) {
+		return;
+	}
+	else if (camera->pixelCoordRatio < camera->zoomTargetRatio) {
+		camera->pixelCoordRatio += seconds * camera->zoomSpeed;
+		if (camera->pixelCoordRatio > camera->zoomTargetRatio) {
+			camera->pixelCoordRatio = camera->zoomTargetRatio;
+		}
+	}
+	else {
+		camera->pixelCoordRatio -= seconds * camera->zoomSpeed;
+		if (camera->pixelCoordRatio < camera->zoomTargetRatio) {
+			camera->pixelCoordRatio = camera->zoomTargetRatio;
+		}
+	}
+}
+
 float CoordXtoPixel(Camera camera, float coordX) {
 	return (0.5f * camera.screenSize.x) + (camera.pixelCoordRatio * (coordX - camera.center.x));
 }
