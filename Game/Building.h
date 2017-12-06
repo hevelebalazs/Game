@@ -27,25 +27,9 @@ struct BuildingCrossInfo {
 	EntranceInfo entrance;
 };
 
-struct Room {
-	float left;
-	float right;
-	float top;
-	float bottom;
-};
-
 struct BuildingInside {
 	int wallCount;
 	Line* walls;
-
-	int doorCount;
-	Line* doors;
-
-	// TODO: create a Room struct?
-	int roomCount;
-	Room* rooms;
-
-	Line entrance;
 };
 
 struct Building {
@@ -77,7 +61,6 @@ struct Building {
 };
 
 void GenerateBuildingInside(Building* building);
-Room* GetRoom(Building* building, Point position);
 
 void ConnectBuildingToElem(Building* building, MapElem elem);
 bool IsPointInBuilding(Point point, Building building);
@@ -88,5 +71,4 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 void HighLightBuilding(Renderer renderer, Building building, Color color);
 void DrawBuilding(Renderer renderer, Building building);
 void DrawBuildingInside(Renderer renderer, Building building);
-void HighLightRoom(Renderer renderer, Room room, Color color);
 void DrawConnectRoad(Renderer renderer, Building building);

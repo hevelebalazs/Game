@@ -1,6 +1,6 @@
 #include "Human.h"
 
-float Human::radius = 1.0f;
+float Human::radius = 0.5f;
 float Human::moveSpeed = 30.0f;
 
 void DrawHuman(Renderer renderer, Human human) {

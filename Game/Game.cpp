@@ -88,10 +88,6 @@ void GameDraw(GameState* gameState) {
 	Building* inBuilding = gameState->playerHuman.human.inBuilding;
 	if (inBuilding) {
 		DrawBuildingInside(renderer, *inBuilding);
-
-		Color highlight = Color{1.0f, 0.5f, 0.0f};
-		Room* inRoom = GetRoom(inBuilding, gameState->playerHuman.human.position);
-		if (inRoom) HighLightRoom(renderer, *inRoom, highlight);
 	}
 	else {
 		DrawMap(renderer, gameState->map);

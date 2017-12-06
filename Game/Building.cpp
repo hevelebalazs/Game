@@ -4,7 +4,10 @@
 #include "Geometry.h"
 
 extern float entranceWidth = 10.0f;
-extern float wallWidth = 2.0f;
+extern float wallWidth = 1.0f;
+
+static float minRoomSide = 5.0f;
+static float maxRoomSide = 20.0f;
 
 float Building::connectRoadWidth;
 
@@ -26,12 +29,82 @@ static Line ConnectingLine(Point point1, Point point2) {
 	return result;
 }
 
+// TODO: move this to a math file?
+static float RandomBetween(float left, float right) {
+	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
+}
+
+// TODO: rewrite this not using recursion
+static void GenerateWalls(Building* building, float top, float left, float bottom, float right, float minRoomSide, float maxRoomSide) {
+	float width = (right - left);
+	float height = (bottom - top);
+
+	float cutDistance = RandomBetween(minRoomSide, maxRoomSide);
+
+	bool canCutHorizontally = (cutDistance <= height - minRoomSide);
+	bool canCutVertically = (cutDistance <= width - minRoomSide);
+
+	bool cutHorizontally = false;
+	bool cutVertically = false;
+
+	if (canCutHorizontally && canCutVertically) {
+		float random = RandomBetween(0.0f, 1.0f);
+
+		if (random < 0.5f) cutHorizontally = true;
+		else cutVertically = true;
+	}
+	else if (canCutHorizontally) {
+		cutHorizontally = true;
+	}
+	else if (canCutVertically) {
+		cutVertically = true;
+	}
+
+	BuildingInside* inside = building->inside;
+	
+	if (cutVertically) {
+		float cutX = left + cutDistance;
+
+		Line wall = {};
+		wall.x1 = cutX;
+		wall.y1 = top;
+		wall.x2 = cutX;
+		wall.y2 = bottom;
+
+		inside->walls[inside->wallCount] = wall;
+		inside->wallCount++;
+
+		GenerateWalls(building, top, left, bottom, cutX, minRoomSide, maxRoomSide);
+		GenerateWalls(building, top, cutX, bottom, right, minRoomSide, maxRoomSide);
+	}
+	else if (cutHorizontally) {
+		float cutY = top + cutDistance;
+
+		Line wall = {};
+		wall.x1 = left;
+		wall.y1 = cutY;
+		wall.x2 = right;
+		wall.y2 = cutY;
+
+		inside->walls[inside->wallCount] = wall;
+		inside->wallCount++;
+
+		GenerateWalls(building, top, left, cutY, right, minRoomSide, maxRoomSide);
+		GenerateWalls(building, cutY, left, bottom, right, minRoomSide, maxRoomSide);
+	}
+}
+
 void GenerateBuildingInside(Building* building) {
 	BuildingInside* inside = new BuildingInside;
 	building->inside = inside;
 
+	float buildingWidth = (building->right - building->left);
+	float buildingHeight = (building->bottom - building->top);
+
+	int maxWallCount = 4 + ((int)buildingWidth / (int)minRoomSide) * ((int)buildingHeight / (int)minRoomSide);
+
 	inside->wallCount = 4;
-	inside->walls = new Line[inside->wallCount];
+	inside->walls = new Line[maxWallCount];
 
 	float halfWallWidth = wallWidth * 0.5f;
 
@@ -55,44 +128,7 @@ void GenerateBuildingInside(Building* building) {
 	inside->walls[3].x2 = building->left + halfWallWidth;
 	inside->walls[3].y2 = building->top;
 
-	int roomRows = 3;
-	int roomCols = 3;
-	inside->roomCount = (roomRows * roomCols);
-	inside->rooms = new Room[inside->roomCount];
-
-	float roomWidth = (building->right - building->left) / ((float)roomCols);
-	float roomHeight = (building->bottom - building->top) / ((float)roomRows);
-
-	// TODO: use relative positions inside building?
-	int roomId = 0;
-	for (int row = 0; row < roomRows; ++row) {
-		for (int col = 0; col < roomCols; ++col) {
-			Room* room = &inside->rooms[roomId];
-
-			room->left   = building->left + (col * roomWidth);
-			room->right  = building->left + ((col + 1) * roomWidth);
-			room->top    = building->top + (row * roomHeight);
-			room->bottom = building->top + ((row + 1) * roomHeight);
-
-			roomId++;
-		}
-	}
-}
-
-Room* GetRoom(Building* building, Point position) {
-	Room* result = 0;
-
-	BuildingInside* inside = building->inside;
-	for (int i = 0; i < inside->roomCount; ++i) {
-		Room* room = &inside->rooms[i];
-
-		if ((room->left < position.x && position.x <= room->right) &&
-			(room->top < position.y && position.y <= room->bottom)) { 
-			result = room;
-		}
-	}
-
-	return result;
+	GenerateWalls(building, building->top, building->left, building->bottom, building->right, minRoomSide, maxRoomSide);
 }
 
 // TODO: rewrite this using vector maths
@@ -509,31 +545,30 @@ void DrawBuildingInside(Renderer renderer, Building building) {
 
 	switch (building.type) {
 		case BuildingType_Black: {
-			color = Color{0.0f, 0.0f, 0.0f};
+			color = Color{0.75f, 0.75f, 0.75f};
 			break;
 		}
 
 		case BuildingType_Red: {
-			color = Color{0.5f, 0.0f, 0.0f};
+			color = Color{0.75f, 0.0f, 0.0f};
 			break;
 		}
 
 		case BuildingType_Green: {
-			color = Color{0.0f, 0.5f, 0.0f};
+			color = Color{0.0f, 0.75f, 0.0f};
 			break;
 		}
 
 		case BuildingType_Blue: {
-			color = Color{0.0f, 0.0f, 0.5f};
+			color = Color{0.0f, 0.0f, 0.75f};
 			break;
 		}
 	}
 
-	Color wallColor = Color{
-		color.red + 0.25f,
-		color.green + 0.25f,
-		color.blue + 0.25f
-	};
+	Color wallColor = color;
+	if (wallColor.red   > 0.2f) wallColor.red   -= 0.2f;
+	if (wallColor.green > 0.2f) wallColor.green -= 0.2f;
+	if (wallColor.blue  > 0.2f) wallColor.blue  -= 0.2f;
 
 	DrawRect(renderer, building.top, building.left, building.bottom, building.right, color);
 
@@ -542,12 +577,8 @@ void DrawBuildingInside(Renderer renderer, Building building) {
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
 
-		DrawLine(renderer, wall.p1, wall.p2, wallColor, wallWidth);
+		DrawGridLine(renderer, wall.p1, wall.p2, wallColor, wallWidth);
 	}
-}
-
-void HighLightRoom(Renderer renderer, Room room, Color color) {
-	DrawRect(renderer, room.top, room.left, room.bottom, room.right, color);
 }
 
 void DrawConnectRoad(Renderer renderer, Building building) {

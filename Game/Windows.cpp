@@ -246,6 +246,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	LARGE_INTEGER lastCounter;
 	QueryPerformanceCounter(&lastCounter);
 
+	float elapsedS = globalTargetFrameS;
+
 	running = true;
 	while (running) {
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
@@ -259,7 +261,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		}
 
 		Point mousePosition = WinMousePosition(window);
-		GameUpdate(&globalGameState, globalTargetFrameS, mousePosition);
+		GameUpdate(&globalGameState, elapsedS, mousePosition);
 
 		WinDraw(window);
 
@@ -281,6 +283,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		if (elapsedMS < globalTargetFrameMS) {
 			DWORD sleepMS = (DWORD)(globalTargetFrameMS - elapsedMS);
 			Sleep(sleepMS);
+			elapsedS = globalTargetFrameS;
+		}
+		else {
+			elapsedS = elapsedMS * 0.001f;
 		}
 
 		QueryPerformanceCounter(&lastCounter);

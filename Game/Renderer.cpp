@@ -66,6 +66,42 @@ void ClearScreen(Renderer renderer, Color color) {
 	}
 }
 
+void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth) {
+	float left = 0.0f;
+	float right = 0.0f;
+	float top = 0.0f;
+	float bottom = 0.0f;
+
+	if (point1.x == point2.x) {
+		left = point1.x - lineWidth * 0.5f;
+		right = point1.x + lineWidth * 0.5f;
+
+		if (point1.y < point2.y) {
+			top = point1.y;
+			bottom = point2.y;
+		}
+		else {
+			top = point2.y;
+			bottom = point1.y;
+		}
+	}
+	else if (point1.y == point2.y) {
+		top = point1.y - lineWidth * 0.5f;
+		bottom = point1.y + lineWidth * 0.5f;
+
+		if (point1.x < point2.x) {
+			left = point1.x;
+			right = point2.x;
+		}
+		else {
+			left = point2.x;
+			right = point1.x;
+		}
+	}
+
+	DrawRect(renderer, top, left, bottom, right, color);
+}
+
 void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth) {
 	Point direction = PointDirection(point2, point1);
 
