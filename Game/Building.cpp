@@ -3,9 +3,10 @@
 #include "Building.h"
 #include "Geometry.h"
 
-extern float entranceWidth = 10.0f;
-extern float wallWidth = 1.0f;
+extern float entranceWidth = 3.0f;
+extern float wallWidth = 0.5f;
 
+static float doorWidth = 3.0f;
 static float minRoomSide = 5.0f;
 static float maxRoomSide = 20.0f;
 
@@ -34,15 +35,205 @@ static float RandomBetween(float left, float right) {
 	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
 }
 
+static Line HorizontalWall(float left, float right, float y) {
+	Line wall = {};
+	wall.x1 = left;
+	wall.y1 = y;
+	wall.x2 = right;
+	wall.y2 = y;
+	return wall;
+}
+
+static Line VerticalWall(float top, float bottom, float x) {
+	Line wall = {};
+	wall.x1 = x;
+	wall.y1 = top;
+	wall.x2 = x;
+	wall.y2 = bottom;
+	return wall;
+}
+
+static void AddHelperWall(WallHelper* helper, Line wall) {
+	if (helper->wallCount < helper->maxWallCount) {
+		helper->walls[helper->wallCount] = wall;
+		helper->hasDoor[helper->wallCount] = false;
+		helper->wallCount++;
+	}
+}
+
+static void AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door) {
+	if (helper->wallCount < helper->maxWallCount) {
+		helper->walls[helper->wallCount] = wall;
+		helper->hasDoor[helper->wallCount] = true;
+		helper->doors[helper->wallCount] = door;
+		helper->wallCount++;
+	}
+}
+
+// TODO: move this to a math file?
+static bool IsBetween(float test, float min, float max) {
+	return (min <= test && test <= max);
+}
+
 // TODO: rewrite this not using recursion
-static void GenerateWalls(Building* building, float top, float left, float bottom, float right, float minRoomSide, float maxRoomSide) {
+static void GenerateWalls(Building* building, WallHelper* wallHelper,
+						  int leftWallIndex, int rightWallIndex, int topWallIndex, int bottomWallIndex,
+						  float minRoomSide, float maxRoomSide) {
+	float left   = wallHelper->walls[leftWallIndex].x1;
+	float right  = wallHelper->walls[rightWallIndex].x1;
+	float top    = wallHelper->walls[topWallIndex].y1;
+	float bottom = wallHelper->walls[bottomWallIndex].y1;
+
 	float width = (right - left);
 	float height = (bottom - top);
 
 	float cutDistance = RandomBetween(minRoomSide, maxRoomSide);
 
 	bool canCutHorizontally = (cutDistance <= height - minRoomSide);
+	float cutY = top + cutDistance;
+	{
+		int doorCount = 0;
+		Line doors[2] = {};
+
+		if (wallHelper->hasDoor[leftWallIndex]) {
+			doors[doorCount] = wallHelper->doors[leftWallIndex];
+			doors[doorCount].y1 -= wallWidth * 0.5f;
+			doors[doorCount].y2 += wallWidth * 0.5f;
+			doorCount++;
+		}
+		if (wallHelper->hasDoor[rightWallIndex]) {
+			doors[doorCount] = wallHelper->doors[rightWallIndex];
+			doors[doorCount].y1 -= wallWidth * 0.5f;
+			doors[doorCount].y2 += wallWidth * 0.5f;
+			doorCount++;
+		}
+
+		if (doorCount == 2 && (doors[0].y1 < doors[1].y2 && doors[1].y1 < doors[0].y2)) {
+			Line door = {};
+			door.y1 = Min2(doors[0].y1, doors[1].y1);
+			door.y2 = Max2(doors[0].y2, doors[1].y2);
+
+			doorCount = 1;
+			doors[0] = door;
+		}
+
+		if (doorCount > 0 && (doors[0].y1 < cutY && cutY < doors[0].y2)) {
+			float topY = doors[0].y1;
+			float topDist1 = topY - top;
+			float topDist2 = bottom - topY;
+
+			float bottomY = doors[0].y2;
+			float bottomDist1 = bottomY - top;
+			float bottomDist2 = bottom - bottomY;
+
+			if (IsBetween(topDist1, minRoomSide, maxRoomSide) && IsBetween(topDist2, minRoomSide, maxRoomSide)) {
+				cutY = topY;
+				canCutHorizontally = true;
+			}
+			else if (IsBetween(bottomDist1, minRoomSide, maxRoomSide) && IsBetween(bottomDist2, minRoomSide, maxRoomSide)) {
+				cutY = bottomY;
+				canCutHorizontally = true;
+			}
+			else {
+				canCutHorizontally = false;
+			}
+		}
+
+		if (doorCount > 1 && (doors[1].y1 < cutY && cutY < doors[1].y2)) {
+			float topY = doors[1].y1;
+			float topDist1 = topY - top;
+			float topDist2 = bottom - topY;
+
+			float bottomY = doors[1].y2;
+			float bottomDist1 = bottomY - top;
+			float bottomDist2 = bottom - bottomY;
+
+			if (IsBetween(topDist1, minRoomSide, maxRoomSide) && IsBetween(topDist2, minRoomSide, height)) {
+				cutY = topY;
+				canCutHorizontally = true;
+			}
+			else if (IsBetween(bottomDist1, minRoomSide, maxRoomSide) && IsBetween(bottomDist2, minRoomSide, height)) {
+				cutY = bottomY;
+				canCutHorizontally = true;
+			}
+			else {
+				canCutHorizontally = false;
+			}
+		}
+	}
+
 	bool canCutVertically = (cutDistance <= width - minRoomSide);
+	float cutX = left + cutDistance;
+	{
+		int doorCount = 0;
+		Line doors[2] = {};
+
+		if (wallHelper->hasDoor[topWallIndex]) {
+			doors[doorCount] = wallHelper->doors[topWallIndex];
+			doors[doorCount].x1 -= wallWidth * 0.5f;
+			doors[doorCount].x2 += wallWidth * 0.5f;
+			doorCount++;
+		}
+		if (wallHelper->hasDoor[bottomWallIndex]) {
+			doors[doorCount] = wallHelper->doors[bottomWallIndex];
+			doors[doorCount].x1 -= wallWidth * 0.5f;
+			doors[doorCount].x2 += wallWidth * 0.5f;
+			doorCount++;
+		}
+
+		if (doorCount == 2 && (doors[0].x1 < doors[1].x2 && doors[1].x1 < doors[0].x2)) {
+			Line door = {};
+			door.x1 = Min2(doors[0].x1, doors[1].x1);
+			door.x2 = Max2(doors[0].x2, doors[1].x2);
+
+			doorCount = 1;
+			doors[0] = door;
+		}
+
+		if (doorCount > 0 && (doors[0].x1 < cutX && cutX < doors[0].x2)) {
+			float leftX = doors[0].x1;
+			float leftDist1 = leftX - left;
+			float leftDist2 = right - leftX;
+
+			float rightX = doors[0].x2;
+			float rightDist1 = rightX - left;
+			float rightDist2 = right - rightX;
+
+			if (IsBetween(leftDist1, minRoomSide, maxRoomSide) && IsBetween(leftDist2, minRoomSide, width)) {
+				cutX = leftX;
+				canCutVertically = true;
+			}
+			else if (IsBetween(rightDist1, minRoomSide, maxRoomSide) && IsBetween(rightDist2, minRoomSide, width)) {
+				cutX = rightX;
+				canCutVertically = true;
+			}
+			else {
+				canCutVertically = false;
+			}
+		}
+
+		if (doorCount > 1 && (doors[1].x1 < cutX && cutX < doors[1].x2)) {
+			float leftX = doors[1].x1;
+			float leftDist1 = leftX - left;
+			float leftDist2 = right - leftX;
+
+			float rightX = doors[1].x2;
+			float rightDist1 = rightX - left;
+			float rightDist2 = right - rightX;
+
+			if (IsBetween(leftDist1, minRoomSide, maxRoomSide) && IsBetween(leftDist2, minRoomSide, maxRoomSide)) {
+				cutX = leftX;
+				canCutVertically = true;
+			}
+			else if (IsBetween(rightDist1, minRoomSide, maxRoomSide) && IsBetween(rightDist2, minRoomSide, maxRoomSide)) {
+				cutX = rightX;
+				canCutVertically = true;
+			}
+			else {
+				canCutVertically = false;
+			}
+		}
+	}
 
 	bool cutHorizontally = false;
 	bool cutVertically = false;
@@ -63,38 +254,47 @@ static void GenerateWalls(Building* building, float top, float left, float botto
 	BuildingInside* inside = building->inside;
 	
 	if (cutVertically) {
-		float cutX = left + cutDistance;
+		int wallIndex = wallHelper->wallCount;
 
-		Line wall = {};
-		wall.x1 = cutX;
-		wall.y1 = top;
-		wall.x2 = cutX;
-		wall.y2 = bottom;
+		Line wall = VerticalWall(top, bottom, cutX);
 
-		inside->walls[inside->wallCount] = wall;
-		inside->wallCount++;
+		float centerY = RandomBetween(
+			Min2(wall.y1, wall.y2) + doorWidth * 0.5f,
+			Max2(wall.y1, wall.y2) - doorWidth * 0.5f
+		);
+		Line door = {};
+		door.x1 = wall.x1;
+		door.y1 = centerY - doorWidth * 0.5f;
+		door.x2 = wall.x2;
+		door.y2 = centerY + doorWidth * 0.5f;
 
-		GenerateWalls(building, top, left, bottom, cutX, minRoomSide, maxRoomSide);
-		GenerateWalls(building, top, cutX, bottom, right, minRoomSide, maxRoomSide);
+		AddHelperWallWithDoor(wallHelper, wall, door);
+
+		GenerateWalls(building, wallHelper,     wallIndex, rightWallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
+		GenerateWalls(building, wallHelper, leftWallIndex,      wallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
 	}
 	else if (cutHorizontally) {
-		float cutY = top + cutDistance;
+		int wallIndex = wallHelper->wallCount;
 
-		Line wall = {};
-		wall.x1 = left;
-		wall.y1 = cutY;
-		wall.x2 = right;
-		wall.y2 = cutY;
+		Line wall = HorizontalWall(left, right, cutY);
 
-		inside->walls[inside->wallCount] = wall;
-		inside->wallCount++;
+		float centerX = RandomBetween(
+			Min2(wall.x1, wall.x2) + doorWidth * 0.5f,
+			Max2(wall.x1, wall.x2) - doorWidth * 0.5f
+		);
+		Line door = {};
+		door.x1 = centerX - doorWidth * 0.5f;
+		door.y1 = wall.y1;
+		door.x2 = centerX + doorWidth * 0.5f;
+		door.y2 = wall.y2;
+		AddHelperWallWithDoor(wallHelper, wall, door);
 
-		GenerateWalls(building, top, left, cutY, right, minRoomSide, maxRoomSide);
-		GenerateWalls(building, cutY, left, bottom, right, minRoomSide, maxRoomSide);
+		GenerateWalls(building, wallHelper, leftWallIndex, rightWallIndex,    wallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
+		GenerateWalls(building, wallHelper, leftWallIndex, rightWallIndex, topWallIndex,       wallIndex, minRoomSide, maxRoomSide);
 	}
 }
 
-void GenerateBuildingInside(Building* building) {
+void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 	BuildingInside* inside = new BuildingInside;
 	building->inside = inside;
 
@@ -103,32 +303,101 @@ void GenerateBuildingInside(Building* building) {
 
 	int maxWallCount = 4 + ((int)buildingWidth / (int)minRoomSide) * ((int)buildingHeight / (int)minRoomSide);
 
-	inside->wallCount = 4;
-	inside->walls = new Line[maxWallCount];
-
 	float halfWallWidth = wallWidth * 0.5f;
 
-	inside->walls[0].x1 = building->left;
-	inside->walls[0].y1 = building->top + halfWallWidth;
-	inside->walls[0].x2 = building->right;
-	inside->walls[0].y2 = building->top + halfWallWidth;
+	Line entrance = {};
+	entrance.p1 = building->entrancePoint1;
+	entrance.p2 = building->entrancePoint2;
 
-	inside->walls[1].x1 = building->right - halfWallWidth;
-	inside->walls[1].y1 = building->top;
-	inside->walls[1].x2 = building->right - halfWallWidth;
-	inside->walls[1].y2 = building->bottom;
+	Line leftWall = VerticalWall(building->top, building->bottom, building->left + halfWallWidth);
+	if (entrance.x1 == building->left && entrance.x2 == building->left) {
+		AddHelperWallWithDoor(wallHelper, leftWall, entrance);
+	}
+	else {
+		AddHelperWall(wallHelper, leftWall);
+	}
 
-	inside->walls[2].x1 = building->right;
-	inside->walls[2].y1 = building->bottom - halfWallWidth;
-	inside->walls[2].x2 = building->left;
-	inside->walls[2].y2 = building->bottom - halfWallWidth;
+	Line rightWall = VerticalWall(building->top, building->bottom, building->right - halfWallWidth);
+	if (entrance.x1 == building->right && entrance.x2 == building->right) {
+		AddHelperWallWithDoor(wallHelper, rightWall, entrance);
+	}
+	else {
+		AddHelperWall(wallHelper, rightWall);
+	}
 
-	inside->walls[3].x1 = building->left + halfWallWidth;
-	inside->walls[3].y1 = building->bottom;
-	inside->walls[3].x2 = building->left + halfWallWidth;
-	inside->walls[3].y2 = building->top;
+	Line topWall = HorizontalWall(building->left, building->right, building->top + halfWallWidth);
+	if (entrance.y1 == building->top && entrance.y2 == building->top) {
+		AddHelperWallWithDoor(wallHelper, topWall, entrance);
+	}
+	else {
+		AddHelperWall(wallHelper, topWall);
+	}
 
-	GenerateWalls(building, building->top, building->left, building->bottom, building->right, minRoomSide, maxRoomSide);
+	Line bottomWall = HorizontalWall(building->left, building->right, building->bottom - halfWallWidth);
+	if (entrance.y1 == building->bottom && entrance.y2 == building->bottom) {
+		AddHelperWallWithDoor(wallHelper, bottomWall, entrance);
+	}
+	else {
+		AddHelperWall(wallHelper, bottomWall);
+	}
+
+	GenerateWalls(building, wallHelper, 0, 1, 2, 3, minRoomSide, maxRoomSide);
+
+	int wallCount = 0;
+	for (int i = 0; i < wallHelper->wallCount; ++i) {
+		if (wallHelper->hasDoor[i]) wallCount += 2;
+		else wallCount += 1;
+	}
+
+	inside->wallCount = 0;
+	inside->walls = new Line[wallCount];
+
+	for (int i = 0; i < wallHelper->wallCount; ++i) {
+		Line wall = wallHelper->walls[i];
+
+		if (wallHelper->hasDoor[i]) {
+			Line door = wallHelper->doors[i];
+
+			if (wall.x1 == wall.x2) {
+				Line topWall = VerticalWall(
+					Min2(wall.y1, wall.y2), 
+					Min2(door.y1, door.y2), 
+					wall.x1
+				);
+				Line bottomWall = VerticalWall(
+					Max2(door.y1, door.y2),
+					Max2(wall.y1, wall.y2),
+					wall.x1
+				);
+
+				inside->walls[inside->wallCount] = topWall;
+				inside->wallCount++;
+				inside->walls[inside->wallCount] = bottomWall;
+				inside->wallCount++;
+			}
+			else if (wall.y1 == wall.y2) {
+				Line leftWall = HorizontalWall(
+					Min2(wall.x1, wall.x2),
+					Min2(door.x1, door.x2),
+					wall.y1
+				);
+				Line rightWall = HorizontalWall(
+					Max2(door.x1, door.x2),
+					Max2(wall.x1, wall.x2),
+					wall.y1
+				);
+
+				inside->walls[inside->wallCount] = leftWall;
+				inside->wallCount++;
+				inside->walls[inside->wallCount] = rightWall;
+				inside->wallCount++;
+			}
+		}
+		else {
+			inside->walls[inside->wallCount] = wall;
+			inside->wallCount++;
+		}
+	}
 }
 
 // TODO: rewrite this using vector maths
@@ -529,15 +798,6 @@ void DrawBuilding(Renderer renderer, Building building) {
 		building.top, building.left, building.bottom, building.right,
 		color
 	);
-
-	float entranceLineWidth = 0.8f;
-	Color entranceColor = Color{
-		color.red * 0.5f, 
-		color.green * 0.5f, 
-		color.blue * 0.5f
-	};
-
-	DrawLine(renderer, building.entrancePoint1, building.entrancePoint2, entranceColor, entranceLineWidth);
 }
 
 void DrawBuildingInside(Renderer renderer, Building building) {

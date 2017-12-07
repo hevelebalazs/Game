@@ -37,7 +37,7 @@ Point PointDirection(Point startPoint, Point endPoint) {
 	return vector;
 }
 
-bool TurnsRight(Point point1, Point point2, Point point3) {
+inline bool TurnsRight(Point point1, Point point2, Point point3) {
 	float dx1 = point2.x - point1.x;
 	float dy1 = point2.y - point1.y;
 	float dx2 = point3.x - point2.x;

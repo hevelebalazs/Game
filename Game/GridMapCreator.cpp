@@ -445,6 +445,13 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		}
 	}
 
+	WallHelper wallHelper = {};
+	wallHelper.maxWallCount = 100;
+	wallHelper.wallCount = 0;
+	wallHelper.walls = new Line[wallHelper.maxWallCount];
+	wallHelper.hasDoor = new bool[wallHelper.maxWallCount];
+	wallHelper.doors = new Line[wallHelper.maxWallCount];
+
 	for (int i = 0; i < map.buildingCount; ++i) {
 		Building* building = &map.buildings[i];
 
@@ -454,8 +461,13 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 		building->type = (BuildingType)(rand() % 4);
 
-		GenerateBuildingInside(building);
+		wallHelper.wallCount = 0;
+		GenerateBuildingInside(building, &wallHelper);
 	}
+
+	delete[] wallHelper.walls;
+	delete[] wallHelper.hasDoor;
+	delete[] wallHelper.doors;
 
 	return map;
 }

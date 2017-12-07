@@ -12,6 +12,14 @@ extern float wallWidth;
 
 struct MapElem;
 
+struct WallHelper {
+	int maxWallCount;
+	int wallCount;
+	Line* walls;
+	bool* hasDoor;
+	Line* doors;
+};
+
 enum EntranceInfo {
 	EntranceNone,
 	EntranceOut,
@@ -60,7 +68,7 @@ struct Building {
 	BuildingInside* inside;
 };
 
-void GenerateBuildingInside(Building* building);
+void GenerateBuildingInside(Building* building, WallHelper* wallHelper);
 
 void ConnectBuildingToElem(Building* building, MapElem elem);
 bool IsPointInBuilding(Point point, Building building);

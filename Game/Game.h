@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Building.h"
 #include "Point.h"
 #include "PlayerHuman.h"
 
@@ -13,6 +14,8 @@ struct GameState {
 
 	PathHelper pathHelper;
 	Path buildingPath;
+
+	WallHelper wallHelper;
 
 	AutoVehicle autoVehicles[100];
 	int autoVehicleCount = 100;
