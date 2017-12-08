@@ -18,6 +18,8 @@ struct Human {
 	Map* map;
 	Building* inBuilding;
 
+	Color color;
+
 	Point position;
 };
 

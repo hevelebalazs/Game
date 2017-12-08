@@ -20,11 +20,10 @@ struct WallHelper {
 	Line* doors;
 };
 
-enum EntranceInfo {
-	EntranceNone,
-	EntranceOut,
-	EntranceIn,
-	EntranceSide
+enum CrossType {
+	CrossNone,
+	CrossWall,
+	CrossEntrance
 };
 
 struct BuildingCrossInfo {
@@ -32,7 +31,7 @@ struct BuildingCrossInfo {
 	Point crossPoint;
 	Point corner1;
 	Point corner2;
-	EntranceInfo entrance;
+	CrossType type;
 };
 
 struct BuildingInside {
@@ -72,8 +71,10 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper);
 
 void ConnectBuildingToElem(Building* building, MapElem elem);
 bool IsPointInBuilding(Point point, Building building);
+bool IsPointInExtBuilding(Point point, Building building, float radius);
 bool IsBuildingCrossed(Building building, Point point1, Point point2);
 BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float extRadius, Point closePoint, Point farPoint);
+BuildingCrossInfo ExtBuildingInsideClosestCrossInfo(Building* building, float extRadius, Point closePoint, Point farPoint);
 Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPoint);
 
 void HighLightBuilding(Renderer renderer, Building building, Color color);

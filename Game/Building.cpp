@@ -126,11 +126,11 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			float bottomDist1 = bottomY - top;
 			float bottomDist2 = bottom - bottomY;
 
-			if (IsBetween(topDist1, minRoomSide, maxRoomSide) && IsBetween(topDist2, minRoomSide, maxRoomSide)) {
+			if (topDist1 >= minRoomSide && topDist2 >= minRoomSide) {
 				cutY = topY;
 				canCutHorizontally = true;
 			}
-			else if (IsBetween(bottomDist1, minRoomSide, maxRoomSide) && IsBetween(bottomDist2, minRoomSide, maxRoomSide)) {
+			else if (bottomDist1 >= minRoomSide && bottomDist2 >= minRoomSide) {
 				cutY = bottomY;
 				canCutHorizontally = true;
 			}
@@ -148,11 +148,11 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			float bottomDist1 = bottomY - top;
 			float bottomDist2 = bottom - bottomY;
 
-			if (IsBetween(topDist1, minRoomSide, maxRoomSide) && IsBetween(topDist2, minRoomSide, height)) {
+			if (topDist1 >= minRoomSide && topDist2 >= minRoomSide) {
 				cutY = topY;
 				canCutHorizontally = true;
 			}
-			else if (IsBetween(bottomDist1, minRoomSide, maxRoomSide) && IsBetween(bottomDist2, minRoomSide, height)) {
+			else if (bottomDist1 >= minRoomSide && bottomDist2 >= minRoomSide) {
 				cutY = bottomY;
 				canCutHorizontally = true;
 			}
@@ -199,11 +199,11 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			float rightDist1 = rightX - left;
 			float rightDist2 = right - rightX;
 
-			if (IsBetween(leftDist1, minRoomSide, maxRoomSide) && IsBetween(leftDist2, minRoomSide, width)) {
+			if (leftDist1 >= minRoomSide && leftDist2 >= minRoomSide) {
 				cutX = leftX;
 				canCutVertically = true;
 			}
-			else if (IsBetween(rightDist1, minRoomSide, maxRoomSide) && IsBetween(rightDist2, minRoomSide, width)) {
+			else if (rightDist1 >= minRoomSide && rightDist2 >= minRoomSide) {
 				cutX = rightX;
 				canCutVertically = true;
 			}
@@ -221,11 +221,11 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			float rightDist1 = rightX - left;
 			float rightDist2 = right - rightX;
 
-			if (IsBetween(leftDist1, minRoomSide, maxRoomSide) && IsBetween(leftDist2, minRoomSide, maxRoomSide)) {
+			if (leftDist1 >= minRoomSide && leftDist2 >= minRoomSide) {
 				cutX = leftX;
 				canCutVertically = true;
 			}
-			else if (IsBetween(rightDist1, minRoomSide, maxRoomSide) && IsBetween(rightDist2, minRoomSide, maxRoomSide)) {
+			else if (rightDist1 >= minRoomSide && rightDist2 >= minRoomSide) {
 				cutX = rightX;
 				canCutVertically = true;
 			}
@@ -511,6 +511,12 @@ bool IsPointInBuilding(Point point, Building building) {
 	return true;
 }
 
+bool IsPointInExtBuilding(Point point, Building building, float radius) {
+	if (point.x < building.left - radius || point.x > building.right + radius) return false;
+	if (point.y < building.top - radius || point.y > building.bottom + radius) return false;
+	return true;
+}
+
 static bool IsPointOnEdge(Point point, Building building) {
 	if (point.x == building.left) return true;
 	if (point.x == building.right) return true;
@@ -540,6 +546,8 @@ bool IsBuildingCrossed(Building building, Point point1, Point point2) {
 
 BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float radius, Point closePoint, Point farPoint) {
 	BuildingCrossInfo result = {};
+	result.type = CrossNone;
+	
 	float minDistanceSquare = 0.0f;
 	bool foundAny = false;
 
@@ -565,134 +573,109 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float radius, 
 				result.crossPoint = intersection;
 				result.corner1 = corner1;
 				result.corner2 = corner2;
-			}
-		}
-	}
-
-	Point inTopLeft = {building->left + radius, building->top + radius};
-	Point inTopRight = {building->right - radius, building->top + radius};
-	Point inBottomLeft = {building->left + radius, building->bottom - radius};
-	Point inBottomRight = {building->right - radius, building->bottom - radius};
-	Point inPoints[5] = {inTopLeft, inTopRight, inBottomRight, inBottomLeft, inTopLeft};
-
-	for (int i = 0; i < 4; ++i) {
-		Point inCorner1 = inPoints[i];
-		Point inCorner2 = inPoints[i + 1];
-
-		if (DoLinesCross(inCorner1, inCorner2, closePoint, farPoint)) {
-			Point intersection = LineIntersection(inCorner1, inCorner2, closePoint, farPoint);
-			float distanceSquare = DistanceSquare(closePoint, intersection);
-
-			if (foundAny == false || distanceSquare < minDistanceSquare) {
-				minDistanceSquare = distanceSquare;
-				foundAny = true;
-
-				result.building = building;
-				result.crossPoint = intersection;
-				result.corner1 = inCorner1;
-				result.corner2 = inCorner2;
+				result.type = CrossWall;
 			}
 		}
 	}
 
 	// TODO: create directed points for entrance points that point outside of the building
-	Point entrancePointOut1 = building->entrancePoint1;
-	Point entrancePointOut2 = building->entrancePoint2;
-	Point entrancePointIn1 = building->entrancePoint1;
-	Point entrancePointIn2 = building->entrancePoint2;
+	Point entrance1 = building->entrancePoint1;
+	Point entrance2 = building->entrancePoint2;
 
-	if (building->entrancePoint1.x == building->left) {
-		entrancePointOut1.x -= radius;
-		entrancePointOut2.x -= radius;
-		entrancePointIn1.x += radius;
-		entrancePointIn2.x += radius;
+	if (entrance1.x == building->left && entrance2.x == building->left) {
+		entrance1.x -= radius;
+		entrance2.x -= radius;
 	}
-	else if (building->entrancePoint1.x == building->right) {
-		entrancePointOut1.x += radius;
-		entrancePointOut2.x += radius;
-		entrancePointIn1.x -= radius;
-		entrancePointIn2.x -= radius;
+	else if (entrance1.x == building->right && entrance2.x == building->right) {
+		entrance1.x += radius;
+		entrance2.x += radius;
 	}
-	else if (building->entrancePoint1.y == building->top) {
-		entrancePointOut1.y -= radius;
-		entrancePointOut2.y -= radius;
-		entrancePointIn1.y += radius;
-		entrancePointIn2.y += radius;
+	else if (entrance1.y == building->top && entrance2.y == building->top) {
+		entrance1.y -= radius;
+		entrance2.y -= radius;
 	}
-	else if (building->entrancePoint1.y == building->bottom) {
-		entrancePointOut1.y += radius;
-		entrancePointOut2.y += radius;
-		entrancePointIn1.y -= radius;
-		entrancePointIn2.y -= radius;
+	else if (entrance2.y == building->bottom && entrance2.y == building->bottom) {
+		entrance1.y += radius;
+		entrance2.y += radius;
 	}
 
-	Point entranceSide11 = building->entrancePoint1;
-	Point entranceSide12 = building->entrancePoint1;
-	Point entranceSide21 = building->entrancePoint2;
-	Point entranceSide22 = building->entrancePoint2;
-
-	if (building->entrancePoint1.x == building->left || building->entrancePoint1.x == building->right) {
-		if (building->entrancePoint1.y < building->entrancePoint2.y) {
-			entranceSide11.y += radius;
-			entranceSide12.y += radius;
-			entranceSide21.y -= radius;
-			entranceSide22.y -= radius;
-		}
-		else {
-			entranceSide11.y -= radius;
-			entranceSide12.y -= radius;
-			entranceSide21.y += radius;
-			entranceSide22.y += radius;
-		}
-
-		entranceSide11.x -= radius;
-		entranceSide12.x += radius;
-
-		entranceSide21.x -= radius;
-		entranceSide22.x += radius;
-	}
-	else if (building->entrancePoint1.y == building->top || building->entrancePoint1.y == building->bottom) {
-		if (building->entrancePoint1.x < building->entrancePoint2.x) {
-			entranceSide11.x += radius;
-			entranceSide12.x += radius;
-			entranceSide21.x -= radius;
-			entranceSide22.x -= radius;
-		}
-		else {
-			entranceSide11.x -= radius;
-			entranceSide12.x -= radius;
-			entranceSide21.x += radius;
-			entranceSide22.x += radius;
-		}
-
-		entranceSide11.y -= radius;
-		entranceSide12.y += radius;
-
-		entranceSide21.y -= radius;
-		entranceSide22.y += radius;
-	}
-
-	if (DoLinesCross(entranceSide11, entranceSide12, closePoint, farPoint)) {
+	if (DoLinesCross(entrance1, entrance2, closePoint, farPoint)) {
+		Point intersection = LineIntersection(entrance1, entrance2, closePoint, farPoint);
+		
 		result.building = building;
-		result.corner1 = entranceSide11;
-		result.corner2 = entranceSide12;
-		result.entrance = EntranceSide;
+		result.crossPoint = intersection;
+		result.corner1 = building->entrancePoint1;
+		result.corner2 = building->entrancePoint2;
+		result.type = CrossEntrance;
 	}
-	else if (DoLinesCross(entranceSide21, entranceSide22, closePoint, farPoint)) {
-		result.building = building;
-		result.corner1 = entranceSide21;
-		result.corner2 = entranceSide22;
-		result.entrance = EntranceSide;
-	}
-	else if (foundAny) {
-		if (DoLinesCross(entrancePointOut1, entrancePointOut2, closePoint, farPoint)) {
-			result.entrance = EntranceOut;
+
+	return result;
+}
+
+BuildingCrossInfo ExtBuildingInsideClosestCrossInfo(Building* building, float radius, Point closePoint, Point farPoint) {
+	BuildingCrossInfo result = {};
+	result.type = CrossNone;
+
+	float minDistanceSquare = 0.0f;
+	bool foundAny = false;
+
+	BuildingInside* inside = building->inside;
+	for (int i = 0; i < inside->wallCount; ++i) {
+		Line wall = inside->walls[i];
+
+		Point endPoint1 = wall.p1;
+		Point endPoint2 = wall.p2;
+
+		if (endPoint1.x < endPoint2.x) {
+			endPoint1.x -= radius;
+			endPoint2.x += radius;
 		}
-		else if (DoLinesCross(entrancePointIn1, entrancePointIn2, closePoint, farPoint)) {
-			result.entrance = EntranceIn;
+		else if (endPoint1.x > endPoint2.x) {
+			endPoint1.x += radius;
+			endPoint2.x -= radius;
 		}
-		else {
-			result.entrance = EntranceNone;
+
+		if (endPoint1.y < endPoint2.y) {
+			endPoint1.y -= radius;
+			endPoint2.y += radius;
+		}
+		else if (endPoint1.y > endPoint2.y) {
+			endPoint1.y += radius;
+			endPoint2.y -= radius;
+		}
+
+		Point add = {};
+		if (endPoint1.x == endPoint2.x) add = {1.0f, 0.0f};
+		else add = {0.0f, 1.0f};
+
+		float wallRadius = radius + (wallWidth * 0.5f);
+
+		Point point1 = PointSum(endPoint1, PointProd(wallRadius, add));
+		Point point2 = PointSum(endPoint1, PointProd(-wallRadius, add));
+		Point point3 = PointSum(endPoint2, PointProd(-wallRadius, add));
+		Point point4 = PointSum(endPoint2, PointProd(wallRadius, add));
+
+		Point points[5] = {point1, point2, point3, point4, point1};
+
+		for (int i = 0; i < 4; ++i) {
+			Point corner1 = points[i];
+			Point corner2 = points[i + 1];
+
+			if (DoLinesCross(corner1, corner2, closePoint, farPoint)) {
+				Point intersection = LineIntersection(corner1, corner2, closePoint, farPoint);
+				float distanceSquare = DistanceSquare(closePoint, intersection);
+
+				if (foundAny == false || distanceSquare < minDistanceSquare) {
+					minDistanceSquare = distanceSquare;
+					foundAny = true;
+
+					result.building = building;
+					result.crossPoint = intersection;
+					result.corner1 = corner1;
+					result.corner2 = corner2;
+					result.type = CrossWall;
+				}
+			}
 		}
 	}
 

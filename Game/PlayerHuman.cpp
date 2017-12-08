@@ -11,40 +11,46 @@ static void MoveHuman(Human* human, Point moveVector) {
 	// TODO: should there be a limit on the iteration number?
 	while (distanceToGo > 0.0f) {
 		bool go = true;
+		bool isTouchingLine = false;
+		BuildingCrossInfo crossInfo = {};
+		crossInfo.type = CrossNone;
 
 		Point pointToGo = PointSum(human->position, moveVector);
 
-		BuildingCrossInfo crossInfo = ClosestExtBuildingCrossInfo(*human->map, human->radius, human->position, pointToGo);
+		if (human->inBuilding) {
+			bool isInBuilding = IsPointInExtBuilding(human->position, *human->inBuilding, human->radius);
 
-		Building* crossedBuilding = crossInfo.building;
-
-		if (crossedBuilding) {
-			if (crossInfo.entrance == EntranceOut) {
-				if (human->inBuilding == crossedBuilding) human->inBuilding = 0;
-				else human->inBuilding = crossedBuilding;
-			}
-			else if (crossInfo.entrance == EntranceIn) {
-				go = true;
-			}
-			else if (crossInfo.entrance == EntranceSide) {
-				distanceToGo = 0.0f;
-				go = false;
+			if (isInBuilding) {
+				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, human->radius, human->position, pointToGo);
 			}
 			else {
-				Point intersectionPoint = ClosestBuildingCrossPoint(*crossedBuilding, human->position, pointToGo);
-
-				// TODO: create a proper collision system
-				float distanceTaken = Distance(human->position, intersectionPoint);
-
-				Point moveNormal = PointProd(1.0f / VectorLength(moveVector), moveVector);
-
-				Point wallDirection = PointDiff(crossInfo.corner1, crossInfo.corner2);
-				moveVector = ParallelVector(moveVector, wallDirection);
-
-				distanceToGo = VectorLength(moveVector);
-
-				go = false;
+				human->inBuilding = 0;
 			}
+		}
+		else {
+			crossInfo = ClosestExtBuildingCrossInfo(*human->map, human->radius, human->position, pointToGo);
+
+			if (crossInfo.type == CrossEntrance) {
+				human->inBuilding = crossInfo.building;
+			}
+		}
+
+		if (crossInfo.type == CrossWall) {
+			Building* crossedBuilding = crossInfo.building;
+
+			Point crossPoint = crossInfo.crossPoint;
+
+			// TODO: create a proper collision system
+			float distanceTaken = Distance(human->position, crossPoint);
+
+			Point moveNormal = PointProd(1.0f / VectorLength(moveVector), moveVector);
+
+			Point wallDirection = PointDiff(crossInfo.corner1, crossInfo.corner2);
+			moveVector = ParallelVector(moveVector, wallDirection);
+
+			distanceToGo = VectorLength(moveVector);
+
+			go = false;
 		}
 
 		if (go) {
