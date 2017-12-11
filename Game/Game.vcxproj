@@ -126,6 +126,8 @@
     <ClCompile Include="Human.cpp" />
     <ClCompile Include="Intersection.cpp" />
     <ClCompile Include="Map.cpp" />
+    <ClCompile Include="MapElem.cpp" />
+    <ClCompile Include="Math.cpp" />
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="PlayerHuman.cpp" />
     <ClCompile Include="PlayerVehicle.cpp" />
@@ -148,6 +150,7 @@
     <ClInclude Include="Intersection.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapElem.h" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="Path.h" />
     <ClInclude Include="PlayerHuman.h" />
     <ClInclude Include="PlayerVehicle.h" />

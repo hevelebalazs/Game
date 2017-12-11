@@ -2,10 +2,8 @@
 #include <stdio.h>
 
 #include "Geometry.h"
+#include "Math.h"
 #include "Vehicle.h"
-
-// TODO: move this to a math file?
-static float PI = 3.14159265358979323f;
 
 void MoveVehicle(Vehicle* vehicle, DirectedPoint point) {
 	vehicle->position = point.position;

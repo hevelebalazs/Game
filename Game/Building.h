@@ -77,7 +77,11 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float extRadiu
 BuildingCrossInfo ExtBuildingInsideClosestCrossInfo(Building* building, float extRadius, Point closePoint, Point farPoint);
 Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPoint);
 
-void HighLightBuilding(Renderer renderer, Building building, Color color);
+bool IsPointOnBuildingConnector(Point point, Building building);
+
+void HighlightBuilding(Renderer renderer, Building building, Color color);
 void DrawBuilding(Renderer renderer, Building building);
 void DrawBuildingInside(Renderer renderer, Building building);
+
+void HighlightBuildingConnector(Renderer renderer, Building building, Color color);
 void DrawConnectRoad(Renderer renderer, Building building);

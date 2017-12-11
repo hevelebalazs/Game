@@ -4,11 +4,14 @@ enum MapElemType {
 	MapElemNone,
 	MapElemRoad,
 	MapElemIntersection,
-	MapElemBuilding
+	MapElemBuilding,
+	MapElemBuildingConnector
 };
 
 struct Building;
+struct Color;
 struct Intersection;
+struct Renderer;
 struct Road;
 
 struct MapElem {
@@ -21,3 +24,5 @@ struct MapElem {
 		void* address;
 	};
 };
+
+void HighlightMapElem(Renderer renderer, MapElem mapElem, Color color);

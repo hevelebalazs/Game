@@ -294,10 +294,10 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 			if (row > 0 && col < colCount) topRightIntersection = &map.intersections[(row - 1) * colCount + (col)];
 
 			Intersection* bottomLeftIntersection = 0;
-			if (row < rowCount && col > 0) bottomLeftIntersection = &map.intersections[(row)* colCount + (col - 1)];
+			if (row < rowCount && col > 0) bottomLeftIntersection = &map.intersections[(row) * colCount + (col - 1)];
 
 			Intersection* bottomRightIntersection = 0;
-			if (row < rowCount && col < colCount) bottomRightIntersection = &map.intersections[(row)* colCount + (col)];
+			if (row < rowCount && col < colCount) bottomRightIntersection = &map.intersections[(row) * colCount + (col)];
 
 			bool roadOnLeft = (topLeftIntersection != 0) && (topLeftIntersection->bottomRoad != 0);
 			bool roadOnRight = (topRightIntersection != 0) && (topRightIntersection->bottomRoad != 0);

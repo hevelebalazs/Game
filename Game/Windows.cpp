@@ -64,14 +64,13 @@ static Point WinMousePosition(HWND window) {
 	point.x = (float)cursorPoint.x;
 	point.y = (float)cursorPoint.y;
 
+	point = PixelToCoord(globalGameState.renderer.camera, point);
+
 	return point;
 }
 
 void WinDraw(HWND window) {
 	Point mousePoint = WinMousePosition(window);
-
-	// TODO: should this be here?
-	Intersection* highlightIntersection = IntersectionAtPoint(globalGameState.map, mousePoint, 20.0f);
 
 	GameDraw(&globalGameState);
 }
@@ -187,11 +186,6 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	return result;
 }
 
-// TODO: move this to a math file?
-static float RandomBetween(float left, float right) {
-	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
-}
-
 // TODO: create a GameState struct for the globals?
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
@@ -252,9 +246,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	while (running) {
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
 			if (message.message == WM_QUIT) running = false;
-			else if (message.message == WM_LBUTTONDOWN) {
-				globalGameState.selectedBuilding = globalGameState.highlightedBuilding;
-			}
 
 			TranslateMessage(&message);
 			DispatchMessageA(&message);

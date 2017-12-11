@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "Building.h"
+#include "Math.h"
 #include "Geometry.h"
 
 extern float entranceWidth = 3.0f;
@@ -12,27 +13,11 @@ static float maxRoomSide = 20.0f;
 
 float Building::connectRoadWidth;
 
-// TODO: move these to a math file?
-float Min2(float x, float y) {
-	if (x < y) return x;
-	else return y;
-}
-
-float Max2(float x, float y) {
-	if (x > y) return x;
-	else return y;
-}
-
 static Line ConnectingLine(Point point1, Point point2) {
 	Line result = {};
 	result.p1 = point1;
 	result.p2 = point2;
 	return result;
-}
-
-// TODO: move this to a math file?
-static float RandomBetween(float left, float right) {
-	return (left)+(right - left) * ((float)rand() / (float)RAND_MAX);
 }
 
 static Line HorizontalWall(float left, float right, float y) {
@@ -68,11 +53,6 @@ static void AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door) {
 		helper->doors[helper->wallCount] = door;
 		helper->wallCount++;
 	}
-}
-
-// TODO: move this to a math file?
-static bool IsBetween(float test, float min, float max) {
-	return (min <= test && test <= max);
 }
 
 // TODO: rewrite this not using recursion
@@ -599,6 +579,24 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float radius, 
 		entrance2.y += radius;
 	}
 
+	if (entrance1.x < entrance2.x) {
+		entrance1.x += radius;
+		entrance2.x -= radius;
+	}
+	else if (entrance1.x > entrance2.x) {
+		entrance1.x -= radius;
+		entrance2.x += radius;
+	}
+
+	if (entrance1.y < entrance2.y) {
+		entrance1.y += radius;
+		entrance2.y -= radius;
+	}
+	else if (entrance1.y > entrance2.y) {
+		entrance1.y -= radius;
+		entrance2.y += radius;
+	}
+
 	if (DoLinesCross(entrance1, entrance2, closePoint, farPoint)) {
 		Point intersection = LineIntersection(entrance1, entrance2, closePoint, farPoint);
 		
@@ -743,7 +741,37 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 	return result;
 }
 
-void HighLightBuilding(Renderer renderer, Building building, Color color) {
+bool IsPointOnBuildingConnector(Point point, Building building) {
+	float roadWidth = Building::connectRoadWidth;
+
+	if (building.roadAround) {
+		float left   = building.left   - roadWidth;
+		float right  = building.right  + roadWidth;
+		float top    = building.top    - roadWidth;
+		float bottom = building.bottom + roadWidth;
+
+		if (IsPointInRect(point, left, right, top, bottom)) return true;
+	}
+
+	float left   = Min2(building.connectPointFarShow.x, building.connectPointClose.x);
+	float right  = Max2(building.connectPointFarShow.x, building.connectPointClose.x);
+	float top    = Min2(building.connectPointFarShow.y, building.connectPointClose.y);
+	float bottom = Max2(building.connectPointFarShow.y, building.connectPointClose.y);
+
+	if (left == right) {
+		left  -= roadWidth * 0.5f;
+		right += roadWidth * 0.5f;
+	}
+	if (top == bottom) {
+		top    -= roadWidth * 0.5f;
+		bottom += roadWidth * 0.5f;
+	}
+
+	if (IsPointInRect(point, left, right, top, bottom)) return true;
+	else return false;
+}
+
+void HighlightBuilding(Renderer renderer, Building building, Color color) {
 	DrawRect(
 		renderer,
 		building.top, building.left, building.bottom, building.right,
@@ -824,6 +852,24 @@ void DrawBuildingInside(Renderer renderer, Building building) {
 	}
 }
 
+void HighlightBuildingConnector(Renderer renderer, Building building, Color color) {
+	float roadWidth = Building::connectRoadWidth;
+
+	if (building.roadAround) {
+		DrawRect(
+			renderer,
+			building.top - roadWidth, building.left - roadWidth,
+			building.bottom + roadWidth, building.right + roadWidth,
+			color
+		);
+
+		// TODO: this is a lazy solution, do this properly!
+		DrawBuilding(renderer, building);
+	}
+
+	DrawLine(renderer, building.connectPointClose, building.connectPointFarShow, color, roadWidth);
+}
+
 void DrawConnectRoad(Renderer renderer, Building building) {
 	// TODO: make this a static member of Road?
 	Color roadColor = Color{0.5f, 0.5f, 0.5f};
@@ -839,5 +885,5 @@ void DrawConnectRoad(Renderer renderer, Building building) {
 		);
 	}
 
-	DrawLine(renderer, building.connectPointClose, building.connectPointFarShow, roadColor, building.connectRoadWidth);
+	DrawLine(renderer, building.connectPointClose, building.connectPointFarShow, roadColor, roadWidth);
 }

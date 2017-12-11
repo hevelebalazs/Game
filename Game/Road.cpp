@@ -2,6 +2,7 @@
 #include <math.h>
 
 #include "Geometry.h"
+#include "Math.h"
 #include "Point.h"
 #include "Road.h"
 
@@ -62,6 +63,47 @@ Point ClosestRoadPoint(Road road, Point point) {
 	}
 
 	return result;
+}
+
+bool IsPointOnRoad(Point point, Road road) {
+	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
+	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
+	float top    = Min2(road.endPoint1.y, road.endPoint2.y);
+	float bottom = Max2(road.endPoint1.y, road.endPoint2.y);
+
+	if (left == right) {
+		left  -= road.width * 0.5f;
+		right += road.width * 0.5f;
+	}
+
+	if (top == bottom) {
+		top    -= road.width * 0.5f;
+		bottom += road.width * 0.5f;
+	}
+
+	if (point.x < left || point.x > right) return false;
+	if (point.y < top || point.y > bottom) return false;
+
+	return true;
+}
+
+void HighlightRoad(Renderer renderer, Road road, Color color) {
+	float left = Min2(road.endPoint1.x, road.endPoint2.x);
+	float right = Max2(road.endPoint1.x, road.endPoint2.x);
+	float top = Min2(road.endPoint1.y, road.endPoint2.y);
+	float bottom = Max2(road.endPoint1.y, road.endPoint2.y);
+
+	if (left == right) {
+		left -= road.width * 0.5f;
+		right += road.width * 0.5f;
+	}
+
+	if (top == bottom) {
+		top -= road.width * 0.5f;
+		bottom += road.width * 0.5f;
+	}
+
+	DrawRect(renderer, top, left, bottom, right, color);
 }
 
 void DrawRoad(Renderer renderer, Road road) {

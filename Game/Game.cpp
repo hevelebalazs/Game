@@ -32,6 +32,7 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 
 	gameState->renderer.camera.zoomSpeed = 10.0f;
 	gameState->renderer.camera.pixelCoordRatio = 10.0f;
+	gameState->renderer.camera.center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -48,23 +49,6 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 	}
 
 	UpdatePlayerHuman(&gameState->playerHuman, seconds);
-
-	gameState->highlightedBuilding = BuildingAtPoint(gameState->map, mousePosition);
-
-	if (gameState->selectedBuilding && gameState->highlightedBuilding && gameState->selectedBuilding != gameState->highlightedBuilding) {
-		ClearPath(&gameState->buildingPath);
-
-		// TODO: create a function for these?
-		MapElem selectedBuildingElem = {};
-		selectedBuildingElem.type = MapElemBuilding;
-		selectedBuildingElem.building = gameState->selectedBuilding;
-
-		MapElem highlightedBuildingElem = {};
-		highlightedBuildingElem.type = MapElemBuilding;
-		highlightedBuildingElem.building = gameState->highlightedBuilding;
-
-		gameState->buildingPath = ConnectElems(&gameState->map, selectedBuildingElem, highlightedBuildingElem, &gameState->pathHelper);
-	}
 
 	Camera* camera = &gameState->renderer.camera;
 	camera->center = gameState->playerHuman.human.position;
@@ -92,20 +76,10 @@ void GameDraw(GameState* gameState) {
 	else {
 		DrawMap(renderer, gameState->map);
 
-		if (gameState->selectedBuilding) {
-			Color highlightColor = {0.0f, 1.0f, 1.0f};
-			HighLightBuilding(gameState->renderer, *gameState->selectedBuilding, highlightColor);
-		}
-
-		if (gameState->highlightedBuilding) {
-			Color highlightColor = {0.0f, 1.0f, 1.0f};
-			HighLightBuilding(gameState->renderer, *gameState->highlightedBuilding, highlightColor);
-		}
-
-		if (gameState->buildingPath.nodeCount > 0 && gameState->selectedBuilding && gameState->highlightedBuilding
-			&& gameState->selectedBuilding != gameState->highlightedBuilding) {
-			Color color = {0.0f, 0.8f, 0.8f};
-			DrawBezierPath(&gameState->buildingPath, gameState->renderer, color, 3.0f);
+		MapElem highlightedElem = MapElemAtPoint(gameState->map, gameState->playerHuman.human.position);
+		if (highlightedElem.type != MapElemNone) {
+			Color highlightColor = Color{0.0f, 1.0f, 1.0f};
+			HighlightMapElem(renderer, highlightedElem, highlightColor);
 		}
 
 		for (int i = 0; i < gameState->autoVehicleCount; ++i) {

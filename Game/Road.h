@@ -20,4 +20,7 @@ struct Road{
 float DistanceSquareFromRoad(Road road, Point point);
 Point ClosestRoadPoint(Road road, Point point);
 
+bool IsPointOnRoad(Point point, Road road);
+
+void HighlightRoad(Renderer renderer, Road road, Color color);
 void DrawRoad(Renderer renderer, Road road);

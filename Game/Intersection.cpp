@@ -4,6 +4,21 @@ float TrafficLight::radius = 2.0f;
 float TrafficLight::switchTime = 3.0f;
 float TrafficLight::yellowTime = 1.0f;
 
+bool IsPointOnIntersection(Point point, Intersection intersection) {
+	float roadWidth = GetIntersectionRoadWidth(intersection);
+	
+	float left   = intersection.coordinate.x - (roadWidth * 0.5f);
+	float right  = intersection.coordinate.x + (roadWidth * 0.5f);
+	float top    = intersection.coordinate.y - (roadWidth * 0.5f);
+	float bottom = intersection.coordinate.y + (roadWidth * 0.5f);
+
+	// TODO: create an IsPointInRect function?
+	if (point.x < left || point.x > right) return false;
+	if (point.y < top || point.y > bottom) return false;
+
+	return true;
+}
+
 static void StartTrafficLight(TrafficLight* trafficLight) {
 	trafficLight->color = TrafficLight_Green;
 	trafficLight->timeLeft = TrafficLight::switchTime;

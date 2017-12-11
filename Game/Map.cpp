@@ -168,6 +168,43 @@ Building* ClosestCrossedBuilding(Map map, Point pointClose, Point pointFar, Buil
 	return result;
 }
 
+MapElem MapElemAtPoint(Map map, Point point) {
+	MapElem result = {};
+	result.type = MapElemNone;
+
+	for (int i = 0; i < map.roadCount; ++i) {
+		if (IsPointOnRoad(point, map.roads[i])) {
+			result.type = MapElemRoad;
+			result.road = &map.roads[i];
+			return result;
+		}
+	}
+
+	for (int i = 0; i < map.buildingCount; ++i) {
+		if (IsPointInBuilding(point, map.buildings[i])) {
+			result.type = MapElemBuilding;
+			result.building = &map.buildings[i];
+			return result;
+		}
+
+		if (IsPointOnBuildingConnector(point, map.buildings[i])) {
+			result.type = MapElemBuildingConnector;
+			result.building = &map.buildings[i];
+			return result;
+		}
+	}
+
+	for (int i = 0; i < map.roadCount; ++i) {
+		if (IsPointOnIntersection(point, map.intersections[i])) {
+			result.type = MapElemIntersection;
+			result.intersection = &map.intersections[i];
+			return result;
+		}
+	}
+
+	return result;
+}
+
 void DrawMap(Renderer renderer, Map map) {
 	Color color = { 0.0f, 1.0f, 0.0f };
 	DrawRect(

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Building.h"
+#include "MapElem.h"
 #include "Point.h"
 #include "PlayerHuman.h"
 
@@ -9,12 +10,7 @@ struct GameState {
 	Map map;
 	Intersection* selectedIntersection;
 
-	Building* selectedBuilding;
-	Building* highlightedBuilding;
-
 	PathHelper pathHelper;
-	Path buildingPath;
-
 	WallHelper wallHelper;
 
 	AutoVehicle autoVehicles[100];
