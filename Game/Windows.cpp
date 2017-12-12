@@ -91,6 +91,7 @@ void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
 	);
 }
 
+//TODO: fetch all the user input and pass it to GameUpdate?
 LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
@@ -124,18 +125,22 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			switch (keyCode) {
 				case 'W': {
 					globalGameState.playerHuman.moveUp = false;
+					globalGameState.playerVehicle.engineForce = 0.0f;
 					break;
 				}
 				case 'S': {
 					globalGameState.playerHuman.moveDown = false;
+					globalGameState.playerVehicle.engineForce = 0.0f;
 					break;
 				}
 				case 'A': {
 					globalGameState.playerHuman.moveLeft = false;
+					globalGameState.playerVehicle.turnAngle = 0.0f;
 					break;
 				}
 				case 'D': {
 					globalGameState.playerHuman.moveRight = false;
+					globalGameState.playerVehicle.turnAngle = 0.0f;
 					break;
 				}
 			}
@@ -148,18 +153,26 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			switch (keyCode) {
 				case 'W': {
 					globalGameState.playerHuman.moveUp = true;
+					globalGameState.playerVehicle.engineForce = globalGameState.playerVehicle.maxEngineForce;
 					break;
 				}
 				case 'S': {
 					globalGameState.playerHuman.moveDown = true;
+					globalGameState.playerVehicle.engineForce = -globalGameState.playerVehicle.breakForce;
 					break;
 				}
 				case 'A': {
 					globalGameState.playerHuman.moveLeft = true;
+					globalGameState.playerVehicle.turnAngle = -0.75f;
 					break;
 				}
 				case 'D': {
 					globalGameState.playerHuman.moveRight = true;
+					globalGameState.playerVehicle.turnAngle = 0.75f;
+					break;
+				}
+				case 'F': {
+					TogglePlayerVehicle(&globalGameState);
 					break;
 				}
 			}

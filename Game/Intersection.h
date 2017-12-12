@@ -38,6 +38,7 @@ struct Intersection {
 	TrafficLight bottomTrafficLight;
 };
 
+TrafficLight* TrafficLightOfRoad(Intersection* intersection, Road* road);
 bool IsPointOnIntersection(Point point, Intersection intersection);
 
 float GetIntersectionRoadWidth(Intersection intersection);

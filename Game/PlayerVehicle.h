@@ -17,5 +17,7 @@ struct PlayerVehicle {
 
 	Point velocity;
 
-	void Update(float seconds);
+	float secondsRed;
 };
+
+void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds);

@@ -4,6 +4,15 @@ float TrafficLight::radius = 2.0f;
 float TrafficLight::switchTime = 3.0f;
 float TrafficLight::yellowTime = 1.0f;
 
+// TODO: use this where it is done manually
+TrafficLight* TrafficLightOfRoad(Intersection* intersection, Road* road) {
+	if (intersection->leftRoad == road)        return &intersection->leftTrafficLight;
+	else if (intersection->rightRoad == road)  return &intersection->rightTrafficLight;
+	else if (intersection->topRoad == road)    return &intersection->topTrafficLight;
+	else if (intersection->bottomRoad == road) return &intersection->bottomTrafficLight;
+	else return 0;
+}
+
 bool IsPointOnIntersection(Point point, Intersection intersection) {
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 	

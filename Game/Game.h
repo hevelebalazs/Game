@@ -4,6 +4,7 @@
 #include "MapElem.h"
 #include "Point.h"
 #include "PlayerHuman.h"
+#include "PlayerVehicle.h"
 
 struct GameState {
 	Renderer renderer;
@@ -17,7 +18,12 @@ struct GameState {
 	int autoVehicleCount = 100;
 
 	PlayerHuman playerHuman;
+	PlayerVehicle playerVehicle;
+
+	bool isPlayerVehicle;
 };
+
+void TogglePlayerVehicle(GameState* gameState);
 
 void GameInit(GameState* gameState, int windowWidth, int windowHeight);
 void GameUpdate(GameState* gameState, float seconds, Point mousePosition);
