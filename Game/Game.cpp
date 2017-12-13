@@ -2,6 +2,7 @@
 #include "Building.h"
 #include "Game.h"
 #include "GridMapCreator.h"
+#include "Math.h"
 #include "Path.h"
 #include "PlayerVehicle.h"
 #include "Vehicle.h"
@@ -88,11 +89,32 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 
 		MapElem onElemAfter = MapElemAtPoint(gameState->map, gameState->playerVehicle.vehicle.position);
 
-		if (onElemAfter.type == MapElemIntersection && onElemBefore.type == MapElemRoad) {
-			TrafficLight* trafficLight = TrafficLightOfRoad(onElemAfter.intersection, onElemBefore.road);
+		if (onElemAfter.type == MapElemNone) {
+			TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
+		}
+		else if (onElemAfter.type == MapElemRoad) {
+			Road* road = onElemAfter.road;
 
-			if (trafficLight && trafficLight->color == TrafficLight_Red) {
-				gameState->playerVehicle.secondsRed = 2.0f;
+			int laneIndex = LaneIndex(*road, gameState->playerVehicle.vehicle.position);
+			Point laneDirection = LaneDirection(*road, laneIndex);
+
+			Point vehicleDirection = RotationVector(gameState->playerVehicle.vehicle.angle);
+			float angleCos = DotProduct(laneDirection, vehicleDirection);
+
+			float minAngleCos = 0.0f;
+
+			if (angleCos < minAngleCos) TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
+		}
+		else if (onElemAfter.type == MapElemIntersection) {
+			Intersection* intersection = onElemAfter.intersection;
+
+			if (onElemBefore.type == MapElemRoad) {
+				Road* road = onElemBefore.road;
+				TrafficLight* trafficLight = TrafficLightOfRoad(intersection, road);
+
+				if (trafficLight && trafficLight->color == TrafficLight_Red) {
+					TurnPlayerVehicleRed(&gameState->playerVehicle, 0.5f);
+				}
 			}
 		}
 	}
@@ -103,14 +125,23 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 	Camera* camera = &gameState->renderer.camera;
 	camera->center = gameState->playerHuman.human.position;
 
-	if (gameState->isPlayerVehicle) camera->center = gameState->playerVehicle.vehicle.position;
-	else camera->center = gameState->playerHuman.human.position;
+	if (gameState->isPlayerVehicle) {
+		camera->center = gameState->playerVehicle.vehicle.position;
 
-	if (gameState->playerHuman.human.inBuilding) {
-		camera->zoomTargetRatio = 20.0f;
+		// TODO: create a speed variable in PlayerVehicle?
+		float speed = VectorLength(gameState->playerVehicle.velocity);
+
+		camera->zoomTargetRatio = 13.0f - (speed / 4.0f);
 	}
 	else {
+		camera->center = gameState->playerHuman.human.position;
+
+		if (gameState->playerHuman.human.inBuilding) {
+		camera->zoomTargetRatio = 20.0f;
+		}
+		else {
 		camera->zoomTargetRatio = 10.0f;
+		}
 	}
 
 	UpdateCamera(camera, seconds);

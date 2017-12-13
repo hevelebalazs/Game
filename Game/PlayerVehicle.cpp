@@ -1,8 +1,13 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include "Math.h"
 #include "Geometry.h"
 #include "PlayerVehicle.h"
+
+void TurnPlayerVehicleRed(PlayerVehicle* playerVehicle, float seconds) {
+	if (playerVehicle->secondsRed < seconds) playerVehicle->secondsRed = seconds;
+}
 
 void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds) {
 	Vehicle* vehicle = &playerVehicle->vehicle;
@@ -14,7 +19,18 @@ void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds) {
 	Point frontWheel = PointProd(vehicle->length * 0.5f, direction);
 	Point rearWheel  = PointProd(-vehicle->length * 0.5f, direction);
 
-	Point turnDirection = RotationVector(vehicle->angle + playerVehicle->turnAngle);
+	float maxControlSpeed = 3.0f;
+	float controlTurnAngle = 5.0f;
+
+	float turnAngle = 0.0f;
+	if (speed > maxControlSpeed) turnAngle = controlTurnAngle * playerVehicle->turnDirection * (maxControlSpeed / speed);
+	
+	bool backwards = false;
+	if (DotProduct(direction, playerVehicle->velocity) < 0.0) backwards = true;
+
+	Point turnDirection = {};
+	if (backwards) turnDirection = RotationVector(vehicle->angle - turnAngle);
+    else           turnDirection = RotationVector(vehicle->angle + turnAngle);
 
 	frontWheel = PointSum(frontWheel, PointProd(seconds * speed, turnDirection));
 	rearWheel  = PointSum(rearWheel, PointProd(seconds * speed, direction));

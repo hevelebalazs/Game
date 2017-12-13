@@ -106,6 +106,25 @@ void HighlightRoad(Renderer renderer, Road road, Color color) {
 	DrawRect(renderer, top, left, bottom, right, color);
 }
 
+int LaneIndex(Road road, Point point) {
+	int result = 0;
+	bool turnsRight = TurnsRight(road.endPoint1, road.endPoint2, point);
+
+	if (turnsRight) result = 1;
+	else result = -1;
+
+	return result;
+}
+
+Point LaneDirection(Road road, int laneIndex) {
+	Point result = {};
+
+	if (laneIndex == 1)       result = PointDirection(road.endPoint1, road.endPoint2);
+	else if (laneIndex == -1) result = PointDirection(road.endPoint2, road.endPoint1);
+	
+	return result;
+}
+
 void DrawRoad(Renderer renderer, Road road) {
 	float stripeWidth = road.width / 20.0f;
 

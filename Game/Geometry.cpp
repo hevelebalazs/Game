@@ -2,6 +2,8 @@
 
 #include "Geometry.h"
 
+// TODO: create a type that always represents a unit vector?
+
 float DistanceSquare(Point point1, Point point2) {
 	return (point1.x - point2.x) * (point1.x - point2.x) +
 		(point1.y - point2.y) * (point1.y - point2.y);
@@ -37,7 +39,7 @@ Point PointDirection(Point startPoint, Point endPoint) {
 	return vector;
 }
 
-inline bool TurnsRight(Point point1, Point point2, Point point3) {
+bool TurnsRight(Point point1, Point point2, Point point3) {
 	float dx1 = point2.x - point1.x;
 	float dy1 = point2.y - point1.y;
 	float dx2 = point3.x - point2.x;

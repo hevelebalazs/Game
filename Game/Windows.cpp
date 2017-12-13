@@ -135,12 +135,12 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 				}
 				case 'A': {
 					globalGameState.playerHuman.moveLeft = false;
-					globalGameState.playerVehicle.turnAngle = 0.0f;
+					globalGameState.playerVehicle.turnDirection = 0.0f;
 					break;
 				}
 				case 'D': {
 					globalGameState.playerHuman.moveRight = false;
-					globalGameState.playerVehicle.turnAngle = 0.0f;
+					globalGameState.playerVehicle.turnDirection = 0.0f;
 					break;
 				}
 			}
@@ -163,12 +163,12 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 				}
 				case 'A': {
 					globalGameState.playerHuman.moveLeft = true;
-					globalGameState.playerVehicle.turnAngle = -0.75f;
+					globalGameState.playerVehicle.turnDirection = -1.0f;
 					break;
 				}
 				case 'D': {
 					globalGameState.playerHuman.moveRight = true;
-					globalGameState.playerVehicle.turnAngle = 0.75f;
+					globalGameState.playerVehicle.turnDirection = 1.0f;
 					break;
 				}
 				case 'F': {

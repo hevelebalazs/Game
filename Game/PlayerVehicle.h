@@ -13,11 +13,12 @@ struct PlayerVehicle {
 	float maxEngineForce;
 	float breakForce;
 
-	float turnAngle;
+	float turnDirection;
 
 	Point velocity;
 
 	float secondsRed;
 };
 
+void TurnPlayerVehicleRed(PlayerVehicle* playerVehicle, float seconds);
 void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds);

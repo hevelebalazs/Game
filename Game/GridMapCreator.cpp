@@ -131,6 +131,7 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 }
 
 // TODO: can the recursion cause any performance or memory issue?
+// TODO: a stack overflow has happened here, find out the issue
 static void CalculateTreeHeight(Building* building) {
 	if (building->connectElem.type == MapElemBuilding) {
 		Building* connectBuilding = building->connectElem.building;

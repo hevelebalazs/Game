@@ -22,5 +22,8 @@ Point ClosestRoadPoint(Road road, Point point);
 
 bool IsPointOnRoad(Point point, Road road);
 
+int LaneIndex(Road road, Point point);
+Point LaneDirection(Road road, int laneIndex);
+
 void HighlightRoad(Renderer renderer, Road road, Color color);
 void DrawRoad(Renderer renderer, Road road);
