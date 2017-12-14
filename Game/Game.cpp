@@ -64,8 +64,8 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 		autoVehicle->moveHelper = &gameState->pathHelper;
 	}
 
-	gameState->renderer.camera.zoomSpeed = 10.0f;
-	gameState->renderer.camera.pixelCoordRatio = 10.0f;
+	gameState->renderer.camera.zoomSpeed = 2.0f;
+	gameState->renderer.camera.pixelCoordRatio = 1.0f;
 	gameState->renderer.camera.center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
 }
 

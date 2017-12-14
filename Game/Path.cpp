@@ -539,14 +539,10 @@ DirectedPoint NextFromRoadToIntersection(DirectedPoint startPoint, Road* road, I
 	DirectedPoint result = {};
 
 	if (intersection == road->intersection1) {
-		result.position = road->endPoint1;
-
-		// TODO: add an angle to Road structure so this does not have to be recalculated?
-		result.direction = PointDirection(road->endPoint2, road->endPoint1);
+		result = RoadLeavePoint(*road, 1);
 	}
 	else if (intersection == road->intersection2) {
-		result.position = road->endPoint2;
-		result.direction = PointDirection(road->endPoint1, road->endPoint2);
+		result = RoadLeavePoint(*road, 2);
 	}
 	else {
 		result.position = intersection->coordinate;
@@ -558,9 +554,12 @@ DirectedPoint NextFromRoadToIntersection(DirectedPoint startPoint, Road* road, I
 bool EndFromRoadToIntersection(DirectedPoint point, Road* road, Intersection* intersection) {
 	bool result = false;
 
-	if (intersection == road->intersection1) result = PointEqual(point.position, road->endPoint1);
-	else if (intersection == road->intersection2) result = PointEqual(point.position, road->endPoint2);
-	else result = PointEqual(point.position, intersection->coordinate);
+	Point endPoint = {};
+	if (intersection == road->intersection1)	  endPoint = RoadLeavePoint(*road, 1).position;
+	else if (intersection == road->intersection2) endPoint = RoadLeavePoint(*road, 2).position;
+	else                                          endPoint = intersection->coordinate;
+
+	result = PointEqual(point.position, endPoint);
 
 	return result;
 }
@@ -583,12 +582,10 @@ DirectedPoint NextFromIntersectionToRoad(DirectedPoint startPoint, Intersection*
 	DirectedPoint result = {};
 
 	if (road->intersection1 == intersection) {
-		result.position = road->endPoint1;
-		result.direction = PointDirection(road->endPoint1, road->endPoint2);
+		result = RoadEnterPoint(*road, 1);
 	}
 	else if (road->intersection2 == intersection) {
-		result.position = road->endPoint2;
-		result.direction = PointDirection(road->endPoint2, road->endPoint1);
+		result = RoadEnterPoint(*road, 2);
 	}
 	else {
 		result.position = intersection->coordinate;
@@ -600,9 +597,12 @@ DirectedPoint NextFromIntersectionToRoad(DirectedPoint startPoint, Intersection*
 bool EndFromIntersectionToRoad(DirectedPoint point, Intersection* intersection, Road* road) {
 	bool result = false;
 
-	if (road->intersection1 == intersection) result = PointEqual(point.position, road->endPoint1);
-	else if (road->intersection2 == intersection) result = PointEqual(point.position, road->endPoint2);
-	else result = PointEqual(point.position, intersection->coordinate);
+	Point endPoint = {};
+	if (road->intersection1 == intersection)      endPoint = RoadEnterPoint(*road, 1).position;
+	else if (road->intersection2 == intersection) endPoint = RoadEnterPoint(*road, 2).position;
+	else                                          endPoint = intersection->coordinate;
+
+	result = PointEqual(point.position, endPoint);
 
 	return result;
 }

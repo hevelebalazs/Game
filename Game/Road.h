@@ -17,6 +17,9 @@ struct Road{
 	float width;
 };
 
+DirectedPoint RoadLeavePoint(Road road, int endPointIndex);
+DirectedPoint RoadEnterPoint(Road road, int endPointIndex);
+
 float DistanceSquareFromRoad(Road road, Point point);
 Point ClosestRoadPoint(Road road, Point point);
 

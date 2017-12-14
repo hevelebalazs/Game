@@ -6,8 +6,56 @@
 #include "Point.h"
 #include "Road.h"
 
-// TODO: introduce road angle and use it for calculations
+// TODO: change endPointIndex to laneIndex when there are more lanes for a direction
+DirectedPoint RoadLeavePoint(Road road, int endPointIndex) {
+	DirectedPoint result = {};
 
+	Point startPoint = {};
+	Point endPoint = {};
+
+	if (endPointIndex == 1) {
+		startPoint = road.endPoint2;
+		endPoint = road.endPoint1;
+	}
+	else {
+		startPoint = road.endPoint1;
+		endPoint = road.endPoint2;
+	}
+
+	Point moveUnitVector = PointDirection(startPoint, endPoint);
+	Point sideUnitVector = Point{-moveUnitVector.y, moveUnitVector.x};
+
+	result.position = PointSum(endPoint, PointProd(road.width * 0.25f, sideUnitVector));
+	result.direction = moveUnitVector;
+
+	return result;
+}
+
+DirectedPoint RoadEnterPoint(Road road, int endPointIndex) {
+	DirectedPoint result = {};
+
+	Point startPoint = {};
+	Point endPoint = {};
+
+	if (endPointIndex == 1) {
+		startPoint = road.endPoint1;
+		endPoint = road.endPoint2;
+	}
+	else {
+		startPoint = road.endPoint2;
+		endPoint = road.endPoint1;
+	}
+
+	Point moveUnitVector = PointDirection(startPoint, endPoint);
+	Point sideUnitVector = Point{-moveUnitVector.y, moveUnitVector.x};
+
+	result.position = PointSum(startPoint, PointProd(road.width * 0.25f, sideUnitVector));
+	result.direction = moveUnitVector;
+
+	return result;
+}
+
+// TODO: introduce road angle and use it for calculations
 float DistanceSquareFromRoad(Road road, Point point) {
 	Point closest = ClosestRoadPoint(road, point);
 
