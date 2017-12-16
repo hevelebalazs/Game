@@ -1,4 +1,4 @@
-#include "GridMapCreator.h"
+#include "GridMap.h"
 #include <math.h>
 #include <time.h>
 
@@ -143,6 +143,40 @@ static void CalculateTreeHeight(Building* building) {
 	else {
 		building->connectTreeHeight = 1;
 	}
+}
+
+static void ReindexRoad(Road* road, Intersection* oldIntersection, Intersection* newIntersection) {
+	if (road->intersection1 == oldIntersection) road->intersection1 = newIntersection;
+	if (road->intersection2 == oldIntersection) road->intersection2 = newIntersection;
+}
+
+static void RemoveIntersection(Map* map, Intersection* intersection) {
+	Intersection* oldIntersection = &map->intersections[map->intersectionCount - 1];
+	map->intersectionCount--;
+
+	*intersection = *oldIntersection;
+
+	if (intersection->leftRoad)   ReindexRoad(intersection->leftRoad,   oldIntersection, intersection);
+	if (intersection->rightRoad)  ReindexRoad(intersection->rightRoad,  oldIntersection, intersection);
+	if (intersection->topRoad)    ReindexRoad(intersection->topRoad,    oldIntersection, intersection);
+	if (intersection->bottomRoad) ReindexRoad(intersection->bottomRoad, oldIntersection, intersection);
+}
+
+static void ReindexIntersection(Intersection* intersection, Road* oldRoad, Road* road) {
+	if (intersection->leftRoad   == oldRoad) intersection->leftRoad   = road;
+	if (intersection->rightRoad  == oldRoad) intersection->rightRoad  = road;
+	if (intersection->topRoad    == oldRoad) intersection->topRoad    = road;
+	if (intersection->bottomRoad == oldRoad) intersection->bottomRoad = road;
+}
+
+static void RemoveRoad(Map* map, Road* road) {
+	Road* oldRoad = &map->roads[map->roadCount - 1];
+	map->roadCount--;
+
+	*road = *oldRoad;
+
+	if (road->intersection1) ReindexIntersection(road->intersection1, oldRoad, road);
+	if (road->intersection2) ReindexIntersection(road->intersection2, oldRoad, road);
 }
 
 Map CreateGridMap(float width, float height, float intersectionDistance) {
@@ -361,59 +395,56 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 	delete[] gridAreas;
 	delete[] buildAreas;
 
-	int realIntersectionCount = 0;
-	for (int i = 0; i < intersectionCount; ++i) {
-		Intersection* oldIntersection = &map.intersections[i];
-		Intersection* newIntersection = &map.intersections[realIntersectionCount];
-		int isIntersectionReal = 0;
+	int i = 0;
+	while (i < map.intersectionCount) {
+		Intersection* intersection = &map.intersections[i];
 
-		if (oldIntersection->leftRoad) {
-			if (oldIntersection->leftRoad->intersection1 == oldIntersection) {
-				oldIntersection->leftRoad->intersection1 = newIntersection;
-			}
-			else {
-				oldIntersection->leftRoad->intersection2 = newIntersection;
-			}
-			isIntersectionReal = 1;
+		int roadCount = 0;
+
+		if (intersection->leftRoad)   roadCount++;
+		if (intersection->rightRoad)  roadCount++;
+		if (intersection->topRoad)    roadCount++;
+		if (intersection->bottomRoad) roadCount++;
+
+		if (roadCount == 0) {
+			RemoveIntersection(&map, intersection);
 		}
+		else if (roadCount == 2 && intersection->leftRoad && intersection->rightRoad) {
+			Road* leftRoad = intersection->leftRoad;
+			Road* rightRoad = intersection->rightRoad;
+			Intersection* leftIntersection = 0;
+			Intersection* rightIntersection = 0;
 
-		if (oldIntersection->rightRoad) {
-			if (oldIntersection->rightRoad->intersection1 == oldIntersection) {
-				oldIntersection->rightRoad->intersection1 = newIntersection;
-			}
-			else {
-				oldIntersection->rightRoad->intersection2 = newIntersection;
-			}
-			isIntersectionReal = 1;
+			if (leftRoad->intersection1 == intersection) leftIntersection = leftRoad->intersection2;
+			else leftIntersection = leftRoad->intersection1;
+
+			if (rightRoad->intersection1 == intersection) rightIntersection = rightRoad->intersection2;
+			else rightIntersection = rightRoad->intersection1;
+
+			ConnectIntersections(leftIntersection, rightIntersection, rightRoad, roadWidth);
+			RemoveRoad(&map, leftRoad);
+			RemoveIntersection(&map, intersection);
 		}
+		else if (roadCount == 2 && intersection->topRoad && intersection->bottomRoad) {
+			Road* topRoad = intersection->topRoad;
+			Road* bottomRoad = intersection->bottomRoad;
+			Intersection* topIntersection = 0;
+			Intersection* bottomIntersection = 0;
 
-		if (oldIntersection->topRoad) {
-			if (oldIntersection->topRoad->intersection1 == oldIntersection) {
-				oldIntersection->topRoad->intersection1 = newIntersection;
-			}
-			else {
-				oldIntersection->topRoad->intersection2 = newIntersection;
-			}
-			isIntersectionReal = 1;
+			if (topRoad->intersection1 == intersection) topIntersection = topRoad->intersection2;
+			else topIntersection = topRoad->intersection1;
+
+			if (bottomRoad->intersection1 == intersection) bottomIntersection = bottomRoad->intersection2;
+			else bottomIntersection = bottomRoad->intersection2;
+
+			ConnectIntersections(topIntersection, bottomIntersection, bottomRoad, roadWidth);
+			RemoveRoad(&map, topRoad);
+			RemoveIntersection(&map, intersection);
 		}
-
-		if (oldIntersection->bottomRoad) {
-			if (oldIntersection->bottomRoad->intersection1 == oldIntersection) {
-				oldIntersection->bottomRoad->intersection1 = newIntersection;
-			}
-			else {
-				oldIntersection->bottomRoad->intersection2 = newIntersection;
-			}
-			isIntersectionReal = 1;
-		}
-
-		if (isIntersectionReal) {
-			*newIntersection = *oldIntersection;
-			realIntersectionCount++;
+		else {
+			i++;
 		}
 	}
-
-	map.intersectionCount = realIntersectionCount;
 
 	for (int i = 0; i < map.intersectionCount; ++i) {
 		Intersection* intersection = &map.intersections[i];

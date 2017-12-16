@@ -1,7 +1,7 @@
 #include "AutoVehicle.h"
 #include "Building.h"
 #include "Game.h"
-#include "GridMapCreator.h"
+#include "GridMap.h"
 #include "Math.h"
 #include "Path.h"
 #include "PlayerVehicle.h"
@@ -65,7 +65,7 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 	}
 
 	gameState->renderer.camera.zoomSpeed = 2.0f;
-	gameState->renderer.camera.pixelCoordRatio = 1.0f;
+	gameState->renderer.camera.pixelCoordRatio = 10.0f;
 	gameState->renderer.camera.center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
 }
 

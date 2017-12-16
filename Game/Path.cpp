@@ -275,11 +275,14 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 
 	bool finished = false;
 
+	Road* endConnectRoad = 0;
+	Road* startConnectRoad = 0;
+
 	if (elemStart.type == MapElemBuilding && elemEnd.type == MapElemBuilding) {
 		Building* buildingStart = elemStart.building;
 		Building* buildingEnd = elemEnd.building;
 
-		// NOTE: if the buildingss have a common ancestor in the connection tree,
+		// NOTE: if the buildings have a common ancestor in the connection tree,
 		//       there is no need to go out to the road
 		Building* commonAncestor = CommonAncestor(buildingStart, buildingEnd);
 
@@ -304,9 +307,12 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 	if (!finished) {
 		MapElem roadElemStart = {};
 		if (elemStart.type == MapElemBuilding) {
-			PushFromBuildingToRoadElem(&path, elemStart.building);
+			Building* startBuilding = elemStart.building;
 
-			roadElemStart = GetConnectRoadElem(elemStart.building);
+			PushFromBuildingToRoadElem(&path, startBuilding);
+			roadElemStart = GetConnectRoadElem(startBuilding);
+
+			if (roadElemStart.type == MapElemRoad) startConnectRoad = roadElemStart.road;
 		}
 		else {
 			roadElemStart = elemStart;
@@ -314,13 +320,68 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 
 		MapElem roadElemEnd = {};
 		if (elemEnd.type == MapElemBuilding) {
-			roadElemEnd = GetConnectRoadElem(elemEnd.building);
+			Building* endBuilding = elemEnd.building;
+
+			roadElemEnd = GetConnectRoadElem(endBuilding);
+
+			if (roadElemEnd.type == MapElemRoad) endConnectRoad = roadElemEnd.road;
 		}
 		else {
 			roadElemEnd = elemEnd;
 		}
 
+		if (startConnectRoad && endConnectRoad && startConnectRoad == endConnectRoad) {
+			int startLaneIndex = LaneIndex(*startConnectRoad, elemStart.building->connectPointFarShow);
+			int endLaneIndex = LaneIndex(*endConnectRoad, elemEnd.building->connectPointFarShow);
+
+			if (startLaneIndex == endLaneIndex) {
+				float startDistance = DistanceOnLane(*startConnectRoad, startLaneIndex, elemStart.building->connectPointFarShow);
+				float endDistance = DistanceOnLane(*endConnectRoad, endLaneIndex, elemEnd.building->connectPointFarShow);
+
+				if (startDistance < endDistance) {
+					startConnectRoad = 0;
+					endConnectRoad = 0;
+				}
+			}
+		}
+
+		if (startConnectRoad) {
+			Building* startBuilding = elemStart.building;
+
+			int laneIndex = LaneIndex(*startConnectRoad, startBuilding->connectPointFarShow);
+
+			Intersection* startIntersection = 0;
+			if (laneIndex == 1)       startIntersection = startConnectRoad->intersection2;
+			else if (laneIndex == -1) startIntersection = startConnectRoad->intersection1;
+
+			if (startIntersection) {
+				startConnectRoad = startConnectRoad;
+				roadElemStart.type = MapElemIntersection;
+				roadElemStart.intersection = startIntersection;
+			}
+		}
+
+		if (endConnectRoad) {
+			Building* endBuilding = elemEnd.building;
+
+			int laneIndex = LaneIndex(*endConnectRoad, endBuilding->connectPointFarShow);
+				
+			Intersection* endIntersection = 0;
+			if (laneIndex == 1)       endIntersection = endConnectRoad->intersection1;
+			else if (laneIndex == -1) endIntersection = endConnectRoad->intersection2;
+
+			if (endIntersection) {
+				endConnectRoad = endConnectRoad;
+				roadElemEnd.type = MapElemIntersection;
+				roadElemEnd.intersection = endIntersection;
+			}
+		}
+
+		if (startConnectRoad) PushRoad(&path, startConnectRoad);
+
 		PushConnectRoadElems(&path, map, roadElemStart, roadElemEnd, helper);
+
+		if (endConnectRoad) PushRoad(&path, endConnectRoad);
 
 		if (elemEnd.type == MapElemBuilding) {
 			PushFromRoadElemToBuilding(&path, elemEnd.building);
@@ -524,8 +585,28 @@ bool EndFromBuildingToIntersection(DirectedPoint point, Building* building, Inte
 
 DirectedPoint NextFromRoadToBuilding(DirectedPoint startPoint, Road* road, Building* building) {
 	DirectedPoint result = {};
-	result.position = building->connectPointFarShow;
-	result.direction = PointDirection(building->connectPointFarShow, building->connectPointClose);
+
+	bool onRoadSide = IsPointOnRoadSide(startPoint.position, *road);
+
+	if (onRoadSide) {
+		int laneIndex = LaneIndex(*road, startPoint.position);
+		result = TurnPointToLane(*road, laneIndex, startPoint.position);
+	}
+	else {
+		// TODO: save these values into the building's connection somehow?
+		int laneIndex = LaneIndex(*road, building->connectPointFarShow);
+		DirectedPoint turnPoint = TurnPointFromLane(*road, laneIndex, building->connectPointFarShow);
+		float turnPointDistance = DistanceOnLane(*road, laneIndex, turnPoint.position);
+		float startDistance = DistanceOnLane(*road, laneIndex, startPoint.position);
+
+		if (startDistance > turnPointDistance || PointEqual(startPoint.position, turnPoint.position)) {
+			result.position = building->connectPointFarShow;
+			result.direction = PointDirection(building->connectPointFarShow, building->connectPointClose);
+		}
+		else {
+			result = turnPoint;
+		}
+	}
 
 	return result;
 }
@@ -538,7 +619,13 @@ bool EndFromRoadToBuilding(DirectedPoint point, Road* road, Building* building) 
 DirectedPoint NextFromRoadToIntersection(DirectedPoint startPoint, Road* road, Intersection* intersection) {
 	DirectedPoint result = {};
 
-	if (intersection == road->intersection1) {
+	bool onRoadSide = IsPointOnRoadSide(startPoint.position, *road);
+
+	if (onRoadSide) {
+		int laneIndex = LaneIndex(*road, startPoint.position);
+		result = TurnPointToLane(*road, laneIndex, startPoint.position);
+	}
+	else if (intersection == road->intersection1) {
 		result = RoadLeavePoint(*road, 1);
 	}
 	else if (intersection == road->intersection2) {

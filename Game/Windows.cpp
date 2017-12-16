@@ -8,7 +8,7 @@
 #include "AutoVehicle.h"
 #include "Bitmap.h"
 #include "Game.h"
-#include "GridMapCreator.h"
+#include "GridMap.h"
 #include "Human.h"
 #include "Path.h"
 #include "PlayerHuman.h"

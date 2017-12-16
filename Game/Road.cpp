@@ -135,6 +135,20 @@ bool IsPointOnRoad(Point point, Road road) {
 	return true;
 }
 
+// TODO: this is a bad idea because of floating point inaccuracies
+bool IsPointOnRoadSide(Point point, Road road) {
+	bool result = false;
+
+	if (road.endPoint1.x == road.endPoint2.x) {
+		result = ((point.x == road.endPoint1.x - road.width * 0.5f) || (point.x == road.endPoint1.x + road.width * 0.5f));
+	}
+	else if (road.endPoint1.y == road.endPoint2.y) {
+		result = ((point.y == road.endPoint1.y - road.width * 0.5f) || (point.y == road.endPoint1.y + road.width * 0.5f));
+	}
+
+	return result;
+}
+
 void HighlightRoad(Renderer renderer, Road road, Color color) {
 	float left = Min2(road.endPoint1.x, road.endPoint2.x);
 	float right = Max2(road.endPoint1.x, road.endPoint2.x);
@@ -170,6 +184,52 @@ Point LaneDirection(Road road, int laneIndex) {
 	if (laneIndex == 1)       result = PointDirection(road.endPoint1, road.endPoint2);
 	else if (laneIndex == -1) result = PointDirection(road.endPoint2, road.endPoint1);
 	
+	return result;
+}
+
+// TODO: can DistanceOnLane and TurnPointFromLane be merged?
+float DistanceOnLane(Road road, int laneIndex, Point point) {
+	DirectedPoint startPoint = RoadEnterPoint(road, laneIndex);
+	Point vector = PointDiff(point, startPoint.position);
+
+	Point parallelVector = ParallelVector(vector, startPoint.direction);
+
+	float length = VectorLength(parallelVector);
+
+	return length;
+}
+
+DirectedPoint TurnPointFromLane(Road road, int laneIndex, Point point) {
+	DirectedPoint result = {};
+
+	DirectedPoint startPoint = RoadEnterPoint(road, laneIndex);
+	Point vector = PointDiff(point, startPoint.position);
+
+	Point parallelVector = ParallelVector(vector, startPoint.direction);
+
+	result.position = PointDiff(
+		PointSum(startPoint.position, parallelVector),
+		PointProd(road.width * 0.25f, startPoint.direction)
+	);
+	result.direction = startPoint.direction;
+
+	return result;
+}
+
+DirectedPoint TurnPointToLane(Road road, int laneIndex, Point point) {
+		DirectedPoint result = {};
+
+	DirectedPoint startPoint = RoadEnterPoint(road, laneIndex);
+	Point vector = PointDiff(point, startPoint.position);
+
+	Point parallelVector = ParallelVector(vector, startPoint.direction);
+
+	result.position = PointSum(
+		PointSum(startPoint.position, parallelVector),
+		PointProd(road.width * 0.25f, startPoint.direction)
+	);
+	result.direction = startPoint.direction;
+
 	return result;
 }
 

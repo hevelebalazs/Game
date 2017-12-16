@@ -19,7 +19,7 @@ void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds) {
 	Point frontWheel = PointProd(vehicle->length * 0.5f, direction);
 	Point rearWheel  = PointProd(-vehicle->length * 0.5f, direction);
 
-	float maxControlSpeed = 3.0f;
+	float maxControlSpeed = 2.0f;
 	float controlTurnAngle = 5.0f;
 
 	float turnAngle = 0.0f;

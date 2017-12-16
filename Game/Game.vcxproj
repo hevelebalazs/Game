@@ -122,7 +122,7 @@
     <ClCompile Include="Building.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Geometry.cpp" />
-    <ClCompile Include="GridMapCreator.cpp" />
+    <ClCompile Include="GridMap.cpp" />
     <ClCompile Include="Human.cpp" />
     <ClCompile Include="Intersection.cpp" />
     <ClCompile Include="Map.cpp" />
@@ -145,7 +145,7 @@
     <ClInclude Include="Building.h" />
     <ClInclude Include="BuildingType.h" />
     <ClInclude Include="Geometry.h" />
-    <ClInclude Include="GridMapCreator.h" />
+    <ClInclude Include="GridMap.h" />
     <ClInclude Include="Human.h" />
     <ClInclude Include="Intersection.h" />
     <ClInclude Include="Map.h" />

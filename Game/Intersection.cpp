@@ -205,6 +205,9 @@ void HighlightIntersection(Renderer renderer, Intersection intersection, Color c
 void DrawIntersection(Renderer renderer, Intersection intersection) {
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 
+	// DEBUG
+	if (roadWidth <= 0.0f) roadWidth = 10.0f;
+
 	Point coordinate = intersection.coordinate;
 
 	float top    = coordinate.y - (roadWidth / 2.0f);
@@ -223,10 +226,10 @@ void DrawIntersection(Renderer renderer, Intersection intersection) {
 
 	int roadCount = 0;
 
-	if (intersection.topRoad) roadCount++;
-	if (intersection.leftRoad) roadCount++;
+	if (intersection.topRoad)    roadCount++;
+	if (intersection.leftRoad)   roadCount++;
 	if (intersection.bottomRoad) roadCount++;
-	if (intersection.rightRoad) roadCount++;
+	if (intersection.rightRoad)  roadCount++;
 
 	if (roadCount > 2) {
 		if (intersection.topRoad) {
