@@ -852,6 +852,30 @@ void DrawBuildingInside(Renderer renderer, Building building) {
 	}
 }
 
+void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center) {
+	BuildingInside* inside = building.inside;
+
+	Color lineColor = Color{1.0f, 1.0f, 1.0f};
+
+	for (int i = 0; i < inside->wallCount; ++i) {
+		Line wall = inside->walls[i];
+
+		Point add = {};
+		if (wall.x1 == wall.x2) add = Point{1.0f, 0.0f};
+		else add = Point{0.0f, 1.0f};
+
+		Point point1 = PointSum(wall.p1, PointProd(wallWidth * 0.5f, add));
+		Point point2 = PointSum(wall.p1, PointProd(-wallWidth * 0.5f, add));
+		Point point3 = PointSum(wall.p2, PointProd(-wallWidth * 0.5f, add));
+		Point point4 = PointSum(wall.p2, PointProd(wallWidth * 0.5f, add));
+
+		Bresenham(renderer, center, point1, lineColor);
+		Bresenham(renderer, center, point2, lineColor);
+		Bresenham(renderer, center, point3, lineColor);
+		Bresenham(renderer, center, point4, lineColor);
+	}
+}
+
 void HighlightBuildingConnector(Renderer renderer, Building building, Color color) {
 	float roadWidth = Building::connectRoadWidth;
 

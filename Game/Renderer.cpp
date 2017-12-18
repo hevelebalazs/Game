@@ -1,4 +1,5 @@
 #include "Geometry.h"
+#include "Math.h"
 #include "Point.h"
 #include "Renderer.h"
 
@@ -44,7 +45,7 @@ Point CoordToPixel(Camera camera, Point coord) {
 	return PointSum(screenCenter, PointProd(camera.pixelCoordRatio, PointDiff(coord, camera.center)));
 }
 
-static unsigned int getColorCode(Color color) {
+static unsigned int ColorCode(Color color) {
 	unsigned char red = (unsigned char)(color.red * 255);
 	unsigned char green = (unsigned char)(color.green * 255);
 	unsigned char blue = (unsigned char)(color.blue * 255);
@@ -55,13 +56,61 @@ static unsigned int getColorCode(Color color) {
 }
 
 void ClearScreen(Renderer renderer, Color color) {
-	unsigned int colorCode = getColorCode(color);
+	unsigned int colorCode = ColorCode(color);
 
 	unsigned int *pixel = (unsigned int*)renderer.bitmap.memory;
 	for (int row = 0; row < renderer.bitmap.height; ++row) {
 		for (int col = 0; col < renderer.bitmap.width; ++col) {
 			*pixel = colorCode;
 			++pixel;
+		}
+	}
+}
+
+static inline void SetPixelCheck(Bitmap bitmap, int row, int col, int colorCode) {
+	if ((row > 0 && row < bitmap.height) && (col > 0 && col < bitmap.width)) {
+		unsigned int* pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
+		*pixel = colorCode;
+	}
+}
+
+void Bresenham(Renderer renderer, Point point1, Point point2, Color color) {
+	Bitmap bitmap = renderer.bitmap;
+	unsigned int colorCode = ColorCode(color);
+
+	Camera camera = renderer.camera;
+	int x1 = (int)CoordXtoPixel(camera, point1.x);
+	int y1 = (int)CoordYtoPixel(camera, point1.y);
+	int x2 = (int)CoordXtoPixel(camera, point2.x);
+	int y2 = (int)CoordYtoPixel(camera, point2.y);
+
+	int absX = IntAbs(x1 - x2);
+	int absY = IntAbs(y1 - y2);
+
+	int addX = 1;
+	if (x1 > x2) addX = -1;
+
+	int addY = 1;
+	if (y1 > y2) addY = -1;
+
+	int error = 0;
+	if (absX > absY) error = absX / 2;
+	else error = -absY / 2;
+
+	int error2 = 0;
+
+	while (1) {
+		SetPixelCheck(renderer.bitmap, y1, x1, colorCode);
+
+		if (x1 == x2 && y1 == y2) break;
+		error2 = error;
+		if (error2 > -absX) {
+			error -= absY;
+			x1 += addX;
+		}
+		if (error2 < absY) {
+			error += absX;
+			y1 += addY;
 		}
 	}
 }
@@ -121,7 +170,7 @@ void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float 
 
 // TODO: make this function take two points instead of four floats?
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color) {
-	unsigned int colorCode = getColorCode(color);
+	unsigned int colorCode = ColorCode(color);
 
 	Camera camera = renderer.camera;
 	int topPixel =    (int)CoordYtoPixel(camera, top);
@@ -169,7 +218,7 @@ float turnDirection(Point point1, Point point2, Point point3) {
 }
 
 void DrawQuad(Renderer renderer, Point points[4], Color color) {
-	unsigned int colorCode = getColorCode(color);
+	unsigned int colorCode = ColorCode(color);
 
 	for (int i = 0; i < 4; ++i) {
 		points[i] = CoordToPixel(renderer.camera, points[i]);

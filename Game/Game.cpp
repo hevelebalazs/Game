@@ -64,7 +64,7 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 		autoVehicle->moveHelper = &gameState->pathHelper;
 	}
 
-	gameState->renderer.camera.zoomSpeed = 2.0f;
+	gameState->renderer.camera.zoomSpeed = 5.0f;
 	gameState->renderer.camera.pixelCoordRatio = 10.0f;
 	gameState->renderer.camera.center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
 }
@@ -121,7 +121,7 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 	else {
 		UpdatePlayerHuman(&gameState->playerHuman, seconds);
 	}
-
+	
 	Camera* camera = &gameState->renderer.camera;
 	camera->center = gameState->playerHuman.human.position;
 
@@ -166,6 +166,16 @@ void GameDraw(GameState* gameState) {
 		}
 	}
 
-	if (gameState->isPlayerVehicle) DrawVehicle(gameState->renderer, gameState->playerVehicle.vehicle);
-	else DrawHuman(gameState->renderer, gameState->playerHuman.human);
+	if (gameState->isPlayerVehicle) {
+		DrawVehicle(renderer, gameState->playerVehicle.vehicle);
+	}
+	else {
+		Building* inBuilding = gameState->playerHuman.human.inBuilding;
+
+		if (inBuilding) {
+			DrawVisibleAreaInBuilding(renderer, *inBuilding, gameState->playerHuman.human.position);
+		}
+
+		DrawHuman(renderer, gameState->playerHuman.human);
+	}
 }

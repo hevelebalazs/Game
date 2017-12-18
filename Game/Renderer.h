@@ -27,6 +27,7 @@ Point CoordToPixel(Camera camera, Point coord);
 
 void ClearScreen(Renderer renderer, Color color);
 
+void Bresenham(Renderer, Point point1, Point point2, Color color);
 void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color);

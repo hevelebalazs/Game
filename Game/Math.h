@@ -2,6 +2,17 @@
 
 extern float PI;
 
+inline void IntSwap(int* i, int* j) {
+	int tmp = *i;
+	*i = *j;
+	*j = tmp;
+}
+
+inline int IntAbs(int i) {
+	if (i > 0) return i;
+	else return -i;
+}
+
 float Min2(float x, float y);
 float Max2(float x, float y);
 
