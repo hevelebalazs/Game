@@ -59,10 +59,10 @@ static void AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door) {
 static void GenerateWalls(Building* building, WallHelper* wallHelper,
 						  int leftWallIndex, int rightWallIndex, int topWallIndex, int bottomWallIndex,
 						  float minRoomSide, float maxRoomSide) {
-	float left   = wallHelper->walls[leftWallIndex].x1;
-	float right  = wallHelper->walls[rightWallIndex].x1;
-	float top    = wallHelper->walls[topWallIndex].y1;
-	float bottom = wallHelper->walls[bottomWallIndex].y1;
+	float left   = wallHelper->walls[leftWallIndex].x1   + wallWidth * 0.5f;
+	float right  = wallHelper->walls[rightWallIndex].x1  - wallWidth * 0.5f;
+	float top    = wallHelper->walls[topWallIndex].y1    + wallWidth * 0.5f;
+	float bottom = wallHelper->walls[bottomWallIndex].y1 - wallWidth * 0.5f;
 
 	float width = (right - left);
 	float height = (bottom - top);
@@ -289,7 +289,7 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 	entrance.p1 = building->entrancePoint1;
 	entrance.p2 = building->entrancePoint2;
 
-	Line leftWall = VerticalWall(building->top, building->bottom, building->left + halfWallWidth);
+	Line leftWall = VerticalWall(building->top + wallWidth, building->bottom - wallWidth, building->left + halfWallWidth);
 	if (entrance.x1 == building->left && entrance.x2 == building->left) {
 		AddHelperWallWithDoor(wallHelper, leftWall, entrance);
 	}
@@ -297,7 +297,7 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 		AddHelperWall(wallHelper, leftWall);
 	}
 
-	Line rightWall = VerticalWall(building->top, building->bottom, building->right - halfWallWidth);
+	Line rightWall = VerticalWall(building->top + wallWidth, building->bottom - wallWidth, building->right - halfWallWidth);
 	if (entrance.x1 == building->right && entrance.x2 == building->right) {
 		AddHelperWallWithDoor(wallHelper, rightWall, entrance);
 	}
@@ -852,6 +852,43 @@ void DrawBuildingInside(Renderer renderer, Building building) {
 	}
 }
 
+// TODO: move this to Geometry?
+static inline bool IsPointOnGridLine(Point point, Point line1, Point line2) {
+	bool result = false;
+
+	if (line1.x == line2.x)      result = (point.x == line1.x);
+	else if (line1.y == line2.y) result = (point.y == line1.y);
+
+	return result;
+}
+
+static inline void DrawVisibleRay(Renderer renderer, BuildingInside* inside, Point closePoint, Point farPoint, Color lineColor) {
+	for (int i = 0; i < inside->wallCount; ++i) {
+		Line wall = inside->walls[i];
+
+		// TODO: should the endpoints of the wall be saved along with the wall?
+		Point add = {};
+		if (wall.x1 == wall.x2) add = Point{1.0f, 0.0f};
+		else add = Point{0.0f, 1.0f};
+		
+		Point point1 = PointSum(wall.p1, PointProd(wallWidth  * 0.5f, add));
+		Point point2 = PointSum(wall.p1, PointProd(-wallWidth * 0.5f, add));
+		Point point3 = PointSum(wall.p2, PointProd(-wallWidth * 0.5f, add));
+		Point point4 = PointSum(wall.p2, PointProd(wallWidth  * 0.5f, add));
+
+		if (!IsPointOnGridLine(farPoint, point1, point2) && DoLinesCross(closePoint, farPoint, point1, point2)) return;
+		if (!IsPointOnGridLine(farPoint, point2, point3) && DoLinesCross(closePoint, farPoint, point2, point3)) return;
+		if (!IsPointOnGridLine(farPoint, point3, point4) && DoLinesCross(closePoint, farPoint, point3, point4)) return;
+		if (!IsPointOnGridLine(farPoint, point4, point1) && DoLinesCross(closePoint, farPoint, point4, point1)) return;
+	}
+
+	Bresenham(renderer, closePoint, farPoint, lineColor);
+}
+
+// TODO: this is an n-square solution, is there a way to improve it?
+//       something along the lines of rays on the bitmap?
+//       or something based on rooms and doors?
+//       or should there be a big area and each line would cut down from it if crossed?
 void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center) {
 	BuildingInside* inside = building.inside;
 
@@ -869,10 +906,10 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 		Point point3 = PointSum(wall.p2, PointProd(-wallWidth * 0.5f, add));
 		Point point4 = PointSum(wall.p2, PointProd(wallWidth * 0.5f, add));
 
-		Bresenham(renderer, center, point1, lineColor);
-		Bresenham(renderer, center, point2, lineColor);
-		Bresenham(renderer, center, point3, lineColor);
-		Bresenham(renderer, center, point4, lineColor);
+		DrawVisibleRay(renderer, inside, center, point1, lineColor);
+		DrawVisibleRay(renderer, inside, center, point2, lineColor);
+		DrawVisibleRay(renderer, inside, center, point3, lineColor);
+		DrawVisibleRay(renderer, inside, center, point4, lineColor);
 	}
 }
 
