@@ -67,8 +67,79 @@ void ClearScreen(Renderer renderer, Color color) {
 	}
 }
 
+static inline unsigned int* GetPixelAddress(Bitmap bitmap, int row, int col) {
+	return (unsigned int*)bitmap.memory + row * bitmap.width + col;
+}
+
+static inline unsigned int GetPixel(Bitmap bitmap, int row, int col) {
+	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
+
+	return *pixelAddress;
+}
+
+static inline void SetPixel(Bitmap bitmap, int row, int col, unsigned int colorCode) {
+	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
+
+	*pixelAddress = colorCode;
+}
+
+void FloodFill(Renderer renderer, Point start, Color color) {
+	unsigned int colorCode = ColorCode(color);
+
+	Bitmap bitmap = renderer.bitmap;
+	Camera camera = renderer.camera;
+
+	// TODO: this is an extremely bad idea, use pre-allocated memory instead!
+	int* rows = new int[bitmap.width * bitmap.height];
+	int* cols = new int[bitmap.width * bitmap.height];
+	int positionCount = 0;
+	
+	rows[positionCount] = (int)CoordYtoPixel(camera, start.y);
+	cols[positionCount] = (int)CoordXtoPixel(camera, start.x);
+	positionCount++;
+
+	SetPixel(bitmap, rows[0], cols[0], colorCode);
+
+	for (int i = 0; i < positionCount; ++i) {
+		int row = rows[i];
+		int col = cols[i];
+
+		if ((row > 0) && (GetPixel(bitmap, row - 1, col) != colorCode)) {
+			SetPixel(bitmap, row - 1, col, colorCode);
+			rows[positionCount] = row - 1;
+			cols[positionCount] = col;
+			positionCount++;
+		}
+
+		if ((row < bitmap.height - 1) && (GetPixel(bitmap, row + 1, col) != colorCode)) {
+			SetPixel(bitmap, row + 1, col, colorCode);
+			rows[positionCount] = row + 1;
+			cols[positionCount] = col;
+			positionCount++;
+		}
+
+		if ((col > 0) && (GetPixel(bitmap, row, col - 1) != colorCode)) {
+			SetPixel(bitmap, row, col - 1, colorCode);
+			rows[positionCount] = row;
+			cols[positionCount] = col - 1;
+			positionCount++;
+		}
+
+		if ((col < bitmap.width - 1) && (GetPixel(bitmap, row, col + 1) != colorCode)) {
+			SetPixel(bitmap, row, col + 1, colorCode);
+			rows[positionCount] = row;
+			cols[positionCount] = col + 1;
+			positionCount++;
+		}
+	}
+
+	free(rows);
+	free(cols);
+}
+
+// TODO: use GetPixelAddress
 static inline void SetPixelCheck(Bitmap bitmap, int row, int col, int colorCode) {
-	if ((row > 0 && row < bitmap.height) && (col > 0 && col < bitmap.width)) {
+	if ((row >= 0 && row < bitmap.height) && (col >= 0 && col < bitmap.width)) {
 		unsigned int* pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
 		*pixel = colorCode;
 	}

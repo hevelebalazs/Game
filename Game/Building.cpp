@@ -59,10 +59,17 @@ static void AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door) {
 static void GenerateWalls(Building* building, WallHelper* wallHelper,
 						  int leftWallIndex, int rightWallIndex, int topWallIndex, int bottomWallIndex,
 						  float minRoomSide, float maxRoomSide) {
+	/*
 	float left   = wallHelper->walls[leftWallIndex].x1   + wallWidth * 0.5f;
 	float right  = wallHelper->walls[rightWallIndex].x1  - wallWidth * 0.5f;
 	float top    = wallHelper->walls[topWallIndex].y1    + wallWidth * 0.5f;
 	float bottom = wallHelper->walls[bottomWallIndex].y1 - wallWidth * 0.5f;
+	*/
+
+	float left   = wallHelper->walls[leftWallIndex].x1;
+	float right  = wallHelper->walls[rightWallIndex].x1;
+	float top    = wallHelper->walls[topWallIndex].y1;
+	float bottom = wallHelper->walls[bottomWallIndex].y1;
 
 	float width = (right - left);
 	float height = (bottom - top);
@@ -289,7 +296,7 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 	entrance.p1 = building->entrancePoint1;
 	entrance.p2 = building->entrancePoint2;
 
-	Line leftWall = VerticalWall(building->top + wallWidth, building->bottom - wallWidth, building->left + halfWallWidth);
+	Line leftWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->left + halfWallWidth);
 	if (entrance.x1 == building->left && entrance.x2 == building->left) {
 		AddHelperWallWithDoor(wallHelper, leftWall, entrance);
 	}
@@ -297,7 +304,7 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 		AddHelperWall(wallHelper, leftWall);
 	}
 
-	Line rightWall = VerticalWall(building->top + wallWidth, building->bottom - wallWidth, building->right - halfWallWidth);
+	Line rightWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->right - halfWallWidth);
 	if (entrance.x1 == building->right && entrance.x2 == building->right) {
 		AddHelperWallWithDoor(wallHelper, rightWall, entrance);
 	}
@@ -862,10 +869,11 @@ static inline bool IsPointOnGridLine(Point point, Point line1, Point line2) {
 	return result;
 }
 
-static inline void DrawVisibleRay(Renderer renderer, BuildingInside* inside, Point closePoint, Point farPoint, Color lineColor) {
+static inline bool IsCornerVisible(BuildingInside* inside, Point center, Point corner) {
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
 
+		/*
 		// TODO: should the endpoints of the wall be saved along with the wall?
 		Point add = {};
 		if (wall.x1 == wall.x2) add = Point{1.0f, 0.0f};
@@ -876,13 +884,140 @@ static inline void DrawVisibleRay(Renderer renderer, BuildingInside* inside, Poi
 		Point point3 = PointSum(wall.p2, PointProd(-wallWidth * 0.5f, add));
 		Point point4 = PointSum(wall.p2, PointProd(wallWidth  * 0.5f, add));
 
-		if (!IsPointOnGridLine(farPoint, point1, point2) && DoLinesCross(closePoint, farPoint, point1, point2)) return;
-		if (!IsPointOnGridLine(farPoint, point2, point3) && DoLinesCross(closePoint, farPoint, point2, point3)) return;
-		if (!IsPointOnGridLine(farPoint, point3, point4) && DoLinesCross(closePoint, farPoint, point3, point4)) return;
-		if (!IsPointOnGridLine(farPoint, point4, point1) && DoLinesCross(closePoint, farPoint, point4, point1)) return;
+		if (!IsPointOnGridLine(corner, point1, point2) && DoLinesCross(center, corner, point1, point2)) return false;
+		if (!IsPointOnGridLine(corner, point2, point3) && DoLinesCross(center, corner, point2, point3)) return false;
+		if (!IsPointOnGridLine(corner, point3, point4) && DoLinesCross(center, corner, point3, point4)) return false;
+		if (!IsPointOnGridLine(corner, point4, point1) && DoLinesCross(center, corner, point4, point1)) return false;
+		*/
+
+		if (!IsPointOnGridLine(corner, wall.p1, wall.p2) && DoLinesCross(center, corner, wall.p1,wall.p2)) return false;
 	}
 
-	Bresenham(renderer, closePoint, farPoint, lineColor);
+	return true;
+}
+
+enum CornerType {
+	CornerEnter,
+	CornerLeave
+};
+
+struct Corner {
+	CornerType type;
+	Point point;
+};
+
+struct CornerHelper {
+	int cornerCount;
+	Corner* corners;
+	Corner* tmpCorners;
+};
+
+static void AddCorner(CornerHelper* helper, Corner corner) {
+	// TODO: introduce asserts
+	helper->corners[helper->cornerCount] = corner;
+	helper->cornerCount++;
+}
+
+static inline bool AreCornersInOrder(Point center, Corner corner1, Corner corner2) {
+	Point point1 = corner1.point;
+	Point point2 = corner2.point;
+
+	if (point1.x <= center.x && point2.x > center.x) 
+		return true;
+	else if (point1.x > center.x && point2.x <= center.x)
+		return false;
+	else if (TurnsRight(center, point1, point2))
+		return true;
+	else
+		return false;
+}
+
+static inline void MergeCornerArrays(CornerHelper* helper, Point center, int leftStart, int leftEnd, int rightStart, int rightEnd) {
+	int left = leftStart;
+	int right = rightStart;
+
+	for (int i = leftStart; i <= rightEnd; ++i) {
+		bool chooseLeft = false;
+		bool chooseRight = false;
+
+		// TODO: update all short ifs to this style (it is better for debugging)
+		if (left > leftEnd) 
+			chooseRight = true;
+		else if (right > rightEnd)
+			chooseLeft = true;
+		else if (AreCornersInOrder(center, helper->corners[left], helper->corners[right]))
+			chooseLeft = true;
+		else
+			chooseRight = true;
+
+		if (chooseLeft) {
+			helper->tmpCorners[i] = helper->corners[left];
+			left++;
+		}
+
+		if (chooseRight) {
+			helper->tmpCorners[i] = helper->corners[right];
+			right++;
+		}
+	}
+
+	// TODO: use some version of memcpy here?
+	for (int i = leftStart; i <= rightEnd; ++i) {
+		helper->corners[i] = helper->tmpCorners[i];
+	}
+}
+
+static inline void SortCorners(CornerHelper* helper, Point center) {
+	int length = 1;
+	while (length <= helper->cornerCount) {
+		int leftStart = 0;
+		while (leftStart < helper->cornerCount) {
+			int leftEnd = leftStart + (length - 1);
+
+			int rightStart = leftEnd + 1;
+			if (rightStart >= helper->cornerCount) break;
+
+			int rightEnd = rightStart + (length - 1);
+			if (rightEnd >= helper->cornerCount) rightEnd = helper->cornerCount - 1;
+
+			MergeCornerArrays(helper, center, leftStart, leftEnd, rightStart, rightEnd);
+
+			leftStart = rightEnd + 1;
+		}
+
+		length *= 2;
+	}
+}
+
+static Point NextVisiblePointAlongRay(BuildingInside* inside, Point closePoint, Point farPoint, float maxDistance) {
+	Point result = farPoint;
+	float minDistanceSquare = maxDistance * maxDistance;;
+
+	Point direction = PointDirection(closePoint, farPoint);
+	Point farFarPoint = PointSum(
+		closePoint, 
+		PointProd(maxDistance, direction)
+	);
+
+	for (int i = 0; i < inside->wallCount; ++i) {
+		Line wall = inside->walls[i];
+
+		if (PointEqual(wall.p1, farPoint)) continue;
+		if (PointEqual(wall.p2, farPoint)) continue;
+
+		if (DoLinesCross(closePoint, farFarPoint, wall.p1, wall.p2)) {
+			Point crossPoint = LineIntersection(closePoint, farFarPoint, wall.p1, wall.p2);
+
+			float distanceSquare = DistanceSquare(closePoint, crossPoint);
+
+			if (distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				result = crossPoint;
+			}
+		}
+	}
+
+	return result;
 }
 
 // TODO: this is an n-square solution, is there a way to improve it?
@@ -894,9 +1029,20 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 
 	Color lineColor = Color{1.0f, 1.0f, 1.0f};
 
+	// TODO: use a memory arena, it's much simpler than this
+	int maxVisibleCornerCount = (4 * inside->wallCount);
+	float maxDistance = (building.bottom - building.top) + (building.right - building.left);
+
+	CornerHelper helper = {};
+
+	helper.cornerCount = 0;
+	helper.corners = new Corner[maxVisibleCornerCount];
+	helper.tmpCorners = new Corner[maxVisibleCornerCount];
+
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
 
+		/*
 		Point add = {};
 		if (wall.x1 == wall.x2) add = Point{1.0f, 0.0f};
 		else add = Point{0.0f, 1.0f};
@@ -906,11 +1052,77 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 		Point point3 = PointSum(wall.p2, PointProd(-wallWidth * 0.5f, add));
 		Point point4 = PointSum(wall.p2, PointProd(wallWidth * 0.5f, add));
 
-		DrawVisibleRay(renderer, inside, center, point1, lineColor);
-		DrawVisibleRay(renderer, inside, center, point2, lineColor);
-		DrawVisibleRay(renderer, inside, center, point3, lineColor);
-		DrawVisibleRay(renderer, inside, center, point4, lineColor);
+		if (IsCornerVisible(inside, center, point1)) AddCorner(&helper, point1);
+		if (IsCornerVisible(inside, center, point2)) AddCorner(&helper, point2);
+		if (IsCornerVisible(inside, center, point3)) AddCorner(&helper, point3);
+		if (IsCornerVisible(inside, center, point4)) AddCorner(&helper, point4);
+		*/
+
+		if (IsCornerVisible(inside, center, wall.p1)) {
+			Corner corner = {};
+			corner.point = wall.p1;
+
+			if (TurnsRight(center, wall.p1, wall.p2))
+				corner.type = CornerEnter;
+			else 
+				corner.type = CornerLeave;
+
+			AddCorner(&helper, corner);
+		}
+		if (IsCornerVisible(inside, center, wall.p2)) {
+			Corner corner = {};
+			corner.point = wall.p2;
+
+			if (TurnsRight(center, wall.p2, wall.p1))
+				corner.type = CornerEnter;
+			else
+				corner.type = CornerLeave;
+
+			AddCorner(&helper, corner);
+		}
 	}
+
+	SortCorners(&helper, center);
+
+	Point* points = new Point[2 * helper.cornerCount];
+	int pointCount = 0;
+
+	for (int i = 0; i < helper.cornerCount; ++i) {
+		Corner corner = helper.corners[i];
+
+		Point farPoint = NextVisiblePointAlongRay(inside, center, corner.point, maxDistance);
+
+		if ((corner.type == CornerEnter) && !PointEqual(farPoint, corner.point)) {
+			points[pointCount] = farPoint;
+			pointCount++;
+		}
+
+		points[pointCount] = corner.point;
+		pointCount++;
+
+		if ((corner.type == CornerLeave) && !PointEqual(farPoint, corner.point)) {
+			points[pointCount] = farPoint;
+			pointCount++;
+		}
+	}
+
+	for (int i = 0; i < pointCount; ++i) {
+		Point point = points[i];
+		Point nextPoint = {};
+
+		if ((i + 1) < pointCount)
+			nextPoint = points[i + 1];
+		else
+			nextPoint = points[0];
+
+		Bresenham(renderer, point, nextPoint, lineColor);
+	}
+
+	FloodFill(renderer, center, lineColor);
+
+	delete points;
+	delete helper.corners;
+	delete helper.tmpCorners;
 }
 
 void HighlightBuildingConnector(Renderer renderer, Building building, Color color) {
