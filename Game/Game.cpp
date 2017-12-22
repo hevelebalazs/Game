@@ -31,6 +31,9 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 	gameState->map = CreateGridMap((float)windowWidth, (float)windowHeight, 100);
 	gameState->pathHelper = PathHelperForMap(&gameState->map);
 
+	// TODO: fix this when window is resized (using a memory arena will fix this nicely)
+	gameState->fillHelper = FillHelperForBitmap(gameState->renderer.bitmap);
+
 	Intersection* intersection = RandomIntersection(gameState->map);
 	gameState->playerHuman.human.position = intersection->coordinate;
 	gameState->playerHuman.human.map = &gameState->map;
@@ -64,9 +67,10 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 		autoVehicle->moveHelper = &gameState->pathHelper;
 	}
 
-	gameState->renderer.camera.zoomSpeed = 5.0f;
-	gameState->renderer.camera.pixelCoordRatio = 10.0f;
-	gameState->renderer.camera.center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
+	Camera* camera = &gameState->camera;
+	camera->zoomSpeed = 5.0f;
+	camera->pixelCoordRatio = 10.0f;
+	camera->center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -122,7 +126,7 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 		UpdatePlayerHuman(&gameState->playerHuman, seconds);
 	}
 	
-	Camera* camera = &gameState->renderer.camera;
+	Camera* camera = gameState->renderer.camera;
 	camera->center = gameState->playerHuman.human.position;
 
 	if (gameState->isPlayerVehicle) {
@@ -154,8 +158,19 @@ void GameDraw(GameState* gameState) {
 	ClearScreen(renderer, clearColor);
 
 	Building* inBuilding = gameState->playerHuman.human.inBuilding;
-	if (inBuilding) {
+	if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) {
 		DrawBuildingInside(renderer, *inBuilding);
+
+		if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) {
+			Color black = Color{0.0f, 0.0f, 0.0f};
+
+			Renderer maskRenderer = gameState->maskRenderer;
+			ClearScreen(maskRenderer, black);
+
+			DrawVisibleAreaInBuilding(maskRenderer, *inBuilding, gameState->playerHuman.human.position, gameState->fillHelper);
+
+			ApplyBitmapMask(renderer.bitmap, maskRenderer.bitmap);
+		}
 	}
 	else {
 		DrawMap(renderer, gameState->map);
@@ -166,16 +181,8 @@ void GameDraw(GameState* gameState) {
 		}
 	}
 
-	if (gameState->isPlayerVehicle) {
+	if (gameState->isPlayerVehicle)
 		DrawVehicle(renderer, gameState->playerVehicle.vehicle);
-	}
-	else {
-		Building* inBuilding = gameState->playerHuman.human.inBuilding;
-
-		if (inBuilding) {
-			DrawVisibleAreaInBuilding(renderer, *inBuilding, gameState->playerHuman.human.position);
-		}
-
+	else
 		DrawHuman(renderer, gameState->playerHuman.human);
-	}
 }

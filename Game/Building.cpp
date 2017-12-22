@@ -873,23 +873,6 @@ static inline bool IsCornerVisible(BuildingInside* inside, Point center, Point c
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
 
-		/*
-		// TODO: should the endpoints of the wall be saved along with the wall?
-		Point add = {};
-		if (wall.x1 == wall.x2) add = Point{1.0f, 0.0f};
-		else add = Point{0.0f, 1.0f};
-		
-		Point point1 = PointSum(wall.p1, PointProd(wallWidth  * 0.5f, add));
-		Point point2 = PointSum(wall.p1, PointProd(-wallWidth * 0.5f, add));
-		Point point3 = PointSum(wall.p2, PointProd(-wallWidth * 0.5f, add));
-		Point point4 = PointSum(wall.p2, PointProd(wallWidth  * 0.5f, add));
-
-		if (!IsPointOnGridLine(corner, point1, point2) && DoLinesCross(center, corner, point1, point2)) return false;
-		if (!IsPointOnGridLine(corner, point2, point3) && DoLinesCross(center, corner, point2, point3)) return false;
-		if (!IsPointOnGridLine(corner, point3, point4) && DoLinesCross(center, corner, point3, point4)) return false;
-		if (!IsPointOnGridLine(corner, point4, point1) && DoLinesCross(center, corner, point4, point1)) return false;
-		*/
-
 		if (!IsPointOnGridLine(corner, wall.p1, wall.p2) && DoLinesCross(center, corner, wall.p1,wall.p2)) return false;
 	}
 
@@ -897,6 +880,7 @@ static inline bool IsCornerVisible(BuildingInside* inside, Point center, Point c
 }
 
 enum CornerType {
+	CornerEdge,
 	CornerEnter,
 	CornerLeave
 };
@@ -912,8 +896,11 @@ struct CornerHelper {
 	Corner* tmpCorners;
 };
 
-static void AddCorner(CornerHelper* helper, Corner corner) {
-	// TODO: introduce asserts
+static void AddCorner(CornerHelper* helper, CornerType type, Point point) {
+	Corner corner = {};
+	corner.type = type;
+	corner.point = point;
+
 	helper->corners[helper->cornerCount] = corner;
 	helper->cornerCount++;
 }
@@ -989,9 +976,11 @@ static inline void SortCorners(CornerHelper* helper, Point center) {
 	}
 }
 
-static Point NextVisiblePointAlongRay(BuildingInside* inside, Point closePoint, Point farPoint, float maxDistance) {
+static Point NextVisiblePointAlongRay(Building building, Point closePoint, Point farPoint, float maxDistance) {
+	BuildingInside* inside = building.inside;
+
 	Point result = farPoint;
-	float minDistanceSquare = maxDistance * maxDistance;;
+	float minDistanceSquare = maxDistance * maxDistance;
 
 	Point direction = PointDirection(closePoint, farPoint);
 	Point farFarPoint = PointSum(
@@ -1017,6 +1006,63 @@ static Point NextVisiblePointAlongRay(BuildingInside* inside, Point closePoint, 
 		}
 	}
 
+	Point topLeft     = Point{building.left, building.top};
+	Point topRight    = Point{building.right, building.top};
+	Point bottomLeft  = Point{building.left, building.bottom};
+	Point bottomRight = Point{building.right, building.bottom};
+
+	if (!PointEqual(topLeft, farPoint) && !PointEqual(topRight, farPoint)) {
+		if (DoLinesCross(closePoint, farFarPoint, topLeft, topRight)) {
+			Point crossPoint = LineIntersection(closePoint, farFarPoint, topLeft, topRight);
+
+			float distanceSquare = DistanceSquare(closePoint, crossPoint);
+
+			if (distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				result = crossPoint;
+			}
+		}
+	}
+
+	if (!PointEqual(topRight, farPoint) && !PointEqual(bottomRight, farPoint)) {
+		if (DoLinesCross(closePoint, farFarPoint, topRight, bottomRight)) {
+			Point crossPoint = LineIntersection(closePoint, farFarPoint, topRight, bottomRight);
+
+			float distanceSquare = DistanceSquare(closePoint, crossPoint);
+
+			if (distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				result = crossPoint;
+			}
+		}
+	}
+
+	if (!PointEqual(bottomRight, farPoint) && !PointEqual(bottomLeft, farPoint)) {
+		if (DoLinesCross(closePoint, farFarPoint, bottomRight, bottomLeft)) {
+			Point crossPoint = LineIntersection(closePoint, farFarPoint, bottomRight, bottomLeft);
+
+			float distanceSquare = DistanceSquare(closePoint, crossPoint);
+
+			if (distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				result = crossPoint;
+			}
+		}
+	}
+
+	if (!PointEqual(bottomLeft, farPoint) && !PointEqual(topLeft, farPoint)) {
+		if (DoLinesCross(closePoint, farFarPoint, bottomLeft, topLeft)) {
+			Point crossPoint = LineIntersection(closePoint, farFarPoint, bottomLeft, topLeft);
+
+			float distanceSquare = DistanceSquare(closePoint, crossPoint);
+
+			if (distanceSquare < minDistanceSquare) {
+				minDistanceSquare = distanceSquare;
+				result = crossPoint;
+			}
+		}
+	}
+
 	return result;
 }
 
@@ -1024,13 +1070,13 @@ static Point NextVisiblePointAlongRay(BuildingInside* inside, Point closePoint, 
 //       something along the lines of rays on the bitmap?
 //       or something based on rooms and doors?
 //       or should there be a big area and each line would cut down from it if crossed?
-void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center) {
+void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, FillHelper fillHelper) {
 	BuildingInside* inside = building.inside;
 
 	Color lineColor = Color{1.0f, 1.0f, 1.0f};
 
 	// TODO: use a memory arena, it's much simpler than this
-	int maxVisibleCornerCount = (4 * inside->wallCount);
+	int maxVisibleCornerCount = (4 * inside->wallCount) + 4;
 	float maxDistance = (building.bottom - building.top) + (building.right - building.left);
 
 	CornerHelper helper = {};
@@ -1042,45 +1088,36 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
 
-		/*
-		Point add = {};
-		if (wall.x1 == wall.x2) add = Point{1.0f, 0.0f};
-		else add = Point{0.0f, 1.0f};
-
-		Point point1 = PointSum(wall.p1, PointProd(wallWidth * 0.5f, add));
-		Point point2 = PointSum(wall.p1, PointProd(-wallWidth * 0.5f, add));
-		Point point3 = PointSum(wall.p2, PointProd(-wallWidth * 0.5f, add));
-		Point point4 = PointSum(wall.p2, PointProd(wallWidth * 0.5f, add));
-
-		if (IsCornerVisible(inside, center, point1)) AddCorner(&helper, point1);
-		if (IsCornerVisible(inside, center, point2)) AddCorner(&helper, point2);
-		if (IsCornerVisible(inside, center, point3)) AddCorner(&helper, point3);
-		if (IsCornerVisible(inside, center, point4)) AddCorner(&helper, point4);
-		*/
-
 		if (IsCornerVisible(inside, center, wall.p1)) {
-			Corner corner = {};
-			corner.point = wall.p1;
-
 			if (TurnsRight(center, wall.p1, wall.p2))
-				corner.type = CornerEnter;
+				AddCorner(&helper, CornerEnter, wall.p1);
 			else 
-				corner.type = CornerLeave;
-
-			AddCorner(&helper, corner);
+				AddCorner(&helper, CornerLeave, wall.p1);
 		}
 		if (IsCornerVisible(inside, center, wall.p2)) {
-			Corner corner = {};
-			corner.point = wall.p2;
-
 			if (TurnsRight(center, wall.p2, wall.p1))
-				corner.type = CornerEnter;
+				AddCorner(&helper, CornerEnter, wall.p2);
 			else
-				corner.type = CornerLeave;
-
-			AddCorner(&helper, corner);
+				AddCorner(&helper, CornerLeave, wall.p2);
 		}
 	}
+
+	Point topLeft     = Point{building.left, building.top};
+	Point topRight    = Point{building.right, building.top};
+	Point bottomLeft  = Point{building.left, building.bottom};
+	Point bottomRight = Point{building.right, building.bottom};
+
+	if (IsCornerVisible(inside, center, topLeft)) 
+		AddCorner(&helper, CornerEdge, topLeft);
+
+	if (IsCornerVisible(inside, center, topRight))
+		AddCorner(&helper, CornerEdge, topRight);
+
+	if (IsCornerVisible(inside, center, bottomLeft))
+		AddCorner(&helper, CornerEdge, bottomLeft);
+
+	if (IsCornerVisible(inside, center, bottomRight))
+		AddCorner(&helper, CornerEdge, bottomRight);
 
 	SortCorners(&helper, center);
 
@@ -1090,7 +1127,7 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 	for (int i = 0; i < helper.cornerCount; ++i) {
 		Corner corner = helper.corners[i];
 
-		Point farPoint = NextVisiblePointAlongRay(inside, center, corner.point, maxDistance);
+		Point farPoint = NextVisiblePointAlongRay(building, center, corner.point, maxDistance);
 
 		if ((corner.type == CornerEnter) && !PointEqual(farPoint, corner.point)) {
 			points[pointCount] = farPoint;
@@ -1118,7 +1155,7 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 		Bresenham(renderer, point, nextPoint, lineColor);
 	}
 
-	FloodFill(renderer, center, lineColor);
+	FloodFill(renderer, center, lineColor, fillHelper);
 
 	delete points;
 	delete helper.corners;

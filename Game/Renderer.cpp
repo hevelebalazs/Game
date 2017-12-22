@@ -3,6 +3,151 @@
 #include "Point.h"
 #include "Renderer.h"
 
+static inline unsigned int* GetPixelAddress(Bitmap bitmap, int row, int col) {
+	return (unsigned int*)bitmap.memory + row * bitmap.width + col;
+}
+
+static inline unsigned int GetPixel(Bitmap bitmap, int row, int col) {
+	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
+
+	return *pixelAddress;
+}
+
+static inline void SetPixel(Bitmap bitmap, int row, int col, unsigned int colorCode) {
+	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
+
+	*pixelAddress = colorCode;
+}
+
+// TODO: use GetPixelAddress
+static inline void SetPixelCheck(Bitmap bitmap, int row, int col, int colorCode) {
+	if ((row >= 0 && row < bitmap.height) && (col >= 0 && col < bitmap.width)) {
+		unsigned int* pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
+		*pixel = colorCode;
+	}
+}
+
+static inline unsigned int ColorCode(Color color) {
+	unsigned char red = (unsigned char)(color.red * 255);
+	unsigned char green = (unsigned char)(color.green * 255);
+	unsigned char blue = (unsigned char)(color.blue * 255);
+
+	unsigned int colorCode = (red << 16) + (green << 8) + (blue);
+
+	return colorCode;
+}
+
+FillHelper FillHelperForBitmap(Bitmap bitmap) {
+	FillHelper result = {};
+	result.count = 0;
+	result.rows = new int[bitmap.width * bitmap.height];
+	result.cols = new int[bitmap.width * bitmap.height];
+
+	return result;
+}
+
+static inline unsigned int MixColorCodes(unsigned int colorCode1, unsigned int colorCode2) {
+	// TODO: is ANDing a good idea here?
+	return (colorCode1 & colorCode2);
+}
+
+void ApplyBitmapMask(Bitmap bitmap, Bitmap mask) {
+	unsigned int* pixel = (unsigned int*)bitmap.memory;
+	unsigned int* maskPixel = (unsigned int*)mask.memory;
+
+	for (int row = 0; row < bitmap.height; ++row) {
+		for (int col = 0; col < bitmap.width; ++col) {
+			*pixel = MixColorCodes(*pixel, *maskPixel);
+
+			pixel++;
+			maskPixel++;
+		}
+	}
+}
+
+static inline void AddPosition(FillHelper* fillHelper, int row, int col) {
+	fillHelper->rows[fillHelper->count] = row;
+	fillHelper->cols[fillHelper->count] = col;
+	fillHelper->count++;
+}
+
+// TODO: use a temporary memory arena so helpers are no longer needed!
+void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelper) {
+	unsigned int colorCode = ColorCode(color);
+
+	Bitmap bitmap = renderer.bitmap;
+	Camera camera = *renderer.camera;
+
+	fillHelper.count = 0;
+	
+	int row = (int)CoordYtoPixel(camera, start.y);
+	int col = (int)CoordXtoPixel(camera, start.x);
+	AddPosition(&fillHelper, row, col);
+
+	bool fillHorizontally = true;
+	int directionSwitchPosition = 1;
+
+	AddPosition(&fillHelper, row, col);
+
+	SetPixel(bitmap, fillHelper.rows[0], fillHelper.cols[0], colorCode);
+
+	for (int i = 0; i < fillHelper.count; ++i) {
+		if (i == directionSwitchPosition) {
+			fillHorizontally = (!fillHorizontally);
+			directionSwitchPosition = fillHelper.count + 1;
+		}
+
+		int row = fillHelper.rows[i];
+		int col = fillHelper.cols[i];
+
+		unsigned int* pixelStart = GetPixelAddress(bitmap, row, col);
+		unsigned int* pixel = 0;
+
+		if (fillHorizontally) {
+			pixel = pixelStart;
+			for (int left = col - 1; left >= 0; --left) {
+				pixel--;
+
+				if (*pixel == colorCode) break;
+				*pixel = colorCode;
+
+				AddPosition(&fillHelper, row, left);
+			}
+
+			pixel = pixelStart;
+			for (int right = col + 1; right < bitmap.width; ++right) {
+				pixel++;
+
+				if (*pixel == colorCode) break;
+				*pixel = colorCode;
+
+				AddPosition(&fillHelper, row, right);
+			}
+		}
+		else {
+			pixel = pixelStart;
+			for (int top = row - 1; top >= 0; --top) {
+				pixel -= bitmap.width;
+
+				if (*pixel == colorCode) break;
+				*pixel = colorCode;
+
+				AddPosition(&fillHelper, top, col);
+			}
+
+			pixel = pixelStart;
+			for (int bottom = row + 1; bottom < bitmap.height; ++bottom) {
+				pixel += bitmap.width;
+			
+				if (*pixel == colorCode) break;
+				*pixel = colorCode;
+
+				AddPosition(&fillHelper, bottom, col);
+			}
+		}
+	}
+}
+
 void SmoothZoom(Camera* camera, float pixelCoordRatio) {
 	camera->zoomTargetRatio = pixelCoordRatio;
 }
@@ -45,16 +190,6 @@ Point CoordToPixel(Camera camera, Point coord) {
 	return PointSum(screenCenter, PointProd(camera.pixelCoordRatio, PointDiff(coord, camera.center)));
 }
 
-static unsigned int ColorCode(Color color) {
-	unsigned char red = (unsigned char)(color.red * 255);
-	unsigned char green = (unsigned char)(color.green * 255);
-	unsigned char blue = (unsigned char)(color.blue * 255);
-
-	unsigned int colorCode = (red << 16) + (green << 8) + (blue);
-
-	return colorCode;
-}
-
 void ClearScreen(Renderer renderer, Color color) {
 	unsigned int colorCode = ColorCode(color);
 
@@ -67,89 +202,11 @@ void ClearScreen(Renderer renderer, Color color) {
 	}
 }
 
-static inline unsigned int* GetPixelAddress(Bitmap bitmap, int row, int col) {
-	return (unsigned int*)bitmap.memory + row * bitmap.width + col;
-}
-
-static inline unsigned int GetPixel(Bitmap bitmap, int row, int col) {
-	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
-
-	return *pixelAddress;
-}
-
-static inline void SetPixel(Bitmap bitmap, int row, int col, unsigned int colorCode) {
-	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
-
-	*pixelAddress = colorCode;
-}
-
-void FloodFill(Renderer renderer, Point start, Color color) {
-	unsigned int colorCode = ColorCode(color);
-
-	Bitmap bitmap = renderer.bitmap;
-	Camera camera = renderer.camera;
-
-	// TODO: this is an extremely bad idea, use pre-allocated memory instead!
-	int* rows = new int[bitmap.width * bitmap.height];
-	int* cols = new int[bitmap.width * bitmap.height];
-	int positionCount = 0;
-	
-	rows[positionCount] = (int)CoordYtoPixel(camera, start.y);
-	cols[positionCount] = (int)CoordXtoPixel(camera, start.x);
-	positionCount++;
-
-	SetPixel(bitmap, rows[0], cols[0], colorCode);
-
-	for (int i = 0; i < positionCount; ++i) {
-		int row = rows[i];
-		int col = cols[i];
-
-		if ((row > 0) && (GetPixel(bitmap, row - 1, col) != colorCode)) {
-			SetPixel(bitmap, row - 1, col, colorCode);
-			rows[positionCount] = row - 1;
-			cols[positionCount] = col;
-			positionCount++;
-		}
-
-		if ((row < bitmap.height - 1) && (GetPixel(bitmap, row + 1, col) != colorCode)) {
-			SetPixel(bitmap, row + 1, col, colorCode);
-			rows[positionCount] = row + 1;
-			cols[positionCount] = col;
-			positionCount++;
-		}
-
-		if ((col > 0) && (GetPixel(bitmap, row, col - 1) != colorCode)) {
-			SetPixel(bitmap, row, col - 1, colorCode);
-			rows[positionCount] = row;
-			cols[positionCount] = col - 1;
-			positionCount++;
-		}
-
-		if ((col < bitmap.width - 1) && (GetPixel(bitmap, row, col + 1) != colorCode)) {
-			SetPixel(bitmap, row, col + 1, colorCode);
-			rows[positionCount] = row;
-			cols[positionCount] = col + 1;
-			positionCount++;
-		}
-	}
-
-	free(rows);
-	free(cols);
-}
-
-// TODO: use GetPixelAddress
-static inline void SetPixelCheck(Bitmap bitmap, int row, int col, int colorCode) {
-	if ((row >= 0 && row < bitmap.height) && (col >= 0 && col < bitmap.width)) {
-		unsigned int* pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
-		*pixel = colorCode;
-	}
-}
-
 void Bresenham(Renderer renderer, Point point1, Point point2, Color color) {
 	Bitmap bitmap = renderer.bitmap;
 	unsigned int colorCode = ColorCode(color);
 
-	Camera camera = renderer.camera;
+	Camera camera = *renderer.camera;
 	int x1 = (int)CoordXtoPixel(camera, point1.x);
 	int y1 = (int)CoordYtoPixel(camera, point1.y);
 	int x2 = (int)CoordXtoPixel(camera, point2.x);
@@ -243,7 +300,7 @@ void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float 
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = ColorCode(color);
 
-	Camera camera = renderer.camera;
+	Camera camera = *renderer.camera;
 	int topPixel =    (int)CoordYtoPixel(camera, top);
 	int leftPixel =   (int)CoordXtoPixel(camera, left);
 	int bottomPixel = (int)CoordYtoPixel(camera, bottom);
@@ -292,7 +349,7 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 	unsigned int colorCode = ColorCode(color);
 
 	for (int i = 0; i < 4; ++i) {
-		points[i] = CoordToPixel(renderer.camera, points[i]);
+		points[i] = CoordToPixel(*renderer.camera, points[i]);
 	}
 
 	Bitmap bitmap = renderer.bitmap;

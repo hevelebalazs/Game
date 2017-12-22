@@ -83,7 +83,7 @@ void HighlightBuilding(Renderer renderer, Building building, Color color);
 void DrawBuilding(Renderer renderer, Building building);
 void DrawBuildingInside(Renderer renderer, Building building);
 
-void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center);
+void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, FillHelper fillHelper);
 
 void HighlightBuildingConnector(Renderer renderer, Building building, Color color);
 void DrawConnectRoad(Renderer renderer, Building building);

@@ -5,14 +5,20 @@
 #include "Point.h"
 #include "PlayerHuman.h"
 #include "PlayerVehicle.h"
+#include "Renderer.h"
 
 struct GameState {
+	Camera camera;
+
 	Renderer renderer;
+	Renderer maskRenderer;
+	
 	Map map;
 	Intersection* selectedIntersection;
 
 	PathHelper pathHelper;
 	WallHelper wallHelper;
+	FillHelper fillHelper;
 
 	AutoVehicle autoVehicles[100];
 	int autoVehicleCount = 100;

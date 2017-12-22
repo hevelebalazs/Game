@@ -14,8 +14,19 @@ struct Camera {
 
 struct Renderer {
 	Bitmap bitmap;
-	Camera camera;
+	Camera* camera;
 };
+
+struct FillHelper {
+	int count;
+	int* rows;
+	int* cols;
+};
+
+FillHelper FillHelperForBitmap(Bitmap bitmap);
+void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelper);
+
+void ApplyBitmapMask(Bitmap bitmap, Bitmap mask);
 
 void SmoothZoom(Camera* camera, float pixelCoordRatio);
 void UpdateCamera(Camera* camera, float seconds);
@@ -26,7 +37,6 @@ Point PixelToCoord(Camera camera, Point pixel);
 Point CoordToPixel(Camera camera, Point coord);
 
 void ClearScreen(Renderer renderer, Color color);
-void FloodFill(Renderer renderer, Point start, Color color);
 
 void Bresenham(Renderer renderer, Point point1, Point point2, Color color);
 void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);

@@ -24,10 +24,13 @@ static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
 static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
 
-void WinResize(Renderer* renderer, int width, int height) {
-	Bitmap* bitmap = &renderer->bitmap;
-	Camera* camera = &renderer->camera;
+static inline void ResizeCamera(Camera* camera, int width, int height) {
+	camera->pixelCoordRatio = 1.0f;
+	camera->screenSize = Point{(float)width, (float)height};
+	camera->center = PointProd(0.5f, camera->screenSize);
+}
 
+static inline void ResizeBitmap(Bitmap* bitmap, int width, int height) {
 	if (bitmap->memory) delete bitmap->memory;
 
 	bitmap->width = width;
@@ -43,15 +46,24 @@ void WinResize(Renderer* renderer, int width, int height) {
 	int bytesPerPixel = 4;
 	int bitmapMemorySize = (bitmap->width * bitmap->height) * bytesPerPixel;
 
-	bitmap->memory = (void *)(new char[bitmapMemorySize]);
+	bitmap->memory = (void*)(new char[bitmapMemorySize]);
 
-	camera->pixelCoordRatio = 1.0f;
-	camera->screenSize = Point{(float)width, (float)height};
-	camera->center = PointProd(0.5f, camera->screenSize);
-
+	/*
 	Color background = Color{0.0f, 0.0f, 0.0f};
 
-	ClearScreen(globalGameState.renderer, background);
+	ClearScreen(*renderer, background);
+	*/
+}
+
+// TODO: could this be moved into Game.cpp?
+void WinResize(GameState* gameState, int width, int height) {
+	ResizeCamera(&gameState->camera, width, height);
+
+	ResizeBitmap(&gameState->renderer.bitmap, width, height);
+	ResizeBitmap(&gameState->maskRenderer.bitmap, width, height);
+
+	gameState->renderer.camera = &gameState->camera;
+	gameState->maskRenderer.camera = &gameState->camera;
 }
 
 // TODO: move this through camera
@@ -64,7 +76,7 @@ static Point WinMousePosition(HWND window) {
 	point.x = (float)cursorPoint.x;
 	point.y = (float)cursorPoint.y;
 
-	point = PixelToCoord(globalGameState.renderer.camera, point);
+	point = PixelToCoord(*globalGameState.renderer.camera, point);
 
 	return point;
 }
@@ -102,7 +114,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			GetClientRect(window, &clientRect);
 			int width = clientRect.right - clientRect.left;
 			int height = clientRect.bottom - clientRect.top;
-			WinResize(&globalGameState.renderer, width, height);
+			WinResize(&globalGameState, width, height);
 			break;
 		}
 
