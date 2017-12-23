@@ -1,9 +1,10 @@
 #pragma once
-#include "Renderer.h"
+
 #include "Intersection.h"
 #include "Map.h"
 #include "Path.h"
 #include "Point.h"
+#include "Renderer.h"
 
 struct Vehicle {
 	Point position;

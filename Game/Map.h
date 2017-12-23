@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Intersection.h"
-#include "BuildingType.h"
 #include "Building.h"
-#include "Renderer.h"
+#include "BuildingType.h"
+#include "Intersection.h"
 #include "MapElem.h"
+#include "Renderer.h"
 
 struct Map {
 	Intersection* intersections;

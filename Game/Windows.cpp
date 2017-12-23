@@ -1,5 +1,3 @@
-// TODO: separate Windows and Game layers
-
 #include <Windows.h>
 #include <math.h>
 #include <stdio.h>
@@ -31,7 +29,8 @@ static inline void ResizeCamera(Camera* camera, int width, int height) {
 }
 
 static inline void ResizeBitmap(Bitmap* bitmap, int width, int height) {
-	if (bitmap->memory) delete bitmap->memory;
+	if (bitmap->memory)
+		delete bitmap->memory;
 
 	bitmap->width = width;
 	bitmap->height = height;
@@ -47,12 +46,6 @@ static inline void ResizeBitmap(Bitmap* bitmap, int width, int height) {
 	int bitmapMemorySize = (bitmap->width * bitmap->height) * bytesPerPixel;
 
 	bitmap->memory = (void*)(new char[bitmapMemorySize]);
-
-	/*
-	Color background = Color{0.0f, 0.0f, 0.0f};
-
-	ClearScreen(*renderer, background);
-	*/
 }
 
 // TODO: could this be moved into Game.cpp?
@@ -66,7 +59,6 @@ void WinResize(GameState* gameState, int width, int height) {
 	gameState->maskRenderer.camera = &gameState->camera;
 }
 
-// TODO: move this through camera
 static Point WinMousePosition(HWND window) {
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
@@ -211,7 +203,6 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	return result;
 }
 
-// TODO: create a GameState struct for the globals?
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
 	WNDCLASS windowClass = {};
@@ -270,7 +261,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	running = true;
 	while (running) {
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
-			if (message.message == WM_QUIT) running = false;
+			if (message.message == WM_QUIT)
+				running = false;
 
 			TranslateMessage(&message);
 			DispatchMessageA(&message);

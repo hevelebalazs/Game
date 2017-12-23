@@ -1,17 +1,14 @@
-#include <math.h>
-
 #include "Building.h"
 #include "Math.h"
 #include "Geometry.h"
 
+extern float connectRoadWidth = 5.0f;
 extern float entranceWidth = 3.0f;
 extern float wallWidth = 0.5f;
 
 static float doorWidth = 3.0f;
 static float minRoomSide = 5.0f;
 static float maxRoomSide = 20.0f;
-
-float Building::connectRoadWidth;
 
 static Line ConnectingLine(Point point1, Point point2) {
 	Line result = {};
@@ -58,14 +55,8 @@ static void AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door) {
 // TODO: rewrite this not using recursion
 static void GenerateWalls(Building* building, WallHelper* wallHelper,
 						  int leftWallIndex, int rightWallIndex, int topWallIndex, int bottomWallIndex,
-						  float minRoomSide, float maxRoomSide) {
-	/*
-	float left   = wallHelper->walls[leftWallIndex].x1   + wallWidth * 0.5f;
-	float right  = wallHelper->walls[rightWallIndex].x1  - wallWidth * 0.5f;
-	float top    = wallHelper->walls[topWallIndex].y1    + wallWidth * 0.5f;
-	float bottom = wallHelper->walls[bottomWallIndex].y1 - wallWidth * 0.5f;
-	*/
-
+						  float minRoomSide, float maxRoomSide) 
+{
 	float left   = wallHelper->walls[leftWallIndex].x1;
 	float right  = wallHelper->walls[rightWallIndex].x1;
 	float top    = wallHelper->walls[topWallIndex].y1;
@@ -228,8 +219,10 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 	if (canCutHorizontally && canCutVertically) {
 		float random = RandomBetween(0.0f, 1.0f);
 
-		if (random < 0.5f) cutHorizontally = true;
-		else cutVertically = true;
+		if (random < 0.5f) 
+			cutHorizontally = true;
+		else 
+			cutVertically = true;
 	}
 	else if (canCutHorizontally) {
 		cutHorizontally = true;
@@ -249,6 +242,7 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			Min2(wall.y1, wall.y2) + doorWidth * 0.5f,
 			Max2(wall.y1, wall.y2) - doorWidth * 0.5f
 		);
+
 		Line door = {};
 		door.x1 = wall.x1;
 		door.y1 = centerY - doorWidth * 0.5f;
@@ -269,6 +263,7 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			Min2(wall.x1, wall.x2) + doorWidth * 0.5f,
 			Max2(wall.x1, wall.x2) - doorWidth * 0.5f
 		);
+
 		Line door = {};
 		door.x1 = centerX - doorWidth * 0.5f;
 		door.y1 = wall.y1;
@@ -297,43 +292,37 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 	entrance.p2 = building->entrancePoint2;
 
 	Line leftWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->left + halfWallWidth);
-	if (entrance.x1 == building->left && entrance.x2 == building->left) {
+	if (entrance.x1 == building->left && entrance.x2 == building->left)
 		AddHelperWallWithDoor(wallHelper, leftWall, entrance);
-	}
-	else {
+	else
 		AddHelperWall(wallHelper, leftWall);
-	}
 
 	Line rightWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->right - halfWallWidth);
-	if (entrance.x1 == building->right && entrance.x2 == building->right) {
+	if (entrance.x1 == building->right && entrance.x2 == building->right)
 		AddHelperWallWithDoor(wallHelper, rightWall, entrance);
-	}
-	else {
+	else
 		AddHelperWall(wallHelper, rightWall);
-	}
 
 	Line topWall = HorizontalWall(building->left, building->right, building->top + halfWallWidth);
-	if (entrance.y1 == building->top && entrance.y2 == building->top) {
+	if (entrance.y1 == building->top && entrance.y2 == building->top)
 		AddHelperWallWithDoor(wallHelper, topWall, entrance);
-	}
-	else {
+	else
 		AddHelperWall(wallHelper, topWall);
-	}
 
 	Line bottomWall = HorizontalWall(building->left, building->right, building->bottom - halfWallWidth);
-	if (entrance.y1 == building->bottom && entrance.y2 == building->bottom) {
+	if (entrance.y1 == building->bottom && entrance.y2 == building->bottom)
 		AddHelperWallWithDoor(wallHelper, bottomWall, entrance);
-	}
-	else {
+	else
 		AddHelperWall(wallHelper, bottomWall);
-	}
 
 	GenerateWalls(building, wallHelper, 0, 1, 2, 3, minRoomSide, maxRoomSide);
 
 	int wallCount = 0;
 	for (int i = 0; i < wallHelper->wallCount; ++i) {
-		if (wallHelper->hasDoor[i]) wallCount += 2;
-		else wallCount += 1;
+		if (wallHelper->hasDoor[i]) 
+			wallCount += 2;
+		else 
+			wallCount += 1;
 	}
 
 	inside->wallCount = 0;
@@ -388,14 +377,11 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 }
 
 // TODO: rewrite this using vector maths
-// TODO: should this be a real function in GridMapCreator.cpp?
+// TODO: should this be in GridMapCreator.cpp?
 void ConnectBuildingToElem(Building* building, MapElem elem) {
 	Point center = {(building->left + building->right) * 0.5f, (building->top + building->bottom) * 0.5f};
 
-	if (elem.type == MapElemNone) {
-		// TODO: should this ever happen?
-	}
-	else if (elem.type == MapElemRoad) {
+	if (elem.type == MapElemRoad) {
 		Road* road = elem.road;
 
 		if (road->endPoint1.x == road->endPoint2.x) {
@@ -434,18 +420,16 @@ void ConnectBuildingToElem(Building* building, MapElem elem) {
 
 		float halfRoadWidth = GetIntersectionRoadWidth(*intersection) * 0.5f;
 
-		bool betweenX = (fabsf(center.x - intersection->coordinate.x) <= halfRoadWidth);
-		bool betweenY = (fabsf(center.y - intersection->coordinate.y) <= halfRoadWidth);
-
-		if (!betweenX && !betweenY) throw 1;
+		bool betweenX = (Abs(center.x - intersection->position.x) <= halfRoadWidth);
+		bool betweenY = (Abs(center.y - intersection->position.y) <= halfRoadWidth);
 
 		if (betweenX) {
-			building->connectPointFar.y = intersection->coordinate.y;
+			building->connectPointFar.y = intersection->position.y;
 			building->connectPointFar.x = center.x;
 			building->connectPointFarShow.x = center.x;
 			building->connectPointClose.x = center.x;
 
-			if (center.y > intersection->coordinate.y) {
+			if (center.y > intersection->position.y) {
 				building->connectPointFarShow.y = building->connectPointFar.y + halfRoadWidth;
 				building->connectPointClose.y = building->top;
 			}
@@ -455,12 +439,12 @@ void ConnectBuildingToElem(Building* building, MapElem elem) {
 			}
 		}
 		else if (betweenY) {
-			building->connectPointFar.x = intersection->coordinate.x;
+			building->connectPointFar.x = intersection->position.x;
 			building->connectPointFar.y = center.y;
 			building->connectPointFarShow.y = center.y;
 			building->connectPointClose.y = center.y;
 
-			if (center.x > intersection->coordinate.x) {
+			if (center.x > intersection->position.x) {
 				building->connectPointFarShow.x = building->connectPointFar.x + halfRoadWidth;
 				building->connectPointClose.x = building->left;
 			}
@@ -493,40 +477,65 @@ void ConnectBuildingToElem(Building* building, MapElem elem) {
 }
 
 bool IsPointInBuilding(Point point, Building building) {
-	if (point.x < building.left || point.x > building.right) return false;
-	if (point.y < building.top || point.y > building.bottom) return false;
+	if (point.x < building.left || point.x > building.right) 
+		return false;
+
+	if (point.y < building.top || point.y > building.bottom) 
+		return false;
+
 	return true;
 }
 
 bool IsPointInExtBuilding(Point point, Building building, float radius) {
-	if (point.x < building.left - radius || point.x > building.right + radius) return false;
-	if (point.y < building.top - radius || point.y > building.bottom + radius) return false;
+	if (point.x < building.left - radius || point.x > building.right + radius) 
+		return false;
+
+	if (point.y < building.top - radius || point.y > building.bottom + radius) 
+		return false;
+
 	return true;
 }
 
 static bool IsPointOnEdge(Point point, Building building) {
-	if (point.x == building.left) return true;
-	if (point.x == building.right) return true;
-	if (point.y == building.top) return true;
-	if (point.y == building.bottom) return true;
+	if (point.x == building.left) 
+		return true;
+
+	if (point.x == building.right) 
+		return true;
+
+	if (point.y == building.top) 
+		return true;
+
+	if (point.y == building.bottom) 
+		return true;
 
 	return false;
 }
 
 // TODO: can this be merged with ClosestCrossPoint?
 bool IsBuildingCrossed(Building building, Point point1, Point point2) {
-	if (IsPointOnEdge(point1, building)) return true;
-	if (IsPointOnEdge(point2, building)) return true;
+	if (IsPointOnEdge(point1, building)) 
+		return true;
+
+	if (IsPointOnEdge(point2, building)) 
+		return true;
 
 	Point topLeft     = {building.left,  building.top};
 	Point topRight    = {building.right, building.top};
 	Point bottomLeft  = {building.left,  building.bottom};
 	Point bottomRight = {building.right, building.bottom};
 
-	if (DoLinesCross(topLeft, topRight, point1, point2)) return true;
-	if (DoLinesCross(topRight, bottomRight, point1, point2)) return true;
-	if (DoLinesCross(bottomRight, bottomLeft, point1, point2)) return true;
-	if (DoLinesCross(bottomLeft, topLeft, point1, point2)) return true;
+	if (DoLinesCross(topLeft, topRight, point1, point2)) 
+		return true;
+
+	if (DoLinesCross(topRight, bottomRight, point1, point2)) 
+		return true;
+
+	if (DoLinesCross(bottomRight, bottomLeft, point1, point2)) 
+		return true;
+
+	if (DoLinesCross(bottomLeft, topLeft, point1, point2)) 
+		return true;
 
 	return false;
 }
@@ -538,9 +547,9 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float radius, 
 	float minDistanceSquare = 0.0f;
 	bool foundAny = false;
 
-	Point topLeft = {building->left - radius, building->top - radius};
-	Point topRight = {building->right + radius, building->top - radius};
-	Point bottomLeft = {building->left - radius, building->bottom + radius};
+	Point topLeft =     {building->left  - radius, building->top    - radius};
+	Point topRight =    {building->right + radius, building->top    - radius};
+	Point bottomLeft =  {building->left  - radius, building->bottom + radius};
 	Point bottomRight = {building->right + radius, building->bottom + radius};
 	Point points[5] = {topLeft, topRight, bottomRight, bottomLeft, topLeft};
 
@@ -650,8 +659,10 @@ BuildingCrossInfo ExtBuildingInsideClosestCrossInfo(Building* building, float ra
 		}
 
 		Point add = {};
-		if (endPoint1.x == endPoint2.x) add = {1.0f, 0.0f};
-		else add = {0.0f, 1.0f};
+		if (endPoint1.x == endPoint2.x) 
+			add = {1.0f, 0.0f};
+		else 
+			add = {0.0f, 1.0f};
 
 		float wallRadius = radius + (wallWidth * 0.5f);
 
@@ -749,7 +760,7 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 }
 
 bool IsPointOnBuildingConnector(Point point, Building building) {
-	float roadWidth = Building::connectRoadWidth;
+	float roadWidth = connectRoadWidth;
 
 	if (building.roadAround) {
 		float left   = building.left   - roadWidth;
@@ -757,7 +768,8 @@ bool IsPointOnBuildingConnector(Point point, Building building) {
 		float top    = building.top    - roadWidth;
 		float bottom = building.bottom + roadWidth;
 
-		if (IsPointInRect(point, left, right, top, bottom)) return true;
+		if (IsPointInRect(point, left, right, top, bottom)) 
+			return true;
 	}
 
 	float left   = Min2(building.connectPointFarShow.x, building.connectPointClose.x);
@@ -774,8 +786,10 @@ bool IsPointOnBuildingConnector(Point point, Building building) {
 		bottom += roadWidth * 0.5f;
 	}
 
-	if (IsPointInRect(point, left, right, top, bottom)) return true;
-	else return false;
+	if (IsPointInRect(point, left, right, top, bottom)) 
+		return true;
+	else 
+		return false;
 }
 
 void HighlightBuilding(Renderer renderer, Building building, Color color) {
@@ -790,22 +804,22 @@ void DrawBuilding(Renderer renderer, Building building) {
 	Color color = {};
 
 	switch (building.type) {
-		case BuildingType_Black: {
+		case BuildingBlack: {
 				color = Color{0.0f, 0.0f, 0.0f};
 				break;
 			}
 
-		case BuildingType_Red: {
+		case BuildingRed: {
 				color = Color{0.5f, 0.0f, 0.0f};
 				break;
 			}
 
-		case BuildingType_Green: {
+		case BuildingGreen: {
 				color = Color{0.0f, 0.5f, 0.0f};
 				break;
 			}
 
-		case BuildingType_Blue: {
+		case BuildingBlue: {
 				color = Color{0.0f, 0.0f, 0.5f};
 				break;
 			}
@@ -822,31 +836,36 @@ void DrawBuildingInside(Renderer renderer, Building building) {
 	Color color = {};
 
 	switch (building.type) {
-		case BuildingType_Black: {
+		case BuildingBlack: {
 			color = Color{0.75f, 0.75f, 0.75f};
 			break;
 		}
 
-		case BuildingType_Red: {
+		case BuildingRed: {
 			color = Color{0.75f, 0.0f, 0.0f};
 			break;
 		}
 
-		case BuildingType_Green: {
+		case BuildingGreen: {
 			color = Color{0.0f, 0.75f, 0.0f};
 			break;
 		}
 
-		case BuildingType_Blue: {
+		case BuildingBlue: {
 			color = Color{0.0f, 0.0f, 0.75f};
 			break;
 		}
 	}
 
 	Color wallColor = color;
-	if (wallColor.red   > 0.2f) wallColor.red   -= 0.2f;
-	if (wallColor.green > 0.2f) wallColor.green -= 0.2f;
-	if (wallColor.blue  > 0.2f) wallColor.blue  -= 0.2f;
+	if (wallColor.red   > 0.2f) 
+		wallColor.red   -= 0.2f;
+
+	if (wallColor.green > 0.2f) 
+		wallColor.green -= 0.2f;
+
+	if (wallColor.blue  > 0.2f) 
+		wallColor.blue  -= 0.2f;
 
 	DrawRect(renderer, building.top, building.left, building.bottom, building.right, color);
 
@@ -863,8 +882,10 @@ void DrawBuildingInside(Renderer renderer, Building building) {
 static inline bool IsPointOnGridLine(Point point, Point line1, Point line2) {
 	bool result = false;
 
-	if (line1.x == line2.x)      result = (point.x == line1.x);
-	else if (line1.y == line2.y) result = (point.y == line1.y);
+	if (line1.x == line2.x)
+		result = (point.x == line1.x);
+	else if (line1.y == line2.y)
+		result = (point.y == line1.y);
 
 	return result;
 }
@@ -873,7 +894,8 @@ static inline bool IsCornerVisible(BuildingInside* inside, Point center, Point c
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
 
-		if (!IsPointOnGridLine(corner, wall.p1, wall.p2) && DoLinesCross(center, corner, wall.p1,wall.p2)) return false;
+		if (!IsPointOnGridLine(corner, wall.p1, wall.p2) && DoLinesCross(center, corner, wall.p1,wall.p2)) 
+			return false;
 	}
 
 	return true;
@@ -927,7 +949,6 @@ static inline void MergeCornerArrays(CornerHelper* helper, Point center, int lef
 		bool chooseLeft = false;
 		bool chooseRight = false;
 
-		// TODO: update all short ifs to this style (it is better for debugging)
 		if (left > leftEnd) 
 			chooseRight = true;
 		else if (right > rightEnd)
@@ -962,10 +983,12 @@ static inline void SortCorners(CornerHelper* helper, Point center) {
 			int leftEnd = leftStart + (length - 1);
 
 			int rightStart = leftEnd + 1;
-			if (rightStart >= helper->cornerCount) break;
+			if (rightStart >= helper->cornerCount) 
+				break;
 
 			int rightEnd = rightStart + (length - 1);
-			if (rightEnd >= helper->cornerCount) rightEnd = helper->cornerCount - 1;
+			if (rightEnd >= helper->cornerCount) 
+				rightEnd = helper->cornerCount - 1;
 
 			MergeCornerArrays(helper, center, leftStart, leftEnd, rightStart, rightEnd);
 
@@ -991,8 +1014,11 @@ static Point NextVisiblePointAlongRay(Building building, Point closePoint, Point
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
 
-		if (PointEqual(wall.p1, farPoint)) continue;
-		if (PointEqual(wall.p2, farPoint)) continue;
+		if (PointEqual(wall.p1, farPoint)) 
+			continue;
+
+		if (PointEqual(wall.p2, farPoint)) 
+			continue;
 
 		if (DoLinesCross(closePoint, farFarPoint, wall.p1, wall.p2)) {
 			Point crossPoint = LineIntersection(closePoint, farFarPoint, wall.p1, wall.p2);
@@ -1163,7 +1189,7 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 }
 
 void HighlightBuildingConnector(Renderer renderer, Building building, Color color) {
-	float roadWidth = Building::connectRoadWidth;
+	float roadWidth = connectRoadWidth;
 
 	if (building.roadAround) {
 		DrawRect(
@@ -1184,7 +1210,7 @@ void DrawConnectRoad(Renderer renderer, Building building) {
 	// TODO: make this a static member of Road?
 	Color roadColor = Color{0.5f, 0.5f, 0.5f};
 
-	float roadWidth = building.connectRoadWidth;
+	float roadWidth = connectRoadWidth;
 
 	if (building.roadAround) {
 		DrawRect(

@@ -77,15 +77,12 @@ Point ClosestRoadPoint(Road road, Point point) {
 
 		result.x = road.endPoint1.x;
 
-		if (minY <= point.y && point.y <= maxY) {
+		if (minY <= point.y && point.y <= maxY)
 			result.y = point.y;
-		}
-		else if (point.y < minY) {
+		else if (point.y < minY)
 			result.y = minY;
-		}
-		else {
+		else
 			result.y = maxY;
-		}
 	}
 	else if (road.endPoint1.y == road.endPoint2.y) {
 		float minX = road.endPoint1.x;
@@ -99,15 +96,12 @@ Point ClosestRoadPoint(Road road, Point point) {
 
 		result.y = road.endPoint1.y;
 
-		if (minX <= point.x && point.x <= maxX) {
+		if (minX <= point.x && point.x <= maxX)
 			result.x = point.x;
-		}
-		else if (point.x < minX) {
+		else if (point.x < minX)
 			result.x = minX;
-		}
-		else {
+		else
 			result.y = maxX;
-		}
 	}
 
 	return result;
@@ -129,8 +123,10 @@ bool IsPointOnRoad(Point point, Road road) {
 		bottom += road.width * 0.5f;
 	}
 
-	if (point.x < left || point.x > right) return false;
-	if (point.y < top || point.y > bottom) return false;
+	if (point.x < left || point.x > right)
+		return false;
+	if (point.y < top || point.y > bottom)
+		return false;
 
 	return true;
 }
@@ -139,12 +135,10 @@ bool IsPointOnRoad(Point point, Road road) {
 bool IsPointOnRoadSide(Point point, Road road) {
 	bool result = false;
 
-	if (road.endPoint1.x == road.endPoint2.x) {
+	if (road.endPoint1.x == road.endPoint2.x)
 		result = ((point.x == road.endPoint1.x - road.width * 0.5f) || (point.x == road.endPoint1.x + road.width * 0.5f));
-	}
-	else if (road.endPoint1.y == road.endPoint2.y) {
+	else if (road.endPoint1.y == road.endPoint2.y)
 		result = ((point.y == road.endPoint1.y - road.width * 0.5f) || (point.y == road.endPoint1.y + road.width * 0.5f));
-	}
 
 	return result;
 }
@@ -172,8 +166,10 @@ int LaneIndex(Road road, Point point) {
 	int result = 0;
 	bool turnsRight = TurnsRight(road.endPoint1, road.endPoint2, point);
 
-	if (turnsRight) result = 1;
-	else result = -1;
+	if (turnsRight)
+		result = 1;
+	else
+		result = -1;
 
 	return result;
 }
@@ -181,8 +177,10 @@ int LaneIndex(Road road, Point point) {
 Point LaneDirection(Road road, int laneIndex) {
 	Point result = {};
 
-	if (laneIndex == 1)       result = PointDirection(road.endPoint1, road.endPoint2);
-	else if (laneIndex == -1) result = PointDirection(road.endPoint2, road.endPoint1);
+	if (laneIndex == 1)
+		result = PointDirection(road.endPoint1, road.endPoint2);
+	else if (laneIndex == -1)
+		result = PointDirection(road.endPoint2, road.endPoint1);
 	
 	return result;
 }

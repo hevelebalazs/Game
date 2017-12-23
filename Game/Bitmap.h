@@ -1,6 +1,6 @@
 #pragma once
-#include <Windows.h>
-#include <math.h>
+
+#include <windows.h>
 #include "Point.h"
 
 struct Color {
@@ -13,6 +13,7 @@ struct Bitmap {
 	int width;
 	int height;
 	void* memory;
+	// TODO: get rid of this Windows specific thing
 	BITMAPINFO info;
 };
 

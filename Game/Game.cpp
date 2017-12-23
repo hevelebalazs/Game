@@ -35,7 +35,7 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 	gameState->fillHelper = FillHelperForBitmap(gameState->renderer.bitmap);
 
 	Intersection* intersection = RandomIntersection(gameState->map);
-	gameState->playerHuman.human.position = intersection->coordinate;
+	gameState->playerHuman.human.position = intersection->position;
 	gameState->playerHuman.human.map = &gameState->map;
 
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
@@ -107,7 +107,8 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 
 			float minAngleCos = 0.0f;
 
-			if (angleCos < minAngleCos) TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
+			if (angleCos < minAngleCos) 
+				TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
 		}
 		else if (onElemAfter.type == MapElemIntersection) {
 			Intersection* intersection = onElemAfter.intersection;
@@ -116,9 +117,8 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 				Road* road = onElemBefore.road;
 				TrafficLight* trafficLight = TrafficLightOfRoad(intersection, road);
 
-				if (trafficLight && trafficLight->color == TrafficLight_Red) {
+				if (trafficLight && trafficLight->color == TrafficLightRed)
 					TurnPlayerVehicleRed(&gameState->playerVehicle, 0.5f);
-				}
 			}
 		}
 	}

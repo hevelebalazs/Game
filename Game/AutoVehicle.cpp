@@ -16,18 +16,11 @@ void InitAutoVehicleMovement(AutoVehicle* autoVehicle) {
 void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building) {
 	ClearPath(&autoVehicle->movePath);
 
-	// TODO: create functions to create these?
-	MapElem targetElem = {};
-	targetElem.type = MapElemBuilding;
-	targetElem.building = autoVehicle->inBuilding;
-
-	MapElem nextElem = {};
-	nextElem.type = MapElemBuilding;
-	nextElem.building = building;
+	MapElem targetElem = BuildingElem(autoVehicle->inBuilding);
+	MapElem nextElem = BuildingElem(building);
 
 	autoVehicle->movePath = ConnectElems(autoVehicle->vehicle.map, targetElem, nextElem, autoVehicle->moveHelper);
 
-	// TODO: can the path have 0 elements if the two buildings are the same?
 	if (autoVehicle->movePath.nodeCount == 0) {
 		autoVehicle->moveNode = 0;
 	}
@@ -72,16 +65,17 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds) {
 							Intersection* intersection = nextElem.intersection;
 							TrafficLight* trafficLight = 0;
 
-							if (intersection->leftRoad == road)        trafficLight = &intersection->leftTrafficLight;
-							else if (intersection->rightRoad == road)  trafficLight = &intersection->rightTrafficLight;
-							else if (intersection->topRoad == road)    trafficLight = &intersection->topTrafficLight;
-							else if (intersection->bottomRoad == road) trafficLight = &intersection->bottomTrafficLight;
+							if (intersection->leftRoad == road)
+								trafficLight = &intersection->leftTrafficLight;
+							else if (intersection->rightRoad == road)
+								trafficLight = &intersection->rightTrafficLight;
+							else if (intersection->topRoad == road)
+								trafficLight = &intersection->topTrafficLight;
+							else if (intersection->bottomRoad == road)
+								trafficLight = &intersection->bottomTrafficLight;
 
-							if ((trafficLight && trafficLight->color == TrafficLight_Red) || 
-								(trafficLight && trafficLight->color == TrafficLight_Yellow)
-							) {
+							if (trafficLight && (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow))
 								stop = true;
-							}
 						}
 					}
 				}
@@ -91,9 +85,8 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds) {
 					float distanceLeft = Distance(vehicle->position, autoVehicle->moveEndPoint.position);
 
 					// TODO: introduce a "stopDistance" variable?
-					if (distanceLeft < vehicle->length * 0.5f) {
+					if (distanceLeft < vehicle->length * 0.5f)
 						break;
-					}
 				}
 
 				autoVehicle->moveSeconds += seconds;
@@ -107,7 +100,8 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds) {
 						moveNode = moveNode->next;
 						autoVehicle->moveNode = moveNode;
 
-						if (!moveNode) continue;
+						if (!moveNode)
+							continue;
 					}
 					else {
 						autoVehicle->moveEndPoint = NextNodePoint(moveNode, autoVehicle->moveStartPoint);

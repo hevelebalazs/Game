@@ -9,8 +9,6 @@ struct AutoHuman {
 	float needGreenSpeed;
 	float needBlueSpeed;
 
-	Building* inBuilding;
-
 	Path movePath;
 	// TODO: does this belong to this struct?
 	//       or should it be passed to Update?
@@ -24,4 +22,3 @@ struct AutoHuman {
 };
 
 void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building);
-void UpdateAutoHuman(float seconds);

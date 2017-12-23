@@ -1,7 +1,8 @@
 #pragma once
-#include "Renderer.h"
+
 #include "Bitmap.h"
 #include "Point.h"
+#include "Renderer.h"
 
 struct Camera {
 	float pixelCoordRatio;

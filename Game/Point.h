@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: move this whole thing to Geometry?
 // TODO: rename this to Vector?
 struct Point {
 	float x;

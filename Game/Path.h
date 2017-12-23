@@ -1,11 +1,11 @@
 #pragma once
-#include "Map.h"
-#include "Road.h"
-#include "Intersection.h"
-#include "Building.h"
-#include "Renderer.h"
 
-// TODO: should this be a linked list element?
+#include "Building.h"
+#include "Intersection.h"
+#include "Map.h"
+#include "Renderer.h"
+#include "Road.h"
+
 struct PathNode {
 	MapElem elem;
 	PathNode* next;

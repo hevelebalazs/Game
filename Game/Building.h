@@ -7,6 +7,7 @@
 #include "Renderer.h"
 #include "Road.h"
 
+extern float connectRoadWidth;
 extern float entranceWidth;
 extern float wallWidth;
 
@@ -40,9 +41,6 @@ struct BuildingInside {
 };
 
 struct Building {
-	// TODO: remove global from struct
-	static float connectRoadWidth;
-
 	BuildingType type;
 
 	// TODO: save four corner points instead

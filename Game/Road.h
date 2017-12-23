@@ -1,13 +1,12 @@
 #pragma once
 
+#include "Intersection.h"
 #include "Point.h"
 #include "Renderer.h"
-#include "Intersection.h"
-#include <Windows.h>
 
 struct Intersection;
 
-struct Road{
+struct Road {
 	Point endPoint1;
 	Point endPoint2;
 

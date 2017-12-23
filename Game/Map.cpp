@@ -1,13 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-
 #include "Geometry.h"
 #include "Map.h"
+#include "Math.h"
 
 Intersection* RandomIntersection(Map map) {
-	int intersectionIndex = rand() % map.intersectionCount;
+	int intersectionIndex = RandMod(map.intersectionCount);
 
 	return &map.intersections[intersectionIndex];
 }
@@ -18,9 +14,10 @@ Intersection* IntersectionAtPoint(Map map, Point point, float maxDistance) {
 	Intersection* result = 0;
 
 	for (int i = 0; i < map.intersectionCount; ++i) {
-		float distanceSquare = DistanceSquare(point, map.intersections[i].coordinate);
+		float distanceSquare = DistanceSquare(point, map.intersections[i].position);
 
-		if (distanceSquare <= maxDistanceSquare) result = &map.intersections[i];
+		if (distanceSquare <= maxDistanceSquare) 
+			result = &map.intersections[i];
 	}
 
 	return result;
@@ -63,11 +60,11 @@ MapElem ClosestRoadOrIntersection(Map map, Point point) {
 
 		float halfRoadWidth = GetIntersectionRoadWidth(*intersection) * 0.5f;
 
-		bool betweenX = (fabsf(intersection->coordinate.x - point.x) <= halfRoadWidth);
-		bool betweenY = (fabsf(intersection->coordinate.y - point.y) <= halfRoadWidth);
+		bool betweenX = (Abs(intersection->position.x - point.x) <= halfRoadWidth);
+		bool betweenY = (Abs(intersection->position.y - point.y) <= halfRoadWidth);
 
 		if (betweenX || betweenY) {
-			float distanceSquare = DistanceSquare(intersection->coordinate, point);
+			float distanceSquare = DistanceSquare(intersection->position, point);
 
 			if ((!closestRoad && !closestIntersection) || distanceSquare < minDistanceSquare) {
 				closestIntersection = intersection;
@@ -86,14 +83,15 @@ Building* BuildingAtPoint(Map map, Point point) {
 	Building* result = 0;
 
 	for (int i = 0; i < map.buildingCount; ++i) {
-		if (IsPointInBuilding(point, map.buildings[i])) result = &map.buildings[i];
+		if (IsPointInBuilding(point, map.buildings[i])) 
+			result = &map.buildings[i];
 	}
 
 	return result;
 }
 
 Building* RandomBuilding(Map map) {
-	int buildingIndex = rand() % map.buildingCount;
+	int buildingIndex = RandMod(map.buildingCount);
 
 	return &map.buildings[buildingIndex];
 }
@@ -104,7 +102,8 @@ Building* ClosestBuilding(Map map, Point point, BuildingType type) {
 
 	for (int i = 0; i < map.buildingCount; ++i) {
 		Building* building = &map.buildings[i];
-		if (building->type != type) continue;
+		if (building->type != type) 
+			continue;
 
 		// TODO: make a function for this, since it is used a lot?
 		Point center = {
@@ -150,8 +149,8 @@ Building* ClosestCrossedBuilding(Map map, Point pointClose, Point pointFar, Buil
 
 	for (int i = 0; i < map.buildingCount; ++i) {
 		Building* building = &map.buildings[i];
-
-		if (building == excludedBuilding) continue;
+		if (building == excludedBuilding) 
+			continue;
 
 		if (IsBuildingCrossed(*building, pointClose, pointFar)) {
 			Point closestCrossPoint = ClosestBuildingCrossPoint(*building, pointClose, pointFar);

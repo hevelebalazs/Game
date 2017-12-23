@@ -1,5 +1,6 @@
 #include "Geometry.h"
 #include "Human.h"
+#include "Math.h"
 #include "PlayerHuman.h"
 #include "Point.h"
 
@@ -18,21 +19,18 @@ static void MoveHuman(Human* human, Point moveVector) {
 		Point pointToGo = PointSum(human->position, moveVector);
 
 		if (human->inBuilding) {
-			bool isInBuilding = IsPointInExtBuilding(human->position, *human->inBuilding, human->radius);
+			bool isInBuilding = IsPointInExtBuilding(human->position, *human->inBuilding, humanRadius);
 
-			if (isInBuilding) {
-				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, human->radius, human->position, pointToGo);
-			}
-			else {
+			if (isInBuilding)
+				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, humanRadius, human->position, pointToGo);
+			else
 				human->inBuilding = 0;
-			}
 		}
 		else {
-			crossInfo = ClosestExtBuildingCrossInfo(*human->map, human->radius, human->position, pointToGo);
+			crossInfo = ClosestExtBuildingCrossInfo(*human->map, humanRadius, human->position, pointToGo);
 
-			if (crossInfo.type == CrossEntrance) {
+			if (crossInfo.type == CrossEntrance)
 				human->inBuilding = crossInfo.building;
-			}
 		}
 
 		if (crossInfo.type == CrossWall) {
@@ -86,9 +84,10 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds) {
 		moveY = true;
 	}
 
-	if (moveX && moveY) playerHuman->moveDirection = PointProd(1.0f / sqrtf(2.0f), playerHuman->moveDirection);
+	if (moveX && moveY) 
+		playerHuman->moveDirection = PointProd(1.0f / Sqrt(2.0f), playerHuman->moveDirection);
 
-	Point moveVector = PointProd(Human::moveSpeed * seconds, playerHuman->moveDirection);
+	Point moveVector = PointProd(humanMoveSpeed * seconds, playerHuman->moveDirection);
 
 	MoveHuman(&playerHuman->human, moveVector);
 }

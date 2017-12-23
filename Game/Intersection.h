@@ -1,29 +1,28 @@
 #pragma once
 
-#include "Road.h"
 #include "Renderer.h"
+#include "Road.h"
 
 struct Road;
 
 enum TrafficLightColor {
-	TrafficLight_Red,
-	TrafficLight_Yellow,
-	TrafficLight_Green
+	TrafficLightRed,
+	TrafficLightYellow,
+	TrafficLightGreen
 };
 
-struct TrafficLight {
-	static float radius;
-	static float switchTime;
-	static float yellowTime;
+extern float trafficLightRadius;
+extern float trafficLightSwitchTime;
+extern float trafficLightYellowTime;
 
+struct TrafficLight {
 	Point position;
 	TrafficLightColor color;
 	float timeLeft;
 };
 
 struct Intersection {
-	// TODO: rename this to "position" for consistency
-	Point coordinate;
+	Point position;
 
 	// TODO: create an array of these
 	Road* leftRoad = 0;

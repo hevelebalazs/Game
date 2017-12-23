@@ -19,12 +19,9 @@ static inline void SetPixel(Bitmap bitmap, int row, int col, unsigned int colorC
 	*pixelAddress = colorCode;
 }
 
-// TODO: use GetPixelAddress
 static inline void SetPixelCheck(Bitmap bitmap, int row, int col, int colorCode) {
-	if ((row >= 0 && row < bitmap.height) && (col >= 0 && col < bitmap.width)) {
-		unsigned int* pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
-		*pixel = colorCode;
-	}
+	if ((row >= 0 && row < bitmap.height) && (col >= 0 && col < bitmap.width))
+		SetPixel(bitmap, row, col, colorCode);
 }
 
 static inline unsigned int ColorCode(Color color) {
@@ -158,15 +155,13 @@ void UpdateCamera(Camera* camera, float seconds) {
 	}
 	else if (camera->pixelCoordRatio < camera->zoomTargetRatio) {
 		camera->pixelCoordRatio += seconds * camera->zoomSpeed;
-		if (camera->pixelCoordRatio > camera->zoomTargetRatio) {
+		if (camera->pixelCoordRatio > camera->zoomTargetRatio)
 			camera->pixelCoordRatio = camera->zoomTargetRatio;
-		}
 	}
 	else {
 		camera->pixelCoordRatio -= seconds * camera->zoomSpeed;
-		if (camera->pixelCoordRatio < camera->zoomTargetRatio) {
+		if (camera->pixelCoordRatio < camera->zoomTargetRatio)
 			camera->pixelCoordRatio = camera->zoomTargetRatio;
-		}
 	}
 }
 
@@ -216,21 +211,27 @@ void Bresenham(Renderer renderer, Point point1, Point point2, Color color) {
 	int absY = IntAbs(y1 - y2);
 
 	int addX = 1;
-	if (x1 > x2) addX = -1;
+	if (x1 > x2)
+		addX = -1;
 
 	int addY = 1;
-	if (y1 > y2) addY = -1;
+	if (y1 > y2)
+		addY = -1;
 
 	int error = 0;
-	if (absX > absY) error = absX / 2;
-	else error = -absY / 2;
+	if (absX > absY)
+		error = absX / 2;
+	else
+		error = -absY / 2;
 
 	int error2 = 0;
 
 	while (1) {
 		SetPixelCheck(renderer.bitmap, y1, x1, colorCode);
 
-		if (x1 == x2 && y1 == y2) break;
+		if (x1 == x2 && y1 == y2)
+			break;
+
 		error2 = error;
 		if (error2 > -absX) {
 			error -= absY;
@@ -320,11 +321,15 @@ void DrawRect(Renderer renderer, float top, float left, float bottom, float righ
 
 	Bitmap bitmap = renderer.bitmap;
 
-	if (topPixel < 0) topPixel = 0;
-	if (bottomPixel >= bitmap.height) bottomPixel = bitmap.height - 1;
+	if (topPixel < 0)
+		topPixel = 0;
+	if (bottomPixel >= bitmap.height)
+		bottomPixel = bitmap.height - 1;
 
-	if (leftPixel < 0) leftPixel = 0;
-	if (rightPixel >= bitmap.width) rightPixel = bitmap.width - 1;
+	if (leftPixel < 0)
+		leftPixel = 0;
+	if (rightPixel >= bitmap.width)
+		rightPixel = bitmap.width - 1;
 
 	for (int row = topPixel; row < bottomPixel; ++row) {
 		for (int col = leftPixel; col < rightPixel; ++col) {
@@ -334,23 +339,11 @@ void DrawRect(Renderer renderer, float top, float left, float bottom, float righ
 	}
 }
 
-// TODO: this is defined in Geometry, use that
-float turnDirection(Point point1, Point point2, Point point3) {
-	float dx1 = point2.x - point1.x;
-	float dy1 = point2.y - point1.y;
-
-	float dx2 = point3.x - point2.x;
-	float dy2 = point3.y - point2.y;
-
-	return (dx1 * dy2 - dx2 * dy1);
-}
-
 void DrawQuad(Renderer renderer, Point points[4], Color color) {
 	unsigned int colorCode = ColorCode(color);
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; ++i)
 		points[i] = CoordToPixel(*renderer.camera, points[i]);
-	}
 
 	Bitmap bitmap = renderer.bitmap;
 	int minX = bitmap.width;
@@ -362,16 +355,24 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 		int pointX = (int)points[i].x;
 		int pointY = (int)points[i].y;
 
-		if (pointX < minX) minX = pointX;
-		if (pointX > maxX) maxX = pointX;
-		if (pointY < minY) minY = pointY;
-		if (pointY > maxY) maxY = pointY;
+		if (pointX < minX)
+			minX = pointX;
+		if (pointX > maxX)
+			maxX = pointX;
+		if (pointY < minY)
+			minY = pointY;
+		if (pointY > maxY)
+			maxY = pointY;
 	}
 
-	if (minX < 0) minX = 0;
-	if (maxX >= bitmap.width) maxX = bitmap.width - 1;
-	if (minY < 0) minY = 0;
-	if (maxY >= bitmap.height) maxY = bitmap.height - 1;
+	if (minX < 0)
+		minX = 0;
+	if (maxX >= bitmap.width)
+		maxX = bitmap.width - 1;
+	if (minY < 0)
+		minY = 0;
+	if (maxY >= bitmap.height)
+		maxY = bitmap.height - 1;
 
 	unsigned int *pixel = 0;
 	for (int row = minY; row < maxY; ++row) {
@@ -380,10 +381,14 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 
 			bool drawPoint = true;
 
-			if (turnDirection(points[0], points[1], testPoint) < 0.0f) drawPoint = false;
-			else if (turnDirection(points[1], points[2], testPoint) < 0.0f) drawPoint = false;
-			else if (turnDirection(points[2], points[3], testPoint) < 0.0f) drawPoint = false;
-			else if (turnDirection(points[3], points[0], testPoint) < 0.0f) drawPoint = false;
+			if (!TurnsRight(points[0], points[1], testPoint))
+				drawPoint = false;
+			else if (!TurnsRight(points[1], points[2], testPoint))
+				drawPoint = false;
+			else if (!TurnsRight(points[2], points[3], testPoint))
+				drawPoint = false;
+			else if (!TurnsRight(points[3], points[0], testPoint))
+				drawPoint = false;
 
 			if (drawPoint) {
 				pixel = (unsigned int *)bitmap.memory + row * bitmap.width + col;

@@ -1,16 +1,15 @@
 #pragma once
 
+#include "Building.h"
+#include "Map.h"
+#include "Path.h"
 #include "Point.h"
 #include "Renderer.h"
-#include "Map.h"
-#include "Building.h"
-#include "Path.h"
+
+extern float humanRadius;
+extern float humanMoveSpeed;
 
 struct Human {
-	// TODO: remove globals from struct
-	static float radius;
-	static float moveSpeed;
-
 	float needRed;
 	float needGreen;
 	float needBlue;

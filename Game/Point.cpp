@@ -1,5 +1,4 @@
 #include "Point.h"
-#include <math.h>
 
 Point PointSum(Point point1, Point point2) {
 	Point result = {};

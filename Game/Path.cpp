@@ -1,6 +1,4 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <windows.h>
 
 #include "Bezier.h"
 #include "Geometry.h"
@@ -136,17 +134,17 @@ static void AddIntersectionToHelper(Map* map, Intersection* intersection, int so
 }
 
 static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper) {
-	for (int i = 0; i < map->intersectionCount; ++i) helper->isIntersectionHelper[i] = 0;
-	for (int i = 0; i < map->roadCount; ++i) helper->isRoadHelper[i] = 0;
+	for (int i = 0; i < map->intersectionCount; ++i) 
+		helper->isIntersectionHelper[i] = 0;
+	for (int i = 0; i < map->roadCount; ++i)
+		helper->isRoadHelper[i] = 0;
 
 	helper->nodeCount = 0;
 
-	if (elemStart.type == MapElemRoad) {
+	if (elemStart.type == MapElemRoad)
 		AddRoadToHelper(map, elemStart.road, -1, helper);
-	}
-	else if (elemStart.type == MapElemIntersection) {
+	else if (elemStart.type == MapElemIntersection)
 		AddIntersectionToHelper(map, elemStart.intersection, -1, helper);
-	}
 
 	if (elemStart.address == elemEnd.address) {
 		PushElem(path, elemStart);
@@ -154,10 +152,12 @@ static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapEle
 	}
 
 	Road* roadEnd = 0;
-	if (elemEnd.type == MapElemRoad) roadEnd = elemEnd.road;
+	if (elemEnd.type == MapElemRoad) 
+		roadEnd = elemEnd.road;
 
 	Intersection* intersectionEnd = 0;
-	if (elemEnd.type == MapElemIntersection) intersectionEnd = elemEnd.intersection;
+	if (elemEnd.type == MapElemIntersection) 
+		intersectionEnd = elemEnd.intersection;
 
 	for (int i = 0; i < helper->nodeCount; ++i) {
 		PathNode node = helper->nodes[i];
@@ -167,32 +167,38 @@ static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapEle
 			Road* road = elem.road;
 
 			AddIntersectionToHelper(map, road->intersection1, i, helper);
-			if (intersectionEnd && road->intersection1 == intersectionEnd) break;
+			if (intersectionEnd && road->intersection1 == intersectionEnd)
+				break;
 
 			AddIntersectionToHelper(map, road->intersection2, i, helper);
-			if (intersectionEnd && road->intersection2 == intersectionEnd) break;
+			if (intersectionEnd && road->intersection2 == intersectionEnd)
+				break;
 		}
 		else if (elem.type == MapElemIntersection) {
 			Intersection* intersection = elem.intersection;
 
 			if (intersection->leftRoad) {
 				AddRoadToHelper(map, intersection->leftRoad, i, helper);
-				if (roadEnd && intersection->leftRoad == roadEnd) break;
+				if (roadEnd && intersection->leftRoad == roadEnd)
+					break;
 			}
 
 			if (intersection->rightRoad) {
 				AddRoadToHelper(map, intersection->rightRoad, i, helper);
-				if (roadEnd && intersection->rightRoad == roadEnd) break;
+				if (roadEnd && intersection->rightRoad == roadEnd)
+					break;
 			}
 
 			if (intersection->topRoad) {
 				AddRoadToHelper(map, intersection->topRoad, i, helper);
-				if (roadEnd && intersection->topRoad == roadEnd) break;
+				if (roadEnd && intersection->topRoad == roadEnd)
+					break;
 			}
 
 			if (intersection->bottomRoad) {
 				AddRoadToHelper(map, intersection->bottomRoad, i, helper);
-				if (roadEnd && intersection->bottomRoad == roadEnd) break;
+				if (roadEnd && intersection->bottomRoad == roadEnd)
+					break;
 			}
 		}
 	}
@@ -215,25 +221,24 @@ static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapEle
 
 Building* CommonAncestor(Building* building1, Building* building2) {
 	while (building1->connectTreeHeight != building2->connectTreeHeight) {
-		if (building1->connectTreeHeight > building2->connectTreeHeight) {
+		if (building1->connectTreeHeight > building2->connectTreeHeight)
 			building1 = building1->connectElem.building;
-		}
-		if (building2->connectTreeHeight > building1->connectTreeHeight) {
+		if (building2->connectTreeHeight > building1->connectTreeHeight)
 			building2 = building2->connectElem.building;
-		}
 	}
 
 	while (building1 && building2 && building1->connectTreeHeight > 1 && building2->connectTreeHeight > 1) {
-		if (building1 == building2) return building1;
+		if (building1 == building2)
+			return building1;
 
 		building1 = building1->connectElem.building;
 		building2 = building2->connectElem.building;
 	}
 
-	if (building1 == building2) return building1;
-	else return 0;
-
-	return 0;
+	if (building1 == building2)
+		return building1;
+	else
+		return 0;
 }
 
 static void PushDownTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
@@ -312,7 +317,8 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 			PushFromBuildingToRoadElem(&path, startBuilding);
 			roadElemStart = GetConnectRoadElem(startBuilding);
 
-			if (roadElemStart.type == MapElemRoad) startConnectRoad = roadElemStart.road;
+			if (roadElemStart.type == MapElemRoad) 
+				startConnectRoad = roadElemStart.road;
 		}
 		else {
 			roadElemStart = elemStart;
@@ -324,7 +330,8 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 
 			roadElemEnd = GetConnectRoadElem(endBuilding);
 
-			if (roadElemEnd.type == MapElemRoad) endConnectRoad = roadElemEnd.road;
+			if (roadElemEnd.type == MapElemRoad) 
+				endConnectRoad = roadElemEnd.road;
 		}
 		else {
 			roadElemEnd = elemEnd;
@@ -351,8 +358,10 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 			int laneIndex = LaneIndex(*startConnectRoad, startBuilding->connectPointFarShow);
 
 			Intersection* startIntersection = 0;
-			if (laneIndex == 1)       startIntersection = startConnectRoad->intersection2;
-			else if (laneIndex == -1) startIntersection = startConnectRoad->intersection1;
+			if (laneIndex == 1)
+				startIntersection = startConnectRoad->intersection2;
+			else if (laneIndex == -1)
+				startIntersection = startConnectRoad->intersection1;
 
 			if (startIntersection) {
 				startConnectRoad = startConnectRoad;
@@ -367,8 +376,10 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 			int laneIndex = LaneIndex(*endConnectRoad, endBuilding->connectPointFarShow);
 				
 			Intersection* endIntersection = 0;
-			if (laneIndex == 1)       endIntersection = endConnectRoad->intersection1;
-			else if (laneIndex == -1) endIntersection = endConnectRoad->intersection2;
+			if (laneIndex == 1)
+				endIntersection = endConnectRoad->intersection1;
+			else if (laneIndex == -1)
+				endIntersection = endConnectRoad->intersection2;
 
 			if (endIntersection) {
 				endConnectRoad = endConnectRoad;
@@ -377,18 +388,20 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 			}
 		}
 
-		if (startConnectRoad) PushRoad(&path, startConnectRoad);
+		if (startConnectRoad)
+			PushRoad(&path, startConnectRoad);
 
 		PushConnectRoadElems(&path, map, roadElemStart, roadElemEnd, helper);
 
-		if (endConnectRoad) PushRoad(&path, endConnectRoad);
+		if (endConnectRoad)
+			PushRoad(&path, endConnectRoad);
 
-		if (elemEnd.type == MapElemBuilding) {
+		if (elemEnd.type == MapElemBuilding)
 			PushFromRoadElemToBuilding(&path, elemEnd.building);
-		}
 	}
 
-	if (path.nodeCount == 0) return path;
+	if (path.nodeCount == 0)
+		return path;
 	
 	for (int i = 0; i < path.nodeCount - 1; ++i) {
 		path.nodes[i].next = &path.nodes[i + 1];
@@ -444,20 +457,28 @@ static void DrawGridLine(Renderer renderer, Point point1, Point point2, Color co
 
 Point NextPointAroundBuilding(Building* building, Point startPoint, Point targetPoint) {
 	if (startPoint.x == building->left && startPoint.y < building->bottom) {
-		if (targetPoint.x == building->left && targetPoint.y > startPoint.y) return targetPoint;
-		else return Point{building->left, building->bottom};
+		if (targetPoint.x == building->left && targetPoint.y > startPoint.y)
+			return targetPoint;
+		else
+			return Point{building->left, building->bottom};
 	}
 	else if (startPoint.y == building->bottom && startPoint.x < building->right) {
-		if (targetPoint.y == building->bottom && targetPoint.x > startPoint.x) return targetPoint;
-		else return Point{building->right, building->bottom};
+		if (targetPoint.y == building->bottom && targetPoint.x > startPoint.x)
+			return targetPoint;
+		else
+			return Point{building->right, building->bottom};
 	}
 	else if (startPoint.x == building->right && startPoint.y > building->top) {
-		if (targetPoint.x == building->right && targetPoint.y < startPoint.y) return targetPoint;
-		else return Point{building->right, building->top};
+		if (targetPoint.x == building->right && targetPoint.y < startPoint.y)
+			return targetPoint;
+		else
+			return Point{building->right, building->top};
 	}
 	else if (startPoint.y == building->top && startPoint.x > building->left) {
-		if (targetPoint.y == building->top && targetPoint.x < startPoint.x) return targetPoint;
-		else return Point{building->left, building->top};
+		if (targetPoint.y == building->top && targetPoint.x < startPoint.x)
+			return targetPoint;
+		else
+			return Point{building->left, building->top};
 	}
 	else {
 		return targetPoint;
@@ -476,7 +497,7 @@ DirectedPoint StartNodePoint(PathNode* node) {
 		direction = PointDirection(building->connectPointClose, building->connectPointFar);
 	}
 	else if (elem.type == MapElemIntersection) {
-		position = elem.intersection->coordinate;
+		position = elem.intersection->position;
 		// TODO: add direction
 	}
 
@@ -511,20 +532,16 @@ DirectedPoint NextFromBuildingToBuilding(DirectedPoint startPoint, Building* bui
 
 	// TODO: add direction
 	if (building->connectElem.type == MapElemBuilding && building->connectElem.building == nextBuilding) {
-		if (PointEqual(startPoint.position, building->connectPointClose)) {
+		if (PointEqual(startPoint.position, building->connectPointClose))
 			result.position = building->connectPointFar;
-		}
-		else {
+		else
 			result.position = NextPointAroundBuilding(building, startPoint.position, building->connectPointClose);
-		}
 	}
 	else if (nextBuilding->connectElem.type == MapElemBuilding && nextBuilding->connectElem.building == building) {
-		if (PointEqual(startPoint.position, building->connectPointFar) || PointEqual(startPoint.position, building->connectPointFarShow)) {
+		if (PointEqual(startPoint.position, building->connectPointFar) || PointEqual(startPoint.position, building->connectPointFarShow))
 			result.position = building->connectPointClose;
-		}
-		else {
+		else
 			result.position = NextPointAroundBuilding(building, startPoint.position, nextBuilding->connectPointFar);
-		}
 	}
 
 	return result;
@@ -533,12 +550,10 @@ DirectedPoint NextFromBuildingToBuilding(DirectedPoint startPoint, Building* bui
 bool EndFromBuildingToBuilding(DirectedPoint point, Building* building, Building* nextBuilding) {
 	bool result = false;
 
-	if (building->connectElem.type == MapElemBuilding && building->connectElem.building == nextBuilding) {
+	if (building->connectElem.type == MapElemBuilding && building->connectElem.building == nextBuilding)
 		result = PointEqual(point.position, building->connectPointFar);
-	}
-	else if (nextBuilding->connectElem.type == MapElemBuilding && nextBuilding->connectElem.building == building) {
+	else if (nextBuilding->connectElem.type == MapElemBuilding && nextBuilding->connectElem.building == building)
 		result = PointEqual(point.position, nextBuilding->connectPointFar);
-	}
 
 	return result;
 }
@@ -632,7 +647,7 @@ DirectedPoint NextFromRoadToIntersection(DirectedPoint startPoint, Road* road, I
 		result = RoadLeavePoint(*road, 2);
 	}
 	else {
-		result.position = intersection->coordinate;
+		result.position = intersection->position;
 	}
 
 	return result;
@@ -642,9 +657,12 @@ bool EndFromRoadToIntersection(DirectedPoint point, Road* road, Intersection* in
 	bool result = false;
 
 	Point endPoint = {};
-	if (intersection == road->intersection1)	  endPoint = RoadLeavePoint(*road, 1).position;
-	else if (intersection == road->intersection2) endPoint = RoadLeavePoint(*road, 2).position;
-	else                                          endPoint = intersection->coordinate;
+	if (intersection == road->intersection1)
+		endPoint = RoadLeavePoint(*road, 1).position;
+	else if (intersection == road->intersection2)
+		endPoint = RoadLeavePoint(*road, 2).position;
+	else
+		endPoint = intersection->position;
 
 	result = PointEqual(point.position, endPoint);
 
@@ -668,15 +686,12 @@ bool EndFromIntersectionToBuilding(DirectedPoint point, Intersection* intersecti
 DirectedPoint NextFromIntersectionToRoad(DirectedPoint startPoint, Intersection* intersection, Road* road) {
 	DirectedPoint result = {};
 
-	if (road->intersection1 == intersection) {
+	if (road->intersection1 == intersection)
 		result = RoadEnterPoint(*road, 1);
-	}
-	else if (road->intersection2 == intersection) {
+	else if (road->intersection2 == intersection)
 		result = RoadEnterPoint(*road, 2);
-	}
-	else {
-		result.position = intersection->coordinate;
-	}
+	else
+		result.position = intersection->position;
 
 	return result;
 }
@@ -685,9 +700,12 @@ bool EndFromIntersectionToRoad(DirectedPoint point, Intersection* intersection, 
 	bool result = false;
 
 	Point endPoint = {};
-	if (road->intersection1 == intersection)      endPoint = RoadEnterPoint(*road, 1).position;
-	else if (road->intersection2 == intersection) endPoint = RoadEnterPoint(*road, 2).position;
-	else                                          endPoint = intersection->coordinate;
+	if (road->intersection1 == intersection)
+		endPoint = RoadEnterPoint(*road, 1).position;
+	else if (road->intersection2 == intersection)
+		endPoint = RoadEnterPoint(*road, 2).position;
+	else
+		endPoint = intersection->position;
 
 	result = PointEqual(point.position, endPoint);
 
@@ -704,24 +722,33 @@ DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint) {
 	if (elem.type == MapElemBuilding) {
 		Building* building = elem.building;
 
-		if (!next)                                       result = NextFromBuildingToNothing(startPoint, building);
-		else if (next->elem.type == MapElemBuilding)     result = NextFromBuildingToBuilding(startPoint, building, next->elem.building);
-		else if (next->elem.type == MapElemRoad)         result = NextFromBuildingToRoad(startPoint, building, next->elem.road);
-		else if (next->elem.type == MapElemIntersection) result = NextFromBuildingToIntersection(startPoint, building, next->elem.intersection);
+		if (!next)
+			result = NextFromBuildingToNothing(startPoint, building);
+		else if (next->elem.type == MapElemBuilding)
+			result = NextFromBuildingToBuilding(startPoint, building, next->elem.building);
+		else if (next->elem.type == MapElemRoad)
+			result = NextFromBuildingToRoad(startPoint, building, next->elem.road);
+		else if (next->elem.type == MapElemIntersection)
+			result = NextFromBuildingToIntersection(startPoint, building, next->elem.intersection);
 	}
 	else if (elem.type == MapElemRoad) {
 		Road* road = elem.road;
 
 		if (!next) ; // NOTE: path should not end in a road
-		else if (next->elem.type == MapElemBuilding)     result = NextFromRoadToBuilding(startPoint, road, next->elem.building);
-		else if (next->elem.type == MapElemIntersection) result = NextFromRoadToIntersection(startPoint, road, next->elem.intersection);
+		else if (next->elem.type == MapElemBuilding)
+			result = NextFromRoadToBuilding(startPoint, road, next->elem.building);
+		else if (next->elem.type == MapElemIntersection)
+			result = NextFromRoadToIntersection(startPoint, road, next->elem.intersection);
 	}
 	else if (elem.type == MapElemIntersection) {
 		Intersection* intersection = elem.intersection;
 
-		if (next && next->elem.type == MapElemBuilding)  result = NextFromIntersectionToBuilding(startPoint, intersection, next->elem.building);
-		else if (next && next->elem.type == MapElemRoad) result = NextFromIntersectionToRoad(startPoint, intersection, next->elem.road);
-		else result.position = elem.intersection->coordinate;
+		if (next && next->elem.type == MapElemBuilding)
+			result = NextFromIntersectionToBuilding(startPoint, intersection, next->elem.building);
+		else if (next && next->elem.type == MapElemRoad)
+			result = NextFromIntersectionToRoad(startPoint, intersection, next->elem.road);
+		else
+			result.position = elem.intersection->position;
 	}
 
 	return result;
@@ -736,23 +763,32 @@ bool IsNodeEndPoint(PathNode* node, DirectedPoint point) {
 	if (elem.type == MapElemBuilding) {
 		Building* building = elem.building;
 
-		if (!next)                                       result = EndFromBuildingToNothing(point, building);
-		else if (next->elem.type == MapElemBuilding)     result = EndFromBuildingToBuilding(point, building, next->elem.building);
-		else if (next->elem.type == MapElemRoad)         result = EndFromBuildingToRoad(point, building, next->elem.road);
-		else if (next->elem.type == MapElemIntersection) result = EndFromBuildingToIntersection(point, building, next->elem.intersection);
+		if (!next)
+			result = EndFromBuildingToNothing(point, building);
+		else if (next->elem.type == MapElemBuilding)
+			result = EndFromBuildingToBuilding(point, building, next->elem.building);
+		else if (next->elem.type == MapElemRoad)
+			result = EndFromBuildingToRoad(point, building, next->elem.road);
+		else if (next->elem.type == MapElemIntersection)
+			result = EndFromBuildingToIntersection(point, building, next->elem.intersection);
 	}
 	else if (elem.type == MapElemRoad) {
 		Road* road = elem.road;
 
-		if (!next) ; // NOTE: path should not end with a road
-		else if (next->elem.type == MapElemBuilding)     result = EndFromRoadToBuilding(point, road, next->elem.building);
-		else if (next->elem.type == MapElemIntersection) result = EndFromRoadToIntersection(point, road, next->elem.intersection);
+		if (!next) 
+			; // NOTE: path should not end with a road
+		else if (next->elem.type == MapElemBuilding)
+			result = EndFromRoadToBuilding(point, road, next->elem.building);
+		else if (next->elem.type == MapElemIntersection)
+			result = EndFromRoadToIntersection(point, road, next->elem.intersection);
 	}
 	else if (elem.type == MapElemIntersection) {
 		Intersection* intersection = elem.intersection;
 
-		if (next && next->elem.type == MapElemBuilding)  result = EndFromIntersectionToBuilding(point, intersection, next->elem.building);
-		else if (next && next->elem.type == MapElemRoad) result = EndFromIntersectionToRoad(point, intersection, next->elem.road);
+		if (next && next->elem.type == MapElemBuilding)
+			result = EndFromIntersectionToBuilding(point, intersection, next->elem.building);
+		else if (next && next->elem.type == MapElemRoad)
+			result = EndFromIntersectionToRoad(point, intersection, next->elem.road);
 	}
 
 	return result;

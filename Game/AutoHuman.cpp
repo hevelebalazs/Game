@@ -4,25 +4,18 @@
 static void InitAutoHumanMovement(AutoHuman* autoHuman) {
 	float moveDistance = CityDistance(autoHuman->moveStartPoint.position, autoHuman->moveEndPoint.position);
 
-	autoHuman->moveTotalSeconds = (moveDistance / autoHuman->human.moveSpeed);
+	autoHuman->moveTotalSeconds = (moveDistance / humanMoveSpeed);
 	autoHuman->moveSeconds = 0.0f;
 }
 
 void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building) {
 	ClearPath(&autoHuman->movePath);
 
-	// TODO: create functions to create these?
-	MapElem targetElem = {};
-	targetElem.type = MapElemBuilding;
-	targetElem.building = autoHuman->inBuilding;
-
-	MapElem nextElem = {};
-	nextElem.type = MapElemBuilding;
-	nextElem.building = building;
+	MapElem targetElem = BuildingElem(autoHuman->human.inBuilding);
+	MapElem nextElem = BuildingElem(building);
 
 	autoHuman->movePath = ConnectElems(autoHuman->human.map, targetElem, nextElem, autoHuman->moveHelper);
 
-	// TODO: can the path have 0 elements if the two buildings are the same?
 	if (autoHuman->movePath.nodeCount == 0) {
 		autoHuman->moveNode = 0;
 	}
@@ -41,31 +34,37 @@ void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building) {
 void UpdateAutoHuman(AutoHuman* autoHuman, float seconds) {
 	Human* human = &autoHuman->human;
 
-	if (autoHuman->inBuilding && autoHuman->inBuilding->type == BuildingType_Red) {
+	if (human->inBuilding && human->inBuilding->type == BuildingRed) {
 		human->needRed -= 10.0f * seconds;
-		if (human->needRed < 0.0f) human->needRed = 0.0f;
+		if (human->needRed < 0.0f) 
+			human->needRed = 0.0f;
 	}
 	else {
 		human->needRed += autoHuman->needRedSpeed * seconds;
-		if (human->needRed > 100.0f) human->needRed = 100.0f;
+		if (human->needRed > 100.0f) 
+			human->needRed = 100.0f;
 	}
 
-	if (autoHuman->inBuilding && autoHuman->inBuilding->type == BuildingType_Green) {
+	if (human->inBuilding && human->inBuilding->type == BuildingGreen) {
 		human->needGreen -= 10.0f * seconds;
-		if (human->needGreen < 0.0f) human->needGreen = 0.0f;
+		if (human->needGreen < 0.0f) 
+			human->needGreen = 0.0f;
 	}
 	else {
 		human->needGreen += autoHuman->needGreenSpeed * seconds;
-		if (human->needGreen > 100.0f) human->needGreen = 100.0f;
+		if (human->needGreen > 100.0f) 
+			human->needGreen = 100.0f;
 	}
 
-	if (autoHuman->inBuilding && autoHuman->inBuilding->type == BuildingType_Blue) {
+	if (human->inBuilding && human->inBuilding->type == BuildingBlue) {
 		human->needBlue -= 10.0f * seconds;
-		if (human->needBlue < 0.0f) human->needBlue = 0.0f;
+		if (human->needBlue < 0.0f) 
+			human->needBlue = 0.0f;
 	}
 	else {
 		human->needBlue += autoHuman->needBlueSpeed * seconds;
-		if (human->needBlue > 100.0f) human->needBlue = 100.0f;
+		if (human->needBlue > 100.0f) 
+			human->needBlue = 100.0f;
 	}
 
 	if (autoHuman->moveTargetBuilding) {
@@ -74,7 +73,7 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds) {
 		// TODO: should there be a limit on the iteration number?
 		while (seconds > 0.0f) {
 			if (!moveNode) {
-				autoHuman->inBuilding = autoHuman->moveTargetBuilding;
+				human->inBuilding = autoHuman->moveTargetBuilding;
 				autoHuman->moveTargetBuilding = 0;
 				break;
 			}
@@ -90,7 +89,8 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds) {
 						autoHuman->moveNode = moveNode->next;
 						moveNode = autoHuman->moveNode;
 
-						if (!moveNode) continue;
+						if (!moveNode) 
+							continue;
 					}
 					else {
 						autoHuman->moveEndPoint = NextNodePoint(autoHuman->moveNode, autoHuman->moveStartPoint);
@@ -114,20 +114,16 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds) {
 	else {
 		Building* targetBuilding = 0;
 
-		if (human->needRed == 100.0f) {
-			targetBuilding = ClosestBuilding(*human->map, human->position, BuildingType_Red);
-		}
-		else if (human->needGreen == 100.0f) {
-			targetBuilding = ClosestBuilding(*human->map, human->position, BuildingType_Green);
-		}
-		else if (human->needBlue == 100.0f) {
-			targetBuilding = ClosestBuilding(*human->map, human->position, BuildingType_Blue);
-		}
-		else if (human->needRed == 0.0f || human->needGreen == 0.0f || human->needBlue == 0.0f) {
-
+		if (human->needRed == 100.0f)
+			targetBuilding = ClosestBuilding(*human->map, human->position, BuildingRed);
+		else if (human->needGreen == 100.0f)
+			targetBuilding = ClosestBuilding(*human->map, human->position, BuildingGreen);
+		else if (human->needBlue == 100.0f)
+			targetBuilding = ClosestBuilding(*human->map, human->position, BuildingBlue);
+		else if (human->needRed == 0.0f || human->needGreen == 0.0f || human->needBlue == 0.0f)
 			targetBuilding = RandomBuilding(*human->map);
-		}
 
-		if (targetBuilding) MoveAutoHumanToBuilding(autoHuman, targetBuilding);
+		if (targetBuilding) 
+			MoveAutoHumanToBuilding(autoHuman, targetBuilding);
 	}
 }

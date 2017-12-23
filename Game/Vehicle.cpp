@@ -1,6 +1,3 @@
-#include <math.h>
-#include <stdio.h>
-
 #include "Geometry.h"
 #include "Math.h"
 #include "Vehicle.h"

@@ -1,10 +1,11 @@
 #include "Bitmap.h"
+#include "Math.h"
 
 Color RandomColor() {
 	Color randomColor = {
-		(float)rand() / (float)RAND_MAX,
-		(float)rand() / (float)RAND_MAX,
-		(float)rand() / (float)RAND_MAX
+		RandomBetween(0.0f, 1.0f),
+		RandomBetween(0.0f, 1.0f),
+		RandomBetween(0.0f, 1.0f)
 	};
 
 	return randomColor;

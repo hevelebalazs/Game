@@ -1,5 +1,4 @@
 #include <math.h>
-
 #include "Geometry.h"
 
 // TODO: create a type that always represents a unit vector?
@@ -54,11 +53,13 @@ bool TurnsRight(Point point1, Point point2, Point point3) {
 bool DoLinesCross(Point line11, Point line12, Point line21, Point line22) {
 	bool right1 = TurnsRight(line11, line21, line22);
 	bool right2 = TurnsRight(line12, line21, line22);
-	if (right1 == right2) return false;
+	if (right1 == right2) 
+		return false;
 
 	bool right3 = TurnsRight(line21, line11, line12);
 	bool right4 = TurnsRight(line22, line11, line12);
-	if (right3 == right4) return false;
+	if (right3 == right4) 
+		return false;
 
 	return true;
 }
@@ -86,8 +87,10 @@ Point LineIntersection(Point line11, Point line12, Point line21, Point line22) {
 
 	float detDown = Determinant(detX1, detY1, detX2, detY2);
 
-	if (detDown == 0.0f) return Point{0.0f, 0.0f};
-	else return Point{(detXUp / detDown), (detYUp / detDown)};
+	if (detDown == 0.0f) 
+		return Point{0.0f, 0.0f};
+	else 
+		return Point{(detXUp / detDown), (detYUp / detDown)};
 }
 
 float DotProduct(Point vector1, Point vector2) {
@@ -97,9 +100,11 @@ float DotProduct(Point vector1, Point vector2) {
 Point NormalVector(Point vector) {
 	float length = VectorLength(vector);
 
-	if (length == 0.0f) return vector;
+	if (length == 0.0f) 
+		return vector;
 
-	return PointProd(1.0f / length, vector);
+	return 
+		PointProd(1.0f / length, vector);
 }
 
 // TODO: create a version of this where base is unit length?
