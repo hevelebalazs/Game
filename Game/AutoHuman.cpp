@@ -1,5 +1,6 @@
 #include "AutoHuman.h"
 #include "Geometry.h"
+#include "Memory.h"
 
 static void InitAutoHumanMovement(AutoHuman* autoHuman) {
 	float moveDistance = CityDistance(autoHuman->moveStartPoint.position, autoHuman->moveEndPoint.position);
@@ -8,20 +9,15 @@ static void InitAutoHumanMovement(AutoHuman* autoHuman) {
 	autoHuman->moveSeconds = 0.0f;
 }
 
-void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building) {
-	ClearPath(&autoHuman->movePath);
+void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
+	FreePath(autoHuman->moveNode, pathPool);
 
 	MapElem targetElem = BuildingElem(autoHuman->human.inBuilding);
 	MapElem nextElem = BuildingElem(building);
 
-	autoHuman->movePath = ConnectElems(autoHuman->human.map, targetElem, nextElem, autoHuman->moveHelper);
+	autoHuman->moveNode = ConnectElems(autoHuman->human.map, targetElem, nextElem, arena, tmpArena, pathPool);
 
-	if (autoHuman->movePath.nodeCount == 0) {
-		autoHuman->moveNode = 0;
-	}
-	else {
-		autoHuman->moveNode = &autoHuman->movePath.nodes[0];
-
+	if (autoHuman->moveNode) {
 		autoHuman->moveStartPoint = StartNodePoint(autoHuman->moveNode);
 		autoHuman->moveEndPoint = NextNodePoint(autoHuman->moveNode, autoHuman->moveStartPoint);
 
@@ -31,7 +27,7 @@ void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building) {
 	}
 }
 
-void UpdateAutoHuman(AutoHuman* autoHuman, float seconds) {
+void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
 	Human* human = &autoHuman->human;
 
 	if (human->inBuilding && human->inBuilding->type == BuildingRed) {
@@ -124,6 +120,6 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds) {
 			targetBuilding = RandomBuilding(*human->map);
 
 		if (targetBuilding) 
-			MoveAutoHumanToBuilding(autoHuman, targetBuilding);
+			MoveAutoHumanToBuilding(autoHuman, targetBuilding, arena, tmpArena, pathPool);
 	}
 }

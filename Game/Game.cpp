@@ -3,8 +3,10 @@
 #include "Game.h"
 #include "GridMap.h"
 #include "Math.h"
+#include "Memory.h"
 #include "Path.h"
 #include "PlayerVehicle.h"
+#include "Renderer.h"
 #include "Vehicle.h"
 
 void TogglePlayerVehicle(GameState* gameState) {
@@ -27,12 +29,61 @@ void TogglePlayerVehicle(GameState* gameState) {
 	}
 }
 
-void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
-	gameState->map = CreateGridMap((float)windowWidth, (float)windowHeight, 100);
-	gameState->pathHelper = PathHelperForMap(&gameState->map);
+static inline void ResizeCamera(Camera* camera, int width, int height) {
+	camera->screenSize = Point{(float)width, (float)height};
+	camera->center = PointProd(0.5f, camera->screenSize);
+}
 
-	// TODO: fix this when window is resized (using a memory arena will fix this nicely)
-	gameState->fillHelper = FillHelperForBitmap(gameState->renderer.bitmap);
+static inline void ResizeBitmap(Bitmap* bitmap, int width, int height) {
+	if (bitmap->memory)
+		delete bitmap->memory;
+
+	bitmap->width = width;
+	bitmap->height = height;
+
+	bitmap->info.bmiHeader.biSize = sizeof(bitmap->info.bmiHeader);
+	bitmap->info.bmiHeader.biWidth = bitmap->width;
+	bitmap->info.bmiHeader.biHeight = -bitmap->height;
+	bitmap->info.bmiHeader.biPlanes = 1;
+	bitmap->info.bmiHeader.biBitCount = 32;
+	bitmap->info.bmiHeader.biCompression = BI_RGB;
+
+	int bytesPerPixel = 4;
+	int bitmapMemorySize = (bitmap->width * bitmap->height) * bytesPerPixel;
+
+	bitmap->memory = (void*)(new char[bitmapMemorySize]);
+}
+
+void WinResize(GameState* gameState, int width, int height) {
+	if (!gameState)
+		return;
+
+	ResizeCamera(&gameState->camera, width, height);
+
+	ResizeBitmap(&gameState->renderer.bitmap, width, height);
+	ResizeBitmap(&gameState->maskRenderer.bitmap, width, height);
+
+	gameState->renderer.camera = &gameState->camera;
+	gameState->maskRenderer.camera = &gameState->camera;
+}
+
+void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
+	gameStorage->arena = CreateMemArena(10u * 1024u * 1024u);
+	gameStorage->tmpArena = CreateMemArena(10u * 1024u * 1024u);
+	MemArena* arena = &gameStorage->arena;
+	MemArena* tmpArena = &gameStorage->tmpArena;
+
+	gameStorage->gameState = ArenaPushType(arena, GameState);
+	GameState* gameState = gameStorage->gameState;
+	*gameState = GameState{};
+
+	gameState->map = CreateGridMap((float)windowWidth, (float)windowHeight, 100, arena, tmpArena);
+
+	int maxPathNodeCount = 10000;
+	gameState->pathPool.maxNodeCount = maxPathNodeCount;
+	gameState->pathPool.nodes = ArenaPushArray(arena, PathNode, maxPathNodeCount);
+
+	WinResize(gameState, windowWidth, windowHeight);
 
 	Intersection* intersection = RandomIntersection(gameState->map);
 	gameState->playerHuman.human.position = intersection->position;
@@ -64,26 +115,31 @@ void GameInit(GameState* gameState, int windowWidth, int windowHeight) {
 		vehicle->map = &gameState->map;
 		vehicle->maxSpeed = 30.0f;
 		autoVehicle->inBuilding = randomBuilding;
-		autoVehicle->moveHelper = &gameState->pathHelper;
 	}
 
 	Camera* camera = &gameState->camera;
-	camera->zoomSpeed = 5.0f;
+	camera->zoomSpeed = 10.0f;
 	camera->pixelCoordRatio = 10.0f;
 	camera->center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
+
+	gameState->renderer.camera = camera;
+	gameState->maskRenderer.camera = camera;
 }
 
 // TODO: get rid of the mousePosition parameter?
-void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
+void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
+	GameState* gameState = gameStorage->gameState;
+	MemArena* arena = &gameStorage->arena;
+	MemArena* tmpArena = &gameStorage->tmpArena;
+
 	for (int i = 0; i < gameState->map.intersectionCount; ++i) {
 		Intersection* intersection = &gameState->map.intersections[i];
-
 		UpdateTrafficLights(intersection, seconds);
 	}
 
 	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 		AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
-		UpdateAutoVehicle(autoVehicle, seconds);
+		UpdateAutoVehicle(autoVehicle, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
 	if (gameState->isPlayerVehicle) {
@@ -151,7 +207,8 @@ void GameUpdate(GameState* gameState, float seconds, Point mousePosition) {
 	UpdateCamera(camera, seconds);
 }
 
-void GameDraw(GameState* gameState) {
+void GameDraw(GameStorage* gameStorage) {
+	GameState* gameState = gameStorage->gameState;
 	Renderer renderer = gameState->renderer;
 
 	Color clearColor = Color{0.0f, 0.0f, 0.0f};
@@ -167,7 +224,7 @@ void GameDraw(GameState* gameState) {
 			Renderer maskRenderer = gameState->maskRenderer;
 			ClearScreen(maskRenderer, black);
 
-			DrawVisibleAreaInBuilding(maskRenderer, *inBuilding, gameState->playerHuman.human.position, gameState->fillHelper);
+			DrawVisibleAreaInBuilding(maskRenderer, *inBuilding, gameState->playerHuman.human.position, &gameStorage->tmpArena);
 
 			ApplyBitmapMask(renderer.bitmap, maskRenderer.bitmap);
 		}

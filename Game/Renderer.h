@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Bitmap.h"
+#include "Memory.h"
 #include "Point.h"
 #include "Renderer.h"
 
@@ -18,14 +19,7 @@ struct Renderer {
 	Camera* camera;
 };
 
-struct FillHelper {
-	int count;
-	int* rows;
-	int* cols;
-};
-
-FillHelper FillHelperForBitmap(Bitmap bitmap);
-void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelper);
+void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena);
 
 void ApplyBitmapMask(Bitmap bitmap, Bitmap mask);
 

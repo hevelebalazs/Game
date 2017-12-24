@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Bezier.h"
+#include "Memory.h"
 #include "Path.h"
 #include "Vehicle.h"
 
@@ -9,10 +10,6 @@ struct AutoVehicle {
 
 	Building* inBuilding;
 
-	Path movePath;
-	// TODO: does this belong to this struct?
-	//       or should it be passed to Update?
-	PathHelper* moveHelper;
 	PathNode* moveNode;
 	Building* moveTargetBuilding;
 
@@ -23,5 +20,5 @@ struct AutoVehicle {
 	float moveSeconds;
 };
 
-void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building);
-void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds);
+void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);

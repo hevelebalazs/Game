@@ -35,6 +35,14 @@ static Line VerticalWall(float top, float bottom, float x) {
 	return wall;
 }
 
+struct WallHelper {
+	int maxWallCount;
+	int wallCount;
+	Line* walls;
+	bool* hasDoor;
+	Line* doors;
+};
+
 static void AddHelperWall(WallHelper* helper, Line wall) {
 	if (helper->wallCount < helper->maxWallCount) {
 		helper->walls[helper->wallCount] = wall;
@@ -276,9 +284,16 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 	}
 }
 
-void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
-	BuildingInside* inside = new BuildingInside;
+void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpArena) {
+	BuildingInside* inside = ArenaPushType(arena, BuildingInside);
 	building->inside = inside;
+
+	WallHelper wallHelper = {};
+	wallHelper.maxWallCount = 100;
+	wallHelper.wallCount = 0;
+	wallHelper.walls = ArenaPushArray(tmpArena, Line, wallHelper.maxWallCount);
+	wallHelper.hasDoor = ArenaPushArray(tmpArena, bool, wallHelper.maxWallCount);
+	wallHelper.doors = ArenaPushArray(tmpArena, Line, wallHelper.maxWallCount);
 
 	float buildingWidth = (building->right - building->left);
 	float buildingHeight = (building->bottom - building->top);
@@ -293,46 +308,46 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 
 	Line leftWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->left + halfWallWidth);
 	if (entrance.x1 == building->left && entrance.x2 == building->left)
-		AddHelperWallWithDoor(wallHelper, leftWall, entrance);
+		AddHelperWallWithDoor(&wallHelper, leftWall, entrance);
 	else
-		AddHelperWall(wallHelper, leftWall);
+		AddHelperWall(&wallHelper, leftWall);
 
 	Line rightWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->right - halfWallWidth);
 	if (entrance.x1 == building->right && entrance.x2 == building->right)
-		AddHelperWallWithDoor(wallHelper, rightWall, entrance);
+		AddHelperWallWithDoor(&wallHelper, rightWall, entrance);
 	else
-		AddHelperWall(wallHelper, rightWall);
+		AddHelperWall(&wallHelper, rightWall);
 
 	Line topWall = HorizontalWall(building->left, building->right, building->top + halfWallWidth);
 	if (entrance.y1 == building->top && entrance.y2 == building->top)
-		AddHelperWallWithDoor(wallHelper, topWall, entrance);
+		AddHelperWallWithDoor(&wallHelper, topWall, entrance);
 	else
-		AddHelperWall(wallHelper, topWall);
+		AddHelperWall(&wallHelper, topWall);
 
 	Line bottomWall = HorizontalWall(building->left, building->right, building->bottom - halfWallWidth);
 	if (entrance.y1 == building->bottom && entrance.y2 == building->bottom)
-		AddHelperWallWithDoor(wallHelper, bottomWall, entrance);
+		AddHelperWallWithDoor(&wallHelper, bottomWall, entrance);
 	else
-		AddHelperWall(wallHelper, bottomWall);
+		AddHelperWall(&wallHelper, bottomWall);
 
-	GenerateWalls(building, wallHelper, 0, 1, 2, 3, minRoomSide, maxRoomSide);
+	GenerateWalls(building, &wallHelper, 0, 1, 2, 3, minRoomSide, maxRoomSide);
 
 	int wallCount = 0;
-	for (int i = 0; i < wallHelper->wallCount; ++i) {
-		if (wallHelper->hasDoor[i]) 
+	for (int i = 0; i < wallHelper.wallCount; ++i) {
+		if (wallHelper.hasDoor[i]) 
 			wallCount += 2;
 		else 
 			wallCount += 1;
 	}
 
 	inside->wallCount = 0;
-	inside->walls = new Line[wallCount];
+	inside->walls = ArenaPushArray(arena, Line, wallCount);
 
-	for (int i = 0; i < wallHelper->wallCount; ++i) {
-		Line wall = wallHelper->walls[i];
+	for (int i = 0; i < wallHelper.wallCount; ++i) {
+		Line wall = wallHelper.walls[i];
 
-		if (wallHelper->hasDoor[i]) {
-			Line door = wallHelper->doors[i];
+		if (wallHelper.hasDoor[i]) {
+			Line door = wallHelper.doors[i];
 
 			if (wall.x1 == wall.x2) {
 				Line topWall = VerticalWall(
@@ -374,6 +389,8 @@ void GenerateBuildingInside(Building* building, WallHelper* wallHelper) {
 			inside->wallCount++;
 		}
 	}
+
+	ArenaPopTo(tmpArena, wallHelper.walls);
 }
 
 // TODO: rewrite this using vector maths
@@ -916,6 +933,7 @@ struct CornerHelper {
 	int cornerCount;
 	Corner* corners;
 	Corner* tmpCorners;
+	MemArena* arena;
 };
 
 static void AddCorner(CornerHelper* helper, CornerType type, Point point) {
@@ -923,7 +941,7 @@ static void AddCorner(CornerHelper* helper, CornerType type, Point point) {
 	corner.type = type;
 	corner.point = point;
 
-	helper->corners[helper->cornerCount] = corner;
+	ArenaPush(helper->arena, Corner, corner);
 	helper->cornerCount++;
 }
 
@@ -1096,20 +1114,18 @@ static Point NextVisiblePointAlongRay(Building building, Point closePoint, Point
 //       something along the lines of rays on the bitmap?
 //       or something based on rooms and doors?
 //       or should there be a big area and each line would cut down from it if crossed?
-void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, FillHelper fillHelper) {
+void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, MemArena* tmpArena) {
 	BuildingInside* inside = building.inside;
 
 	Color lineColor = Color{1.0f, 1.0f, 1.0f};
 
-	// TODO: use a memory arena, it's much simpler than this
-	int maxVisibleCornerCount = (4 * inside->wallCount) + 4;
 	float maxDistance = (building.bottom - building.top) + (building.right - building.left);
 
 	CornerHelper helper = {};
 
+	helper.arena = tmpArena;
 	helper.cornerCount = 0;
-	helper.corners = new Corner[maxVisibleCornerCount];
-	helper.tmpCorners = new Corner[maxVisibleCornerCount];
+	helper.corners = ArenaPushArray(tmpArena, Corner, 0);
 
 	for (int i = 0; i < inside->wallCount; ++i) {
 		Line wall = inside->walls[i];
@@ -1145,9 +1161,11 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 	if (IsCornerVisible(inside, center, bottomRight))
 		AddCorner(&helper, CornerEdge, bottomRight);
 
+	helper.tmpCorners = ArenaPushArray(tmpArena, Corner, helper.cornerCount);
+
 	SortCorners(&helper, center);
 
-	Point* points = new Point[2 * helper.cornerCount];
+	Point* points = ArenaPushArray(tmpArena, Point, 0);
 	int pointCount = 0;
 
 	for (int i = 0; i < helper.cornerCount; ++i) {
@@ -1156,15 +1174,15 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 		Point farPoint = NextVisiblePointAlongRay(building, center, corner.point, maxDistance);
 
 		if ((corner.type == CornerEnter) && !PointEqual(farPoint, corner.point)) {
-			points[pointCount] = farPoint;
+			ArenaPushVar(tmpArena, farPoint);
 			pointCount++;
 		}
 
-		points[pointCount] = corner.point;
+		ArenaPushVar(tmpArena, corner.point);
 		pointCount++;
 
 		if ((corner.type == CornerLeave) && !PointEqual(farPoint, corner.point)) {
-			points[pointCount] = farPoint;
+			ArenaPushVar(tmpArena, farPoint);
 			pointCount++;
 		}
 	}
@@ -1181,11 +1199,9 @@ void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point cente
 		Bresenham(renderer, point, nextPoint, lineColor);
 	}
 
-	FloodFill(renderer, center, lineColor, fillHelper);
+	FloodFill(renderer, center, lineColor, tmpArena);
 
-	delete points;
-	delete helper.corners;
-	delete helper.tmpCorners;
+	ArenaPopTo(tmpArena, helper.corners);
 }
 
 void HighlightBuildingConnector(Renderer renderer, Building building, Color color) {

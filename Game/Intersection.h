@@ -6,6 +6,7 @@
 struct Road;
 
 enum TrafficLightColor {
+	TrafficLightNone,
 	TrafficLightRed,
 	TrafficLightYellow,
 	TrafficLightGreen

@@ -1,5 +1,6 @@
 #include "Geometry.h"
 #include "Math.h"
+#include "Memory.h"
 #include "Point.h"
 #include "Renderer.h"
 
@@ -34,15 +35,6 @@ static inline unsigned int ColorCode(Color color) {
 	return colorCode;
 }
 
-FillHelper FillHelperForBitmap(Bitmap bitmap) {
-	FillHelper result = {};
-	result.count = 0;
-	result.rows = new int[bitmap.width * bitmap.height];
-	result.cols = new int[bitmap.width * bitmap.height];
-
-	return result;
-}
-
 static inline unsigned int MixColorCodes(unsigned int colorCode1, unsigned int colorCode2) {
 	// TODO: is ANDing a good idea here?
 	return (colorCode1 & colorCode2);
@@ -62,40 +54,44 @@ void ApplyBitmapMask(Bitmap bitmap, Bitmap mask) {
 	}
 }
 
-static inline void AddPosition(FillHelper* fillHelper, int row, int col) {
-	fillHelper->rows[fillHelper->count] = row;
-	fillHelper->cols[fillHelper->count] = col;
-	fillHelper->count++;
-}
+struct PixelPosition {
+	int row;
+	int col;
+};
 
-// TODO: use a temporary memory arena so helpers are no longer needed!
-void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelper) {
+void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena) {
 	unsigned int colorCode = ColorCode(color);
 
 	Bitmap bitmap = renderer.bitmap;
 	Camera camera = *renderer.camera;
 
-	fillHelper.count = 0;
+	int positionCount = 0;
+	PixelPosition* positions = ArenaPushArray(tmpArena, PixelPosition, 0);
 	
 	int row = (int)CoordYtoPixel(camera, start.y);
 	int col = (int)CoordXtoPixel(camera, start.x);
-	AddPosition(&fillHelper, row, col);
+
+	ArenaPush(tmpArena, int, row);
+	ArenaPush(tmpArena, int, col);
+	positionCount++;
 
 	bool fillHorizontally = true;
 	int directionSwitchPosition = 1;
 
-	AddPosition(&fillHelper, row, col);
+	ArenaPush(tmpArena, int, row);
+	ArenaPush(tmpArena, int, col);
+	positionCount++;
 
-	SetPixel(bitmap, fillHelper.rows[0], fillHelper.cols[0], colorCode);
+	SetPixel(bitmap, positions[0].row, positions[0].col, colorCode);
 
-	for (int i = 0; i < fillHelper.count; ++i) {
+	for (int i = 0; i < positionCount; ++i) {
 		if (i == directionSwitchPosition) {
 			fillHorizontally = (!fillHorizontally);
-			directionSwitchPosition = fillHelper.count + 1;
+			directionSwitchPosition = positionCount + 1;
 		}
 
-		int row = fillHelper.rows[i];
-		int col = fillHelper.cols[i];
+		int row = positions[i].row;
+		int col = positions[i].col;
 
 		unsigned int* pixelStart = GetPixelAddress(bitmap, row, col);
 		unsigned int* pixel = 0;
@@ -108,7 +104,9 @@ void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelpe
 				if (*pixel == colorCode) break;
 				*pixel = colorCode;
 
-				AddPosition(&fillHelper, row, left);
+				ArenaPush(tmpArena, int, row);
+				ArenaPush(tmpArena, int, left);
+				positionCount++;
 			}
 
 			pixel = pixelStart;
@@ -118,7 +116,9 @@ void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelpe
 				if (*pixel == colorCode) break;
 				*pixel = colorCode;
 
-				AddPosition(&fillHelper, row, right);
+				ArenaPush(tmpArena, int, row);
+				ArenaPush(tmpArena, int, right);
+				positionCount++;
 			}
 		}
 		else {
@@ -129,7 +129,9 @@ void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelpe
 				if (*pixel == colorCode) break;
 				*pixel = colorCode;
 
-				AddPosition(&fillHelper, top, col);
+				ArenaPush(tmpArena, int, top);
+				ArenaPush(tmpArena, int, col);
+				positionCount++;
 			}
 
 			pixel = pixelStart;
@@ -139,10 +141,14 @@ void FloodFill(Renderer renderer, Point start, Color color, FillHelper fillHelpe
 				if (*pixel == colorCode) break;
 				*pixel = colorCode;
 
-				AddPosition(&fillHelper, bottom, col);
+				ArenaPush(tmpArena, int, bottom);
+				ArenaPush(tmpArena, int, col);
+				positionCount++;
 			}
 		}
 	}
+
+	ArenaPopTo(tmpArena, positions);
 }
 
 void SmoothZoom(Camera* camera, float pixelCoordRatio) {

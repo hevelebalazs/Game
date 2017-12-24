@@ -1,6 +1,7 @@
 // TODO: rename "Vehicle" to "Car" because it sounds cooler?
 #include "AutoVehicle.h"
 #include "Geometry.h"
+#include "Memory.h"
 #include "MapElem.h"
 
 void InitAutoVehicleMovement(AutoVehicle* autoVehicle) {
@@ -13,20 +14,15 @@ void InitAutoVehicleMovement(AutoVehicle* autoVehicle) {
 	autoVehicle->moveSeconds = 0.0f;
 }
 
-void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building) {
-	ClearPath(&autoVehicle->movePath);
+void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
+	FreePath(autoVehicle->moveNode, pathPool);
 
 	MapElem targetElem = BuildingElem(autoVehicle->inBuilding);
 	MapElem nextElem = BuildingElem(building);
 
-	autoVehicle->movePath = ConnectElems(autoVehicle->vehicle.map, targetElem, nextElem, autoVehicle->moveHelper);
+	autoVehicle->moveNode = ConnectElems(autoVehicle->vehicle.map, targetElem, nextElem, arena, tmpArena, pathPool);
 
-	if (autoVehicle->movePath.nodeCount == 0) {
-		autoVehicle->moveNode = 0;
-	}
-	else {
-		autoVehicle->moveNode = &autoVehicle->movePath.nodes[0];
-
+	if (autoVehicle->moveNode) {
 		autoVehicle->moveStartPoint = StartNodePoint(autoVehicle->moveNode);
 		autoVehicle->moveEndPoint = NextNodePoint(autoVehicle->moveNode, autoVehicle->moveStartPoint);
 
@@ -36,7 +32,7 @@ void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building) {
 	}
 }
 
-void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds) {
+void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
 	Vehicle* vehicle = &autoVehicle->vehicle;
 
 	if (autoVehicle->moveTargetBuilding) {
@@ -122,6 +118,6 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds) {
 	}
 	else {
 		Building* targetBuilding = RandomBuilding(*vehicle->map);
-		MoveAutoVehicleToBuilding(autoVehicle, targetBuilding);
+		MoveAutoVehicleToBuilding(autoVehicle, targetBuilding, arena, tmpArena, pathPool);
 	}
 }

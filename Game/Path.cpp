@@ -2,25 +2,15 @@
 
 #include "Bezier.h"
 #include "Geometry.h"
+#include "Memory.h"
 #include "Path.h"
 
-// TODO: should the helper be attached to the map?
-PathHelper PathHelperForMap(Map* map) {
-	PathHelper helper;
-	helper.nodes = new PathNode[map->intersectionCount + map->roadCount];
-	helper.isIntersectionHelper = new int[map->intersectionCount];
-	helper.isRoadHelper = new int[map->roadCount];
-	helper.sourceIndex = new int[map->intersectionCount + map->roadCount];
+struct Path {
+	int nodeCount;
+	PathNode *nodes;
+};
 
-	return helper;
-}
-
-static Path EmptyPath() {
-	Path path = {};
-	return path;
-}
-
-static void PushNode(Path* path, PathNode node) {
+static inline void PushNode(Path* path, PathNode node) {
 	if (node.elem.type > 4) throw 1;
 
 	// TODO: create a resizable template array
@@ -30,52 +20,52 @@ static void PushNode(Path* path, PathNode node) {
 	path->nodeCount++;
 }
 
-static PathNode ElemNode(MapElem elem) {
+static inline PathNode ElemNode(MapElem elem) {
 	PathNode node = {};
 	node.elem = elem;
 	return node;
 }
 
-static void PushElem(Path* path, MapElem elem) {
+static inline void PushElem(Path* path, MapElem elem) {
 	PathNode node = ElemNode(elem);
 
 	PushNode(path, node);
 }
 
-static PathNode RoadNode(Road* road) {
+static inline PathNode RoadNode(Road* road) {
 	PathNode node = {};
-	node.elem.type = MapElemRoad;
-	node.elem.road = road;
+	node.elem = RoadElem(road);
+	node.next = 0;
 	return node;
 }
 
-static PathNode IntersectionNode(Intersection* intersection) {
+static inline PathNode IntersectionNode(Intersection* intersection) {
 	PathNode node = {};
-	node.elem.type = MapElemIntersection;
-	node.elem.intersection = intersection;
+	node.elem = IntersectionElem(intersection);
+	node.next = 0;
 	return node;
 }
 
-static PathNode BuildingNode(Building* building) {
+static inline PathNode BuildingNode(Building* building) {
 	PathNode node = {};
-	node.elem.type = MapElemBuilding;
-	node.elem.building = building;
+	node.elem = BuildingElem(building);
+	node.next = 0;
 	return node;
 }
 
-static void PushRoad(Path* path, Road* road) {
+static inline void PushRoad(Path* path, Road* road) {
 	PathNode node = RoadNode(road);
 
 	PushNode(path, node);
 }
 
-static void PushIntersection(Path* path, Intersection* intersection) {
+static inline void PushIntersection(Path* path, Intersection* intersection) {
 	PathNode node = IntersectionNode(intersection);
 
 	PushNode(path, node);
 }
 
-static void PushBuilding(Path* path, Building* building) {
+static inline void PushBuilding(Path* path, Building* building) {
 	PathNode node = BuildingNode(building);
 
 	PushNode(path, node);
@@ -92,6 +82,15 @@ static void InvertSegment(Path* path, int startIndex, int endIndex) {
 	}
 }
 
+struct PathHelper {
+	PathNode* nodes;
+	int nodeCount;
+
+	int* isIntersectionHelper;
+	int* isRoadHelper;
+	int* sourceIndex;
+};
+
 static void PushFromBuildingToRoadElem(Path* path, Building* building) {
 	while (building->connectElem.type == MapElemBuilding) {
 		PushBuilding(path, building);
@@ -104,8 +103,8 @@ static void PushFromBuildingToRoadElem(Path* path, Building* building) {
 static void PushFromRoadElemToBuilding(Path* path, Building *building) {
 	int startIndex = path->nodeCount;
 	PushFromBuildingToRoadElem(path, building);
-	int endIndex = path->nodeCount - 1;
 
+	int endIndex = path->nodeCount - 1;
 	InvertSegment(path, startIndex, endIndex);
 }
 
@@ -253,11 +252,9 @@ static void PushDownTheTree(Path* path, Building* buildingStart, Building* build
 
 static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
 	int startIndex = path->nodeCount;
-
 	PushDownTheTree(path, buildingEnd, buildingStart);
 
 	int endIndex = path->nodeCount - 1;
-
 	InvertSegment(path, startIndex, endIndex);
 }
 
@@ -269,21 +266,62 @@ MapElem GetConnectRoadElem(Building* building) {
 	return building->connectElem;
 }
 
-Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper) {
-	Path path = EmptyPath();
+static PathNode* PushPathToArena(Path path, MemArena* arena, PathPool* pathPool) {
+	PathNode* result = 0;
+	PathNode* previous = 0;
+
+	for (int i = 0; i < path.nodeCount; ++i) {
+		PathNode* address = 0;
+
+		if (pathPool->firstFreeNode) {
+			address = pathPool->firstFreeNode;
+			pathPool->firstFreeNode = pathPool->firstFreeNode->next;
+		}
+		else if (pathPool->nodeCount < pathPool->maxNodeCount) {
+			address = &pathPool->nodes[pathPool->nodeCount];
+			pathPool->nodeCount++;
+		}
+		else {
+			// TODO: introduce asserts
+			break;
+		}
+
+		*address = path.nodes[i];
+		address->next = 0;
+
+		if (previous)
+			previous->next = address;
+
+		if (!result)
+			result = address;
+
+		previous = address;
+	}
+
+	return result;
+}
+
+PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
+	Path path = {};
+
+	PathHelper helper = {};
+	helper.nodes = ArenaPushArray(tmpArena, PathNode, map->intersectionCount + map->roadCount);
+	helper.isIntersectionHelper = ArenaPushArray(tmpArena, int, map->intersectionCount);
+	helper.isRoadHelper = ArenaPushArray(tmpArena, int, map->roadCount);
+	helper.sourceIndex = ArenaPushArray(tmpArena, int, map->intersectionCount + map->roadCount);
+
+	bool finished = false;
 
 	if (elemStart.address == elemEnd.address) {
 		PushElem(&path, elemStart);
 
-		return path;
+		finished = true;
 	}
-
-	bool finished = false;
 
 	Road* endConnectRoad = 0;
 	Road* startConnectRoad = 0;
 
-	if (elemStart.type == MapElemBuilding && elemEnd.type == MapElemBuilding) {
+	if (!finished && elemStart.type == MapElemBuilding && elemEnd.type == MapElemBuilding) {
 		Building* buildingStart = elemStart.building;
 		Building* buildingEnd = elemEnd.building;
 
@@ -310,6 +348,12 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 	}
 	
 	if (!finished) {
+		for (int i = 0; i < map->roadCount; ++i)
+			helper.isRoadHelper[i] = 0;
+
+		for (int i = 0; i < map->intersectionCount; ++i)
+			helper.isIntersectionHelper[i] = 0;
+
 		MapElem roadElemStart = {};
 		if (elemStart.type == MapElemBuilding) {
 			Building* startBuilding = elemStart.building;
@@ -391,7 +435,7 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 		if (startConnectRoad)
 			PushRoad(&path, startConnectRoad);
 
-		PushConnectRoadElems(&path, map, roadElemStart, roadElemEnd, helper);
+		PushConnectRoadElems(&path, map, roadElemStart, roadElemEnd, &helper);
 
 		if (endConnectRoad)
 			PushRoad(&path, endConnectRoad);
@@ -400,25 +444,37 @@ Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* help
 			PushFromRoadElemToBuilding(&path, elemEnd.building);
 	}
 
-	if (path.nodeCount == 0)
-		return path;
-	
-	for (int i = 0; i < path.nodeCount - 1; ++i) {
+	for (int i = 0; i < path.nodeCount - 1; ++i)
 		path.nodes[i].next = &path.nodes[i + 1];
+
+	PathNode* firstNode = PushPathToArena(path, arena, pathPool);
+
+	ArenaPopTo(tmpArena, helper.nodes);
+
+	return firstNode;
+}
+
+void FreePathNode(PathNode* node, PathPool* pathPool) {
+	if (node) {
+		node->next = pathPool->firstFreeNode;
+		pathPool->firstFreeNode = node;
 	}
-
-	path.nodes[path.nodeCount - 1].next = 0;
-
-	return path;
 }
 
-void ClearPath(Path* path) {
-	free(path->nodes);
-	path->nodes = 0;
-	path->nodeCount = 0;
+void FreePath(PathNode* firstNode, PathPool* pathPool) {
+	if (firstNode) {
+		PathNode* lastNode = firstNode;
+
+		while (lastNode && lastNode->next)
+			lastNode = lastNode->next;
+
+		lastNode->next = pathPool->firstFreeNode;
+		pathPool->firstFreeNode = firstNode;
+	}
 }
 
-static void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float width) {
+// TODO: move this to Renderer.cpp?
+static inline void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float width) {
 	if (point1.x == point2.x) {
 		point1.x -= width * 0.5f;
 		point2.x += width * 0.5f;
@@ -794,9 +850,10 @@ bool IsNodeEndPoint(PathNode* node, DirectedPoint point) {
 	return result;
 }
 
-void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
-	if (path->nodeCount > 0) {
-		PathNode* node = &path->nodes[0];
+void DrawPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth) {
+	PathNode* node = firstNode;
+
+	if (node) {
 		DirectedPoint point = StartNodePoint(node);
 
 		while (node) {
@@ -814,10 +871,11 @@ void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth) {
 	}
 }
 
-void DrawBezierPath(Path* path, Renderer renderer, Color color, float lineWidth) {
+void DrawBezierPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth) {
+	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
-	if (path->nodeCount > 0) {
-		PathNode* node = &path->nodes[0];
+
+	if (node) {
 		DirectedPoint point = StartNodePoint(node);
 
 		while (node) {

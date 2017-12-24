@@ -16,48 +16,12 @@
 
 static bool running;
 
-GameState globalGameState;
+GameState* globalGameState;
+GameStorage globalGameStorage;
 
 static float globalTargetFPS = 60.0f;
 static float globalTargetFrameS = 1.0f / globalTargetFPS;
 static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
-
-static inline void ResizeCamera(Camera* camera, int width, int height) {
-	camera->pixelCoordRatio = 1.0f;
-	camera->screenSize = Point{(float)width, (float)height};
-	camera->center = PointProd(0.5f, camera->screenSize);
-}
-
-static inline void ResizeBitmap(Bitmap* bitmap, int width, int height) {
-	if (bitmap->memory)
-		delete bitmap->memory;
-
-	bitmap->width = width;
-	bitmap->height = height;
-
-	bitmap->info.bmiHeader.biSize = sizeof(bitmap->info.bmiHeader);
-	bitmap->info.bmiHeader.biWidth = bitmap->width;
-	bitmap->info.bmiHeader.biHeight = -bitmap->height;
-	bitmap->info.bmiHeader.biPlanes = 1;
-	bitmap->info.bmiHeader.biBitCount = 32;
-	bitmap->info.bmiHeader.biCompression = BI_RGB;
-
-	int bytesPerPixel = 4;
-	int bitmapMemorySize = (bitmap->width * bitmap->height) * bytesPerPixel;
-
-	bitmap->memory = (void*)(new char[bitmapMemorySize]);
-}
-
-// TODO: could this be moved into Game.cpp?
-void WinResize(GameState* gameState, int width, int height) {
-	ResizeCamera(&gameState->camera, width, height);
-
-	ResizeBitmap(&gameState->renderer.bitmap, width, height);
-	ResizeBitmap(&gameState->maskRenderer.bitmap, width, height);
-
-	gameState->renderer.camera = &gameState->camera;
-	gameState->maskRenderer.camera = &gameState->camera;
-}
 
 static Point WinMousePosition(HWND window) {
 	POINT cursorPoint = {};
@@ -68,7 +32,7 @@ static Point WinMousePosition(HWND window) {
 	point.x = (float)cursorPoint.x;
 	point.y = (float)cursorPoint.y;
 
-	point = PixelToCoord(*globalGameState.renderer.camera, point);
+	point = PixelToCoord(*globalGameState->renderer.camera, point);
 
 	return point;
 }
@@ -76,7 +40,7 @@ static Point WinMousePosition(HWND window) {
 void WinDraw(HWND window) {
 	Point mousePoint = WinMousePosition(window);
 
-	GameDraw(&globalGameState);
+	GameDraw(&globalGameStorage);
 }
 
 void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
@@ -106,7 +70,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			GetClientRect(window, &clientRect);
 			int width = clientRect.right - clientRect.left;
 			int height = clientRect.bottom - clientRect.top;
-			WinResize(&globalGameState, width, height);
+			WinResize(globalGameState, width, height);
 			break;
 		}
 
@@ -117,7 +81,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
 
-			WinUpdate(globalGameState.renderer, context, clientRect);
+			WinUpdate(globalGameState->renderer, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -128,23 +92,23 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 
 			switch (keyCode) {
 				case 'W': {
-					globalGameState.playerHuman.moveUp = false;
-					globalGameState.playerVehicle.engineForce = 0.0f;
+					globalGameState->playerHuman.moveUp = false;
+					globalGameState->playerVehicle.engineForce = 0.0f;
 					break;
 				}
 				case 'S': {
-					globalGameState.playerHuman.moveDown = false;
-					globalGameState.playerVehicle.engineForce = 0.0f;
+					globalGameState->playerHuman.moveDown = false;
+					globalGameState->playerVehicle.engineForce = 0.0f;
 					break;
 				}
 				case 'A': {
-					globalGameState.playerHuman.moveLeft = false;
-					globalGameState.playerVehicle.turnDirection = 0.0f;
+					globalGameState->playerHuman.moveLeft = false;
+					globalGameState->playerVehicle.turnDirection = 0.0f;
 					break;
 				}
 				case 'D': {
-					globalGameState.playerHuman.moveRight = false;
-					globalGameState.playerVehicle.turnDirection = 0.0f;
+					globalGameState->playerHuman.moveRight = false;
+					globalGameState->playerVehicle.turnDirection = 0.0f;
 					break;
 				}
 			}
@@ -156,27 +120,27 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 
 			switch (keyCode) {
 				case 'W': {
-					globalGameState.playerHuman.moveUp = true;
-					globalGameState.playerVehicle.engineForce = globalGameState.playerVehicle.maxEngineForce;
+					globalGameState->playerHuman.moveUp = true;
+					globalGameState->playerVehicle.engineForce = globalGameState->playerVehicle.maxEngineForce;
 					break;
 				}
 				case 'S': {
-					globalGameState.playerHuman.moveDown = true;
-					globalGameState.playerVehicle.engineForce = -globalGameState.playerVehicle.breakForce;
+					globalGameState->playerHuman.moveDown = true;
+					globalGameState->playerVehicle.engineForce = -globalGameState->playerVehicle.breakForce;
 					break;
 				}
 				case 'A': {
-					globalGameState.playerHuman.moveLeft = true;
-					globalGameState.playerVehicle.turnDirection = -1.0f;
+					globalGameState->playerHuman.moveLeft = true;
+					globalGameState->playerVehicle.turnDirection = -1.0f;
 					break;
 				}
 				case 'D': {
-					globalGameState.playerHuman.moveRight = true;
-					globalGameState.playerVehicle.turnDirection = 1.0f;
+					globalGameState->playerHuman.moveRight = true;
+					globalGameState->playerVehicle.turnDirection = 1.0f;
 					break;
 				}
 				case 'F': {
-					TogglePlayerVehicle(&globalGameState);
+					TogglePlayerVehicle(globalGameState);
 					break;
 				}
 			}
@@ -246,7 +210,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
 
-	GameInit(&globalGameState, width, height);
+	GameInit(&globalGameStorage, width, height);
+	globalGameState = globalGameStorage.gameState;
+
+	WinResize(globalGameState, width, height);
 
 	timeBeginPeriod(1);
 
@@ -269,7 +236,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 		}
 
 		Point mousePosition = WinMousePosition(window);
-		GameUpdate(&globalGameState, elapsedS, mousePosition);
+		GameUpdate(&globalGameStorage, elapsedS, mousePosition);
 
 		WinDraw(window);
 
@@ -278,7 +245,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 		HDC context = GetDC(window);
 
-		WinUpdate(globalGameState.renderer, context, rect);
+		WinUpdate(globalGameState->renderer, context, rect);
 
 		ReleaseDC(window, context);
 

@@ -3,6 +3,7 @@
 #include "BuildingType.h"
 #include "Geometry.h"
 #include "MapElem.h"
+#include "Memory.h"
 #include "Point.h"
 #include "Renderer.h"
 #include "Road.h"
@@ -12,14 +13,6 @@ extern float entranceWidth;
 extern float wallWidth;
 
 struct MapElem;
-
-struct WallHelper {
-	int maxWallCount;
-	int wallCount;
-	Line* walls;
-	bool* hasDoor;
-	Line* doors;
-};
 
 enum CrossType {
 	CrossNone,
@@ -65,7 +58,7 @@ struct Building {
 	BuildingInside* inside;
 };
 
-void GenerateBuildingInside(Building* building, WallHelper* wallHelper);
+void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpArena);
 
 void ConnectBuildingToElem(Building* building, MapElem elem);
 bool IsPointInBuilding(Point point, Building building);
@@ -81,7 +74,7 @@ void HighlightBuilding(Renderer renderer, Building building, Color color);
 void DrawBuilding(Renderer renderer, Building building);
 void DrawBuildingInside(Renderer renderer, Building building);
 
-void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, FillHelper fillHelper);
+void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, MemArena* tmpArena);
 
 void HighlightBuildingConnector(Renderer renderer, Building building, Color color);
 void DrawConnectRoad(Renderer renderer, Building building);

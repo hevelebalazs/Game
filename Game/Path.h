@@ -3,6 +3,7 @@
 #include "Building.h"
 #include "Intersection.h"
 #include "Map.h"
+#include "Memory.h"
 #include "Renderer.h"
 #include "Road.h"
 
@@ -11,29 +12,21 @@ struct PathNode {
 	PathNode* next;
 };
 
-struct Path {
-	int nodeCount;
-	PathNode *nodes;
-};
-
-struct PathHelper {
+struct PathPool {
 	PathNode* nodes;
 	int nodeCount;
-
-	int* isIntersectionHelper;
-	int* isRoadHelper;
-	int* sourceIndex;
+	int maxNodeCount;
+	PathNode* firstFreeNode;
 };
 
 DirectedPoint StartNodePoint(PathNode* node);
 DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint);
 bool IsNodeEndPoint(PathNode* node, DirectedPoint point);
 
-PathHelper PathHelperForMap(Map* map);
+PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
 
-Path ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper);
+void FreePathNode(PathNode* node, PathPool* pathPool);
+void FreePath(PathNode* firstNode, PathPool* pathPool);
 
-void ClearPath(Path* path);
-
-void DrawPath(Path* path, Renderer renderer, Color color, float lineWidth);
-void DrawBezierPath(Path* path, Renderer renderer, Color color, float lineWidth);
+void DrawPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth);
+void DrawBezierPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth);

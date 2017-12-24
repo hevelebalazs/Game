@@ -1,3 +1,5 @@
 #include "Map.h"
 
-Map CreateGridMap(float width, float height, float intersectionDistance);
+struct MemArena;
+
+Map CreateGridMap(float width, float height, float intersectionDistance, MemArena* arena, MemArena* tmpArena);

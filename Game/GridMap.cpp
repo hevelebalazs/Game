@@ -1,5 +1,6 @@
 #include "GridMap.h"
 #include "Math.h"
+#include "Memory.h"
 
 struct GridPosition {
 	int row;
@@ -130,6 +131,9 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 // TODO: can the recursion cause any performance or memory issue?
 // TODO: a stack overflow has happened here, find out the issue
 static void CalculateTreeHeight(Building* building) {
+	if (building->connectTreeHeight > 0)
+		return;
+
 	if (building->connectElem.type == MapElemBuilding) {
 		Building* connectBuilding = building->connectElem.building;
 
@@ -196,9 +200,8 @@ static void RemoveRoad(Map* map, Road* road) {
 		ReindexIntersection(road->intersection2, oldRoad, road);
 }
 
-Map CreateGridMap(float width, float height, float intersectionDistance) {
-	Map map;
-
+Map CreateGridMap(float width, float height, float intersectionDistance, MemArena* arena, MemArena* tmpArena) {
+	Map map = {};
 	map.width = width;
 	map.height = height;
 
@@ -212,12 +215,13 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 	int intersectionCount = colCount * rowCount;
 
-	map.intersections = new Intersection[intersectionCount];
+	map.intersections = ArenaPushArray(arena, Intersection, intersectionCount);
 	map.intersectionCount = intersectionCount;
 
 	int intersectionIndex = 0;
 	for (int row = 0; row < rowCount; ++row) {
 		for (int col = 0; col < colCount; ++col) {
+			map.intersections[intersectionIndex] = Intersection{};
 			map.intersections[intersectionIndex].position = PointSum(
 				leftTop,
 				PointProd((float)intersectionDistance, Point{(float)col, (float)row})
@@ -227,14 +231,14 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		}
 	}
 
-	GridPosition* connectedPositions = new GridPosition[intersectionCount];
+	GridPosition* connectedPositions = ArenaPushArray(tmpArena, GridPosition, intersectionCount);
 	int connectedCount = 0;
 
 	int maxRoadCount = colCount * (rowCount - 1) + (colCount - 1) * rowCount;
 	int roadCount = maxRoadCount / 2;
 	int createdRoadCount = 0;
 
-	map.roads = new Road[roadCount];
+	map.roads = ArenaPushArray(arena, Road, roadCount);
 	map.roadCount = roadCount;
 
 	InitRandom();
@@ -318,18 +322,17 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		}
 	}
 
-	delete[] connectedPositions;
+	ArenaPopTo(tmpArena, connectedPositions);
 
 	int maxAreaCount = (rowCount + 1) * (colCount + 1);
-	map.buildings = new Building[4 * maxAreaCount];
+	map.buildings = ArenaPushArray(arena, Building, 4 * maxAreaCount);
 
 	map.buildingCount = 0;
 
 	float buildingPadding = intersectionDistance / 10.0f;
 
-	BuildArea** gridAreas = new BuildArea *[maxAreaCount];
-
-	BuildArea* buildAreas = new BuildArea[maxAreaCount];
+	BuildArea** gridAreas = ArenaPushArray(tmpArena, BuildArea*, maxAreaCount);
+	BuildArea* buildAreas = ArenaPushArray(tmpArena, BuildArea, maxAreaCount);
 	int buildAreaCount = 0;
 
 	for (int i = 0; i < maxAreaCount; ++i) {
@@ -419,12 +422,10 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		}
 	}
 
-	for (int i = 0; i < buildAreaCount; ++i) {
+	for (int i = 0; i < buildAreaCount; ++i)
 		GenerateBuildings(&map, buildAreas[i], buildingPadding, intersectionDistance * 0.25f, intersectionDistance * 1.0f);
-	}
 
-	delete[] gridAreas;
-	delete[] buildAreas;
+	ArenaPopTo(tmpArena, gridAreas);
 
 	int i = 0;
 	while (i < map.intersectionCount) {
@@ -513,13 +514,6 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 		}
 	}
 
-	WallHelper wallHelper = {};
-	wallHelper.maxWallCount = 100;
-	wallHelper.wallCount = 0;
-	wallHelper.walls = new Line[wallHelper.maxWallCount];
-	wallHelper.hasDoor = new bool[wallHelper.maxWallCount];
-	wallHelper.doors = new Line[wallHelper.maxWallCount];
-
 	for (int i = 0; i < map.buildingCount; ++i) {
 		Building* building = &map.buildings[i];
 
@@ -528,13 +522,8 @@ Map CreateGridMap(float width, float height, float intersectionDistance) {
 
 		building->type = (BuildingType)(rand() % 4);
 
-		wallHelper.wallCount = 0;
-		GenerateBuildingInside(building, &wallHelper);
+		GenerateBuildingInside(building, arena, tmpArena);
 	}
-
-	delete[] wallHelper.walls;
-	delete[] wallHelper.hasDoor;
-	delete[] wallHelper.doors;
 
 	return map;
 }

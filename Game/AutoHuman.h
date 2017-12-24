@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Human.h"
+#include "Memory.h"
+#include "Path.h"
 
 struct AutoHuman {
 	Human human;
@@ -9,10 +11,6 @@ struct AutoHuman {
 	float needGreenSpeed;
 	float needBlueSpeed;
 
-	Path movePath;
-	// TODO: does this belong to this struct?
-	//       or should it be passed to Update?
-	PathHelper* moveHelper;
 	PathNode* moveNode;
 	Building* moveTargetBuilding;
 	DirectedPoint moveStartPoint;
@@ -21,4 +19,5 @@ struct AutoHuman {
 	float moveSeconds;
 };
 
-void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building);
+void MoveAutoHumanToBuilding(AutoHuman* autoHuman, Building* building, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
