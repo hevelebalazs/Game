@@ -14,6 +14,7 @@ struct PlayerVehicle {
 	float turnDirection;
 
 	Point velocity;
+	Color defaultColor;
 
 	float secondsRed;
 };

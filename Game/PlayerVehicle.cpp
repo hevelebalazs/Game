@@ -17,12 +17,12 @@ void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds) {
 	Point frontWheel = PointProd(vehicle->length * 0.5f, direction);
 	Point rearWheel  = PointProd(-vehicle->length * 0.5f, direction);
 
-	float maxControlSpeed = 2.0f;
-	float controlTurnAngle = 5.0f;
+	float maxControlSpeed = 10.0f;
+	float controlTurnAngle = PI * 0.5f;
 
-	float turnAngle = 0.0f;
+	float turnAngle = controlTurnAngle * playerVehicle->turnDirection;
 	if (speed > maxControlSpeed)
-		turnAngle = controlTurnAngle * playerVehicle->turnDirection * (maxControlSpeed / speed);
+		turnAngle *= (maxControlSpeed / speed);
 	
 	bool backwards = false;
 	if (DotProduct(direction, playerVehicle->velocity) < 0.0)
@@ -66,7 +66,7 @@ void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds) {
 
 		if (playerVehicle->secondsRed < 0.0f) {
 			playerVehicle->secondsRed = 0.0f;
-			vehicle->color = Color{0.0f, 0.0f, 1.0f};
+			vehicle->color = playerVehicle->defaultColor;
 		}
 	}
 }

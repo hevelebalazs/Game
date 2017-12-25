@@ -15,8 +15,6 @@ void InitAutoVehicleMovement(AutoVehicle* autoVehicle) {
 }
 
 void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
-	FreePath(autoVehicle->moveNode, pathPool);
-
 	MapElem targetElem = BuildingElem(autoVehicle->inBuilding);
 	MapElem nextElem = BuildingElem(building);
 
@@ -94,6 +92,8 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena,
 
 					if (IsNodeEndPoint(moveNode, autoVehicle->moveStartPoint)) {
 						moveNode = moveNode->next;
+
+						FreePathNode(autoVehicle->moveNode, pathPool);
 						autoVehicle->moveNode = moveNode;
 
 						if (!moveNode)

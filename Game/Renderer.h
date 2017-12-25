@@ -7,6 +7,7 @@
 
 struct Camera {
 	float pixelCoordRatio;
+
 	Point center;
 	Point screenSize;
 

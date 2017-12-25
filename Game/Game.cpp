@@ -92,6 +92,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
 	Vehicle* vehicle = &playerVehicle->vehicle;;
 
+	playerVehicle->defaultColor   = Color{0.0f, 0.0f, 1.0f};
 	playerVehicle->maxEngineForce = 1000.0f;
 	playerVehicle->breakForce     = 1000.0f;
 	playerVehicle->mass           = 200.0f;
@@ -124,6 +125,9 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 
 	gameState->renderer.camera = camera;
 	gameState->maskRenderer.camera = camera;
+
+	gameState->missionIntersection = RandomIntersection(gameState->map);
+	gameState->onMission = false;
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -163,7 +167,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 
 			float minAngleCos = 0.0f;
 
-			if (angleCos < minAngleCos) 
+			if (angleCos < minAngleCos)
 				TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
 		}
 		else if (onElemAfter.type == MapElemIntersection) {
@@ -183,9 +187,15 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	}
 	
 	Camera* camera = gameState->renderer.camera;
-	camera->center = gameState->playerHuman.human.position;
+	if (gameState->showFullMap) {
+		camera->center = Point{
+			gameState->map.width * 0.5f,
+			gameState->map.height * 0.5f
+		};
 
-	if (gameState->isPlayerVehicle) {
+		camera->zoomTargetRatio = 1.0f;
+	}
+	else if (gameState->isPlayerVehicle) {
 		camera->center = gameState->playerVehicle.vehicle.position;
 
 		// TODO: create a speed variable in PlayerVehicle?
@@ -196,15 +206,38 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	else {
 		camera->center = gameState->playerHuman.human.position;
 
-		if (gameState->playerHuman.human.inBuilding) {
-		camera->zoomTargetRatio = 20.0f;
-		}
-		else {
-		camera->zoomTargetRatio = 10.0f;
-		}
+		if (gameState->playerHuman.human.inBuilding)
+			camera->zoomTargetRatio = 20.0f;
+		else
+			camera->zoomTargetRatio = 10.0f;
 	}
 
 	UpdateCamera(camera, seconds);
+
+	// TODO: create StartMission function?
+	Color missionHighlightColor = {1.0f, 1.0f, 0.0f};
+	Point playerPosition = {};
+	if (gameState->isPlayerVehicle)
+		playerPosition = gameState->playerVehicle.vehicle.position;
+	else
+		playerPosition = gameState->playerHuman.human.position;
+
+	MapElem playerElem = MapElemAtPoint(gameState->map, playerPosition);
+	if (playerElem.type == MapElemIntersection && playerElem.intersection == gameState->missionIntersection) {
+		gameState->missionIntersection = RandomIntersection(gameState->map);
+		gameState->onMission = !gameState->onMission;
+
+		if (gameState->onMission) {
+			gameState->playerVehicle.defaultColor = missionHighlightColor;
+			gameState->playerVehicle.vehicle.color = missionHighlightColor;
+			gameState->playerHuman.human.color = missionHighlightColor;
+		}
+		else {
+			gameState->playerVehicle.defaultColor = Color{0.0f, 0.0f, 1.0f};
+			gameState->playerVehicle.vehicle.color = Color{0.0f, 0.0f, 1.0f};
+			gameState->playerHuman.human.color = Color{0.0f, 0.0f, 0.0f};
+		}
+	}
 }
 
 void GameDraw(GameStorage* gameStorage) {
@@ -231,6 +264,10 @@ void GameDraw(GameStorage* gameStorage) {
 	}
 	else {
 		DrawMap(renderer, gameState->map);
+
+		Color missionHighlightColor = {1.0f, 1.0f, 0.0f};
+		if (gameState->missionIntersection)
+			HighlightIntersection(gameState->renderer, *gameState->missionIntersection, missionHighlightColor);
 
 		for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 			AutoVehicle* autoVehicle = &gameState->autoVehicles[i];

@@ -27,6 +27,10 @@ struct GameState {
 	PathPool pathPool;
 
 	bool isPlayerVehicle;
+
+	Intersection* missionIntersection;
+	bool showFullMap;
+	bool onMission;
 };
 
 // TODO: remove gameState reference
