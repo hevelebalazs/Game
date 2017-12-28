@@ -85,8 +85,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 
 	WinResize(gameState, windowWidth, windowHeight);
 
-	Intersection* intersection = RandomIntersection(gameState->map);
-	gameState->playerHuman.human.position = intersection->position;
+	Intersection* startIntersection = RandomIntersection(gameState->map);
+	gameState->playerHuman.human.position = startIntersection->position;
 	gameState->playerHuman.human.map = &gameState->map;
 
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
@@ -128,6 +128,11 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 
 	gameState->missionIntersection = RandomIntersection(gameState->map);
 	gameState->onMission = false;
+
+	MapElem startElem = IntersectionElem(startIntersection);
+	MapElem endElem = IntersectionElem(gameState->missionIntersection);
+	gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem, 
+										  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -215,7 +220,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	UpdateCamera(camera, seconds);
 
 	// TODO: create StartMission function?
-	Color missionHighlightColor = {1.0f, 1.0f, 0.0f};
+	Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 	Point playerPosition = {};
 	if (gameState->isPlayerVehicle)
 		playerPosition = gameState->playerVehicle.vehicle.position;
@@ -224,7 +229,10 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 
 	MapElem playerElem = MapElemAtPoint(gameState->map, playerPosition);
 	if (playerElem.type == MapElemIntersection && playerElem.intersection == gameState->missionIntersection) {
-		gameState->missionIntersection = RandomIntersection(gameState->map);
+		Intersection* startIntersection = gameState->missionIntersection;
+		Intersection* endIntersection = RandomIntersection(gameState->map);
+
+		gameState->missionIntersection = endIntersection;
 		gameState->onMission = !gameState->onMission;
 
 		if (gameState->onMission) {
@@ -237,6 +245,13 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 			gameState->playerVehicle.vehicle.color = Color{0.0f, 0.0f, 1.0f};
 			gameState->playerHuman.human.color = Color{0.0f, 0.0f, 0.0f};
 		}
+
+		FreePath(gameState->missionPath, &gameState->pathPool);
+
+		MapElem startElem = IntersectionElem(startIntersection);
+		MapElem endElem = IntersectionElem(endIntersection);
+		gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem,
+											  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 }
 
@@ -265,9 +280,12 @@ void GameDraw(GameStorage* gameStorage) {
 	else {
 		DrawMap(renderer, gameState->map);
 
-		Color missionHighlightColor = {1.0f, 1.0f, 0.0f};
+		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 		if (gameState->missionIntersection)
 			HighlightIntersection(gameState->renderer, *gameState->missionIntersection, missionHighlightColor);
+
+		if (gameState->missionPath)
+			DrawBezierPath(gameState->missionPath, gameState->renderer, missionHighlightColor, 1.0f);
 
 		for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 			AutoVehicle* autoVehicle = &gameState->autoVehicles[i];

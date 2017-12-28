@@ -725,6 +725,19 @@ bool EndFromRoadToIntersection(DirectedPoint point, Road* road, Intersection* in
 	return result;
 }
 
+DirectedPoint NextFromIntersectionToNothing(DirectedPoint startPoint, Intersection* intersection) {
+	DirectedPoint result = {};
+
+	result.position = intersection->position;
+
+	return result;
+}
+
+bool EndFromIntersectionToNothing(DirectedPoint point, Intersection* intersection) {
+	bool result = PointEqual(point.position, intersection->position);
+	return result;
+}
+
 DirectedPoint NextFromIntersectionToBuilding(DirectedPoint startPoint, Intersection* intersection, Building* building) {
 	DirectedPoint result = {};
 
@@ -799,9 +812,11 @@ DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint) {
 	else if (elem.type == MapElemIntersection) {
 		Intersection* intersection = elem.intersection;
 
-		if (next && next->elem.type == MapElemBuilding)
+		if (!next)
+			result = NextFromIntersectionToNothing(startPoint, intersection);
+		else if (next->elem.type == MapElemBuilding)
 			result = NextFromIntersectionToBuilding(startPoint, intersection, next->elem.building);
-		else if (next && next->elem.type == MapElemRoad)
+		else if (next->elem.type == MapElemRoad)
 			result = NextFromIntersectionToRoad(startPoint, intersection, next->elem.road);
 		else
 			result.position = elem.intersection->position;
@@ -841,15 +856,18 @@ bool IsNodeEndPoint(PathNode* node, DirectedPoint point) {
 	else if (elem.type == MapElemIntersection) {
 		Intersection* intersection = elem.intersection;
 
-		if (next && next->elem.type == MapElemBuilding)
+		if (!next)
+			result = EndFromIntersectionToNothing(point, intersection);
+		else if (next->elem.type == MapElemBuilding)
 			result = EndFromIntersectionToBuilding(point, intersection, next->elem.building);
-		else if (next && next->elem.type == MapElemRoad)
+		else if (next->elem.type == MapElemRoad)
 			result = EndFromIntersectionToRoad(point, intersection, next->elem.road);
 	}
 
 	return result;
 }
 
+// TODO: make renderer the first parameter for consistency
 void DrawPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth) {
 	PathNode* node = firstNode;
 
@@ -871,6 +889,7 @@ void DrawPath(PathNode* firstNode, Renderer renderer, Color color, float lineWid
 	}
 }
 
+// TODO: make renderer the first parameter for consistency
 void DrawBezierPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth) {
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};

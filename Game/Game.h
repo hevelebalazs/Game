@@ -31,6 +31,7 @@ struct GameState {
 	Intersection* missionIntersection;
 	bool showFullMap;
 	bool onMission;
+	PathNode* missionPath;
 };
 
 // TODO: remove gameState reference

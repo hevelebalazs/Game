@@ -200,6 +200,7 @@ static void RemoveRoad(Map* map, Road* road) {
 		ReindexIntersection(road->intersection2, oldRoad, road);
 }
 
+// TODO: sometimes a building is not connected to anything, find out why this is
 Map CreateGridMap(float width, float height, float intersectionDistance, MemArena* arena, MemArena* tmpArena) {
 	Map map = {};
 	map.width = width;
