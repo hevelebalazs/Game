@@ -253,6 +253,51 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem,
 											  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
+
+	bool recalculatePath = false;
+	int missionLaneIndex = gameState->missionLaneIndex;
+
+	if (!MapElemEqual(playerElem, gameState->missionElem))
+		recalculatePath = true;
+
+	if (playerElem.type == MapElemRoad) {
+		missionLaneIndex = LaneIndex(*playerElem.road, playerPosition);
+		if (missionLaneIndex != gameState->missionLaneIndex)
+			recalculatePath = true;
+	}
+
+	if (recalculatePath) {
+		MapElem pathStartElem = {};
+		if (gameState->missionPath)
+			pathStartElem = gameState->missionPath->elem;
+
+		if (playerElem.type == MapElemIntersection) {
+			FreePath(gameState->missionPath, &gameState->pathPool);
+			MapElem pathEndElem = IntersectionElem(gameState->missionIntersection);
+
+			gameState->missionPath = ConnectElems(&gameState->map, playerElem, pathEndElem, 
+												  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
+		}
+		else if (playerElem.type == MapElemRoad) {
+			Intersection* startIntersection = 0;
+			if (missionLaneIndex > 0)
+				startIntersection = playerElem.road->intersection2;
+			else if (missionLaneIndex < 0)
+				startIntersection = playerElem.road->intersection1;
+
+			FreePath(gameState->missionPath, &gameState->pathPool);
+			MapElem startIntersectionElem = IntersectionElem(startIntersection);
+			MapElem pathEndElem = IntersectionElem(gameState->missionIntersection);
+
+			gameState->missionPath = ConnectElems(&gameState->map, startIntersectionElem, pathEndElem,
+												  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
+
+			gameState->missionPath = PrefixPath(playerElem, gameState->missionPath, &gameState->pathPool);
+		}
+	}
+
+	gameState->missionElem = playerElem;
+	gameState->missionLaneIndex = missionLaneIndex;
 }
 
 void GameDraw(GameStorage* gameStorage) {
@@ -284,8 +329,18 @@ void GameDraw(GameStorage* gameStorage) {
 		if (gameState->missionIntersection)
 			HighlightIntersection(gameState->renderer, *gameState->missionIntersection, missionHighlightColor);
 
-		if (gameState->missionPath)
-			DrawBezierPath(gameState->missionPath, gameState->renderer, missionHighlightColor, 1.0f);
+		if (gameState->missionPath) {
+			Point playerPosition = {};
+			if (gameState->isPlayerVehicle)
+				playerPosition = gameState->playerVehicle.vehicle.position;
+			else
+				playerPosition = gameState->playerHuman.human.position;
+
+			DirectedPoint startPoint = {};
+			startPoint.position = playerPosition;
+
+			DrawBezierPathFromPoint(gameState->renderer, gameState->missionPath, startPoint, missionHighlightColor, 1.0f);
+		}
 
 		for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 			AutoVehicle* autoVehicle = &gameState->autoVehicles[i];

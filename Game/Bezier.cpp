@@ -57,7 +57,7 @@ DirectedPoint Bezier4DirectedPoint(Bezier4 bezier4, float ratio) {
 	return result;
 }
 
-void DrawBezier4(Bezier4 bezier4, Renderer renderer, Color color, float lineWidth, int segmentCount) {
+void DrawBezier4(Renderer renderer, Bezier4 bezier4, Color color, float lineWidth, int segmentCount) {
 	Point point = bezier4.points[0];
 
 	for (int i = 1; i <= segmentCount; ++i) {

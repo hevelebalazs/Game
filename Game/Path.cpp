@@ -266,37 +266,51 @@ MapElem GetConnectRoadElem(Building* building) {
 	return building->connectElem;
 }
 
+static PathNode* GetFreePathNode(PathPool* pathPool) {
+	PathNode* result = 0;
+
+	if (pathPool->firstFreeNode) {
+		result = pathPool->firstFreeNode;
+		pathPool->firstFreeNode = pathPool->firstFreeNode->next;
+	}
+	else if (pathPool->nodeCount < pathPool->maxNodeCount) {
+		result = &pathPool->nodes[pathPool->nodeCount];
+		pathPool->nodeCount++;
+	}
+	else {
+		// TODO: introduce asserts
+	}
+
+	return result;
+}
+
 static PathNode* PushPathToArena(Path path, MemArena* arena, PathPool* pathPool) {
 	PathNode* result = 0;
 	PathNode* previous = 0;
 
 	for (int i = 0; i < path.nodeCount; ++i) {
-		PathNode* address = 0;
+		PathNode* pathNode = GetFreePathNode(pathPool);
 
-		if (pathPool->firstFreeNode) {
-			address = pathPool->firstFreeNode;
-			pathPool->firstFreeNode = pathPool->firstFreeNode->next;
-		}
-		else if (pathPool->nodeCount < pathPool->maxNodeCount) {
-			address = &pathPool->nodes[pathPool->nodeCount];
-			pathPool->nodeCount++;
-		}
-		else {
-			// TODO: introduce asserts
-			break;
-		}
-
-		*address = path.nodes[i];
-		address->next = 0;
+		*pathNode = path.nodes[i];
+		pathNode->next = 0;
 
 		if (previous)
-			previous->next = address;
+			previous->next = pathNode;
 
 		if (!result)
-			result = address;
+			result = pathNode;
 
-		previous = address;
+		previous = pathNode;
 	}
+
+	return result;
+}
+
+PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool) {
+	PathNode* result = GetFreePathNode(pathPool);
+
+	result->elem = elem;
+	result->next = firstNode;
 
 	return result;
 }
@@ -867,8 +881,7 @@ bool IsNodeEndPoint(PathNode* node, DirectedPoint point) {
 	return result;
 }
 
-// TODO: make renderer the first parameter for consistency
-void DrawPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth) {
+void DrawPath(Renderer renderer, PathNode* firstNode, Color color, float lineWidth) {
 	PathNode* node = firstNode;
 
 	if (node) {
@@ -889,13 +902,12 @@ void DrawPath(PathNode* firstNode, Renderer renderer, Color color, float lineWid
 	}
 }
 
-// TODO: make renderer the first parameter for consistency
-void DrawBezierPath(PathNode* firstNode, Renderer renderer, Color color, float lineWidth) {
+void DrawBezierPathFromPoint(Renderer renderer, PathNode* firstNode, DirectedPoint startPoint, Color color, float lineWidth) {
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
 
 	if (node) {
-		DirectedPoint point = StartNodePoint(node);
+		DirectedPoint point = startPoint;
 
 		while (node) {
 			if (IsNodeEndPoint(node, point)) {
@@ -904,10 +916,20 @@ void DrawBezierPath(PathNode* firstNode, Renderer renderer, Color color, float l
 			else {
 				DirectedPoint nextPoint = NextNodePoint(node, point);
 				bezier4 = TurnBezier4(point, nextPoint);
-				DrawBezier4(bezier4, renderer, color, lineWidth, 5);
+				DrawBezier4(renderer, bezier4, color, lineWidth, 5);
 
 				point = nextPoint;
 			}
 		}
+	}
+}
+
+void DrawBezierPath(Renderer renderer, PathNode* firstNode, Color color, float lineWidth) {
+	PathNode* node = firstNode;
+	Bezier4 bezier4 = {};
+
+	if (node) {
+		DirectedPoint startPoint = StartNodePoint(node);
+		DrawBezierPathFromPoint(renderer, firstNode, startPoint, color, lineWidth);
 	}
 }

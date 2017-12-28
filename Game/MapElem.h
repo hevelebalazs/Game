@@ -57,4 +57,13 @@ inline MapElem BuildingConnectorElem(Building* building) {
 	return result;
 }
 
+inline bool MapElemEqual(MapElem elem1, MapElem elem2) {
+	if (elem1.type != elem2.type) 
+		return false;
+	else if (elem1.type == MapElemNone) 
+		return true;
+	else
+		return (elem1.address == elem2.address);
+}
+
 void HighlightMapElem(Renderer renderer, MapElem mapElem, Color color);
