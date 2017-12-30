@@ -227,6 +227,9 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	else
 		playerPosition = gameState->playerHuman.human.position;
 
+	Point missionStartPoint = {};
+	missionStartPoint = playerPosition;
+
 	MapElem playerElem = MapElemAtPoint(gameState->map, playerPosition);
 	if (playerElem.type == MapElemIntersection && playerElem.intersection == gameState->missionIntersection) {
 		Intersection* startIntersection = gameState->missionIntersection;
@@ -264,6 +267,15 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		missionLaneIndex = LaneIndex(*playerElem.road, playerPosition);
 		if (missionLaneIndex != gameState->missionLaneIndex)
 			recalculatePath = true;
+
+		missionStartPoint = ClosestLanePoint(*playerElem.road, missionLaneIndex, playerPosition);
+	}
+	else if (playerElem.type == MapElemNone) {
+		if (gameState->missionPath)
+			FreePath(gameState->missionPath, &gameState->pathPool);
+
+		gameState->missionPath = 0;
+		recalculatePath = false;
 	}
 
 	if (recalculatePath) {
@@ -298,6 +310,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 
 	gameState->missionElem = playerElem;
 	gameState->missionLaneIndex = missionLaneIndex;
+	gameState->missionStartPoint = missionStartPoint;
 }
 
 void GameDraw(GameStorage* gameStorage) {
@@ -337,7 +350,7 @@ void GameDraw(GameStorage* gameStorage) {
 				playerPosition = gameState->playerHuman.human.position;
 
 			DirectedPoint startPoint = {};
-			startPoint.position = playerPosition;
+			startPoint.position = gameState->missionStartPoint;
 
 			DrawBezierPathFromPoint(gameState->renderer, gameState->missionPath, startPoint, missionHighlightColor, 1.0f);
 		}

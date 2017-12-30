@@ -107,6 +107,51 @@ Point ClosestRoadPoint(Road road, Point point) {
 	return result;
 }
 
+Point ClosestLanePoint(Road road, int laneIndex, Point point) {
+	Point result = {};
+
+	if (road.endPoint1.x == road.endPoint2.x) {
+		float x = road.endPoint1.x;
+
+		if (road.endPoint1.y < road.endPoint2.y) {
+			if (laneIndex > 0)
+				x -= road.width * 0.25f;
+			else
+				x += road.width * 0.25f;
+		}
+		else {
+			if (laneIndex > 0)
+				x += road.width * 0.25f;
+			else
+				x -= road.width * 0.25f;
+		}
+
+		result.x = x;
+		result.y = point.y;
+	}
+	else if (road.endPoint1.y == road.endPoint2.y) {
+		float y = road.endPoint1.y;
+
+		if (road.endPoint1.x < road.endPoint2.x) {
+			if (laneIndex > 0)
+				y += road.width * 0.25f;
+			else
+				y -= road.width * 0.25f;
+		}
+		else {
+			if (laneIndex > 0)
+				y -= road.width * 0.25f;
+			else
+				y -= road.width * 0.25f;
+		}
+
+		result.x = point.x;
+		result.y = y;
+	}
+
+	return result;
+}
+
 bool IsPointOnRoad(Point point, Road road) {
 	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
 	float right  = Max2(road.endPoint1.x, road.endPoint2.x);

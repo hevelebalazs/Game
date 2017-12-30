@@ -32,9 +32,10 @@ struct GameState {
 	bool showFullMap;
 	bool onMission;
 	PathNode* missionPath;
-	// TODO: create a MapPosition structure that contains a positionIndex and a MapElem?
+	// TODO: create a MapPosition structure that contains a positionIndex and a MapElem (and a position)?
 	MapElem missionElem;
 	int missionLaneIndex;
+	Point missionStartPoint;
 };
 
 // TODO: remove gameState reference

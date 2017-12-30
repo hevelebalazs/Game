@@ -21,6 +21,7 @@ DirectedPoint RoadEnterPoint(Road road, int endPointIndex);
 
 float DistanceSquareFromRoad(Road road, Point point);
 Point ClosestRoadPoint(Road road, Point point);
+Point ClosestLanePoint(Road road, int laneIndex, Point point);
 
 bool IsPointOnRoad(Point point, Road road);
 bool IsPointOnRoadSide(Point point, Road road);
