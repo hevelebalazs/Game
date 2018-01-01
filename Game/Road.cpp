@@ -6,6 +6,12 @@
 #include "Point.h"
 #include "Road.h"
 
+// TODO: use this everywhere
+extern Color roadColor = {0.5f, 0.5f, 0.5f};
+
+extern Color sideWalkColor = {0.4f, 0.4f, 0.4f};
+extern float sideWalkWidth = 3.0f;
+
 // TODO: change endPointIndex to laneIndex when there are more lanes for a direction
 DirectedPoint RoadLeavePoint(Road road, int endPointIndex) {
 	DirectedPoint result = {};
@@ -276,7 +282,27 @@ DirectedPoint TurnPointToLane(Road road, int laneIndex, Point point) {
 	return result;
 }
 
+static inline void DrawRoadSide(Renderer renderer, Road road) {
+	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
+	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
+	float top    = Min2(road.endPoint1.y, road.endPoint2.y);
+	float bottom = Max2(road.endPoint1.y, road.endPoint2.y);
+
+	float sideWidth = (road.width * 0.5f + sideWalkWidth);
+
+	if (road.endPoint1.x == road.endPoint2.x) {
+		DrawRect(renderer, top, left - sideWidth, bottom, left, sideWalkColor);
+		DrawRect(renderer, top, right, bottom, right + sideWidth, sideWalkColor);
+	}
+	else if (road.endPoint1.y == road.endPoint2.y) {
+		DrawRect(renderer, top - sideWidth, left, top, right, sideWalkColor);
+		DrawRect(renderer, bottom, left, bottom + sideWidth, right, sideWalkColor);
+	}
+}
+
 void DrawRoad(Renderer renderer, Road road) {
+	DrawRoadSide(renderer, road);
+
 	float stripeWidth = road.width / 20.0f;
 
 	float top = 0.0f;

@@ -4,6 +4,10 @@
 #include "Point.h"
 #include "Renderer.h"
 
+extern Color roadColor;
+extern Color sideWalkColor;
+extern float sideWalkWidth;
+
 struct Intersection;
 
 struct Road {

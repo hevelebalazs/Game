@@ -1,4 +1,5 @@
 #include "Intersection.h"
+#include "Road.h"
 
 extern float trafficLightRadius = 2.0f;
 extern float trafficLightSwitchTime = 3.0f;
@@ -248,7 +249,36 @@ void HighlightIntersection(Renderer renderer, Intersection intersection, Color c
 	}
 }
 
+static inline void DrawIntersectionSide(Renderer renderer, Intersection intersection) {
+	float roadWidth = GetIntersectionRoadWidth(intersection);
+	Point position = intersection.position;
+
+	float left   = position.x - roadWidth * 0.5f;
+	float right  = position.x + roadWidth * 0.5f;
+	float top    = position.y - roadWidth * 0.5f;
+	float bottom = position.y + roadWidth * 0.5f;
+
+	if (!intersection.topRoad)
+		DrawRect(renderer, top - sideWalkWidth, left, top, right, sideWalkColor);
+
+	if (!intersection.bottomRoad)
+		DrawRect(renderer, bottom, left, bottom + sideWalkWidth, right, sideWalkColor);
+
+	if (!intersection.topRoad)
+		top -= sideWalkWidth;
+	if (!intersection.bottomRoad)
+		bottom += sideWalkWidth;
+
+	if (!intersection.leftRoad)
+		DrawRect(renderer, top, left - sideWalkWidth, bottom, left, sideWalkColor);
+	
+	if (!intersection.rightRoad)
+		DrawRect(renderer, top, right, bottom, right + sideWalkWidth, sideWalkColor);
+}
+
 void DrawIntersection(Renderer renderer, Intersection intersection) {
+	DrawIntersectionSide(renderer, intersection);
+
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 
 	Point coordinate = intersection.position;
