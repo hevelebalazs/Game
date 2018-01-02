@@ -25,6 +25,7 @@ bool IsNodeEndPoint(PathNode* node, DirectedPoint point);
 
 PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool);
 PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+PathNode* ConnectSidewalkElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
 
 void FreePathNode(PathNode* node, PathPool* pathPool);
 void FreePath(PathNode* firstNode, PathPool* pathPool);

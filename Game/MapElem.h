@@ -3,7 +3,9 @@
 enum MapElemType {
 	MapElemNone,
 	MapElemRoad,
+	MapElemRoadSidewalk,
 	MapElemIntersection,
+	MapElemIntersectionSidewalk,
 	MapElemBuilding,
 	MapElemBuildingConnector
 };
@@ -33,9 +35,25 @@ inline MapElem RoadElem(Road* road) {
 	return result;
 }
 
+inline MapElem RoadSidewalkElem(Road* road) {
+	MapElem result = {};
+	result.type = MapElemRoadSidewalk;
+	result.road = road;
+
+	return result;
+}
+
 inline MapElem IntersectionElem(Intersection* intersection) {
 	MapElem result = {};
 	result.type = MapElemIntersection;
+	result.intersection = intersection;
+
+	return result;
+}
+
+inline MapElem IntersectionSidewalkElem(Intersection* intersection) {
+	MapElem result = {};
+	result.type = MapElemIntersectionSidewalk;
 	result.intersection = intersection;
 
 	return result;

@@ -22,6 +22,24 @@ float VectorAngle(Point vector);
 
 Point RotationVector(float angle);
 
+// TODO: create a Rect struct?
+// TODO: use this everywhere
+inline bool IsPointInRect(Point point, float left, float right, float top, float bottom) {
+	bool result = true;
+
+	if (point.x < left || point.x > right) result = false;
+	else if (point.y < top || point.y > bottom) result = false;
+
+	return result;
+}
+
+inline Point TurnVectorToRight(Point vector) {
+	Point result = {};
+	result.x = -vector.y;
+	result.y = vector.x;
+	return result;
+}
+
 Point PointDirection(Point startPoint, Point endPoint);
 bool TurnsRight(Point point1, Point point2, Point point3);
 bool DoLinesCross(Point line11, Point line12, Point line21, Point line22);

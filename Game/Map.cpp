@@ -177,6 +177,12 @@ MapElem MapElemAtPoint(Map map, Point point) {
 			result.road = &map.roads[i];
 			return result;
 		}
+
+		if (IsPointOnRoadSidewalk(point, map.roads[i])) {
+			result.type = MapElemRoadSidewalk;
+			result.road = &map.roads[i];
+			return result;
+		}
 	}
 
 	for (int i = 0; i < map.buildingCount; ++i) {
@@ -196,6 +202,12 @@ MapElem MapElemAtPoint(Map map, Point point) {
 	for (int i = 0; i < map.roadCount; ++i) {
 		if (IsPointOnIntersection(point, map.intersections[i])) {
 			result.type = MapElemIntersection;
+			result.intersection = &map.intersections[i];
+			return result;
+		}
+
+		if (IsPointOnIntersectionSidewalk(point, map.intersections[i])) {
+			result.type = MapElemIntersectionSidewalk;
 			result.intersection = &map.intersections[i];
 			return result;
 		}

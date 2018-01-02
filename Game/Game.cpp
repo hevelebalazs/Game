@@ -214,7 +214,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->playerHuman.human.inBuilding)
 			camera->zoomTargetRatio = 20.0f;
 		else
-			camera->zoomTargetRatio = 10.0f;
+			camera->zoomTargetRatio = 3.0f;
 	}
 
 	UpdateCamera(camera, seconds);
@@ -283,8 +283,9 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->missionPath)
 			pathStartElem = gameState->missionPath->elem;
 
+		FreePath(gameState->missionPath, &gameState->pathPool);
+
 		if (playerElem.type == MapElemIntersection) {
-			FreePath(gameState->missionPath, &gameState->pathPool);
 			MapElem pathEndElem = IntersectionElem(gameState->missionIntersection);
 
 			gameState->missionPath = ConnectElems(&gameState->map, playerElem, pathEndElem, 
@@ -297,7 +298,6 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 			else if (missionLaneIndex < 0)
 				startIntersection = playerElem.road->intersection1;
 
-			FreePath(gameState->missionPath, &gameState->pathPool);
 			MapElem startIntersectionElem = IntersectionElem(startIntersection);
 			MapElem pathEndElem = IntersectionElem(gameState->missionIntersection);
 
@@ -306,6 +306,15 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 
 			gameState->missionPath = PrefixPath(playerElem, gameState->missionPath, &gameState->pathPool);
 		}
+		else if (playerElem.type == MapElemRoadSidewalk || playerElem.type == MapElemIntersectionSidewalk) {
+			MapElem sidewalkElemEnd = IntersectionSidewalkElem(gameState->missionIntersection);
+
+			gameState->missionPath = ConnectSidewalkElems(&gameState->map, playerElem, sidewalkElemEnd,
+														  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
+		}
+		else {
+			gameState->missionPath = 0;
+		}
 	}
 
 	gameState->missionElem = playerElem;
@@ -313,12 +322,19 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	gameState->missionStartPoint = missionStartPoint;
 }
 
+// TODO: many things are recalculated, merge GameUpdate with GameDraw?
 void GameDraw(GameStorage* gameStorage) {
 	GameState* gameState = gameStorage->gameState;
 	Renderer renderer = gameState->renderer;
 
 	Color clearColor = Color{0.0f, 0.0f, 0.0f};
 	ClearScreen(renderer, clearColor);
+
+	Point playerPosition = {};
+	if (gameState->isPlayerVehicle)
+		playerPosition = gameState->playerVehicle.vehicle.position;
+	else
+		playerPosition = gameState->playerHuman.human.position;
 
 	Building* inBuilding = gameState->playerHuman.human.inBuilding;
 	if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) {
@@ -343,12 +359,6 @@ void GameDraw(GameStorage* gameStorage) {
 			HighlightIntersection(gameState->renderer, *gameState->missionIntersection, missionHighlightColor);
 
 		if (gameState->missionPath) {
-			Point playerPosition = {};
-			if (gameState->isPlayerVehicle)
-				playerPosition = gameState->playerVehicle.vehicle.position;
-			else
-				playerPosition = gameState->playerHuman.human.position;
-
 			DirectedPoint startPoint = {};
 			startPoint.position = gameState->missionStartPoint;
 

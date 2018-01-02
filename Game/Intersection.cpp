@@ -1,3 +1,4 @@
+#include "Geometry.h"
 #include "Intersection.h"
 #include "Road.h"
 
@@ -34,6 +35,38 @@ bool IsPointOnIntersection(Point point, Intersection intersection) {
 		return false;
 
 	return true;
+}
+
+bool IsPointOnIntersectionSidewalk(Point point, Intersection intersection) {
+	float roadWidth = GetIntersectionRoadWidth(intersection);
+
+	float left   = intersection.position.x - roadWidth * 0.5f;
+	float right  = intersection.position.x + roadWidth * 0.5f;
+	float top    = intersection.position.y - roadWidth * 0.5f;
+	float bottom = intersection.position.y + roadWidth * 0.5f;
+
+	if (!intersection.topRoad) {
+		if (IsPointInRect(point, left, right, top - sideWalkWidth, top))
+			return true;
+
+		top -= sideWalkWidth;
+	}
+	if (!intersection.bottomRoad) {
+		if (IsPointInRect(point, left, right, bottom, bottom + sideWalkWidth))
+			return true;
+
+		bottom += sideWalkWidth;
+	}
+	if (!intersection.leftRoad) {
+		if (IsPointInRect(point, left - sideWalkWidth, left, top, bottom))
+			return true;
+	}
+	if (!intersection.rightRoad) {
+		if (IsPointInRect(point, right, right + sideWalkWidth, top, bottom))
+			return true;
+	}
+
+	return false;
 }
 
 static void StartTrafficLight(TrafficLight* trafficLight) {
@@ -249,7 +282,34 @@ void HighlightIntersection(Renderer renderer, Intersection intersection, Color c
 	}
 }
 
-static inline void DrawIntersectionSide(Renderer renderer, Intersection intersection) {
+void HighlightIntersectionSidewalk(Renderer renderer, Intersection intersection, Color color) {
+	float roadWidth = GetIntersectionRoadWidth(intersection);
+	Point position = intersection.position;
+
+	float left   = position.x - roadWidth * 0.5f;
+	float right  = position.x + roadWidth * 0.5f;
+	float top    = position.y - roadWidth * 0.5f;
+	float bottom = position.y + roadWidth * 0.5f;
+
+	if (!intersection.topRoad)
+		DrawRect(renderer, top - sideWalkWidth, left, top, right, color);
+
+	if (!intersection.bottomRoad)
+		DrawRect(renderer, bottom, left, bottom + sideWalkWidth, right, color);
+
+	if (!intersection.topRoad)
+		top -= sideWalkWidth;
+	if (!intersection.bottomRoad)
+		bottom += sideWalkWidth;
+
+	if (!intersection.leftRoad)
+		DrawRect(renderer, top, left - sideWalkWidth, bottom, left, color);
+	
+	if (!intersection.rightRoad)
+		DrawRect(renderer, top, right, bottom, right + sideWalkWidth, color);
+}
+
+static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection intersection) {
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 	Point position = intersection.position;
 
@@ -277,7 +337,7 @@ static inline void DrawIntersectionSide(Renderer renderer, Intersection intersec
 }
 
 void DrawIntersection(Renderer renderer, Intersection intersection) {
-	DrawIntersectionSide(renderer, intersection);
+	DrawIntersectionSidewalk(renderer, intersection);
 
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 

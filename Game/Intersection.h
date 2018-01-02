@@ -40,11 +40,13 @@ struct Intersection {
 
 TrafficLight* TrafficLightOfRoad(Intersection* intersection, Road* road);
 bool IsPointOnIntersection(Point point, Intersection intersection);
+bool IsPointOnIntersectionSidewalk(Point point, Intersection intersection);
 
 float GetIntersectionRoadWidth(Intersection intersection);
 void InitTrafficLights(Intersection* intersection);
 void UpdateTrafficLights(Intersection* intersection, float seconds);
 void DrawTrafficLights(Renderer renderer, Intersection intersection);
 
+void HighlightIntersectionSidewalk(Renderer renderer, Intersection intersection, Color color);
 void HighlightIntersection(Renderer renderer, Intersection intersection, Color color);
 void DrawIntersection(Renderer renderer, Intersection intersection);

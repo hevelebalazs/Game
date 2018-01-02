@@ -6,6 +6,8 @@
 #include "Point.h"
 #include "Road.h"
 
+// TODO: "road coordinate system"
+
 // TODO: use this everywhere
 extern Color roadColor = {0.5f, 0.5f, 0.5f};
 
@@ -182,6 +184,26 @@ bool IsPointOnRoad(Point point, Road road) {
 	return true;
 }
 
+bool IsPointOnRoadSidewalk(Point point, Road road) {
+	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
+	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
+	float top    = Min2(road.endPoint1.y, road.endPoint2.y);
+	float bottom = Max2(road.endPoint1.y, road.endPoint2.y);
+
+	float width = road.width * 0.5f + sideWalkWidth;
+	if (left == right) {
+		left  -= width;
+		right += width;
+	}
+	if (top == bottom) {
+		top    -= width;
+		bottom += width;
+	}
+
+	bool result = IsPointInRect(point, left, right, top, bottom);
+	return result;
+}
+
 // TODO: this is a bad idea because of floating point inaccuracies
 bool IsPointOnRoadSide(Point point, Road road) {
 	bool result = false;
@@ -282,7 +304,30 @@ DirectedPoint TurnPointToLane(Road road, int laneIndex, Point point) {
 	return result;
 }
 
-static inline void DrawRoadSide(Renderer renderer, Road road) {
+void HighlightRoadSidewalk(Renderer renderer, Road road, Color color) {
+	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
+	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
+	float top    = Min2(road.endPoint1.y, road.endPoint2.y);
+	float bottom = Max2(road.endPoint1.y, road.endPoint2.y);
+
+	if (road.endPoint1.x == road.endPoint2.x) {
+		left  -= (road.width * 0.5f);
+		right += (road.width * 0.5f);
+
+		DrawRect(renderer, top, left - sideWalkWidth, bottom, left, color);
+		DrawRect(renderer, top, right, bottom, right + sideWalkWidth, color);
+	}
+	else if (road.endPoint1.y == road.endPoint2.y) {
+		top    -= (road.width * 0.5f);
+		bottom += (road.width * 0.5f);
+
+		DrawRect(renderer, top - sideWalkWidth, left, top, right, color);
+		DrawRect(renderer, bottom, left, bottom + sideWalkWidth, right, color);
+	}
+}
+
+
+static inline void DrawRoadSidewalk(Renderer renderer, Road road) {
 	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
 	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
 	float top    = Min2(road.endPoint1.y, road.endPoint2.y);
@@ -301,7 +346,7 @@ static inline void DrawRoadSide(Renderer renderer, Road road) {
 }
 
 void DrawRoad(Renderer renderer, Road road) {
-	DrawRoadSide(renderer, road);
+	DrawRoadSidewalk(renderer, road);
 
 	float stripeWidth = road.width / 20.0f;
 

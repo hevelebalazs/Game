@@ -1,7 +1,7 @@
 #include "Human.h"
 
 extern float humanRadius = 0.5f;
-extern float humanMoveSpeed = 10.0f;
+extern float humanMoveSpeed = 30.0f;
 
 void DrawHuman(Renderer renderer, Human human) {
 	float radius = humanRadius;
