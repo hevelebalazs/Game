@@ -200,6 +200,7 @@ static void RemoveRoad(Map* map, Road* road) {
 		ReindexIntersection(road->intersection2, oldRoad, road);
 }
 
+// TODO: separate this into smaller functions?
 // TODO: sometimes a building is not connected to anything, find out why this is
 Map CreateGridMap(float width, float height, float intersectionDistance, MemArena* arena, MemArena* tmpArena) {
 	Map map = {};
@@ -321,6 +322,11 @@ Map CreateGridMap(float width, float height, float intersectionDistance, MemAren
 					break;
 			}
 		}
+	}
+
+	for (int i = 0; i < map.roadCount; ++i) {
+		Road* road = &map.roads[i];
+		GenerateCrossing(road);
 	}
 
 	ArenaPopTo(tmpArena, connectedPositions);

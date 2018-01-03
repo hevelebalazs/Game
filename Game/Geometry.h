@@ -40,6 +40,17 @@ inline Point TurnVectorToRight(Point vector) {
 	return result;
 }
 
+inline Point XYToBase(Point point, Point baseUnit) {
+	float cosa = baseUnit.x;
+	float sina = baseUnit.y;
+
+	Point result = {};
+	result.x = point.x * cosa + point.y * sina;
+	result.y = -point.x * sina + point.y * cosa;
+
+	return result;
+}
+
 Point PointDirection(Point startPoint, Point endPoint);
 bool TurnsRight(Point point1, Point point2, Point point3);
 bool DoLinesCross(Point line11, Point line12, Point line21, Point line22);

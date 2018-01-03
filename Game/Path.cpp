@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include "Bezier.h"
 #include "Geometry.h"
 #include "Memory.h"
@@ -8,11 +6,11 @@
 struct Path {
 	int nodeCount;
 	PathNode *nodes;
+	MemArena* arena;
 };
 
 static inline void PushNode(Path* path, PathNode node) {
-	// TODO: use arena for this as well?
-	path->nodes = (PathNode*)realloc(path->nodes, (path->nodeCount + 1) * sizeof(PathNode));
+	ArenaPushType(path->arena, PathNode);
 	path->nodes[path->nodeCount] = node;
 	path->nodeCount++;
 }
@@ -329,9 +327,11 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* a
 	if (elemEnd.type == MapElemRoadSidewalk || elemEnd.type == MapElemIntersectionSidewalk)
 		return 0;
 
-	Path path = {};
-
 	PathHelper helper = PathHelperForMap(map, tmpArena);
+
+	Path path = {};
+	path.arena = tmpArena;
+	path.nodes = ArenaPushArray(path.arena, PathNode, 0);
 
 	bool finished = false;
 
@@ -482,8 +482,6 @@ PathNode* ConnectSidewalkElems(Map* map, MapElem elemStart, MapElem elemEnd, Mem
 	if (elemEnd.type != MapElemRoadSidewalk && elemEnd.type != MapElemIntersectionSidewalk)
 		return 0;
 
-	Path path = {};
-
 	MapElem roadElemStart = elemStart;
 	if (elemStart.type == MapElemRoadSidewalk)
 		roadElemStart.type = MapElemRoad;
@@ -504,7 +502,35 @@ PathNode* ConnectSidewalkElems(Map* map, MapElem elemStart, MapElem elemEnd, Mem
 	for (int i = 0; i < map->intersectionCount; ++i)
 		helper.isIntersectionHelper[i] = 0;
 
+	Path path = {};
+	path.arena = tmpArena;
+	path.nodes = ArenaPushArray(path.arena, PathNode, 0);
+
 	PushConnectRoadElems(&path, map, roadElemStart, roadElemEnd, &helper);
+
+	int newCount = 0;
+	for (int i = 0; i < path.nodeCount; ++i) {
+		bool addToNewPath = false;
+
+		// TODO: fix this so it only crosses the road at pedestrian crossings!
+		MapElem* elem = &path.nodes[i].elem;
+		if (elem->type == MapElemRoad) {
+			elem->type = MapElemRoadSidewalk;
+			addToNewPath = true;
+		}
+		else if (elem->type == MapElemIntersection) {
+			elem->type = MapElemIntersectionSidewalk;
+			if (i == 0 || i == path.nodeCount - 1)
+				addToNewPath = true;
+		}
+
+		if (addToNewPath) {
+			path.nodes[newCount] = path.nodes[i];
+			newCount++;
+		}
+	}
+
+	path.nodeCount = newCount;
 
 	// NOTE: convert road elems to sidewalk elems
 	for (int i = 0; i < path.nodeCount; ++i) {
@@ -882,6 +908,57 @@ static bool EndFromRoadSidewalkToIntersectionSidewalk(DirectedPoint point, Road*
 	return result;
 }
 
+static DirectedPoint NextFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Road* road, Road* nextRoad) {
+	DirectedPoint result = {};
+
+	Point pointRoadCoord = PointToPositiveRoadCoord(road, point.position);
+	Point nextRoadCoord = PointToPositiveRoadCoord(road, nextRoad->endPoint1);
+
+	int pointLaneIndex = 1;
+	if (pointRoadCoord.y < 0.0f)
+		pointLaneIndex = -1;
+
+	int nextRoadLaneIndex = 1;
+	if (nextRoadCoord.y < 0.0f)
+		nextRoadLaneIndex = -1;
+
+	if (pointLaneIndex == nextRoadLaneIndex) {
+		float roadLength = RoadLength(road);
+		if (nextRoadCoord.x < roadLength * 0.5f)
+			pointRoadCoord.x = sideWalkWidth * 0.5f;
+		else
+			pointRoadCoord.x = roadLength - sideWalkWidth * 0.5f;
+	}
+	else {
+		if ((pointRoadCoord.x >= road->crossingDistance - crossingWidth * 0.5f) 
+			&& (pointRoadCoord.x <= road->crossingDistance + crossingWidth * 0.5f))
+			pointRoadCoord.y = nextRoadLaneIndex * (road->width * 0.5f + sideWalkWidth * 0.5f); 
+		else
+			pointRoadCoord.x = road->crossingDistance;
+	}
+
+	result.position = PointFromPositiveRoadCoord(road, pointRoadCoord);
+
+	return result;
+}
+
+static bool EndFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Road* road, Road* nextRoad) {
+	bool result = false;
+
+	Point pointRoadCoord = PointToPositiveRoadCoord(road, point.position);
+	Point nextRoadCoord = PointToPositiveRoadCoord(road, nextRoad->endPoint1);
+
+	Point debug = PointFromPositiveRoadCoord(road, pointRoadCoord);
+
+	float roadLength = RoadLength(road);
+	if (nextRoadCoord.x < roadLength * 0.5f)
+		result = (pointRoadCoord.x < sideWalkWidth);
+	else
+		result = (pointRoadCoord.x > roadLength - sideWalkWidth);
+
+	return result;
+}
+
 static inline DirectedPoint NextFromIntersectionSidewalkToNothing(DirectedPoint startPoint, Intersection* intersection) {
 	DirectedPoint result = startPoint;
 	return result;
@@ -1054,6 +1131,8 @@ DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint) {
 		if (!next) ; // NOTE: path should not end in a road
 		else if (next->elem.type == MapElemIntersectionSidewalk)
 			result = NextFromRoadSidewalkToIntersectionSidewalk(startPoint, road, next->elem.intersection);
+		else if (next->elem.type == MapElemRoadSidewalk)
+			result = NextFromRoadSidewalkToRoadSidewalk(startPoint, road, next->elem.road);
 	}
 	else if (elem.type == MapElemIntersectionSidewalk) {
 		Intersection* intersection = elem.intersection;
@@ -1112,6 +1191,8 @@ bool IsNodeEndPoint(PathNode* node, DirectedPoint point) {
 			; // NOTE: path should not end with a road
 		else if (next->elem.type == MapElemIntersectionSidewalk)
 			result = EndFromRoadSidewalkToIntersectionSidewalk(point, road, next->elem.intersection);
+		else if (next->elem.type == MapElemRoadSidewalk)
+			result = EndFromRoadSidewalkToRoadSidewalk(point, road, next->elem.road);
 	}
 	else if (elem.type == MapElemIntersectionSidewalk) {
 		Intersection* intersection = elem.intersection;

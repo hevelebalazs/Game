@@ -214,7 +214,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->playerHuman.human.inBuilding)
 			camera->zoomTargetRatio = 20.0f;
 		else
-			camera->zoomTargetRatio = 3.0f;
+			camera->zoomTargetRatio = 5.0f;
 	}
 
 	UpdateCamera(camera, seconds);

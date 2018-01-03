@@ -6,59 +6,41 @@
 #include "Point.h"
 #include "Road.h"
 
-// TODO: "road coordinate system"
-
 // TODO: use this everywhere
 extern Color roadColor = {0.5f, 0.5f, 0.5f};
 
 extern Color sideWalkColor = {0.4f, 0.4f, 0.4f};
 extern float sideWalkWidth = 3.0f;
+extern float crossingWidth = 10.0f;
 
 // TODO: change endPointIndex to laneIndex when there are more lanes for a direction
 DirectedPoint RoadLeavePoint(Road road, int endPointIndex) {
 	DirectedPoint result = {};
 
-	Point startPoint = {};
-	Point endPoint = {};
-
 	if (endPointIndex == 1) {
-		startPoint = road.endPoint2;
-		endPoint = road.endPoint1;
+		result.direction = PointDirection(road.endPoint2, road.endPoint1);
+		result.position = XYFromPositiveRoadCoord(&road, 0.0f, -road.width * 0.25f);
 	}
 	else {
-		startPoint = road.endPoint1;
-		endPoint = road.endPoint2;
+		result.direction = PointDirection(road.endPoint1, road.endPoint2);
+		result.position = XYFromNegativeRoadCoord(&road, 0.0f, -road.width * 0.25f);
 	}
-
-	Point moveUnitVector = PointDirection(startPoint, endPoint);
-	Point sideUnitVector = Point{-moveUnitVector.y, moveUnitVector.x};
-
-	result.position = PointSum(endPoint, PointProd(road.width * 0.25f, sideUnitVector));
-	result.direction = moveUnitVector;
 
 	return result;
 }
 
+// TODO: change endPointIndex to laneIndex when there are more lanes for a direction
 DirectedPoint RoadEnterPoint(Road road, int endPointIndex) {
 	DirectedPoint result = {};
 
-	Point startPoint = {};
-	Point endPoint = {};
-
 	if (endPointIndex == 1) {
-		startPoint = road.endPoint1;
-		endPoint = road.endPoint2;
+		result.direction = PointDirection(road.endPoint1, road.endPoint2);
+		result.position = XYFromPositiveRoadCoord(&road, 0.0f, road.width * 0.25f);
 	}
 	else {
-		startPoint = road.endPoint2;
-		endPoint = road.endPoint1;
+		result.direction = PointDirection(road.endPoint2, road.endPoint1);
+		result.position = XYFromNegativeRoadCoord(&road, 0.0f, road.width * 0.25f);
 	}
-
-	Point moveUnitVector = PointDirection(startPoint, endPoint);
-	Point sideUnitVector = Point{-moveUnitVector.y, moveUnitVector.x};
-
-	result.position = PointSum(startPoint, PointProd(road.width * 0.25f, sideUnitVector));
-	result.direction = moveUnitVector;
 
 	return result;
 }
@@ -72,91 +54,29 @@ float DistanceSquareFromRoad(Road road, Point point) {
 
 Point ClosestRoadPoint(Road road, Point point) {
 	Point result = {};
+	Point resultRoadCoord = {};
 
-	if (road.endPoint1.x == road.endPoint2.x) {
-		float minY = road.endPoint1.y;
-		float maxY = road.endPoint2.y;
+	Point pointRoadCoord = PointToPositiveRoadCoord(&road, point);
 
-		if (minY > maxY) {
-			float tmp = minY;
-			minY = maxY;
-			maxY = tmp;
-		}
+	float roadLength = RoadLength(&road);
+	if (pointRoadCoord.x < 0.0f)
+		resultRoadCoord.x = 0.0f;
+	else if (pointRoadCoord.x < roadLength)
+		resultRoadCoord.x = pointRoadCoord.x;
+	else
+		resultRoadCoord.x = roadLength;
 
-		result.x = road.endPoint1.x;
+	resultRoadCoord.y = 0.0f;
 
-		if (minY <= point.y && point.y <= maxY)
-			result.y = point.y;
-		else if (point.y < minY)
-			result.y = minY;
-		else
-			result.y = maxY;
-	}
-	else if (road.endPoint1.y == road.endPoint2.y) {
-		float minX = road.endPoint1.x;
-		float maxX = road.endPoint2.x;
-
-		if (minX > maxX) {
-			float tmp = minX;
-			minX = maxX;
-			maxX = tmp;
-		}
-
-		result.y = road.endPoint1.y;
-
-		if (minX <= point.x && point.x <= maxX)
-			result.x = point.x;
-		else if (point.x < minX)
-			result.x = minX;
-		else
-			result.y = maxX;
-	}
+	result = PointFromPositiveRoadCoord(&road, resultRoadCoord);
 
 	return result;
 }
 
 Point ClosestLanePoint(Road road, int laneIndex, Point point) {
-	Point result = {};
-
-	if (road.endPoint1.x == road.endPoint2.x) {
-		float x = road.endPoint1.x;
-
-		if (road.endPoint1.y < road.endPoint2.y) {
-			if (laneIndex > 0)
-				x -= road.width * 0.25f;
-			else
-				x += road.width * 0.25f;
-		}
-		else {
-			if (laneIndex > 0)
-				x += road.width * 0.25f;
-			else
-				x -= road.width * 0.25f;
-		}
-
-		result.x = x;
-		result.y = point.y;
-	}
-	else if (road.endPoint1.y == road.endPoint2.y) {
-		float y = road.endPoint1.y;
-
-		if (road.endPoint1.x < road.endPoint2.x) {
-			if (laneIndex > 0)
-				y += road.width * 0.25f;
-			else
-				y -= road.width * 0.25f;
-		}
-		else {
-			if (laneIndex > 0)
-				y -= road.width * 0.25f;
-			else
-				y -= road.width * 0.25f;
-		}
-
-		result.x = point.x;
-		result.y = y;
-	}
-
+	Point pointRoadCoord = PointToRoadCoord(&road, point, laneIndex);
+	pointRoadCoord.y = 0.25f * road.width;
+	Point result = PointFromRoadCoord(&road, pointRoadCoord, laneIndex);
 	return result;
 }
 
@@ -326,7 +246,6 @@ void HighlightRoadSidewalk(Renderer renderer, Road road, Color color) {
 	}
 }
 
-
 static inline void DrawRoadSidewalk(Renderer renderer, Road road) {
 	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
 	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
@@ -345,47 +264,49 @@ static inline void DrawRoadSidewalk(Renderer renderer, Road road) {
 	}
 }
 
+// TODO: pass Road by pointer?
+static inline void DrawCrossing(Renderer renderer, Road road) {
+	Color stepColor = Color{1.0f, 1.0f, 1.0f};
+	float stepSize = 2.0f;
+	float stepDistance = -road.width * 0.5f;
+	bool drawStep = true;
+
+	while (stepDistance < road.width * 0.5f) {
+		float newStepDistance = stepDistance + stepSize;
+		if (newStepDistance > road.width * 0.5f)
+			newStepDistance = road.width * 0.5f;
+
+		if (drawStep) {
+			Point point1 = XYFromPositiveRoadCoord(&road, road.crossingDistance - crossingWidth * 0.5f, stepDistance);
+			Point point2 = XYFromPositiveRoadCoord(&road, road.crossingDistance + crossingWidth * 0.5f, newStepDistance);
+			DrawRect(renderer, point1.y, point1.x, point2.y, point2.x, stepColor);
+		}
+
+		drawStep = !drawStep;
+		stepDistance = newStepDistance;
+	}
+}
+
 void DrawRoad(Renderer renderer, Road road) {
 	DrawRoadSidewalk(renderer, road);
+	float roadLength = RoadLength(&road);
 
+	Color roadColor = Color{0.5f, 0.5f, 0.5f};
+	Point roadPoint1 = XYFromPositiveRoadCoord(&road, 0.0f, -road.width * 0.5f);
+	Point roadPoint2 = XYFromPositiveRoadCoord(&road, roadLength, road.width * 0.5f);
+	DrawRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadColor);
+	DrawRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadColor);
+
+	Color stripeColor = Color{1.0f, 1.0f, 1.0f};
 	float stripeWidth = road.width / 20.0f;
 
-	float top = 0.0f;
-	float left = 0.0f;
-	float bottom = 0.0f;
-	float right = 0.0f;
+	Point stripePoint1 = XYFromPositiveRoadCoord(&road, 0.0f, -stripeWidth * 0.5f);
+	Point stripePoint2 = XYFromPositiveRoadCoord(&road, road.crossingDistance - crossingWidth * 0.5f, stripeWidth * 0.5f);
+	DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
 
-	float stripeTop = 0.0f;
-	float stripeLeft = 0.0f;
-	float stripeBottom = 0.0f;
-	float stripeRight = 0.0f;
+	stripePoint1 = XYFromPositiveRoadCoord(&road, road.crossingDistance + crossingWidth * 0.5f, -stripeWidth * 0.5f);
+	stripePoint2 = XYFromPositiveRoadCoord(&road, roadLength, stripeWidth * 0.5f);
+	DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
 
-	if (road.endPoint1.x == road.endPoint2.x) {
-		left   = road.endPoint1.x - (road.width / 2.0f);
-		right  = road.endPoint2.x + (road.width / 2.0f);
-		top    = road.endPoint1.y;
-		bottom = road.endPoint2.y;
-
-		stripeLeft   = road.endPoint1.x - (stripeWidth / 2.0f);
-		stripeRight  = road.endPoint2.x + (stripeWidth / 2.0f);
-		stripeTop    = road.endPoint1.y;
-		stripeBottom = road.endPoint2.y;
-	}
-	else if (road.endPoint1.y == road.endPoint2.y) {
-		left   = road.endPoint1.x;
-		right  = road.endPoint2.x;
-		top    = road.endPoint1.y - (road.width / 2.0f);
-		bottom = road.endPoint2.y + (road.width / 2.0f);
-
-		stripeLeft   = road.endPoint1.x;
-		stripeRight  = road.endPoint2.x;
-		stripeTop    = road.endPoint1.y - (stripeWidth / 2.0f);
-		stripeBottom = road.endPoint2.y + (stripeWidth / 2.0f);
-	}
-
-	Color roadColor = { 0.5f, 0.5f, 0.5f };
-	DrawRect(renderer, top, left, bottom, right, roadColor);
-
-	Color stripeColor = { 1.0f, 1.0f, 1.0f };
-	DrawRect(renderer, stripeTop, stripeLeft, stripeBottom, stripeRight, stripeColor);
+	DrawCrossing(renderer, road);
 }
