@@ -309,7 +309,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		else if (playerElem.type == MapElemRoadSidewalk || playerElem.type == MapElemIntersectionSidewalk) {
 			MapElem sidewalkElemEnd = IntersectionSidewalkElem(gameState->missionIntersection);
 
-			gameState->missionPath = ConnectSidewalkElems(&gameState->map, playerElem, sidewalkElemEnd,
+			gameState->missionPath = ConnectSidewalkElems(&gameState->map, playerElem, playerPosition, sidewalkElemEnd,
 														  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 		}
 		else {
