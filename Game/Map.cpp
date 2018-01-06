@@ -167,48 +167,58 @@ Building* ClosestCrossedBuilding(Map map, Point pointClose, Point pointFar, Buil
 	return result;
 }
 
-MapElem MapElemAtPoint(Map map, Point point) {
+MapElem RoadElemAtPoint(Map map, Point point) {
 	MapElem result = {};
 	result.type = MapElemNone;
 
 	for (int i = 0; i < map.roadCount; ++i) {
 		if (IsPointOnRoad(point, map.roads[i])) {
-			result.type = MapElemRoad;
-			result.road = &map.roads[i];
+			result = RoadElem(&map.roads[i]);
 			return result;
 		}
+	}
 
-		if (IsPointOnRoadSidewalk(point, map.roads[i])) {
-			result.type = MapElemRoadSidewalk;
-			result.road = &map.roads[i];
+	for (int i = 0; i < map.intersectionCount; ++i) {
+		if (IsPointOnIntersection(point, map.intersections[i])) {
+			result = IntersectionElem(&map.intersections[i]);
 			return result;
 		}
 	}
 
 	for (int i = 0; i < map.buildingCount; ++i) {
 		if (IsPointInBuilding(point, map.buildings[i])) {
-			result.type = MapElemBuilding;
-			result.building = &map.buildings[i];
+			result = BuildingElem(&map.buildings[i]);
 			return result;
 		}
 
 		if (IsPointOnBuildingConnector(point, map.buildings[i])) {
-			result.type = MapElemBuildingConnector;
-			result.building = &map.buildings[i];
+			result = BuildingConnectorElem(&map.buildings[i]);
 			return result;
 		}
 	}
 
+	return result;
+}
+
+MapElem PedestrianElemAtPoint(Map map, Point point) {
+	MapElem result = {};
+	result.type = MapElemNone;
+
 	for (int i = 0; i < map.roadCount; ++i) {
-		if (IsPointOnIntersection(point, map.intersections[i])) {
-			result.type = MapElemIntersection;
-			result.intersection = &map.intersections[i];
+		if (IsPointOnRoadSidewalk(point, map.roads[i])) {
+			result = RoadSidewalkElem(&map.roads[i]);
 			return result;
 		}
 
+		if (IsPointOnCrossing(point, map.roads[i])) {
+			result = CrossingElem(&map.roads[i]);
+			return result;
+		}
+	}
+
+	for (int i = 0; i < map.intersectionCount; ++i) {
 		if (IsPointOnIntersectionSidewalk(point, map.intersections[i])) {
-			result.type = MapElemIntersectionSidewalk;
-			result.intersection = &map.intersections[i];
+			result = IntersectionSidewalkElem(&map.intersections[i]);
 			return result;
 		}
 	}

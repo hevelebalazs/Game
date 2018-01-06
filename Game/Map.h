@@ -31,6 +31,7 @@ BuildingCrossInfo ClosestExtBuildingCrossInfo(Map map, float radius, Point close
 Building* ClosestCrossedBuilding(Map map, Point point1, Point point2, Building* excludedBuilding);
 Building* BuildingAtPoint(Map map, Point point);
 
-MapElem MapElemAtPoint(Map map, Point point);
+MapElem RoadElemAtPoint(Map map, Point point);
+MapElem PedestrianElemAtPoint(Map map, Point point);
 
 void DrawMap(Renderer renderer, Map map);

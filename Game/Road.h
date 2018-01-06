@@ -122,9 +122,31 @@ Point ClosestLanePoint(Road road, int laneIndex, Point point);
 bool IsPointOnRoad(Point point, Road road);
 bool IsPointOnRoadSide(Point point, Road road);
 bool IsPointOnRoadSidewalk(Point point, Road road);
+inline bool IsPointOnCrossing(Point point, Road road) {
+	Point pointRoadCoord = PointToPositiveRoadCoord(&road, point);
+
+	bool result = (
+		(Abs(pointRoadCoord.x - road.crossingDistance) <= crossingWidth * 0.5f) &&
+		(Abs(pointRoadCoord.y) <= road.width * 0.5f)
+	);
+
+	return result;
+}
 
 int LaneIndex(Road road, Point point);
 Point LaneDirection(Road road, int laneIndex);
+
+inline int RoadSidewalkIndex(Road road, Point point) {
+	int result = 0;
+	Point pointRoadCoord = PointToPositiveRoadCoord(&road, point);
+	if (pointRoadCoord.y < -road.width * 0.5f)
+		result = -1;
+	else if (pointRoadCoord.y > road.width * 0.5f)
+		result = 1;
+
+	return result;
+}
+
 float DistanceOnLane(Road road, int laneIndex, Point point);
 DirectedPoint TurnPointFromLane(Road road, int laneIndex, Point point);
 DirectedPoint TurnPointToLane(Road road, int laneIndex, Point point);

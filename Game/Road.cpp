@@ -105,22 +105,12 @@ bool IsPointOnRoad(Point point, Road road) {
 }
 
 bool IsPointOnRoadSidewalk(Point point, Road road) {
-	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
-	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
-	float top    = Min2(road.endPoint1.y, road.endPoint2.y);
-	float bottom = Max2(road.endPoint1.y, road.endPoint2.y);
+	Point pointRoadCoord = PointToPositiveRoadCoord(&road, point);
 
-	float width = road.width * 0.5f + sideWalkWidth;
-	if (left == right) {
-		left  -= width;
-		right += width;
-	}
-	if (top == bottom) {
-		top    -= width;
-		bottom += width;
-	}
+	float roadLength = RoadLength(&road);
+	bool result = IsBetween(pointRoadCoord.x, 0.0f, roadLength)
+		&& IsBetween(Abs(pointRoadCoord.y), road.width * 0.5f, road.width * 0.5f + sideWalkWidth);
 
-	bool result = IsPointInRect(point, left, right, top, bottom);
 	return result;
 }
 

@@ -22,6 +22,15 @@ struct TrafficLight {
 	float timeLeft;
 };
 
+// TODO: name this QuarterIndex
+enum {
+	QuarterNone,
+	QuarterTopLeft,
+	QuarterTopRight,
+	QuarterBottomLeft,
+	QuarterBottomRight
+};
+
 struct Intersection {
 	Point position;
 
@@ -50,3 +59,41 @@ void DrawTrafficLights(Renderer renderer, Intersection intersection);
 void HighlightIntersectionSidewalk(Renderer renderer, Intersection intersection, Color color);
 void HighlightIntersection(Renderer renderer, Intersection intersection, Color color);
 void DrawIntersection(Renderer renderer, Intersection intersection);
+
+static inline int QuarterIndex(Intersection* intersection, Point point) {
+	int result = 0;
+
+	if (point.y < intersection->position.y) {
+		if (point.x < intersection->position.x)
+			result = QuarterTopLeft;
+		else
+			result = QuarterTopRight;
+	}
+	else {
+		if (point.x < intersection->position.x)
+			result = QuarterBottomLeft;
+		else
+			result = QuarterBottomRight;
+	}
+
+	return result;
+}
+
+static inline Point IntersectionSidewalkCorner(Intersection* intersection, int quarterIndex) {
+	Point result = intersection->position;
+
+	extern float sideWalkWidth;
+	float distance = (GetIntersectionRoadWidth(*intersection) * 0.5f) + (sideWalkWidth * 0.5f);
+
+	if (quarterIndex == QuarterTopLeft || quarterIndex == QuarterBottomLeft)
+		result.x -= distance;
+	else
+		result.x += distance;
+
+	if (quarterIndex == QuarterTopLeft || quarterIndex == QuarterTopRight)
+		result.y -= distance;
+	else
+		result.y += distance;
+
+	return result;
+}
