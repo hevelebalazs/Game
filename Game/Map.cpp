@@ -204,6 +204,13 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	MapElem result = {};
 	result.type = MapElemNone;
 
+	for (int i = 0; i < map.intersectionCount; ++i) {
+		if (IsPointOnIntersectionSidewalk(point, map.intersections[i])) {
+			result = IntersectionSidewalkElem(&map.intersections[i]);
+			return result;
+		}
+	}
+
 	for (int i = 0; i < map.roadCount; ++i) {
 		if (IsPointOnRoadSidewalk(point, map.roads[i])) {
 			result = RoadSidewalkElem(&map.roads[i]);
@@ -212,13 +219,6 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 
 		if (IsPointOnCrossing(point, map.roads[i])) {
 			result = CrossingElem(&map.roads[i]);
-			return result;
-		}
-	}
-
-	for (int i = 0; i < map.intersectionCount; ++i) {
-		if (IsPointOnIntersectionSidewalk(point, map.intersections[i])) {
-			result = IntersectionSidewalkElem(&map.intersections[i]);
 			return result;
 		}
 	}

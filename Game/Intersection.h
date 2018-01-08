@@ -31,6 +31,10 @@ enum {
 	QuarterBottomRight
 };
 
+inline int RandomQuarterIndex() {
+	return 1 + (rand() % 4);
+}
+
 struct Intersection {
 	Point position;
 

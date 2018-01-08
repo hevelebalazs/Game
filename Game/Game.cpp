@@ -117,6 +117,21 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		autoVehicle->inBuilding = randomBuilding;
 	}
 
+	for (int i = 0; i < gameState->autoHumanCount; ++i) {
+		AutoHuman* autoHuman = gameState->autoHumans + i;
+		Human* human = &autoHuman->human;
+
+		Intersection* intersection = RandomIntersection(gameState->map);
+		int quarterIndex = RandomQuarterIndex();
+		Point position = IntersectionSidewalkCorner(intersection, quarterIndex);
+
+		human->position = position;
+		human->inBuilding = 0;
+		human->color = RandomColor();
+		human->map = &gameState->map;
+		autoHuman->onIntersection = intersection;
+	}
+
 	Camera* camera = &gameState->camera;
 	camera->zoomSpeed = 10.0f;
 	camera->pixelCoordRatio = 10.0f;
@@ -148,6 +163,11 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 		AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
 		UpdateAutoVehicle(autoVehicle, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
+	}
+
+	for (int i = 0; i < gameState->autoHumanCount; ++i) {
+		AutoHuman* autoHuman = &gameState->autoHumans[i];
+		UpdateAutoHuman(autoHuman, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
 	if (gameState->isPlayerVehicle) {
@@ -213,7 +233,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->playerHuman.human.inBuilding)
 			camera->zoomTargetRatio = 20.0f;
 		else
-			camera->zoomTargetRatio = 5.0f;
+			camera->zoomTargetRatio = 10.0f;
 	}
 
 	UpdateCamera(camera, seconds);
@@ -380,18 +400,23 @@ void GameDraw(GameStorage* gameStorage) {
 
 		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 		if (gameState->missionIntersection)
-			HighlightIntersection(gameState->renderer, *gameState->missionIntersection, missionHighlightColor);
+			// HighlightIntersection(gameState->renderer, *gameState->missionIntersection, missionHighlightColor);
 
 		if (gameState->missionPath) {
 			DirectedPoint startPoint = {};
 			startPoint.position = gameState->missionStartPoint;
 
-			DrawBezierPathFromPoint(gameState->renderer, gameState->missionPath, startPoint, missionHighlightColor, 1.0f);
+			// DrawBezierPathFromPoint(gameState->renderer, gameState->missionPath, startPoint, missionHighlightColor, 1.0f);
 		}
 
 		for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 			AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
 			DrawVehicle(renderer, autoVehicle->vehicle);
+		}
+
+		for (int i = 0; i < gameState->autoHumanCount; ++i) {
+			AutoHuman* autoHuman = &gameState->autoHumans[i];
+			DrawHuman(renderer, autoHuman->human);
 		}
 	}
 

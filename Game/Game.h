@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AutoVehicle.h"
+#include "AutoHuman.h"
 #include "Building.h"
 #include "MapElem.h"
 #include "Memory.h"
@@ -20,6 +22,9 @@ struct GameState {
 
 	AutoVehicle autoVehicles[100];
 	int autoVehicleCount = 100;
+
+	AutoHuman autoHumans[100];
+	int autoHumanCount = 100;
 
 	PlayerHuman playerHuman;
 	PlayerVehicle playerVehicle;

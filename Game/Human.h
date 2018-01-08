@@ -10,10 +10,6 @@ extern float humanRadius;
 extern float humanMoveSpeed;
 
 struct Human {
-	float needRed;
-	float needGreen;
-	float needBlue;
-
 	Map* map;
 	Building* inBuilding;
 
@@ -22,4 +18,5 @@ struct Human {
 	Point position;
 };
 
+void MoveHuman(Human* human, DirectedPoint point);
 void DrawHuman(Renderer renderer, Human human);

@@ -826,7 +826,7 @@ DirectedPoint StartNodePoint(PathNode* node) {
 		position = building->connectPointClose;
 		direction = PointDirection(building->connectPointClose, building->connectPointFar);
 	}
-	else if (elem.type == MapElemIntersection) {
+	else if (elem.type == MapElemIntersection || elem.type == MapElemIntersectionSidewalk) {
 		position = elem.intersection->position;
 		// TODO: add direction
 	}

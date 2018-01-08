@@ -48,14 +48,10 @@ bool IsPointOnIntersectionSidewalk(Point point, Intersection intersection) {
 	if (!intersection.topRoad) {
 		if (IsPointInRect(point, left, right, top - sideWalkWidth, top))
 			return true;
-
-		top -= sideWalkWidth;
 	}
 	if (!intersection.bottomRoad) {
 		if (IsPointInRect(point, left, right, bottom, bottom + sideWalkWidth))
 			return true;
-
-		bottom += sideWalkWidth;
 	}
 	if (!intersection.leftRoad) {
 		if (IsPointInRect(point, left - sideWalkWidth, left, top, bottom))
@@ -65,6 +61,14 @@ bool IsPointOnIntersectionSidewalk(Point point, Intersection intersection) {
 		if (IsPointInRect(point, right, right + sideWalkWidth, top, bottom))
 			return true;
 	}
+
+	float roadDistance = roadWidth * 0.5f;
+	float sidewalkDistance = roadDistance + sideWalkWidth;
+	float absX = Abs(point.x - intersection.position.x);
+	float absY = Abs(point.y - intersection.position.y);
+
+	if (IsBetween(absX, roadDistance, sidewalkDistance) && IsBetween(absY, roadDistance, sidewalkDistance))
+		return true;
 
 	return false;
 }
