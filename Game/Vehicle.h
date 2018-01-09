@@ -22,5 +22,6 @@ struct Vehicle {
 	Map* map;
 };
 
+bool IsVehicleOnPoint(Vehicle* vehicle, Point point);
 void MoveVehicle(Vehicle* vehicle, DirectedPoint point);
 void DrawVehicle(Renderer renderer, Vehicle vehicle);

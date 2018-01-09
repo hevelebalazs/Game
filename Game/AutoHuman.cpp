@@ -30,6 +30,9 @@ void MoveAutoHumanToIntersection(AutoHuman* autoHuman, Intersection* intersectio
 }
 
 void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
+	if (autoHuman->dead)
+		return;
+
 	Human* human = &autoHuman->human;
 
 	if (autoHuman->moveTargetIntersection) {
@@ -85,5 +88,16 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemAr
 	else {
 		Intersection* targetIntersection = RandomIntersection(*human->map);
 		MoveAutoHumanToIntersection(autoHuman, targetIntersection, arena, tmpArena, pathPool);
+	}
+}
+
+void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool) {
+	autoHuman->dead = true;
+	// TODO: create a global variable for this color?
+	autoHuman->human.color = Color{0.0f, 0.0f, 0.0f};
+
+	if (autoHuman->moveNode) {
+		FreePath(autoHuman->moveNode, pathPool);
+		autoHuman->moveNode = 0;
 	}
 }

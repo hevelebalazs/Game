@@ -39,6 +39,10 @@ inline int RandMod(int mod) {
 	return (rand() % mod);
 }
 
+inline void SeedRandom(int seed) {
+	srand((unsigned int)seed);
+}
+
 void InitRandom();
 float RandomBetween(float min, float max);
 bool IsBetween(float test, float min, float max);

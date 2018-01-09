@@ -22,6 +22,15 @@ float VectorAngle(Point vector);
 
 Point RotationVector(float angle);
 
+Point PointDirection(Point startPoint, Point endPoint);
+bool TurnsRight(Point point1, Point point2, Point point3);
+bool DoLinesCross(Point line11, Point line12, Point line21, Point line22);
+Point LineIntersection(Point line11, Point line12, Point line21, Point line22);
+
+float DotProduct(Point vector1, Point vector2);
+Point NormalVector(Point vector);
+Point ParallelVector(Point vector, Point base);
+
 // TODO: create a Rect struct?
 // TODO: use this everywhere
 inline bool IsPointInRect(Point point, float left, float right, float top, float bottom) {
@@ -31,6 +40,30 @@ inline bool IsPointInRect(Point point, float left, float right, float top, float
 	else if (point.y < top || point.y > bottom) result = false;
 
 	return result;
+}
+
+// TODO: create a Quad struct?
+inline bool IsPointInQuad(Point quad[4], Point point) {
+	if (point.x < quad[0].x && point.x < quad[1].x && point.x < quad[2].x && point.x < quad[3].x)
+		return false;
+	if (point.x > quad[0].x && point.x > quad[1].x && point.x > quad[2].x && point.x > quad[3].x)
+		return false;
+
+	if (point.y < quad[0].y && point.y < quad[1].y && point.y < quad[2].y && point.y < quad[3].y)
+		return false;
+	if (point.y > quad[0].y && point.y > quad[1].y && point.y > quad[2].y && point.y > quad[3].y)
+		return false;
+
+	if (!TurnsRight(quad[0], quad[1], point))
+		return false;
+	else if (!TurnsRight(quad[1], quad[2], point))
+		return false;
+	else if (!TurnsRight(quad[2], quad[3], point))
+		return false;
+	else if (!TurnsRight(quad[3], quad[0], point))
+		return false;
+	else
+		return true;
 }
 
 inline Point TurnVectorToRight(Point vector) {
@@ -50,12 +83,3 @@ inline Point XYToBase(Point point, Point baseUnit) {
 
 	return result;
 }
-
-Point PointDirection(Point startPoint, Point endPoint);
-bool TurnsRight(Point point1, Point point2, Point point3);
-bool DoLinesCross(Point line11, Point line12, Point line21, Point line22);
-Point LineIntersection(Point line11, Point line12, Point line21, Point line22);
-
-float DotProduct(Point vector1, Point vector2);
-Point NormalVector(Point vector);
-Point ParallelVector(Point vector, Point base);

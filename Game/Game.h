@@ -23,8 +23,8 @@ struct GameState {
 	AutoVehicle autoVehicles[100];
 	int autoVehicleCount = 100;
 
-	AutoHuman autoHumans[100];
-	int autoHumanCount = 100;
+	AutoHuman autoHumans[300];
+	int autoHumanCount = 300;
 
 	PlayerHuman playerHuman;
 	PlayerVehicle playerVehicle;

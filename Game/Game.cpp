@@ -205,6 +205,16 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 					TurnPlayerVehicleRed(&gameState->playerVehicle, 0.5f);
 			}
 		}
+
+		for (int i = 0; i < gameState->autoHumanCount; ++i) {
+			// TODO: use array + index instead of &array[index] everywhere
+			AutoHuman* autoHuman = gameState->autoHumans + i;
+			Point autoHumanPoint = autoHuman->human.position;
+
+			if (IsVehicleOnPoint(&gameState->playerVehicle.vehicle, autoHumanPoint)) {
+				KillAutoHuman(autoHuman, &gameState->pathPool);
+			}
+		}
 	}
 	else {
 		UpdatePlayerHuman(&gameState->playerHuman, seconds);
@@ -225,7 +235,8 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->zoomTargetRatio = 13.0f - (speed / 4.0f);
+		// camera->zoomTargetRatio = 13.0f - (speed / 4.0f);
+		camera->zoomTargetRatio = 15.0f;
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
@@ -416,7 +427,7 @@ void GameDraw(GameStorage* gameStorage) {
 
 		for (int i = 0; i < gameState->autoHumanCount; ++i) {
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
-			DrawHuman(renderer, autoHuman->human);
+			DrawAutoHuman(renderer, autoHuman);
 		}
 	}
 
