@@ -15,6 +15,7 @@ struct Camera {
 	float zoomTargetRatio;
 };
 
+// TODO: rename this to RenderContext or some other "passive" noun?
 struct Renderer {
 	Bitmap bitmap;
 	Camera* camera;

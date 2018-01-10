@@ -84,9 +84,11 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 
 	WinResize(gameState, windowWidth, windowHeight);
 
+	PlayerHuman* playerHuman = &gameState->playerHuman;
 	Intersection* startIntersection = RandomIntersection(gameState->map);
-	gameState->playerHuman.human.position = startIntersection->position;
-	gameState->playerHuman.human.map = &gameState->map;
+	playerHuman->human.position = startIntersection->position;
+	playerHuman->human.map = &gameState->map;
+	playerHuman->human.moveSpeed = 15.0f;
 
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
 	Vehicle* vehicle = &playerVehicle->vehicle;;
@@ -129,6 +131,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		human->inBuilding = 0;
 		human->color = RandomColor();
 		human->map = &gameState->map;
+		human->moveSpeed = RandomBetween(2.0f, 10.0f);
 		autoHuman->onIntersection = intersection;
 	}
 
@@ -217,7 +220,10 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		}
 	}
 	else {
-		UpdatePlayerHuman(&gameState->playerHuman, seconds);
+		PlayerHuman* playerHuman = &gameState->playerHuman;
+
+		playerHuman->aimPosition = mousePosition;
+		UpdatePlayerHuman(playerHuman, seconds);
 	}
 	
 	Camera* camera = gameState->renderer.camera;
@@ -434,5 +440,5 @@ void GameDraw(GameStorage* gameStorage) {
 	if (gameState->isPlayerVehicle)
 		DrawVehicle(renderer, gameState->playerVehicle.vehicle);
 	else
-		DrawHuman(renderer, gameState->playerHuman.human);
+		DrawPlayerHuman(renderer, &gameState->playerHuman);
 }

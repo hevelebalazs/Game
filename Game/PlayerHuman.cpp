@@ -1,8 +1,43 @@
+#include "Game.h"
 #include "Geometry.h"
 #include "Human.h"
 #include "Math.h"
 #include "PlayerHuman.h"
 #include "Point.h"
+#include "Renderer.h"
+
+static inline Point GetAimEndPoint(PlayerHuman* playerHuman) {
+	Human* human = &playerHuman->human;
+
+	// TODO: make this a global?
+	float aimDistance = 50.0f;
+
+	Point aimDirection = PointDirection(human->position, playerHuman->aimPosition);
+	Point aimEndPoint = PointSum(
+		human->position,
+		PointProd(aimDistance, aimDirection)
+	);
+
+	return aimEndPoint;
+}
+
+// TODO: add an aimPosition parameter?
+void ShootBullet(PlayerHuman* playerHuman, GameState* gameState) {
+	Point aimStartPoint = playerHuman->human.position;
+	Point aimEndPoint = GetAimEndPoint(playerHuman);
+	Line aimLine = Line{aimStartPoint, aimEndPoint};
+
+	for (int i = 0; i < gameState->autoHumanCount; ++i) {
+		AutoHuman* autoHuman = gameState->autoHumans + i;
+
+		if (IsHumanCrossedByLine(&autoHuman->human, aimLine))
+			KillAutoHuman(autoHuman, &gameState->pathPool);
+	}
+
+	// TODO: make this a global?
+	float aimRedSeconds = 0.2f;
+	playerHuman->aimRedSeconds = aimRedSeconds;
+}
 
 static void MoveHuman(Human* human, Point moveVector) {
 	Map* map = human->map;
@@ -59,6 +94,8 @@ static void MoveHuman(Human* human, Point moveVector) {
 }
 
 void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds) {
+	Human* human = &playerHuman->human;
+
 	playerHuman->moveDirection = Point {0.0f, 0.0f};
 
 	bool moveX = false;
@@ -87,7 +124,35 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds) {
 	if (moveX && moveY) 
 		playerHuman->moveDirection = PointProd(1.0f / Sqrt(2.0f), playerHuman->moveDirection);
 
-	Point moveVector = PointProd(humanMoveSpeed * seconds, playerHuman->moveDirection);
+	Point moveVector = PointProd(human->moveSpeed * seconds, playerHuman->moveDirection);
 
-	MoveHuman(&playerHuman->human, moveVector);
+	MoveHuman(human, moveVector);
+
+	// TODO: this is weird, merge Update and Draw?
+	if (playerHuman->isAiming)
+		human->color = Color{1.0f, 1.0f, 1.0f};
+	else
+		human->color = Color{0.0f, 0.0f, 0.0f};
+
+	if (playerHuman->aimRedSeconds >= 0.0f) {
+		playerHuman->aimRedSeconds -= seconds;
+		if (playerHuman->aimRedSeconds <= 0.0f)
+			playerHuman->aimRedSeconds = 0.0f;
+	}
+}
+
+void DrawPlayerHuman(Renderer renderer, PlayerHuman* playerHuman) {
+	Human* human = &playerHuman->human;
+
+	if (playerHuman->isAiming) {
+		Color aimColor = Color{1.0f, 1.0f, 1.0f};
+
+		if (playerHuman->aimRedSeconds > 0.0f)
+			aimColor = Color{1.0f, 0.0f, 0.0f};
+
+		Point aimEndPoint = GetAimEndPoint(playerHuman);
+		Bresenham(renderer, human->position, aimEndPoint, aimColor);
+	}
+
+	DrawHuman(renderer, playerHuman->human);
 }

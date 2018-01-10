@@ -1,9 +1,11 @@
 #include "AutoHuman.h"
 
 void InitAutoHumanMovement(AutoHuman* autoHuman) {
+	Human* human = &autoHuman->human;
+
 	float moveDistance = Distance(autoHuman->moveStartPoint.position, autoHuman->moveEndPoint.position);
 
-	autoHuman->moveTotalSeconds = (moveDistance / humanMoveSpeed);
+	autoHuman->moveTotalSeconds = (moveDistance / human->moveSpeed);
 	autoHuman->moveSeconds = 0.0f;
 }
 
