@@ -103,3 +103,13 @@ void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool) {
 		autoHuman->moveNode = 0;
 	}
 }
+
+// TODO: make this work with a Human instead of an AutoHuman
+void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool) {
+	Human* human = &autoHuman->human;
+	if (human->healthPoints > 0) {
+		human->healthPoints--;
+		if (human->healthPoints == 0)
+			KillAutoHuman(autoHuman, pathPool);
+	}
+}

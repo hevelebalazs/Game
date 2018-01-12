@@ -89,10 +89,10 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	playerHuman->human.position = startIntersection->position;
 	playerHuman->human.map = &gameState->map;
 	playerHuman->human.moveSpeed = 15.0f;
+	playerHuman->human.healthPoints = maxHealthPoints;
 
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
 	Vehicle* vehicle = &playerVehicle->vehicle;;
-
 	playerVehicle->defaultColor   = Color{0.0f, 0.0f, 1.0f};
 	playerVehicle->maxEngineForce = 1000.0f;
 	playerVehicle->breakForce     = 1000.0f;
@@ -104,6 +104,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	vehicle->color  = Color{0.0f, 0.0f, 1.0f};
 
 	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
+		// TODO: create an InitAutoVehicle function?
 		Building* randomBuilding = RandomBuilding(gameState->map);
 
 		AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
@@ -120,6 +121,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	}
 
 	for (int i = 0; i < gameState->autoHumanCount; ++i) {
+		// TODO: create an InitAutoHuman function?
 		AutoHuman* autoHuman = gameState->autoHumans + i;
 		Human* human = &autoHuman->human;
 
@@ -132,6 +134,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		human->color = RandomColor();
 		human->map = &gameState->map;
 		human->moveSpeed = RandomBetween(2.0f, 10.0f);
+		human->healthPoints = maxHealthPoints;
 		autoHuman->onIntersection = intersection;
 	}
 
@@ -221,9 +224,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	}
 	else {
 		PlayerHuman* playerHuman = &gameState->playerHuman;
-
-		playerHuman->aimPosition = mousePosition;
-		UpdatePlayerHuman(playerHuman, seconds);
+		UpdatePlayerHuman(playerHuman, seconds, gameState);
 	}
 	
 	Camera* camera = gameState->renderer.camera;
@@ -241,16 +242,15 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		// camera->zoomTargetRatio = 13.0f - (speed / 4.0f);
-		camera->zoomTargetRatio = 15.0f;
+		camera->zoomTargetRatio = 15.0f - (speed / 4.0f);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
 
 		if (gameState->playerHuman.human.inBuilding)
-			camera->zoomTargetRatio = 20.0f;
-		else
 			camera->zoomTargetRatio = 10.0f;
+		else
+			camera->zoomTargetRatio = 20.0f;
 	}
 
 	UpdateCamera(camera, seconds);

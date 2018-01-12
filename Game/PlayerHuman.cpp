@@ -6,37 +6,26 @@
 #include "Point.h"
 #include "Renderer.h"
 
-static inline Point GetAimEndPoint(PlayerHuman* playerHuman) {
-	Human* human = &playerHuman->human;
+float aimDistance = 50.0f;
+float bulletTotalSeconds = 0.2f;
+float shootCooldown = 0.2f;
+float bulletSpeed = (aimDistance / bulletTotalSeconds);
 
-	// TODO: make this a global?
-	float aimDistance = 50.0f;
-
-	Point aimDirection = PointDirection(human->position, playerHuman->aimPosition);
-	Point aimEndPoint = PointSum(
-		human->position,
-		PointProd(aimDistance, aimDirection)
-	);
-
-	return aimEndPoint;
-}
-
+// TODO: this doesn't belong here, move it somewhere else
 // TODO: add an aimPosition parameter?
-void ShootBullet(PlayerHuman* playerHuman, GameState* gameState) {
+void ShootBullet(PlayerHuman* playerHuman, Point targetPoint) {
+	Human* human = &playerHuman->human;
 	Point aimStartPoint = playerHuman->human.position;
-	Point aimEndPoint = GetAimEndPoint(playerHuman);
+	Point aimEndPoint = targetPoint;
 	Line aimLine = Line{aimStartPoint, aimEndPoint};
 
-	for (int i = 0; i < gameState->autoHumanCount; ++i) {
-		AutoHuman* autoHuman = gameState->autoHumans + i;
+	playerHuman->shootCooldown = shootCooldown;
 
-		if (IsHumanCrossedByLine(&autoHuman->human, aimLine))
-			KillAutoHuman(autoHuman, &gameState->pathPool);
-	}
+	Bullet* bullet = &playerHuman->bullet;
 
-	// TODO: make this a global?
-	float aimRedSeconds = 0.2f;
-	playerHuman->aimRedSeconds = aimRedSeconds;
+	bullet->secondsRemaining = bulletTotalSeconds;
+	bullet->position.position = human->position;
+	bullet->position.direction = PointDirection(human->position, targetPoint);
 }
 
 static void MoveHuman(Human* human, Point moveVector) {
@@ -93,7 +82,8 @@ static void MoveHuman(Human* human, Point moveVector) {
 	}
 }
 
-void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds) {
+// TODO: the gameState is needed for updating the bullet
+void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds, GameState* gameState) {
 	Human* human = &playerHuman->human;
 
 	playerHuman->moveDirection = Point {0.0f, 0.0f};
@@ -128,30 +118,68 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds) {
 
 	MoveHuman(human, moveVector);
 
-	// TODO: this is weird, merge Update and Draw?
-	if (playerHuman->isAiming)
-		human->color = Color{1.0f, 1.0f, 1.0f};
-	else
-		human->color = Color{0.0f, 0.0f, 0.0f};
+	// TODO: merge update and draw everywhere
+	if (playerHuman->shootCooldown >= 0.0f) {
+		playerHuman->shootCooldown -= seconds;
+		if (playerHuman->shootCooldown <= 0.0f)
+			playerHuman->shootCooldown = 0.0f;
+	}
 
-	if (playerHuman->aimRedSeconds >= 0.0f) {
-		playerHuman->aimRedSeconds -= seconds;
-		if (playerHuman->aimRedSeconds <= 0.0f)
-			playerHuman->aimRedSeconds = 0.0f;
+	// TODO: create an UpdateBullet function
+	//       and move it to another file?
+	Bullet* bullet = &playerHuman->bullet;
+	if (bullet->secondsRemaining > 0.0f) {
+		float secondsToGo = 0.0f;
+
+		if (bullet->secondsRemaining > seconds) {
+			secondsToGo = seconds;
+			bullet->secondsRemaining -= seconds;
+		}
+		else {
+			secondsToGo = bullet->secondsRemaining;
+			bullet->secondsRemaining = 0.0f;
+		}
+
+		Point oldPosition = bullet->position.position;
+		Point newPosition = PointSum(
+			bullet->position.position,
+			PointProd(secondsToGo * bulletSpeed, bullet->position.direction)
+		);
+
+		bullet->position.position = newPosition;
+
+		// TODO: is it necessary to build this struct?
+		Line bulletLine = Line{oldPosition, newPosition};
+
+		for (int i = 0; i < gameState->autoHumanCount; ++i) {
+			AutoHuman* autoHuman = &gameState->autoHumans[i];
+			Human* human = &autoHuman->human;
+
+			if (!autoHuman->dead && IsHumanCrossedByLine(human, bulletLine)) {
+				DamageAutoHuman(autoHuman, &gameState->pathPool);
+				bullet->secondsRemaining = 0.0f;
+				break;
+			}
+		}
 	}
 }
 
 void DrawPlayerHuman(Renderer renderer, PlayerHuman* playerHuman) {
 	Human* human = &playerHuman->human;
 
-	if (playerHuman->isAiming) {
-		Color aimColor = Color{1.0f, 1.0f, 1.0f};
+	Bullet* bullet = &playerHuman->bullet;
+	if (bullet->secondsRemaining > 0.0f) {
+		float bulletTailLength = 2.0f;
 
-		if (playerHuman->aimRedSeconds > 0.0f)
-			aimColor = Color{1.0f, 0.0f, 0.0f};
+		Point point1 = bullet->position.position;
+		Point point2 = PointDiff(
+			point1,
+			PointProd(bulletTailLength, bullet->position.direction)
+		);
 
-		Point aimEndPoint = GetAimEndPoint(playerHuman);
-		Bresenham(renderer, human->position, aimEndPoint, aimColor);
+		// TODO: make this a global value
+		Color bulletColor = Color{1.0f, 1.0f, 0.0f};
+		Bresenham(renderer, point1, point2, bulletColor);
 	}
 
 	DrawHuman(renderer, playerHuman->human);

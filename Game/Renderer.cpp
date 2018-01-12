@@ -303,6 +303,7 @@ void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float 
 	DrawQuad(renderer, drawPoints, color);
 }
 
+// TODO: change the order to left, right, top, bottom
 // TODO: make this function take two points instead of four floats?
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color) {
 	unsigned int colorCode = ColorCode(color);

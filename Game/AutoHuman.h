@@ -24,7 +24,9 @@ struct AutoHuman {
 
 void MoveAutoHumanToIntersection(AutoHuman* autoHuman, Intersection* intersection, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
 void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+
 void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool);
+void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool);
 
 inline void DrawAutoHuman(Renderer renderer, AutoHuman* autoHuman) {
 	if (autoHuman->dead) {

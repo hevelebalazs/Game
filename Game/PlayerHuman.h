@@ -4,6 +4,13 @@
 #include "Human.h"
 #include "Point.h"
 
+struct Bullet {
+	DirectedPoint position;
+
+	// TODO: 0 means not active
+	float secondsRemaining;
+};
+
 struct PlayerHuman {
 	Human human;
 
@@ -14,18 +21,13 @@ struct PlayerHuman {
 
 	Point moveDirection;
 
-	bool isAiming;
-	// TODO: should this be here?
-	//       or passed to UpdatePlayerHuman?
-	Point aimPosition;
-
-	// TODO: rename this to shootCooldown?
-	float aimRedSeconds;
+	float shootCooldown;
+	Bullet bullet;
 };
 
 struct GameState;
 
-void ShootBullet(PlayerHuman* playerHuman, GameState* gameState);
+void ShootBullet(PlayerHuman* playerHuman, Point targetPoint);
 
-void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds);
+void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds, GameState* gameState);
 void DrawPlayerHuman(Renderer renderer, PlayerHuman* playerHuman);

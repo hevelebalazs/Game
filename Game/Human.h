@@ -7,6 +7,7 @@
 #include "Renderer.h"
 
 extern float humanRadius;
+extern int maxHealthPoints;
 
 struct Human {
 	Map* map;
@@ -16,6 +17,8 @@ struct Human {
 
 	Point position;
 	float moveSpeed;
+
+	int healthPoints;
 };
 
 inline bool IsHumanCrossedByLine(Human* human, Line line) {

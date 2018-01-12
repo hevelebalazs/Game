@@ -156,19 +156,11 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			break;
 		}
 
-		case WM_RBUTTONDOWN: {
-			globalGameState->playerHuman.isAiming = true;
-			break;
-		}
-
-		case WM_RBUTTONUP: {
-			globalGameState->playerHuman.isAiming = false;
-			break;
-		}
-
 		case WM_LBUTTONDOWN: {
-			if (!globalGameState->isPlayerVehicle)
-				ShootBullet(&globalGameState->playerHuman, globalGameState);
+			if (!globalGameState->isPlayerVehicle) {
+				Point mousePosition = WinMousePosition(window);
+				ShootBullet(&globalGameState->playerHuman, mousePosition);
+			}
 			break;
 		}
 
