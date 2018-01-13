@@ -23,7 +23,18 @@ float VectorAngle(Point vector);
 Point RotationVector(float angle);
 
 Point PointDirection(Point startPoint, Point endPoint);
-bool TurnsRight(Point point1, Point point2, Point point3);
+
+inline bool TurnsRight(Point point1, Point point2, Point point3) {
+	float dx1 = point2.x - point1.x;
+	float dy1 = point2.y - point1.y;
+	float dx2 = point3.x - point2.x;
+	float dy2 = point3.y - point2.y;
+
+	float det = (dx1 * dy2) - (dx2 * dy1);
+
+	return (det > 0.0f);
+}
+
 bool DoLinesCross(Point line11, Point line12, Point line21, Point line22);
 Point LineIntersection(Point line11, Point line12, Point line21, Point line22);
 

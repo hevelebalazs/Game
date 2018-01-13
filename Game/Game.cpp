@@ -139,8 +139,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	}
 
 	Camera* camera = &gameState->camera;
-	camera->zoomSpeed = 10.0f;
-	camera->pixelCoordRatio = 10.0f;
+	camera->moveSpeed = 100.0f;
+	camera->altitude = 30.0f;
 	camera->center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
 
 	gameState->renderer.camera = camera;
@@ -228,30 +228,26 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	}
 	
 	Camera* camera = gameState->renderer.camera;
-	if (gameState->showFullMap) {
-		camera->center = Point{
-			gameState->map.width * 0.5f,
-			gameState->map.height * 0.5f
-		};
 
-		camera->zoomTargetRatio = 1.0f;
-	}
-	else if (gameState->isPlayerVehicle) {
+	if (gameState->isPlayerVehicle) {
 		camera->center = gameState->playerVehicle.vehicle.position;
 
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->zoomTargetRatio = 15.0f - (speed / 4.0f);
+		camera->targetAltitude = 50.0f + (speed * 4.0f);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
 
 		if (gameState->playerHuman.human.inBuilding)
-			camera->zoomTargetRatio = 10.0f;
+			camera->targetAltitude = 30.0f;
 		else
-			camera->zoomTargetRatio = 20.0f;
+			camera->targetAltitude = 50.0f;
 	}
+
+	if (gameState->showFullMap)
+		camera->targetAltitude = 1000.0f;
 
 	UpdateCamera(camera, seconds);
 

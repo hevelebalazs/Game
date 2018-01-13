@@ -1,3 +1,4 @@
+#include "Debug.h"
 #include "Geometry.h"
 #include "Math.h"
 #include "Memory.h"
@@ -151,44 +152,77 @@ void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena) 
 	ArenaPopTo(tmpArena, positions);
 }
 
-void SmoothZoom(Camera* camera, float pixelCoordRatio) {
-	camera->zoomTargetRatio = pixelCoordRatio;
+void SmoothZoom(Camera* camera, float altitude) {
+	camera->targetAltitude = altitude;
 }
 
 void UpdateCamera(Camera* camera, float seconds) {
-	if (camera->pixelCoordRatio == camera->zoomTargetRatio) {
+	if (camera->altitude == camera->targetAltitude) {
 		return;
 	}
-	else if (camera->pixelCoordRatio < camera->zoomTargetRatio) {
-		camera->pixelCoordRatio += seconds * camera->zoomSpeed;
-		if (camera->pixelCoordRatio > camera->zoomTargetRatio)
-			camera->pixelCoordRatio = camera->zoomTargetRatio;
+	else if (camera->altitude < camera->targetAltitude) {
+		camera->altitude += seconds * camera->moveSpeed;
+		if (camera->altitude > camera->targetAltitude)
+			camera->altitude = camera->targetAltitude;
 	}
 	else {
-		camera->pixelCoordRatio -= seconds * camera->zoomSpeed;
-		if (camera->pixelCoordRatio < camera->zoomTargetRatio)
-			camera->pixelCoordRatio = camera->zoomTargetRatio;
+		camera->altitude -= seconds * camera->moveSpeed;
+		if (camera->altitude < camera->targetAltitude)
+			camera->altitude = camera->targetAltitude;
 	}
 }
 
 float CoordXtoPixel(Camera camera, float coordX) {
-	return (0.5f * camera.screenSize.x) + (camera.pixelCoordRatio * (coordX - camera.center.x));
+	// TODO: add unitInPixels to Camera?
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
+
+	return (camera.screenSize.x * 0.5f) + ((coordX - camera.center.x) * (unitInPixels));
 }
 
 float CoordYtoPixel(Camera camera, float coordY) {
-	return (0.5f * camera.screenSize.y) + (camera.pixelCoordRatio * (coordY - camera.center.y));
-}
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
 
-Point PixelToCoord(Camera camera, Point pixel) {
-	Point screenCenter = PointProd(0.5f, camera.screenSize);
-
-	return PointSum(camera.center, PointProd(1.0f / camera.pixelCoordRatio, PointDiff(pixel, screenCenter)));
+	return (camera.screenSize.y * 0.5f) + ((coordY - camera.center.y) * (unitInPixels));
 }
 
 Point CoordToPixel(Camera camera, Point coord) {
-	Point screenCenter = PointProd(0.5f, camera.screenSize);
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
 
-	return PointSum(screenCenter, PointProd(camera.pixelCoordRatio, PointDiff(coord, camera.center)));
+	Point result =  Point {
+		CoordXtoPixel(camera, coord.x),
+		CoordYtoPixel(camera, coord.y)
+	};
+
+	return result;
+}
+
+float PixelToCoordX(Camera camera, float pixelX) {
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
+
+	float result = camera.center.x + ((pixelX - (camera.screenSize.x * 0.5f)) / unitInPixels);
+	return result;
+}
+
+float PixelToCoordY(Camera camera, float pixelY) {
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
+
+	float result = camera.center.y + ((pixelY - (camera.screenSize.y * 0.5f)) / unitInPixels);
+	return result;
+}
+
+Point PixelToCoord(Camera camera, Point pixel) {
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
+
+	Point result = {};
+	result.x = PixelToCoordX(camera, pixel.x);
+	result.y = PixelToCoordY(camera, pixel.y);
+	return result;
 }
 
 void ClearScreen(Renderer renderer, Color color) {
@@ -208,10 +242,13 @@ void Bresenham(Renderer renderer, Point point1, Point point2, Color color) {
 	unsigned int colorCode = ColorCode(color);
 
 	Camera camera = *renderer.camera;
-	int x1 = (int)CoordXtoPixel(camera, point1.x);
-	int y1 = (int)CoordYtoPixel(camera, point1.y);
-	int x2 = (int)CoordXtoPixel(camera, point2.x);
-	int y2 = (int)CoordYtoPixel(camera, point2.y);
+	Point pixelPoint1 = CoordToPixel(camera, point1);
+	Point pixelPoint2 = CoordToPixel(camera, point2);
+
+	int x1 = (int)pixelPoint1.x;
+	int y1 = (int)pixelPoint1.y;
+	int x2 = (int)pixelPoint2.x;
+	int y2 = (int)pixelPoint2.y;
 
 	int absX = IntAbs(x1 - x2);
 	int absY = IntAbs(y1 - y2);
@@ -388,6 +425,7 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 
 			bool drawPoint = true;
 
+			// TODO: is using cross product faster than these calls?
 			if (!TurnsRight(points[0], points[1], testPoint))
 				drawPoint = false;
 			else if (!TurnsRight(points[1], points[2], testPoint))
@@ -399,8 +437,13 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 
 			if (drawPoint) {
 				pixel = (unsigned int *)bitmap.memory + row * bitmap.width + col;
-				pixel[0] = colorCode;
+				*pixel = colorCode;
 			}
 		}
 	}
+}
+
+void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color) {
+	Point points[4] = {point1, point2, point3, point4};
+	DrawQuad(renderer, points, color);
 }

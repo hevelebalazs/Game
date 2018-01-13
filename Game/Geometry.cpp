@@ -38,17 +38,6 @@ Point PointDirection(Point startPoint, Point endPoint) {
 	return vector;
 }
 
-bool TurnsRight(Point point1, Point point2, Point point3) {
-	float dx1 = point2.x - point1.x;
-	float dy1 = point2.y - point1.y;
-	float dx2 = point3.x - point2.x;
-	float dy2 = point3.y - point2.y;
-
-	float det = (dx1 * dy2) - (dx2 * dy1);
-
-	return (det > 0.0f);
-}
-
 // TODO: can this be merged with LineIntersection?
 bool DoLinesCross(Point line11, Point line12, Point line21, Point line22) {
 	bool right1 = TurnsRight(line11, line21, line22);

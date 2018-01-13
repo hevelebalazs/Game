@@ -818,6 +818,15 @@ void HighlightBuilding(Renderer renderer, Building building, Color color) {
 }
 
 void DrawBuilding(Renderer renderer, Building building) {
+	if (building.right < CameraLeftCoord(renderer.camera))
+		return;
+	if (building.left > CameraRightCoord(renderer.camera))
+		return;
+	if (building.bottom < CameraTopCoord(renderer.camera))
+		return;
+	if (building.top > CameraBottomCoord(renderer.camera))
+		return;
+
 	Color color = {};
 
 	switch (building.type) {
@@ -842,11 +851,63 @@ void DrawBuilding(Renderer renderer, Building building) {
 			}
 	}
 
+	Point topLeft     = Point{building.left,  building.top};
+	Point topRight    = Point{building.right, building.top};
+	Point bottomLeft  = Point{building.left,  building.bottom};
+	Point bottomRight = Point{building.right, building.bottom};
+
+	Point topLeftZ     = ProjectPointToGround(*renderer.camera, topLeft,     building.height);
+	Point topRightZ    = ProjectPointToGround(*renderer.camera, topRight,    building.height);
+	Point bottomLeftZ  = ProjectPointToGround(*renderer.camera, bottomLeft,  building.height);
+	Point bottomRightZ = ProjectPointToGround(*renderer.camera, bottomRight, building.height);
+
+	float leftZ   = Min2(topLeftZ.x, bottomLeftZ.x);
+	float rightZ  = Max2(topRightZ.x, bottomRightZ.x);
+	float topZ    = Min2(topLeftZ.y, topRightZ.y);
+	float bottomZ = Max2(bottomLeftZ.y, bottomRightZ.y);
+
+	DrawRect(renderer, topZ, leftZ, bottomZ, rightZ, color);
+
+	if (building.left < leftZ)
+		DrawQuadPoints(renderer, topLeft, topLeftZ, bottomLeftZ, bottomLeft, color);
+	if (building.right > rightZ)
+		DrawQuadPoints(renderer, bottomRight, bottomRightZ, topRightZ, topRight, color);
+	if (building.top < topZ)
+		DrawQuadPoints(renderer, topRight, topRightZ, topLeftZ, topLeft, color);
+	if (building.bottom > bottomZ)
+		DrawQuadPoints(renderer, bottomLeft, bottomLeftZ, bottomRightZ, bottomRight, color);
+
+	Color frameColor = Color{1.0f, 1.0f, 1.0f};
+	Bresenham(renderer, topLeftZ,     topRightZ,    frameColor);
+	Bresenham(renderer, topRightZ,    bottomRightZ, frameColor);
+	Bresenham(renderer, bottomRightZ, bottomLeftZ,  frameColor);
+	Bresenham(renderer, bottomLeftZ,  topLeftZ,     frameColor);
+
+	if (building.left < leftZ)
+		Bresenham(renderer, topLeft, bottomLeft, frameColor);
+	if (building.right > rightZ)
+		Bresenham(renderer, topRight, bottomRight, frameColor);
+	if (building.top < topZ)
+		Bresenham(renderer, topLeft, topRight, frameColor);
+	if (building.bottom > bottomZ)
+		Bresenham(renderer, bottomLeft, bottomRight, frameColor);
+
+	if ((building.left < leftZ) || (building.top < topZ))
+		Bresenham(renderer, topLeft, topLeftZ, frameColor);
+	if ((building.right > rightZ) || (building.top < topZ))
+		Bresenham(renderer, topRight, topRightZ, frameColor);
+	if ((building.left < leftZ) || (building.bottom > bottomZ))
+		Bresenham(renderer, bottomLeft, bottomLeftZ, frameColor);
+	if ((building.right > rightZ) || (building.bottom > bottomZ))
+		Bresenham(renderer, bottomRight, bottomRightZ, frameColor);
+
+	/*
 	DrawRect(
 		renderer,
-		building.top, building.left, building.bottom, building.right,
+		topZ, leftZ, bottomZ, rightZ,
 		color
 	);
+	*/
 }
 
 void DrawBuildingInside(Renderer renderer, Building building) {

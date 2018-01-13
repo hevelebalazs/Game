@@ -42,6 +42,8 @@ struct Building {
 	float bottom;
 	float right;
 
+	float height;
+
 	bool roadAround;
 
 	Point connectPointClose;
