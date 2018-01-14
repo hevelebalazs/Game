@@ -226,29 +226,134 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	return result;
 }
 
-void DrawMap(Renderer renderer, Map map) {
-	Color color = { 0.0f, 1.0f, 0.0f };
+void DrawGroundElems(Renderer renderer, Map* map) {
+	Color color = Color{0.0f, 1.0f, 0.0f};
 	DrawRect(
 		renderer,
-		0, 0, map.height, map.width, 
+		0, 0, map->height, map->width,
 		color
 	);
 
-	for (int i = 0; i < map.intersectionCount; ++i) {
-		DrawIntersection(renderer, map.intersections[i]);
+	for (int i = 0; i < map->intersectionCount; ++i)
+		DrawIntersection(renderer, map->intersections[i]);
+
+	for (int i = 0; i < map->roadCount; ++i)
+		DrawRoad(renderer, map->roads[i]);
+
+	for (int i = 0; i < map->buildingCount; ++i)
+		DrawConnectRoad(renderer, map->buildings[i]);
+
+	for (int i = 0; i < map->intersectionCount; ++i)
+		DrawTrafficLights(renderer, map->intersections[i]);
+}
+
+// TODO: there are two instances of mergesort in the code
+//       pull those two together somehow?
+struct BuildingHelper {
+	int buildingCount;
+	Building* buildings;
+	Building* tmpBuildings;
+	MemArena* arena;
+};
+
+inline Point BuildingCenter(Building* building) {
+	Point result = {};
+	result.x = (building->left + building->right) * 0.5f;
+	result.y = (building->top + building->bottom) * 0.5f;
+	return result;
+}
+
+inline bool AreBuildingsInOrder(Point center, Building building1, Building building2) {
+	Point point1 = BuildingCenter(&building1);
+	Point point2 = BuildingCenter(&building2);
+
+	float dist1 = CityDistance(center, point1);
+	float dist2 = CityDistance(center, point2);
+
+	if (dist1 > dist2)
+		return true;
+	else
+		return false;
+}
+
+inline void MergeBuildingArrays(BuildingHelper* helper, Point center, int leftStart, int leftEnd, int rightStart, int rightEnd) {
+	int left = leftStart;
+	int right = rightStart;
+
+	for (int i = leftStart; i <= rightEnd; ++i) {
+		bool chooseLeft = false;
+		bool chooseRight = false;
+
+		if (left > leftEnd)
+			chooseRight = true;
+		else if (right > rightEnd)
+			chooseLeft = true;
+		else if (AreBuildingsInOrder(center, helper->buildings[left], helper->buildings[right]))
+			chooseLeft = true;
+		else
+			chooseRight = true;
+
+		if (chooseLeft) {
+			helper->tmpBuildings[i] = helper->buildings[left];
+			left++;
+		}
+
+		if (chooseRight) {
+			helper->tmpBuildings[i] = helper->buildings[right];
+			right++;
+		}
 	}
 
-	for (int i = 0; i < map.roadCount; ++i) {
-		DrawRoad(renderer, map.roads[i]);
-	}
+	// TODO: use some version of memcpy here?
+	for (int i = leftStart; i <= rightEnd; ++i)
+		helper->buildings[i] = helper->tmpBuildings[i];
+}
 
-	for (int i = 0; i < map.buildingCount; ++i) {
-		DrawConnectRoad(renderer, map.buildings[i]);
-		DrawBuilding(renderer, map.buildings[i]);
-	}
+inline void SortBuildings(BuildingHelper* helper, Point center) {
+	int length = 1;
+	while (length <= helper->buildingCount) {
+		int leftStart = 0;
+		while (leftStart < helper->buildingCount) {
+			int leftEnd = leftStart + (length - 1);
 
-	for (int i = 0; i < map.intersectionCount; ++i) {
-		DrawTrafficLights(renderer, map.intersections[i]);
+			int rightStart = leftEnd + 1;
+			if (rightStart >= helper->buildingCount)
+				break;
+
+			int rightEnd = rightStart + (length - 1);
+			if (rightEnd >= helper->buildingCount)
+				rightEnd = helper->buildingCount - 1;
+
+			MergeBuildingArrays(helper, center, leftStart, leftEnd, rightStart, rightEnd);
+
+			leftStart = rightEnd + 1;
+		}
+
+		length *= 2;
 	}
+}
+
+// TODO: move the sorting logic to renderer
+void DrawBuildings(Renderer renderer, Map* map, MemArena* arena) {
+	BuildingHelper helper = {};
+	helper.buildingCount = map->buildingCount;
+	helper.buildings = ArenaPushArray(arena, Building, helper.buildingCount);
+	// TODO: use memcpy for this?
+	for (int i = 0; i < helper.buildingCount; ++i)
+		helper.buildings[i] = map->buildings[i];
+
+	helper.tmpBuildings = ArenaPushArray(arena, Building, helper.buildingCount);
+
+	SortBuildings(&helper, renderer.camera->center);
+	
+	for (int i = 0; i < helper.buildingCount; ++i)
+		DrawBuilding(renderer, helper.buildings[i]);
+
+	ArenaPopTo(arena, helper.buildings);
+}
+
+void DrawMap(Renderer renderer, Map* map, MemArena* arena) {
+	DrawGroundElems(renderer, map);
+	DrawBuildings(renderer, map, arena);
 }
 

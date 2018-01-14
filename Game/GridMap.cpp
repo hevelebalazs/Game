@@ -69,7 +69,7 @@ static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, f
 		building->top = area.top;
 		building->bottom = area.bottom;
 
-		building->height = RandomBetween(10.0f, 20.0f);
+		building->height = RandomBetween(10.0f, 30.0f);
 
 		map->buildingCount++;
 	}

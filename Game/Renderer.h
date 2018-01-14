@@ -117,6 +117,8 @@ inline Point ProjectPointToGround(Camera camera, Point point, float z) {
 void ClearScreen(Renderer renderer, Color color);
 
 void Bresenham(Renderer renderer, Point point1, Point point2, Color color);
+void DrawHorizontalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Color color);
+void DrawVerticalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Color color);
 void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color);

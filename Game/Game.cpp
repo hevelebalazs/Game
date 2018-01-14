@@ -235,7 +235,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->targetAltitude = 50.0f + (speed * 4.0f);
+		camera->targetAltitude = 40.0f + (speed * 4.0f);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
@@ -243,7 +243,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->playerHuman.human.inBuilding)
 			camera->targetAltitude = 30.0f;
 		else
-			camera->targetAltitude = 50.0f;
+			camera->targetAltitude = 40.0f;
 	}
 
 	if (gameState->showFullMap)
@@ -409,7 +409,7 @@ void GameDraw(GameStorage* gameStorage) {
 		}
 	}
 	else {
-		DrawMap(renderer, gameState->map);
+		DrawGroundElems(renderer, &gameState->map);
 
 		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 		if (gameState->missionIntersection)
@@ -431,6 +431,8 @@ void GameDraw(GameStorage* gameStorage) {
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			DrawAutoHuman(renderer, autoHuman);
 		}
+
+		DrawBuildings(renderer, &gameState->map, &gameStorage->tmpArena);
 	}
 
 	if (gameState->isPlayerVehicle)

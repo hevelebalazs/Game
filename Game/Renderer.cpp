@@ -237,52 +237,242 @@ void ClearScreen(Renderer renderer, Color color) {
 	}
 }
 
+struct BresenhamContext {
+	int x1, y1;
+	// TODO: is this needed?
+	int x2, y2;
+	int absX, absY;
+	int addX, addY;
+	int error, error2;
+};
+
+inline BresenhamContext BresenhamInitPixel(Point pixelPoint1, Point pixelPoint2) {
+	BresenhamContext context = {};
+
+	context.x1 = (int)pixelPoint1.x;
+	context.y1 = (int)pixelPoint1.y;
+	context.x2 = (int)pixelPoint2.x;
+	context.y2 = (int)pixelPoint2.y;
+
+	context.absX = IntAbs(context.x1 - context.x2);
+	context.absY = IntAbs(context.y1 - context.y2);
+
+	context.addX = 1;
+	if (context.x1 > context.x2)
+		context.addX = -1;
+
+	context.addY = 1;
+	if (context.y1 > context.y2)
+		context.addY = -1;
+
+	context.error = 0;
+	if (context.absX > context.absY)
+		context.error = context.absX / 2;
+	else
+		context.error = -context.absY / 2;
+
+	context.error2 = 0;
+
+	return context;
+}
+
+inline BresenhamContext BresenhamInitCoord(Renderer renderer, Point point1, Point point2) {
+	Camera camera = *renderer.camera;
+	Point pixelPoint1 = CoordToPixel(camera, point1);
+	Point pixelPoint2 = CoordToPixel(camera, point2);
+	BresenhamContext context = BresenhamInitPixel(pixelPoint1, pixelPoint2);
+	return context;
+}
+
+inline void BresenhamAdvance(BresenhamContext* context) {
+	context->error2 = context->error;
+	if (context->error2 > -context->absX) {
+		context->error -= context->absY;
+		context->x1 += context->addX;
+	}
+	if (context->error2 < context->absY) {
+		context->error += context->absX;
+		context->y1 += context->addY;
+	}
+}
+
 void Bresenham(Renderer renderer, Point point1, Point point2, Color color) {
 	Bitmap bitmap = renderer.bitmap;
 	unsigned int colorCode = ColorCode(color);
 
-	Camera camera = *renderer.camera;
-	Point pixelPoint1 = CoordToPixel(camera, point1);
-	Point pixelPoint2 = CoordToPixel(camera, point2);
-
-	int x1 = (int)pixelPoint1.x;
-	int y1 = (int)pixelPoint1.y;
-	int x2 = (int)pixelPoint2.x;
-	int y2 = (int)pixelPoint2.y;
-
-	int absX = IntAbs(x1 - x2);
-	int absY = IntAbs(y1 - y2);
-
-	int addX = 1;
-	if (x1 > x2)
-		addX = -1;
-
-	int addY = 1;
-	if (y1 > y2)
-		addY = -1;
-
-	int error = 0;
-	if (absX > absY)
-		error = absX / 2;
-	else
-		error = -absY / 2;
-
-	int error2 = 0;
-
+	BresenhamContext context = BresenhamInitCoord(renderer, point1, point2);
 	while (1) {
-		SetPixelCheck(renderer.bitmap, y1, x1, colorCode);
+		SetPixelCheck(bitmap, context.y1, context.x1, colorCode);
 
-		if (x1 == x2 && y1 == y2)
+		if (context.x1 == context.x2 && context.y1 == context.y2)
 			break;
 
-		error2 = error;
-		if (error2 > -absX) {
-			error -= absY;
-			x1 += addX;
+		BresenhamAdvance(&context);
+	}
+}
+
+// TODO: move this to Geometry?
+inline Point LineAtX(Point linePoint1, Point linePoint2, float x) {
+	float minX = Min2(linePoint1.x, linePoint2.x);
+	float maxX = Max2(linePoint1.x, linePoint2.x);
+	Assert ((minX <= x) && (x <= maxX));
+
+	if (linePoint1.x == linePoint2.x)
+		return linePoint1;
+
+	float alpha = (x - linePoint1.x) / (linePoint2.x - linePoint1.x);
+	Point result = {};
+	result.x = x;
+	result.y = linePoint1.y + alpha * (linePoint2.y - linePoint1.y);
+	return result;
+}
+
+// TODO: move this to Geometry?
+inline Point LineAtY(Point linePoint1, Point linePoint2, float y) {
+	float minY = Min2(linePoint1.y, linePoint2.y);
+	float maxY = Max2(linePoint1.y, linePoint2.y);
+	Assert ((minY <= y) && (y <= maxY));
+	
+	if (linePoint1.y == linePoint2.y)
+		return linePoint1;
+
+	float alpha = (y - linePoint1.y) / (linePoint2.y - linePoint1.y);
+	Point result = {};
+	result.x = linePoint1.x + alpha * (linePoint2.x - linePoint1.x);
+	result.y = y;
+	return result;
+}
+
+// TODO: check this for performance issues
+void DrawHorizontalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Color color) {
+	Camera* camera = renderer.camera;
+	float cameraTop     = CameraTopCoord(renderer.camera);
+	float cameraBottom  = CameraBottomCoord(renderer.camera);
+
+	if (topLeft.y < cameraTop) {
+		if (bottomLeft.y < cameraTop)
+			return;
+
+		topLeft = LineAtY(topLeft, bottomLeft, cameraTop);
+	}
+	if (topRight.y < cameraTop) {
+		if (bottomRight.y < cameraTop)
+			return;
+
+		topRight = LineAtY(topRight, bottomRight, cameraTop);
+	}
+	if (bottomLeft.y > cameraBottom) {
+		if (topLeft.y > cameraBottom)
+			return;
+
+		bottomLeft = LineAtY(topLeft, bottomLeft, cameraBottom);
+	}
+	if (bottomRight.y > cameraBottom) {
+		if (topRight.y > cameraBottom)
+			return;
+
+		bottomRight = LineAtY(topRight, bottomRight, cameraBottom);
+	}
+
+	Bitmap bitmap = renderer.bitmap;
+	unsigned int colorCode = ColorCode(color);
+
+	BresenhamContext leftLine = BresenhamInitCoord(renderer, topLeft, bottomLeft);
+	BresenhamContext rightLine = BresenhamInitCoord(renderer, topRight, bottomRight);
+
+	int top = (int)CoordYtoPixel(*renderer.camera, topLeft.y);
+	int bottom = (int)CoordYtoPixel(*renderer.camera, bottomLeft.y);
+	if (bottom < top)
+		return;
+
+	for (int row = top; row <= bottom; ++row) {
+		while (leftLine.y1 < row)
+			BresenhamAdvance(&leftLine);
+		while (rightLine.y1 < row)
+			BresenhamAdvance(&rightLine);
+
+		if ((row < 0) || (row > bitmap.height - 1))
+			continue;
+
+		int left = leftLine.x1;
+		int right = rightLine.x1;
+
+		if (left < 0) 
+			left = 0;
+		if (right > bitmap.width - 1)
+			right = bitmap.width - 1;
+
+		unsigned int* pixel = GetPixelAddress(bitmap, row, left);
+		for (int col = left; col <= right; ++col) {
+			*pixel = colorCode;
+			pixel++;
 		}
-		if (error2 < absY) {
-			error += absX;
-			y1 += addY;
+	}
+}
+
+// TODO: check this for performance issues
+void DrawVerticalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Color color) {
+	Camera* camera = renderer.camera;
+	float cameraLeft  = CameraLeftCoord(renderer.camera);
+	float cameraRight = CameraRightCoord(renderer.camera);
+
+	if (topLeft.x < cameraLeft) {
+		if (topRight.x < cameraLeft)
+			return;
+
+		topLeft = LineAtX(topLeft, topRight, cameraLeft);
+	}
+	if (topRight.x > cameraRight) {
+		if (topLeft.x > cameraRight)
+			return;
+
+		topRight = LineAtX(topLeft, topRight, cameraRight);
+	}
+	if (bottomLeft.x < cameraLeft) {
+		if (bottomRight.x < cameraLeft)
+			return;
+
+		bottomLeft = LineAtX(bottomLeft, bottomRight, cameraLeft);
+	}
+	if (bottomRight.x > cameraRight) {
+		if (bottomLeft.x > cameraRight)
+			return;
+
+		bottomRight = LineAtX(bottomLeft, bottomRight, cameraRight);
+	}
+
+	Bitmap bitmap = renderer.bitmap;
+	unsigned int colorCode = ColorCode(color);
+
+	BresenhamContext topLine = BresenhamInitCoord(renderer, topLeft, topRight);
+	BresenhamContext bottomLine = BresenhamInitCoord(renderer, bottomLeft, bottomRight);
+
+	int left = (int)CoordXtoPixel(*renderer.camera, topLeft.x);
+	int right = (int)CoordXtoPixel(*renderer.camera, topRight.x);
+	if (right < left)
+		return;
+
+	for (int col = left; col <= right; ++col) {
+		while (topLine.x1 < col)
+			BresenhamAdvance(&topLine);
+		while (bottomLine.x1 < col)
+			BresenhamAdvance(&bottomLine);
+
+		if ((col < 0) || (col > bitmap.width - 1))
+			continue;
+
+		int top = topLine.y1;
+		int bottom = bottomLine.y1;
+
+		if (top < 0) 
+			top = 0;
+		if (bottom > bitmap.height - 1)
+			bottom = bitmap.height - 1;
+
+		unsigned int* pixel = GetPixelAddress(bitmap, top, col);
+		for (int row = top; row <= bottom; ++row) {
+			*pixel = colorCode;
+			pixel += bitmap.width;
 		}
 	}
 }
@@ -377,8 +567,8 @@ void DrawRect(Renderer renderer, float top, float left, float bottom, float righ
 
 	for (int row = topPixel; row < bottomPixel; ++row) {
 		for (int col = leftPixel; col < rightPixel; ++col) {
-			unsigned int *pixel = (unsigned int *)bitmap.memory + row * bitmap.width + col;
-			pixel[0] = colorCode;
+			unsigned int* pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
+			*pixel = colorCode;
 		}
 	}
 }

@@ -869,13 +869,13 @@ void DrawBuilding(Renderer renderer, Building building) {
 	DrawRect(renderer, topZ, leftZ, bottomZ, rightZ, color);
 
 	if (building.left < leftZ)
-		DrawQuadPoints(renderer, topLeft, topLeftZ, bottomLeftZ, bottomLeft, color);
+		DrawVerticalTrapezoid(renderer, topLeft, topLeftZ, bottomLeft, bottomLeftZ, color);
 	if (building.right > rightZ)
-		DrawQuadPoints(renderer, bottomRight, bottomRightZ, topRightZ, topRight, color);
+		DrawVerticalTrapezoid(renderer, topRightZ, topRight, bottomRightZ, bottomRight, color);
 	if (building.top < topZ)
-		DrawQuadPoints(renderer, topRight, topRightZ, topLeftZ, topLeft, color);
+		DrawHorizontalTrapezoid(renderer, topLeft, topRight, topLeftZ, topRightZ, color);
 	if (building.bottom > bottomZ)
-		DrawQuadPoints(renderer, bottomLeft, bottomLeftZ, bottomRightZ, bottomRight, color);
+		DrawHorizontalTrapezoid(renderer, bottomLeftZ, bottomRightZ, bottomLeft, bottomRight, color);
 
 	Color frameColor = Color{1.0f, 1.0f, 1.0f};
 	Bresenham(renderer, topLeftZ,     topRightZ,    frameColor);

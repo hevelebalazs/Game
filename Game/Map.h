@@ -4,6 +4,7 @@
 #include "BuildingType.h"
 #include "Intersection.h"
 #include "MapElem.h"
+#include "Memory.h"
 #include "Renderer.h"
 
 struct Map {
@@ -34,4 +35,6 @@ Building* BuildingAtPoint(Map map, Point point);
 MapElem RoadElemAtPoint(Map map, Point point);
 MapElem PedestrianElemAtPoint(Map map, Point point);
 
-void DrawMap(Renderer renderer, Map map);
+void DrawGroundElems(Renderer renderer, Map* map);
+void DrawBuildings(Renderer renderer, Map* map, MemArena* arena);
+void DrawMap(Renderer renderer, Map* map, MemArena* arena);
