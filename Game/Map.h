@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Bitmap.h"
 #include "Building.h"
 #include "BuildingType.h"
 #include "Intersection.h"
@@ -35,6 +36,6 @@ Building* BuildingAtPoint(Map map, Point point);
 MapElem RoadElemAtPoint(Map map, Point point);
 MapElem PedestrianElemAtPoint(Map map, Point point);
 
-void DrawGroundElems(Renderer renderer, Map* map);
+void DrawGroundElems(Renderer renderer, Map* map, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture);
 void DrawBuildings(Renderer renderer, Map* map, MemArena* arena);
-void DrawMap(Renderer renderer, Map* map, MemArena* arena);
+void DrawMap(Renderer renderer, Map* map, MemArena* arena, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture);

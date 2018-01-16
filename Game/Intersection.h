@@ -62,7 +62,7 @@ void DrawTrafficLights(Renderer renderer, Intersection intersection);
 
 void HighlightIntersectionSidewalk(Renderer renderer, Intersection intersection, Color color);
 void HighlightIntersection(Renderer renderer, Intersection intersection, Color color);
-void DrawIntersection(Renderer renderer, Intersection intersection);
+void DrawIntersection(Renderer renderer, Intersection intersection, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture);
 
 static inline int QuarterIndex(Intersection* intersection, Point point) {
 	int result = 0;

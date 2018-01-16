@@ -122,5 +122,96 @@ void DrawVerticalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Poi
 void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color);
+
+// TODO: change the order of parameters to left, right, top, bottom
+inline void WorldTextureRect(Renderer renderer, float top, float left, float bottom, float right, Texture texture) {
+	Camera camera = *renderer.camera;
+	int topPixel =    (int)CoordYtoPixel(camera, top);
+	int leftPixel =   (int)CoordXtoPixel(camera, left);
+	int bottomPixel = (int)CoordYtoPixel(camera, bottom);
+	int rightPixel =  (int)CoordXtoPixel(camera, right);
+
+	if (topPixel > bottomPixel) {
+		int tmp = topPixel;
+		topPixel = bottomPixel;
+		bottomPixel = tmp;
+	}
+
+	if (leftPixel > rightPixel) {
+		int tmp = leftPixel;
+		leftPixel = rightPixel;
+		rightPixel = tmp;
+	}
+
+	Bitmap bitmap = renderer.bitmap;
+
+	if (topPixel < 0)
+		topPixel = 0;
+	if (bottomPixel >= bitmap.height)
+		bottomPixel = bitmap.height - 1;
+
+	if (leftPixel < 0)
+		leftPixel = 0;
+	if (rightPixel >= bitmap.width)
+		rightPixel = bitmap.width - 1;
+
+	Point topLeftPixel = {(float)leftPixel, (float)topPixel};
+	Point topLeftCoord = PixelToCoord(camera, topLeftPixel);
+	// NOTE: optimization stuff
+	topLeftCoord.x *= 8.0f;
+	topLeftCoord.y *= 8.0f;
+
+	Assert(camera.screenSize.y > 0.0f);
+	float coordPerPixel = (camera.altitude / camera.screenSize.y);
+	// NOTE: optimization stuff
+	coordPerPixel *= 8.0f;
+
+	float px = 0.0f;
+	float py = 0.0f;
+
+	unsigned int* topLeft = (unsigned int*)bitmap.memory + topPixel * bitmap.width + leftPixel;
+
+	Point worldCoord = topLeftCoord;
+	for (int row = topPixel; row < bottomPixel; ++row) {
+		worldCoord.x = topLeftCoord.x;
+
+		unsigned int* pixel = topLeft;
+
+		for (int col = leftPixel; col < rightPixel; ++col) {
+			// TODO: make this work with arbitrary sized texture
+			//       does it have to be an integer power of two though?
+			int x = (((int)(worldCoord.x)) & 255);
+			int y = (((int)(worldCoord.y)) & 255);
+
+			*pixel = TextureColor(texture, x, y);
+			pixel++;
+
+			worldCoord.x += coordPerPixel;
+		}
+
+		worldCoord.y += coordPerPixel;
+		topLeft += bitmap.width;
+	}
+}
+
+inline void WorldTextureGridLine(Renderer renderer, Point point1, Point point2, float width, Texture texture) {
+	float left   = Min2(point1.x, point2.x);
+	float right  = Max2(point1.x, point2.x);
+	float top    = Min2(point1.y, point2.y);
+	float bottom = Max2(point1.y, point2.y);
+
+	Assert((left == right) || (top == bottom));
+	if (left == right) {
+		left  -= width * 0.5f;
+		right += width * 0.5f;
+	}
+	else if (top == bottom) {
+		top    -= width * 0.5f;
+		bottom += width * 0.5f;
+	}
+
+	WorldTextureRect(renderer, top, left, bottom, right, texture);
+}
+
 void DrawQuad(Renderer renderer, Point points[4], Color color);
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color);

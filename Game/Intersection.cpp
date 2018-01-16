@@ -313,7 +313,7 @@ void HighlightIntersectionSidewalk(Renderer renderer, Intersection intersection,
 		DrawRect(renderer, top, right, bottom, right + sideWalkWidth, color);
 }
 
-static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection intersection) {
+static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection intersection, Texture sidewalkTexture) {
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 	Point position = intersection.position;
 
@@ -323,10 +323,12 @@ static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection inte
 	float bottom = position.y + roadWidth * 0.5f;
 
 	if (!intersection.topRoad)
-		DrawRect(renderer, top - sideWalkWidth, left, top, right, sideWalkColor);
+		// DrawRect(renderer, top - sideWalkWidth, left, top, right, sideWalkColor);
+		WorldTextureRect(renderer, top - sideWalkWidth, left, top, right, sidewalkTexture);
 
 	if (!intersection.bottomRoad)
-		DrawRect(renderer, bottom, left, bottom + sideWalkWidth, right, sideWalkColor);
+		// DrawRect(renderer, bottom, left, bottom + sideWalkWidth, right, sideWalkColor);
+		WorldTextureRect(renderer, bottom, left, bottom + sideWalkWidth, right, sidewalkTexture);
 
 	if (!intersection.topRoad)
 		top -= sideWalkWidth;
@@ -334,14 +336,16 @@ static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection inte
 		bottom += sideWalkWidth;
 
 	if (!intersection.leftRoad)
-		DrawRect(renderer, top, left - sideWalkWidth, bottom, left, sideWalkColor);
+		// DrawRect(renderer, top, left - sideWalkWidth, bottom, left, sideWalkColor);
+		WorldTextureRect(renderer, top, left - sideWalkWidth, bottom, left, sidewalkTexture);
 	
 	if (!intersection.rightRoad)
-		DrawRect(renderer, top, right, bottom, right + sideWalkWidth, sideWalkColor);
+		// DrawRect(renderer, top, right, bottom, right + sideWalkWidth, sideWalkColor);
+		WorldTextureRect(renderer, top, right, bottom, right + sideWalkWidth, sidewalkTexture);
 }
 
-void DrawIntersection(Renderer renderer, Intersection intersection) {
-	DrawIntersectionSidewalk(renderer, intersection);
+void DrawIntersection(Renderer renderer, Intersection intersection, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
+	DrawIntersectionSidewalk(renderer, intersection, sidewalkTexture);
 
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 
@@ -356,7 +360,8 @@ void DrawIntersection(Renderer renderer, Intersection intersection) {
 	float midY = (top + bottom) / 2;
 
 	Color color = { 0.5f, 0.5f, 0.5f };
-	DrawRect(renderer, top, left, bottom, right, color);
+	// DrawRect(renderer, top, left, bottom, right, color);
+	WorldTextureRect(renderer, top, left, bottom, right, roadTexture);
 
 	float stripeWidth = roadWidth / 20.0f;
 	Color stripeColor = { 1.0f, 1.0f, 1.0f };
@@ -374,22 +379,30 @@ void DrawIntersection(Renderer renderer, Intersection intersection) {
 
 	if (roadCount > 2) {
 		if (intersection.topRoad)
-			DrawRect(renderer, top, left, top + stripeWidth, right, stripeColor);
+			// DrawRect(renderer, top, left, top + stripeWidth, right, stripeColor);
+			WorldTextureRect(renderer, top, left, top + stripeWidth, right, stripeTexture);
 		if (intersection.leftRoad)
-			DrawRect(renderer, top, left, bottom, left + stripeWidth, stripeColor);
+			// DrawRect(renderer, top, left, bottom, left + stripeWidth, stripeColor);
+			WorldTextureRect(renderer, top, left, bottom, left + stripeWidth, stripeTexture);
 		if (intersection.bottomRoad)
-			DrawRect(renderer, bottom - stripeWidth, left, bottom, right, stripeColor);
+			// DrawRect(renderer, bottom - stripeWidth, left, bottom, right, stripeColor);
+			WorldTextureRect(renderer, bottom - stripeWidth, left, bottom, right, stripeTexture);
 		if (intersection.rightRoad)
-			DrawRect(renderer, top, right - stripeWidth, bottom, right, stripeColor);
+			// DrawRect(renderer, top, right - stripeWidth, bottom, right, stripeColor);
+			WorldTextureRect(renderer, top, right - stripeWidth, bottom, right, stripeTexture);
 	}
 	else {
 		if (intersection.topRoad)
-			DrawRect(renderer, top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			// DrawRect(renderer, top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			WorldTextureRect(renderer, top, midX - (stripeWidth * 0.5f), midY + (stripeWidth * 0.5f), midX + (stripeWidth * 0.5f), stripeTexture);
 		if (intersection.leftRoad)
-			DrawRect(renderer, midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			// DrawRect(renderer, midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
+			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), left, midY + (stripeWidth * 0.5f), midX + (stripeWidth * 0.5f), stripeTexture);
 		if (intersection.bottomRoad)
-			DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
+			// DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
+			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), midX - (stripeWidth * 0.5f), bottom, midX + (stripeWidth * 0.5f), stripeTexture);
 		if (intersection.rightRoad)
-			DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
+			// DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
+			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), midX - (stripeWidth * 0.5f), midY + (stripeWidth * 0.5f), right, stripeTexture);
 	}
 }

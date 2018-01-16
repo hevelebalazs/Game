@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Bitmap.h"
 #include "Intersection.h"
 #include "Math.h"
 #include "Point.h"
@@ -153,4 +154,4 @@ DirectedPoint TurnPointToLane(Road road, int laneIndex, Point point);
 
 void HighlightRoadSidewalk(Renderer renderer, Road road, Color color);
 void HighlightRoad(Renderer renderer, Road road, Color color);
-void DrawRoad(Renderer renderer, Road road);
+void DrawRoad(Renderer renderer, Road road, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture);

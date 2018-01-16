@@ -236,7 +236,8 @@ void HighlightRoadSidewalk(Renderer renderer, Road road, Color color) {
 	}
 }
 
-static inline void DrawRoadSidewalk(Renderer renderer, Road road) {
+// TODO: rename "sideWalk" to "sidewalk" everywhere
+static inline void DrawRoadSidewalk(Renderer renderer, Road road, Texture sidewalkTexture) {
 	float left   = Min2(road.endPoint1.x, road.endPoint2.x);
 	float right  = Max2(road.endPoint1.x, road.endPoint2.x);
 	float top    = Min2(road.endPoint1.y, road.endPoint2.y);
@@ -245,17 +246,21 @@ static inline void DrawRoadSidewalk(Renderer renderer, Road road) {
 	float sideWidth = (road.width * 0.5f + sideWalkWidth);
 
 	if (road.endPoint1.x == road.endPoint2.x) {
-		DrawRect(renderer, top, left - sideWidth, bottom, left, sideWalkColor);
-		DrawRect(renderer, top, right, bottom, right + sideWidth, sideWalkColor);
+		// DrawRect(renderer, top, left - sideWidth, bottom, left, sideWalkColor);
+		WorldTextureRect(renderer, top, left - sideWidth, bottom, left, sidewalkTexture);
+		// DrawRect(renderer, top, right, bottom, right + sideWidth, sideWalkColor);
+		WorldTextureRect(renderer, top, right, bottom, right + sideWidth, sidewalkTexture);
 	}
 	else if (road.endPoint1.y == road.endPoint2.y) {
-		DrawRect(renderer, top - sideWidth, left, top, right, sideWalkColor);
-		DrawRect(renderer, bottom, left, bottom + sideWidth, right, sideWalkColor);
+		// DrawRect(renderer, top - sideWidth, left, top, right, sideWalkColor);
+		WorldTextureRect(renderer, top - sideWidth, left, top, right, sidewalkTexture);
+		// DrawRect(renderer, bottom, left, bottom + sideWidth, right, sideWalkColor);
+		WorldTextureRect(renderer, bottom, left, bottom + sideWidth, right, sidewalkTexture);
 	}
 }
 
 // TODO: pass Road by pointer?
-static inline void DrawCrossing(Renderer renderer, Road road) {
+inline void DrawCrossing(Renderer renderer, Road road, Texture stripeTexture) {
 	Color stepColor = Color{1.0f, 1.0f, 1.0f};
 	float stepSize = 2.0f;
 	float stepDistance = -road.width * 0.5f;
@@ -269,7 +274,8 @@ static inline void DrawCrossing(Renderer renderer, Road road) {
 		if (drawStep) {
 			Point point1 = XYFromPositiveRoadCoord(&road, road.crossingDistance - crossingWidth * 0.5f, stepDistance);
 			Point point2 = XYFromPositiveRoadCoord(&road, road.crossingDistance + crossingWidth * 0.5f, newStepDistance);
-			DrawRect(renderer, point1.y, point1.x, point2.y, point2.x, stepColor);
+			// DrawRect(renderer, point1.y, point1.x, point2.y, point2.x, stepColor);
+			WorldTextureRect(renderer, point1.y, point1.x, point2.y, point2.x, stripeTexture);
 		}
 
 		drawStep = !drawStep;
@@ -277,26 +283,28 @@ static inline void DrawCrossing(Renderer renderer, Road road) {
 	}
 }
 
-void DrawRoad(Renderer renderer, Road road) {
-	DrawRoadSidewalk(renderer, road);
+void DrawRoad(Renderer renderer, Road road, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
+	DrawRoadSidewalk(renderer, road, sidewalkTexture);
 	float roadLength = RoadLength(&road);
 
 	Color roadColor = Color{0.5f, 0.5f, 0.5f};
 	Point roadPoint1 = XYFromPositiveRoadCoord(&road, 0.0f, -road.width * 0.5f);
 	Point roadPoint2 = XYFromPositiveRoadCoord(&road, roadLength, road.width * 0.5f);
-	DrawRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadColor);
-	DrawRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadColor);
+	// DrawRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadColor);
+	WorldTextureRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadTexture);
 
 	Color stripeColor = Color{1.0f, 1.0f, 1.0f};
 	float stripeWidth = road.width / 20.0f;
 
 	Point stripePoint1 = XYFromPositiveRoadCoord(&road, 0.0f, -stripeWidth * 0.5f);
 	Point stripePoint2 = XYFromPositiveRoadCoord(&road, road.crossingDistance - crossingWidth * 0.5f, stripeWidth * 0.5f);
-	DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
+	// DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
+	WorldTextureRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeTexture);
 
 	stripePoint1 = XYFromPositiveRoadCoord(&road, road.crossingDistance + crossingWidth * 0.5f, -stripeWidth * 0.5f);
 	stripePoint2 = XYFromPositiveRoadCoord(&road, roadLength, stripeWidth * 0.5f);
-	DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
+	// DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
+	WorldTextureRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeTexture);
 
-	DrawCrossing(renderer, road);
+	DrawCrossing(renderer, road, stripeTexture);
 }

@@ -153,6 +153,10 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	MapElem endElem = IntersectionElem(gameState->missionIntersection);
 	gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem, 
 										  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
+
+	gameState->roadTexture = RandomGreyTexture(256, 256, 100, 127);
+	gameState->stripeTexture = RandomGreyTexture(256, 256, 200, 255);
+	gameState->sidewalkTexture = RandomGreyTexture(256, 256, 70, 100);
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -235,15 +239,15 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->targetAltitude = 40.0f + (speed * 4.0f);
+		camera->targetAltitude = 30.0f + (speed * 2.0f);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
 
 		if (gameState->playerHuman.human.inBuilding)
-			camera->targetAltitude = 30.0f;
+			camera->targetAltitude = 15.0;
 		else
-			camera->targetAltitude = 40.0f;
+			camera->targetAltitude = 30.0f;
 	}
 
 	if (gameState->showFullMap)
@@ -409,7 +413,7 @@ void GameDraw(GameStorage* gameStorage) {
 		}
 	}
 	else {
-		DrawGroundElems(renderer, &gameState->map);
+		DrawGroundElems(renderer, &gameState->map, gameState->roadTexture, gameState->stripeTexture, gameState->sidewalkTexture);
 
 		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 		if (gameState->missionIntersection)

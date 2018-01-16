@@ -20,6 +20,11 @@ inline int IntAbs(int i) {
 		return -i;
 }
 
+inline int IntRandom(int min, int max) {
+	int result = min + (rand() % (max - min + 1));
+	return result;
+}
+
 // TODO: these should be inline functions
 float Min2(float x, float y);
 float Max2(float x, float y);

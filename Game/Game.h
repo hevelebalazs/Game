@@ -41,6 +41,10 @@ struct GameState {
 	MapElem missionElem;
 	int missionLaneIndex;
 	Point missionStartPoint;
+
+	Texture roadTexture;
+	Texture stripeTexture;
+	Texture sidewalkTexture;
 };
 
 // TODO: remove gameState reference

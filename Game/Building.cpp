@@ -727,6 +727,7 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 
 	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) {
 		Point intersection = LineIntersection(topLeft, topRight, closePoint, farPoint);
+		intersection.x = closePoint.x;
 		intersection.y = building.top;
 		float distanceSquare = DistanceSquare(closePoint, intersection);
 
@@ -740,6 +741,7 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) {
 		Point intersection = LineIntersection(topRight, bottomRight, closePoint, farPoint);
 		intersection.x = building.right;
+		intersection.y = closePoint.y;
 		float distanceSquare = DistanceSquare(closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) {
@@ -751,6 +753,7 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 
 	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) {
 		Point intersection = LineIntersection(bottomRight, bottomLeft, closePoint, farPoint);
+		intersection.x = closePoint.x;
 		intersection.y = building.bottom;
 		float distanceSquare = DistanceSquare(closePoint, intersection);
 
@@ -764,6 +767,7 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) {
 		Point intersection = LineIntersection(bottomLeft, topLeft, closePoint, farPoint);
 		intersection.x = building.left;
+		intersection.y = closePoint.y;
 		float distanceSquare = DistanceSquare(closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) {
@@ -817,7 +821,7 @@ void HighlightBuilding(Renderer renderer, Building building, Color color) {
 	);
 }
 
-void DrawBuilding(Renderer renderer, Building building) {
+inline void DrawBuilding3D(Renderer renderer, Building building) {
 	if (building.right < CameraLeftCoord(renderer.camera))
 		return;
 	if (building.left > CameraRightCoord(renderer.camera))
@@ -828,7 +832,6 @@ void DrawBuilding(Renderer renderer, Building building) {
 		return;
 
 	Color color = {};
-
 	switch (building.type) {
 		case BuildingBlack: {
 				color = Color{0.0f, 0.0f, 0.0f};
@@ -901,13 +904,38 @@ void DrawBuilding(Renderer renderer, Building building) {
 	if ((building.right > rightZ) || (building.bottom > bottomZ))
 		Bresenham(renderer, bottomRight, bottomRightZ, frameColor);
 
-	/*
 	DrawRect(
 		renderer,
 		topZ, leftZ, bottomZ, rightZ,
 		color
 	);
-	*/
+}
+
+void DrawBuilding(Renderer renderer, Building building) {
+	Color color = {};
+	switch (building.type) {
+		case BuildingBlack: {
+				color = Color{0.0f, 0.0f, 0.0f};
+				break;
+			}
+
+		case BuildingRed: {
+				color = Color{0.5f, 0.0f, 0.0f};
+				break;
+			}
+
+		case BuildingGreen: {
+				color = Color{0.0f, 0.5f, 0.0f};
+				break;
+			}
+
+		case BuildingBlue: {
+				color = Color{0.0f, 0.0f, 0.5f};
+				break;
+			}
+	}
+
+	DrawRect(renderer, building.top, building.left, building.bottom, building.right, color);
 }
 
 void DrawBuildingInside(Renderer renderer, Building building) {
@@ -1283,20 +1311,21 @@ void HighlightBuildingConnector(Renderer renderer, Building building, Color colo
 	DrawLine(renderer, building.connectPointClose, building.connectPointFarShow, color, roadWidth);
 }
 
-void DrawConnectRoad(Renderer renderer, Building building) {
-	// TODO: make this a static member of Road?
-	Color roadColor = Color{0.5f, 0.5f, 0.5f};
-
+void DrawConnectRoad(Renderer renderer, Building building, Texture roadTexture) {
 	float roadWidth = connectRoadWidth;
 
 	if (building.roadAround) {
-		DrawRect(
+		WorldTextureRect(
 			renderer,
 			building.top - roadWidth, building.left - roadWidth,
 			building.bottom + roadWidth, building.right + roadWidth,
-			roadColor
+			roadTexture
 		);
 	}
 
-	DrawLine(renderer, building.connectPointClose, building.connectPointFarShow, roadColor, roadWidth);
+	WorldTextureGridLine(
+		renderer, 
+		building.connectPointClose, building.connectPointFarShow, roadWidth, 
+		roadTexture
+	);
 }

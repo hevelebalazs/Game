@@ -226,7 +226,7 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	return result;
 }
 
-void DrawGroundElems(Renderer renderer, Map* map) {
+void DrawGroundElems(Renderer renderer, Map* map, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
 	Color color = Color{0.0f, 1.0f, 0.0f};
 	DrawRect(
 		renderer,
@@ -235,13 +235,13 @@ void DrawGroundElems(Renderer renderer, Map* map) {
 	);
 
 	for (int i = 0; i < map->intersectionCount; ++i)
-		DrawIntersection(renderer, map->intersections[i]);
+		DrawIntersection(renderer, map->intersections[i], roadTexture, stripeTexture, sidewalkTexture);
 
 	for (int i = 0; i < map->roadCount; ++i)
-		DrawRoad(renderer, map->roads[i]);
+		DrawRoad(renderer, map->roads[i], roadTexture, stripeTexture, sidewalkTexture);
 
 	for (int i = 0; i < map->buildingCount; ++i)
-		DrawConnectRoad(renderer, map->buildings[i]);
+		DrawConnectRoad(renderer, map->buildings[i], roadTexture);
 
 	for (int i = 0; i < map->intersectionCount; ++i)
 		DrawTrafficLights(renderer, map->intersections[i]);
@@ -352,8 +352,8 @@ void DrawBuildings(Renderer renderer, Map* map, MemArena* arena) {
 	ArenaPopTo(arena, helper.buildings);
 }
 
-void DrawMap(Renderer renderer, Map* map, MemArena* arena) {
-	DrawGroundElems(renderer, map);
+void DrawMap(Renderer renderer, Map* map, MemArena* arena, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
+	DrawGroundElems(renderer, map, roadTexture, stripeTexture, sidewalkTexture);
 	DrawBuildings(renderer, map, arena);
 }
 

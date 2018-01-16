@@ -79,4 +79,4 @@ void DrawBuildingInside(Renderer renderer, Building building);
 void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, MemArena* tmpArena);
 
 void HighlightBuildingConnector(Renderer renderer, Building building, Color color);
-void DrawConnectRoad(Renderer renderer, Building building);
+void DrawConnectRoad(Renderer renderer, Building building, Texture roadTexture);
