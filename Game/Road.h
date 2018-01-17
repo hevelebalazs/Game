@@ -5,6 +5,7 @@
 #include "Math.h"
 #include "Point.h"
 #include "Renderer.h"
+#include "Texture.h"
 
 extern Color roadColor;
 extern Color sideWalkColor;

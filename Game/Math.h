@@ -40,6 +40,10 @@ inline float Abs(float x) {
 		return -x;
 }
 
+inline float Lerp(float value1, float ratio, float value2) {
+	return ((1.0f - ratio) * value1) + ((ratio) * value2);
+}
+
 inline int RandMod(int mod) {
 	return (rand() % mod);
 }

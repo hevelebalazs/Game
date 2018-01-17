@@ -159,6 +159,7 @@
     <ClInclude Include="Point.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Road.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Vehicle.h" />
     <ClInclude Include="Windows.h" />
   </ItemGroup>

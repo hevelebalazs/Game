@@ -10,6 +10,7 @@
 #include "PlayerHuman.h"
 #include "PlayerVehicle.h"
 #include "Renderer.h"
+#include "Texture.h"
 
 struct GameState {
 	Camera camera;
@@ -42,9 +43,11 @@ struct GameState {
 	int missionLaneIndex;
 	Point missionStartPoint;
 
+	// TODO: put these into a GameAssets structure?
 	Texture roadTexture;
 	Texture stripeTexture;
 	Texture sidewalkTexture;
+	Texture grassTexture;
 };
 
 // TODO: remove gameState reference

@@ -26,16 +26,6 @@ static inline void SetPixelCheck(Bitmap bitmap, int row, int col, int colorCode)
 		SetPixel(bitmap, row, col, colorCode);
 }
 
-static inline unsigned int ColorCode(Color color) {
-	unsigned char red = (unsigned char)(color.red * 255);
-	unsigned char green = (unsigned char)(color.green * 255);
-	unsigned char blue = (unsigned char)(color.blue * 255);
-
-	unsigned int colorCode = (red << 16) + (green << 8) + (blue);
-
-	return colorCode;
-}
-
 static inline unsigned int MixColorCodes(unsigned int colorCode1, unsigned int colorCode2) {
 	// TODO: is ANDing a good idea here?
 	return (colorCode1 & colorCode2);

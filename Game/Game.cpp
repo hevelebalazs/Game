@@ -1,3 +1,5 @@
+// TODO: use a unity build?
+
 #include "AutoVehicle.h"
 #include "Building.h"
 #include "Game.h"
@@ -157,6 +159,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	gameState->roadTexture = RandomGreyTexture(256, 256, 100, 127);
 	gameState->stripeTexture = RandomGreyTexture(256, 256, 200, 255);
 	gameState->sidewalkTexture = RandomGreyTexture(256, 256, 70, 100);
+	gameState->grassTexture = GrassTexture(256, 256, &gameStorage->tmpArena);
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -413,7 +416,11 @@ void GameDraw(GameStorage* gameStorage) {
 		}
 	}
 	else {
-		DrawGroundElems(renderer, &gameState->map, gameState->roadTexture, gameState->stripeTexture, gameState->sidewalkTexture);
+		DrawGroundElems(renderer, &gameState->map, 
+						gameState->grassTexture, 
+						gameState->roadTexture,
+						gameState->stripeTexture, 
+						gameState->sidewalkTexture);
 
 		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 		if (gameState->missionIntersection)

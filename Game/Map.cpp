@@ -226,12 +226,16 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	return result;
 }
 
-void DrawGroundElems(Renderer renderer, Map* map, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
+void DrawGroundElems(Renderer renderer, Map* map,
+					 Texture grassTexture,
+					 Texture roadTexture,
+					 Texture stripeTexture,
+					 Texture sidewalkTexture) {
 	Color color = Color{0.0f, 1.0f, 0.0f};
-	DrawRect(
+	WorldTextureRect(
 		renderer,
 		0, 0, map->height, map->width,
-		color
+		grassTexture
 	);
 
 	for (int i = 0; i < map->intersectionCount; ++i)
@@ -352,8 +356,12 @@ void DrawBuildings(Renderer renderer, Map* map, MemArena* arena) {
 	ArenaPopTo(arena, helper.buildings);
 }
 
-void DrawMap(Renderer renderer, Map* map, MemArena* arena, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
-	DrawGroundElems(renderer, map, roadTexture, stripeTexture, sidewalkTexture);
+void DrawMap(Renderer renderer, Map* map, MemArena* arena,
+			 Texture grassTexture,
+			 Texture roadTexture,
+			 Texture stripeTexture,
+			 Texture sidewalkTexture) {
+	DrawGroundElems(renderer, map, grassTexture, roadTexture, stripeTexture, sidewalkTexture);
 	DrawBuildings(renderer, map, arena);
 }
 

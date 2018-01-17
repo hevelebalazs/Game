@@ -18,38 +18,48 @@ struct Bitmap {
 	BITMAPINFO info;
 };
 
-struct Texture {
-	int width;
-	int height;
-	unsigned int* memory;
-};
-
 #define BitmapBytesPerPixel 4
 
 Color RandomColor();
-inline Texture RandomGreyTexture(int width, int height, int minRatio, int maxRatio) {
-	Texture result = {};
-	result.width = width;
-	result.height = height;
-	// TODO: use a memory arena
-	result.memory = new unsigned int[width * height];
 
-	unsigned int* pixel = result.memory;
-	for (int row = 0; row < height; ++row) {
-		for (int col = 0; col < width; ++col) {
-			int greyRatio = IntRandom(minRatio, maxRatio);
+inline unsigned int ColorCode(Color color) {
+	unsigned char red = (unsigned char)(color.red * 255);
+	unsigned char green = (unsigned char)(color.green * 255);
+	unsigned char blue = (unsigned char)(color.blue * 255);
 
-			*pixel = (greyRatio << 16) | (greyRatio << 8) | (greyRatio << 0); 
-			pixel++;
-		}
-	}
+	unsigned int colorCode = (red << 16) + (green << 8) + (blue);
 
+	return colorCode;
+}
+
+inline Color ColorFromCode(unsigned int colorCode) {
+	Color color = {};
+	color.red   = (float)(colorCode & 0x00ff0000) / (float)(0x00ff0000);
+	color.green = (float)(colorCode & 0x0000ff00) / (float)(0x0000ff00);
+	color.blue  = (float)(colorCode & 0x000000ff) / (float)(0x000000ff);
+	return color;
+}
+
+inline Color ColorAdd(Color color1, Color color2) {
+	Color result = {};
+	result.red   = (color1.red   + color2.red);
+	result.green = (color1.green + color2.green);
+	result.blue  = (color1.blue  + color2.blue);
 	return result;
 }
 
-inline unsigned int TextureColor(Texture texture, int row, int col) {
-	// unsigned int result = *(texture.memory + row * texture.width + col);
-	// TODO: it is assumed that texture.width is 256 and texture.height is 256
-	unsigned int result = *(texture.memory + (row << 8) + (col));
+inline Color ColorProd(float times, Color color) {
+	Color result = {};
+	result.red   = (times * color.red);
+	result.green = (times * color.green);
+	result.blue  = (times * color.blue);
+	return result;
+}
+
+inline Color ColorLerp(Color color1, float ratio, Color color2) {
+	Color result = {};
+	result.red   = Lerp(color1.red,   ratio, color2.red);
+	result.green = Lerp(color1.green, ratio, color2.green);
+	result.blue  = Lerp(color1.blue,  ratio, color2.blue);
 	return result;
 }

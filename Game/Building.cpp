@@ -904,14 +904,19 @@ inline void DrawBuilding3D(Renderer renderer, Building building) {
 	if ((building.right > rightZ) || (building.bottom > bottomZ))
 		Bresenham(renderer, bottomRight, bottomRightZ, frameColor);
 
+	/*
 	DrawRect(
 		renderer,
 		topZ, leftZ, bottomZ, rightZ,
 		color
 	);
+	*/
 }
 
 void DrawBuilding(Renderer renderer, Building building) {
+	DrawBuilding3D(renderer, building);
+	return;
+
 	Color color = {};
 	switch (building.type) {
 		case BuildingBlack: {

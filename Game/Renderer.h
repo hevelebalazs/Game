@@ -6,6 +6,7 @@
 #include "Memory.h"
 #include "Point.h"
 #include "Renderer.h"
+#include "Texture.h"
 
 struct Camera {
 	Point center;
@@ -155,16 +156,18 @@ inline void WorldTextureRect(Renderer renderer, float top, float left, float bot
 	if (rightPixel >= bitmap.width)
 		rightPixel = bitmap.width - 1;
 
+	float textureZoom = 16.0f;
+
 	Point topLeftPixel = {(float)leftPixel, (float)topPixel};
 	Point topLeftCoord = PixelToCoord(camera, topLeftPixel);
 	// NOTE: optimization stuff
-	topLeftCoord.x *= 8.0f;
-	topLeftCoord.y *= 8.0f;
+	topLeftCoord.x *= textureZoom;
+	topLeftCoord.y *= textureZoom;
 
 	Assert(camera.screenSize.y > 0.0f);
 	float coordPerPixel = (camera.altitude / camera.screenSize.y);
 	// NOTE: optimization stuff
-	coordPerPixel *= 8.0f;
+	coordPerPixel *= textureZoom;
 
 	float px = 0.0f;
 	float py = 0.0f;
@@ -182,8 +185,8 @@ inline void WorldTextureRect(Renderer renderer, float top, float left, float bot
 			//       does it have to be an integer power of two though?
 			int x = (((int)(worldCoord.x)) & 255);
 			int y = (((int)(worldCoord.y)) & 255);
-
-			*pixel = TextureColor(texture, x, y);
+			
+			*pixel = TextureColor(texture, y, x);
 			pixel++;
 
 			worldCoord.x += coordPerPixel;
@@ -200,6 +203,7 @@ inline void WorldTextureGridLine(Renderer renderer, Point point1, Point point2, 
 	float top    = Min2(point1.y, point2.y);
 	float bottom = Max2(point1.y, point2.y);
 
+	// TODO: this Assert was triggered, check what's happening
 	Assert((left == right) || (top == bottom));
 	if (left == right) {
 		left  -= width * 0.5f;

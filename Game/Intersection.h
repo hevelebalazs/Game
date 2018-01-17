@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 #include "Road.h"
+#include "Texture.h"
 
 struct Road;
 
