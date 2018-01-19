@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "Game.h"
 #include "Geometry.h"
 #include "Math.h"
 #include "Point.h"
@@ -245,17 +246,38 @@ static inline void DrawRoadSidewalk(Renderer renderer, Road road, Texture sidewa
 
 	float sideWidth = (road.width * 0.5f + sideWalkWidth);
 
+	Color separatorColor = {0.2f, 0.2f, 0.2f};
 	if (road.endPoint1.x == road.endPoint2.x) {
 		// DrawRect(renderer, top, left - sideWidth, bottom, left, sideWalkColor);
 		WorldTextureRect(renderer, top, left - sideWidth, bottom, left, sidewalkTexture);
 		// DrawRect(renderer, top, right, bottom, right + sideWidth, sideWalkColor);
 		WorldTextureRect(renderer, top, right, bottom, right + sideWidth, sidewalkTexture);
+
+		Point topLeft     = Point{left  - sideWidth, top    + sideWalkWidth};
+		Point topRight    = Point{right + sideWidth, top    + sideWalkWidth};
+		Point bottomLeft  = Point{left  - sideWidth, bottom - sideWalkWidth};
+		Point bottomRight = Point{right + sideWidth, bottom - sideWalkWidth};
+
+		/*
+		Bresenham(renderer, topLeft, bottomLeft, separatorColor);
+		Bresenham(renderer, topRight, bottomRight, separatorColor);
+		*/
 	}
 	else if (road.endPoint1.y == road.endPoint2.y) {
 		// DrawRect(renderer, top - sideWidth, left, top, right, sideWalkColor);
 		WorldTextureRect(renderer, top - sideWidth, left, top, right, sidewalkTexture);
 		// DrawRect(renderer, bottom, left, bottom + sideWidth, right, sideWalkColor);
 		WorldTextureRect(renderer, bottom, left, bottom + sideWidth, right, sidewalkTexture);
+
+		Point topLeft     = Point{left  + sideWalkWidth, top    - sideWidth};
+		Point topRight    = Point{right - sideWalkWidth, top    - sideWidth};
+		Point bottomLeft  = Point{left  + sideWalkWidth, bottom + sideWidth};
+		Point bottomRight = Point{right - sideWalkWidth, bottom + sideWidth};
+
+		/*
+		Bresenham(renderer, topLeft, topRight, separatorColor);
+		Bresenham(renderer, bottomLeft, bottomRight, separatorColor);
+		*/
 	}
 }
 
@@ -283,15 +305,38 @@ inline void DrawCrossing(Renderer renderer, Road road, Texture stripeTexture) {
 	}
 }
 
-void DrawRoad(Renderer renderer, Road road, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
-	DrawRoadSidewalk(renderer, road, sidewalkTexture);
+void DrawRoad(Renderer renderer, Road road, GameAssets* assets) {
+	DrawRoadSidewalk(renderer, road, assets->sidewalkTexture);
 	float roadLength = RoadLength(&road);
 
 	Color roadColor = Color{0.5f, 0.5f, 0.5f};
 	Point roadPoint1 = XYFromPositiveRoadCoord(&road, 0.0f, -road.width * 0.5f);
 	Point roadPoint2 = XYFromPositiveRoadCoord(&road, roadLength, road.width * 0.5f);
 	// DrawRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadColor);
-	WorldTextureRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, roadTexture);
+	WorldTextureRect(renderer, roadPoint1.y, roadPoint1.x, roadPoint2.y, roadPoint2.x, assets->roadTexture);
+
+	Color separatorColor = {0.2f, 0.2f, 0.2f};
+	float left   = Min2(roadPoint1.x, roadPoint2.x);
+	float right  = Max2(roadPoint1.x, roadPoint2.x);
+	float top    = Min2(roadPoint1.y, roadPoint2.y);
+	float bottom = Max2(roadPoint1.y, roadPoint2.y);
+
+	Point topLeft     = Point{left, top};
+	Point bottomLeft  = Point{left, bottom};
+	Point topRight    = Point{right, top};
+	Point bottomRight = Point{right, bottom};
+	
+	/*
+	if (road.endPoint1.x == road.endPoint2.x) {
+		// TODO: make version of Bresenham that go one pixel to the left/right/top/bottom
+		Bresenham(renderer, topLeft, bottomLeft, separatorColor);
+		Bresenham(renderer, topRight, bottomRight, separatorColor);
+	}
+	else if (road.endPoint1.y == road.endPoint2.y) {
+		Bresenham(renderer, topLeft, topRight, separatorColor);
+		Bresenham(renderer, bottomLeft, bottomRight, separatorColor);
+	}
+	*/
 
 	Color stripeColor = Color{1.0f, 1.0f, 1.0f};
 	float stripeWidth = road.width / 20.0f;
@@ -299,12 +344,12 @@ void DrawRoad(Renderer renderer, Road road, Texture roadTexture, Texture stripeT
 	Point stripePoint1 = XYFromPositiveRoadCoord(&road, 0.0f, -stripeWidth * 0.5f);
 	Point stripePoint2 = XYFromPositiveRoadCoord(&road, road.crossingDistance - crossingWidth * 0.5f, stripeWidth * 0.5f);
 	// DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
-	WorldTextureRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeTexture);
+	WorldTextureRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, assets->stripeTexture);
 
 	stripePoint1 = XYFromPositiveRoadCoord(&road, road.crossingDistance + crossingWidth * 0.5f, -stripeWidth * 0.5f);
 	stripePoint2 = XYFromPositiveRoadCoord(&road, roadLength, stripeWidth * 0.5f);
 	// DrawRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeColor);
-	WorldTextureRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, stripeTexture);
+	WorldTextureRect(renderer, stripePoint1.y, stripePoint1.x, stripePoint2.y, stripePoint2.x, assets->stripeTexture);
 
-	DrawCrossing(renderer, road, stripeTexture);
+	DrawCrossing(renderer, road, assets->stripeTexture);
 }

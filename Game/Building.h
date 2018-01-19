@@ -13,6 +13,7 @@ extern float entranceWidth;
 extern float wallWidth;
 
 struct MapElem;
+struct GameAssets;
 
 enum CrossType {
 	CrossNone,
@@ -34,6 +35,7 @@ struct BuildingInside {
 };
 
 struct Building {
+	// TODO: remove this
 	BuildingType type;
 
 	// TODO: save four corner points instead
@@ -73,7 +75,7 @@ Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPo
 bool IsPointOnBuildingConnector(Point point, Building building);
 
 void HighlightBuilding(Renderer renderer, Building building, Color color);
-void DrawBuilding(Renderer renderer, Building building);
+void DrawBuilding(Renderer renderer, Building building, GameAssets* assets);
 void DrawBuildingInside(Renderer renderer, Building building);
 
 void DrawVisibleAreaInBuilding(Renderer renderer, Building building, Point center, MemArena* tmpArena);

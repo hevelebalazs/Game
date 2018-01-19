@@ -25,6 +25,16 @@ inline int IntRandom(int min, int max) {
 	return result;
 }
 
+inline int IntMin2(int i1, int i2) {
+	if (i1 < i2) return i1;
+	else return i2;
+}
+
+inline int IntMax2(int i1, int i2) {
+	if (i1 > i2) return i1;
+	else return i2;
+}
+
 // TODO: these should be inline functions
 float Min2(float x, float y);
 float Max2(float x, float y);
@@ -38,6 +48,10 @@ inline float Abs(float x) {
 		return x;
 	else
 		return -x;
+}
+
+inline float Floor(float x) {
+	return floorf(x);
 }
 
 inline float Lerp(float value1, float ratio, float value2) {

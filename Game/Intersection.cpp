@@ -1,3 +1,4 @@
+#include "Game.h"
 #include "Geometry.h"
 #include "Intersection.h"
 #include "Road.h"
@@ -344,8 +345,8 @@ static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection inte
 		WorldTextureRect(renderer, top, right, bottom, right + sideWalkWidth, sidewalkTexture);
 }
 
-void DrawIntersection(Renderer renderer, Intersection intersection, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture) {
-	DrawIntersectionSidewalk(renderer, intersection, sidewalkTexture);
+void DrawIntersection(Renderer renderer, Intersection intersection, GameAssets* assets) {
+	DrawIntersectionSidewalk(renderer, intersection, assets->sidewalkTexture);
 
 	float roadWidth = GetIntersectionRoadWidth(intersection);
 
@@ -361,7 +362,7 @@ void DrawIntersection(Renderer renderer, Intersection intersection, Texture road
 
 	Color color = { 0.5f, 0.5f, 0.5f };
 	// DrawRect(renderer, top, left, bottom, right, color);
-	WorldTextureRect(renderer, top, left, bottom, right, roadTexture);
+	WorldTextureRect(renderer, top, left, bottom, right, assets->roadTexture);
 
 	float stripeWidth = roadWidth / 20.0f;
 	Color stripeColor = { 1.0f, 1.0f, 1.0f };
@@ -380,29 +381,29 @@ void DrawIntersection(Renderer renderer, Intersection intersection, Texture road
 	if (roadCount > 2) {
 		if (intersection.topRoad)
 			// DrawRect(renderer, top, left, top + stripeWidth, right, stripeColor);
-			WorldTextureRect(renderer, top, left, top + stripeWidth, right, stripeTexture);
+			WorldTextureRect(renderer, top, left, top + stripeWidth, right, assets->stripeTexture);
 		if (intersection.leftRoad)
 			// DrawRect(renderer, top, left, bottom, left + stripeWidth, stripeColor);
-			WorldTextureRect(renderer, top, left, bottom, left + stripeWidth, stripeTexture);
+			WorldTextureRect(renderer, top, left, bottom, left + stripeWidth, assets->stripeTexture);
 		if (intersection.bottomRoad)
 			// DrawRect(renderer, bottom - stripeWidth, left, bottom, right, stripeColor);
-			WorldTextureRect(renderer, bottom - stripeWidth, left, bottom, right, stripeTexture);
+			WorldTextureRect(renderer, bottom - stripeWidth, left, bottom, right, assets->stripeTexture);
 		if (intersection.rightRoad)
 			// DrawRect(renderer, top, right - stripeWidth, bottom, right, stripeColor);
-			WorldTextureRect(renderer, top, right - stripeWidth, bottom, right, stripeTexture);
+			WorldTextureRect(renderer, top, right - stripeWidth, bottom, right, assets->stripeTexture);
 	}
 	else {
 		if (intersection.topRoad)
 			// DrawRect(renderer, top, midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
-			WorldTextureRect(renderer, top, midX - (stripeWidth * 0.5f), midY + (stripeWidth * 0.5f), midX + (stripeWidth * 0.5f), stripeTexture);
+			WorldTextureRect(renderer, top, midX - (stripeWidth * 0.5f), midY + (stripeWidth * 0.5f), midX + (stripeWidth * 0.5f), assets->stripeTexture);
 		if (intersection.leftRoad)
 			// DrawRect(renderer, midY - (stripeWidth / 2.0f), left, midY + (stripeWidth / 2.0f), midX + (stripeWidth / 2.0f), stripeColor);
-			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), left, midY + (stripeWidth * 0.5f), midX + (stripeWidth * 0.5f), stripeTexture);
+			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), left, midY + (stripeWidth * 0.5f), midX + (stripeWidth * 0.5f), assets->stripeTexture);
 		if (intersection.bottomRoad)
 			// DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), bottom, midX + (stripeWidth / 2.0f), stripeColor);
-			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), midX - (stripeWidth * 0.5f), bottom, midX + (stripeWidth * 0.5f), stripeTexture);
+			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), midX - (stripeWidth * 0.5f), bottom, midX + (stripeWidth * 0.5f), assets->stripeTexture);
 		if (intersection.rightRoad)
 			// DrawRect(renderer, midY - (stripeWidth / 2.0f), midX - (stripeWidth / 2.0f), midY + (stripeWidth / 2.0f), right, stripeColor);
-			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), midX - (stripeWidth * 0.5f), midY + (stripeWidth * 0.5f), right, stripeTexture);
+			WorldTextureRect(renderer, midY - (stripeWidth * 0.5f), midX - (stripeWidth * 0.5f), midY + (stripeWidth * 0.5f), right, assets->stripeTexture);
 	}
 }

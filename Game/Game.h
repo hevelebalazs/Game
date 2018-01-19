@@ -12,6 +12,19 @@
 #include "Renderer.h"
 #include "Texture.h"
 
+// TODO: rename this and remove from Game
+struct GameAssets {
+	Texture roadTexture;
+	Texture stripeTexture;
+	Texture sidewalkTexture;
+	Texture grassTexture;
+
+	Texture roofTextureUp;
+	Texture roofTextureDown;
+	Texture roofTextureLeft;
+	Texture roofTextureRight;
+};
+
 struct GameState {
 	Camera camera;
 
@@ -43,11 +56,7 @@ struct GameState {
 	int missionLaneIndex;
 	Point missionStartPoint;
 
-	// TODO: put these into a GameAssets structure?
-	Texture roadTexture;
-	Texture stripeTexture;
-	Texture sidewalkTexture;
-	Texture grassTexture;
+	GameAssets assets;
 };
 
 // TODO: remove gameState reference

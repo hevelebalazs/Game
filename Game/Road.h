@@ -13,6 +13,7 @@ extern float sideWalkWidth;
 extern float crossingWidth;
 
 struct Intersection;
+struct GameAssets;
 
 struct Road {
 	Point endPoint1;
@@ -155,4 +156,4 @@ DirectedPoint TurnPointToLane(Road road, int laneIndex, Point point);
 
 void HighlightRoadSidewalk(Renderer renderer, Road road, Color color);
 void HighlightRoad(Renderer renderer, Road road, Color color);
-void DrawRoad(Renderer renderer, Road road, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture);
+void DrawRoad(Renderer renderer, Road road, GameAssets* assets);

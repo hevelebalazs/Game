@@ -34,9 +34,9 @@ inline unsigned int ColorCode(Color color) {
 
 inline Color ColorFromCode(unsigned int colorCode) {
 	Color color = {};
-	color.red   = (float)(colorCode & 0x00ff0000) / (float)(0x00ff0000);
-	color.green = (float)(colorCode & 0x0000ff00) / (float)(0x0000ff00);
-	color.blue  = (float)(colorCode & 0x000000ff) / (float)(0x000000ff);
+	color.red   = (float)((colorCode & 0x00ff0000) >> 16) * (1.0f / 255.0f);
+	color.green = (float)((colorCode & 0x0000ff00) >>  8) * (1.0f / 255.0f);
+	color.blue  = (float)((colorCode & 0x000000ff) >>  0) * (1.0f / 255.0f);
 	return color;
 }
 

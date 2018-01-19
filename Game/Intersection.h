@@ -5,6 +5,7 @@
 #include "Texture.h"
 
 struct Road;
+struct GameAssets;
 
 enum TrafficLightColor {
 	TrafficLightNone,
@@ -63,7 +64,7 @@ void DrawTrafficLights(Renderer renderer, Intersection intersection);
 
 void HighlightIntersectionSidewalk(Renderer renderer, Intersection intersection, Color color);
 void HighlightIntersection(Renderer renderer, Intersection intersection, Color color);
-void DrawIntersection(Renderer renderer, Intersection intersection, Texture roadTexture, Texture stripeTexture, Texture sidewalkTexture);
+void DrawIntersection(Renderer renderer, Intersection intersection, GameAssets* assets);
 
 static inline int QuarterIndex(Intersection* intersection, Point point) {
 	int result = 0;

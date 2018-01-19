@@ -149,12 +149,12 @@ inline void WorldTextureRect(Renderer renderer, float top, float left, float bot
 	if (topPixel < 0)
 		topPixel = 0;
 	if (bottomPixel >= bitmap.height)
-		bottomPixel = bitmap.height - 1;
+		bottomPixel = (bitmap.height - 1);
 
 	if (leftPixel < 0)
 		leftPixel = 0;
 	if (rightPixel >= bitmap.width)
-		rightPixel = bitmap.width - 1;
+		rightPixel = (bitmap.width - 1);
 
 	float textureZoom = 16.0f;
 
@@ -169,30 +169,48 @@ inline void WorldTextureRect(Renderer renderer, float top, float left, float bot
 	// NOTE: optimization stuff
 	coordPerPixel *= textureZoom;
 
-	float px = 0.0f;
-	float py = 0.0f;
+	int subCoordPerPixel = (int)(coordPerPixel * 255.0f);
 
 	unsigned int* topLeft = (unsigned int*)bitmap.memory + topPixel * bitmap.width + leftPixel;
 
+	// TODO: try to optimize this code
 	Point worldCoord = topLeftCoord;
+	int leftx  = (((int)(worldCoord.x)) & (texture.side - 1));
+	int topy   = (((int)(worldCoord.y)) & (texture.side - 1));
+
+	int leftsubx = (int)((worldCoord.x - Floor(worldCoord.x)) * 255.0f);
+	int topsuby = (int)((worldCoord.y - Floor(worldCoord.y)) * 255.0f);
+
+	int x = leftx;
+	int y = topy;
+
+	int subx = leftsubx;
+	int suby = topsuby;
+
 	for (int row = topPixel; row < bottomPixel; ++row) {
-		worldCoord.x = topLeftCoord.x;
+		x = leftx;
+		subx = leftsubx;
 
 		unsigned int* pixel = topLeft;
 
 		for (int col = leftPixel; col < rightPixel; ++col) {
-			// TODO: make this work with arbitrary sized texture
-			//       does it have to be an integer power of two though?
-			int x = (((int)(worldCoord.x)) & 255);
-			int y = (((int)(worldCoord.y)) & 255);
-			
-			*pixel = TextureColor(texture, y, x);
+			//*pixel = TextureColorCodeInt(texture, y, x);
+			*pixel = TextureColorCode(texture, x, subx, y, suby);
 			pixel++;
 
-			worldCoord.x += coordPerPixel;
+			subx += subCoordPerPixel;
+			if (subx > 0xFF) {
+				x = ((x + (subx >> 8)) & (texture.side - 1));
+				subx = (subx & 0xFF);
+			}
 		}
 
-		worldCoord.y += coordPerPixel;
+		suby += subCoordPerPixel;
+		if (suby > 0xFF) {
+			y = ((y + (suby >> 8)) & (texture.side - 1));
+			suby = (suby & 0xFF);
+		}
+
 		topLeft += bitmap.width;
 	}
 }

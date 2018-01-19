@@ -1,6 +1,7 @@
 #include "Building.h"
-#include "Math.h"
+#include "Game.h"
 #include "Geometry.h"
+#include "Math.h"
 
 extern float connectRoadWidth = 5.0f;
 extern float entranceWidth = 3.0f;
@@ -913,34 +914,45 @@ inline void DrawBuilding3D(Renderer renderer, Building building) {
 	*/
 }
 
-void DrawBuilding(Renderer renderer, Building building) {
+void DrawBuilding(Renderer renderer, Building building, GameAssets* assets) {
+	/*
 	DrawBuilding3D(renderer, building);
 	return;
+	*/
 
-	Color color = {};
-	switch (building.type) {
-		case BuildingBlack: {
-				color = Color{0.0f, 0.0f, 0.0f};
-				break;
-			}
+	Color sideColor = {0.0f, 0.0f, 0.0f};
 
-		case BuildingRed: {
-				color = Color{0.5f, 0.0f, 0.0f};
-				break;
-			}
+	//WorldTextureRect(renderer, building.top, building.left, building.bottom, building.right, assets->roofTexture);
+	float width  = (building.right - building.left);
+	float height = (building.bottom - building.top);
 
-		case BuildingGreen: {
-				color = Color{0.0f, 0.5f, 0.0f};
-				break;
-			}
+	if (height > width) {
+		float middle = ((building.right + building.left) * 0.5f);
+		WorldTextureRect(renderer, building.top, building.left, building.bottom, middle, assets->roofTextureLeft);
+		WorldTextureRect(renderer, building.top, middle, building.bottom, building.right, assets->roofTextureRight);
 
-		case BuildingBlue: {
-				color = Color{0.0f, 0.0f, 0.5f};
-				break;
-			}
+		Point topMiddle = Point{middle, building.top};
+		Point bottomMiddle = Point{middle, building.bottom};
+		Bresenham(renderer, topMiddle, bottomMiddle, sideColor);
+	}
+	else {
+		float middle = ((building.bottom + building.top) * 0.5f);
+		WorldTextureRect(renderer, building.top, building.left, middle, building.right, assets->roofTextureUp);
+		WorldTextureRect(renderer, middle, building.left, building.bottom, building.right, assets->roofTextureDown);
+
+		Point leftMiddle = Point{building.left, middle};
+		Point rightMiddle = Point{building.right, middle};
+		Bresenham(renderer, leftMiddle, rightMiddle, sideColor);
 	}
 
-	DrawRect(renderer, building.top, building.left, building.bottom, building.right, color);
+	Point topLeft     = Point{building.left, building.top};
+	Point topRight    = Point{building.right, building.top};
+	Point bottomLeft  = Point{building.left, building.bottom};
+	Point bottomRight = Point{building.right, building.bottom};
+	Bresenham(renderer, topLeft, topRight, sideColor);
+	Bresenham(renderer, topRight, bottomRight, sideColor);
+	Bresenham(renderer, bottomRight, bottomLeft, sideColor);
+	Bresenham(renderer, bottomLeft, topLeft, sideColor);
 }
 
 void DrawBuildingInside(Renderer renderer, Building building) {
@@ -1310,7 +1322,7 @@ void HighlightBuildingConnector(Renderer renderer, Building building, Color colo
 		);
 
 		// TODO: this is a lazy solution, do this properly!
-		DrawBuilding(renderer, building);
+		// DrawBuilding(renderer, building);
 	}
 
 	DrawLine(renderer, building.connectPointClose, building.connectPointFarShow, color, roadWidth);

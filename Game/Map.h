@@ -8,6 +8,8 @@
 #include "Memory.h"
 #include "Renderer.h"
 
+struct GameAssets;
+
 struct Map {
 	Intersection* intersections;
 	int intersectionCount = 0;
@@ -36,14 +38,6 @@ Building* BuildingAtPoint(Map map, Point point);
 MapElem RoadElemAtPoint(Map map, Point point);
 MapElem PedestrianElemAtPoint(Map map, Point point);
 
-void DrawGroundElems(Renderer renderer, Map* map, 
-					 Texture grassTexture,
-					 Texture roadTexture, 
-					 Texture stripeTexture, 
-					 Texture sidewalkTexture);
-void DrawBuildings(Renderer renderer, Map* map, MemArena* arena);
-void DrawMap(Renderer renderer, Map* map, MemArena* arena, 
-			 Texture grassTexture,
-			 Texture roadTexture, 
-			 Texture stripeTexture, 
-			 Texture sidewalkTexture);
+void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets);
+void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets);
+void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets);

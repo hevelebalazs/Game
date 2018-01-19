@@ -90,7 +90,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	Intersection* startIntersection = RandomIntersection(gameState->map);
 	playerHuman->human.position = startIntersection->position;
 	playerHuman->human.map = &gameState->map;
-	playerHuman->human.moveSpeed = 15.0f;
+	playerHuman->human.moveSpeed = 5.0f;
 	playerHuman->human.healthPoints = maxHealthPoints;
 
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
@@ -156,10 +156,18 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem, 
 										  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 
-	gameState->roadTexture = RandomGreyTexture(256, 256, 100, 127);
-	gameState->stripeTexture = RandomGreyTexture(256, 256, 200, 255);
-	gameState->sidewalkTexture = RandomGreyTexture(256, 256, 70, 100);
-	gameState->grassTexture = GrassTexture(256, 256, &gameStorage->tmpArena);
+	GameAssets* assets = &gameState->assets;
+	assets->roadTexture = RandomGreyTexture(6, 100, 127);
+	assets->stripeTexture = RandomGreyTexture(6, 200, 255);
+	assets->sidewalkTexture = RandomGreyTexture(6, 70, 100);
+	assets->grassTexture = GrassTexture(10, &gameStorage->tmpArena);
+	assets->roofTextureDown = RoofTexture(6);
+	assets->roofTextureUp = CopyTexture(&assets->roofTextureDown);
+	RotateTextureUpsideDown(&assets->roofTextureUp);
+	assets->roofTextureRight = CopyTexture(&assets->roofTextureUp);
+	RotateTextureRight(&assets->roofTextureRight);
+	assets->roofTextureLeft = CopyTexture(&assets->roofTextureUp);
+	RotateTextureLeft(&assets->roofTextureLeft);
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -242,15 +250,15 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->targetAltitude = 30.0f + (speed * 2.0f);
+		camera->targetAltitude = 30.0f + (0.5f * speed);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
 
 		if (gameState->playerHuman.human.inBuilding)
-			camera->targetAltitude = 15.0;
+			camera->targetAltitude = 15.0f;
 		else
-			camera->targetAltitude = 30.0f;
+			camera->targetAltitude = 40.0f;
 	}
 
 	if (gameState->showFullMap)
@@ -416,11 +424,7 @@ void GameDraw(GameStorage* gameStorage) {
 		}
 	}
 	else {
-		DrawGroundElems(renderer, &gameState->map, 
-						gameState->grassTexture, 
-						gameState->roadTexture,
-						gameState->stripeTexture, 
-						gameState->sidewalkTexture);
+		DrawGroundElems(renderer, &gameState->map, &gameState->assets);
 
 		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 		if (gameState->missionIntersection)
@@ -443,7 +447,7 @@ void GameDraw(GameStorage* gameStorage) {
 			DrawAutoHuman(renderer, autoHuman);
 		}
 
-		DrawBuildings(renderer, &gameState->map, &gameStorage->tmpArena);
+		DrawBuildings(renderer, &gameState->map, &gameStorage->tmpArena, &gameState->assets);
 	}
 
 	if (gameState->isPlayerVehicle)

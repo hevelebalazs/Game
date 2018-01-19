@@ -1,3 +1,4 @@
+#include "Game.h"
 #include "Geometry.h"
 #include "Map.h"
 #include "Math.h"
@@ -226,26 +227,18 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	return result;
 }
 
-void DrawGroundElems(Renderer renderer, Map* map,
-					 Texture grassTexture,
-					 Texture roadTexture,
-					 Texture stripeTexture,
-					 Texture sidewalkTexture) {
+void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets) {
 	Color color = Color{0.0f, 1.0f, 0.0f};
-	WorldTextureRect(
-		renderer,
-		0, 0, map->height, map->width,
-		grassTexture
-	);
+	WorldTextureRect(renderer, 0, 0, map->height, map->width, assets->grassTexture);
 
 	for (int i = 0; i < map->intersectionCount; ++i)
-		DrawIntersection(renderer, map->intersections[i], roadTexture, stripeTexture, sidewalkTexture);
+		DrawIntersection(renderer, map->intersections[i], assets);
 
 	for (int i = 0; i < map->roadCount; ++i)
-		DrawRoad(renderer, map->roads[i], roadTexture, stripeTexture, sidewalkTexture);
+		DrawRoad(renderer, map->roads[i], assets);
 
 	for (int i = 0; i < map->buildingCount; ++i)
-		DrawConnectRoad(renderer, map->buildings[i], roadTexture);
+		DrawConnectRoad(renderer, map->buildings[i], assets->roadTexture);
 
 	for (int i = 0; i < map->intersectionCount; ++i)
 		DrawTrafficLights(renderer, map->intersections[i]);
@@ -338,7 +331,12 @@ inline void SortBuildings(BuildingHelper* helper, Point center) {
 }
 
 // TODO: move the sorting logic to renderer
-void DrawBuildings(Renderer renderer, Map* map, MemArena* arena) {
+void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets) {
+	for (int i = 0; i < map->buildingCount; ++i)
+		DrawBuilding(renderer, map->buildings[i], assets);
+
+	/*
+	// NOTE: 3d buildings
 	BuildingHelper helper = {};
 	helper.buildingCount = map->buildingCount;
 	helper.buildings = ArenaPushArray(arena, Building, helper.buildingCount);
@@ -354,14 +352,11 @@ void DrawBuildings(Renderer renderer, Map* map, MemArena* arena) {
 		DrawBuilding(renderer, helper.buildings[i]);
 
 	ArenaPopTo(arena, helper.buildings);
+	*/
 }
 
-void DrawMap(Renderer renderer, Map* map, MemArena* arena,
-			 Texture grassTexture,
-			 Texture roadTexture,
-			 Texture stripeTexture,
-			 Texture sidewalkTexture) {
-	DrawGroundElems(renderer, map, grassTexture, roadTexture, stripeTexture, sidewalkTexture);
-	DrawBuildings(renderer, map, arena);
+void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets) {
+	DrawGroundElems(renderer, map, assets);
+	DrawBuildings(renderer, map, arena, assets);
 }
 
