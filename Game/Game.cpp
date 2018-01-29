@@ -250,7 +250,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->targetAltitude = 30.0f + (0.5f * speed);
+		camera->targetAltitude = 40.0f + (1.0f * speed);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;

@@ -194,8 +194,8 @@ inline void WorldTextureRect(Renderer renderer, float top, float left, float bot
 		unsigned int* pixel = topLeft;
 
 		for (int col = leftPixel; col < rightPixel; ++col) {
-			//*pixel = TextureColorCodeInt(texture, y, x);
-			*pixel = TextureColorCode(texture, x, subx, y, suby);
+			*pixel = TextureColorCodeInt(texture, y, x);
+			//*pixel = TextureColorCode(texture, x, subx, y, suby);
 			pixel++;
 
 			subx += subCoordPerPixel;
