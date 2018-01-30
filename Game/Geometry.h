@@ -13,6 +13,10 @@ union Line {
 	};
 };
 
+struct Quad {
+	Point points[4];
+};
+
 float DistanceSquare(Point point1, Point point2);
 float CityDistance(Point point1, Point point2);
 float Distance(Point point1, Point point2);
@@ -54,24 +58,25 @@ inline bool IsPointInRect(Point point, float left, float right, float top, float
 }
 
 // TODO: create a Quad struct?
-inline bool IsPointInQuad(Point quad[4], Point point) {
-	if (point.x < quad[0].x && point.x < quad[1].x && point.x < quad[2].x && point.x < quad[3].x)
+inline bool IsPointInQuad(Quad quad, Point point) {
+	Point* points = (Point*)quad.points;
+	if (point.x < points[0].x && point.x < points[1].x && point.x < points[2].x && point.x < points[3].x)
 		return false;
-	if (point.x > quad[0].x && point.x > quad[1].x && point.x > quad[2].x && point.x > quad[3].x)
-		return false;
-
-	if (point.y < quad[0].y && point.y < quad[1].y && point.y < quad[2].y && point.y < quad[3].y)
-		return false;
-	if (point.y > quad[0].y && point.y > quad[1].y && point.y > quad[2].y && point.y > quad[3].y)
+	if (point.x > points[0].x && point.x > points[1].x && point.x > points[2].x && point.x > points[3].x)
 		return false;
 
-	if (!TurnsRight(quad[0], quad[1], point))
+	if (point.y < points[0].y && point.y < points[1].y && point.y < points[2].y && point.y < points[3].y)
 		return false;
-	else if (!TurnsRight(quad[1], quad[2], point))
+	if (point.y > points[0].y && point.y > points[1].y && point.y > points[2].y && point.y > points[3].y)
 		return false;
-	else if (!TurnsRight(quad[2], quad[3], point))
+
+	if (!TurnsRight(points[0], points[1], point))
 		return false;
-	else if (!TurnsRight(quad[3], quad[0], point))
+	else if (!TurnsRight(points[1], points[2], point))
+		return false;
+	else if (!TurnsRight(points[2], points[3], point))
+		return false;
+	else if (!TurnsRight(points[3], points[0], point))
 		return false;
 	else
 		return true;

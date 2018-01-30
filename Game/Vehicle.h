@@ -6,6 +6,10 @@
 #include "Point.h"
 #include "Renderer.h"
 
+// TODO: capitalize all globals
+extern float MinVehicleSpeed;
+extern float MaxVehicleSpeed;
+
 struct Vehicle {
 	Point position;
 	
@@ -17,11 +21,13 @@ struct Vehicle {
 	float length;
 	float width;
 
+	float moveSpeed;
 	float maxSpeed;
 
 	Map* map;
 };
 
+Quad GetVehicleStopArea(Vehicle* vehicle);
 bool IsVehicleOnPoint(Vehicle* vehicle, Point point);
 void MoveVehicle(Vehicle* vehicle, DirectedPoint point);
 void DrawVehicle(Renderer renderer, Vehicle vehicle);

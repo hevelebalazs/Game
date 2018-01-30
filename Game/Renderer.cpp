@@ -511,13 +511,13 @@ void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float 
 	direction.y = tmp;
 
 	float halfLineWidth = lineWidth * 0.5f;
-	Point drawPoints[4] = {};
+	Quad quad = {};
 
-	drawPoints[0] = PointDiff(point1, PointProd(halfLineWidth, direction));
-	drawPoints[1] = PointSum (point1, PointProd(halfLineWidth, direction));
-	drawPoints[2] = PointSum (point2, PointProd(halfLineWidth, direction));
-	drawPoints[3] = PointDiff(point2, PointProd(halfLineWidth, direction));
-	DrawQuad(renderer, drawPoints, color);
+	quad.points[0] = PointDiff(point1, PointProd(halfLineWidth, direction));
+	quad.points[1] = PointSum (point1, PointProd(halfLineWidth, direction));
+	quad.points[2] = PointSum (point2, PointProd(halfLineWidth, direction));
+	quad.points[3] = PointDiff(point2, PointProd(halfLineWidth, direction));
+	DrawQuad(renderer, quad, color);
 }
 
 // TODO: change the order to left, right, top, bottom
@@ -563,11 +563,11 @@ void DrawRect(Renderer renderer, float top, float left, float bottom, float righ
 	}
 }
 
-void DrawQuad(Renderer renderer, Point points[4], Color color) {
+void DrawQuad(Renderer renderer, Quad quad, Color color) {
 	unsigned int colorCode = ColorCode(color);
 
 	for (int i = 0; i < 4; ++i)
-		points[i] = CoordToPixel(*renderer.camera, points[i]);
+		quad.points[i] = CoordToPixel(*renderer.camera, quad.points[i]);
 
 	Bitmap bitmap = renderer.bitmap;
 	int minX = bitmap.width;
@@ -576,8 +576,8 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 	int maxY = 0;
 
 	for (int i = 0; i < 4; ++i) {
-		int pointX = (int)points[i].x;
-		int pointY = (int)points[i].y;
+		int pointX = (int)quad.points[i].x;
+		int pointY = (int)quad.points[i].y;
 
 		if (pointX < minX)
 			minX = pointX;
@@ -606,17 +606,17 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 			bool drawPoint = true;
 
 			// TODO: is using cross product faster than these calls?
-			if (!TurnsRight(points[0], points[1], testPoint))
+			if (!TurnsRight(quad.points[0], quad.points[1], testPoint))
 				drawPoint = false;
-			else if (!TurnsRight(points[1], points[2], testPoint))
+			else if (!TurnsRight(quad.points[1], quad.points[2], testPoint))
 				drawPoint = false;
-			else if (!TurnsRight(points[2], points[3], testPoint))
+			else if (!TurnsRight(quad.points[2], quad.points[3], testPoint))
 				drawPoint = false;
-			else if (!TurnsRight(points[3], points[0], testPoint))
+			else if (!TurnsRight(quad.points[3], quad.points[0], testPoint))
 				drawPoint = false;
 
 			if (drawPoint) {
-				pixel = (unsigned int *)bitmap.memory + row * bitmap.width + col;
+				pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
 				*pixel = colorCode;
 			}
 		}
@@ -624,6 +624,6 @@ void DrawQuad(Renderer renderer, Point points[4], Color color) {
 }
 
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color) {
-	Point points[4] = {point1, point2, point3, point4};
-	DrawQuad(renderer, points, color);
+	Quad quad = {point1, point2, point3, point4};
+	DrawQuad(renderer, quad, color);
 }

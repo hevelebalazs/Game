@@ -78,7 +78,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	GameState* gameState = gameStorage->gameState;
 	*gameState = GameState{};
 
-	gameState->map = CreateGridMap((float)windowWidth, (float)windowHeight, 100, arena, tmpArena);
+	gameState->map = CreateGridMap((float)600, (float)600, 100, arena, tmpArena);
 
 	int maxPathNodeCount = 10000;
 	gameState->pathPool.maxNodeCount = maxPathNodeCount;
@@ -118,7 +118,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		vehicle->length = 7.5f;
 		vehicle->width = 5.0f;
 		vehicle->map = &gameState->map;
-		vehicle->maxSpeed = 30.0f;
+		vehicle->maxSpeed = RandomBetween(MinVehicleSpeed, MaxVehicleSpeed);
 		autoVehicle->inBuilding = randomBuilding;
 	}
 
@@ -183,6 +183,38 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 
 	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 		AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
+		Vehicle* vehicle = &autoVehicle->vehicle;
+
+		vehicle->moveSpeed = vehicle->maxSpeed;
+
+		// TODO: move this logic to UpdateAutoVehicle?
+		Quad stopArea = GetVehicleStopArea(vehicle);
+
+		Point playerPosition = {};
+		if (gameState->isPlayerVehicle)
+			playerPosition = gameState->playerVehicle.vehicle.position;
+		else
+			playerPosition = gameState->playerHuman.human.position;
+
+		if (IsPointInQuad(stopArea, playerPosition))
+				vehicle->moveSpeed = 0.0f;
+
+		for (int i = 0; i < gameState->autoHumanCount; ++i) {
+			AutoHuman* autoHuman = &gameState->autoHumans[i];
+			Human* human = &autoHuman->human;
+			if (IsPointInQuad(stopArea, human->position))
+				vehicle->moveSpeed = 0.0f;
+		}
+
+		for (int i = 0; i < gameState->autoVehicleCount; ++i) {
+			AutoVehicle* testAutoVehicle = &gameState->autoVehicles[i];
+			if (autoVehicle == testAutoVehicle)
+				continue;
+			Vehicle* testVehicle = &testAutoVehicle->vehicle;
+			if (IsPointInQuad(stopArea, testVehicle->position))
+				vehicle->moveSpeed = 0.0f;
+		}
+
 		UpdateAutoVehicle(autoVehicle, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 

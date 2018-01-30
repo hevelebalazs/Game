@@ -10,7 +10,10 @@ void InitAutoVehicleMovement(AutoVehicle* autoVehicle) {
 	// TODO: is this distance close enough?
 	float moveDistance = Distance(autoVehicle->moveStartPoint.position, autoVehicle->moveEndPoint.position);
 
-	autoVehicle->moveTotalSeconds = (moveDistance / autoVehicle->vehicle.maxSpeed);
+	if (autoVehicle->vehicle.moveSpeed > 0.0f)
+		autoVehicle->moveTotalSeconds = (moveDistance / autoVehicle->vehicle.moveSpeed);
+	else
+		autoVehicle->moveTotalSeconds = 0.0f;
 	autoVehicle->moveSeconds = 0.0f;
 }
 
@@ -32,6 +35,9 @@ void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, Mem
 
 void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
 	Vehicle* vehicle = &autoVehicle->vehicle;
+
+	if (autoVehicle->vehicle.moveSpeed == 0.0f)
+		return;
 
 	if (autoVehicle->moveTargetBuilding) {
 		// TODO: should there be a limit on the iteration number?

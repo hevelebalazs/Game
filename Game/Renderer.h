@@ -2,6 +2,7 @@
 
 #include "Bitmap.h"
 #include "Debug.h"
+#include "Geometry.h"
 #include "Math.h"
 #include "Memory.h"
 #include "Point.h"
@@ -235,5 +236,5 @@ inline void WorldTextureGridLine(Renderer renderer, Point point1, Point point2, 
 	WorldTextureRect(renderer, top, left, bottom, right, texture);
 }
 
-void DrawQuad(Renderer renderer, Point points[4], Color color);
+void DrawQuad(Renderer renderer, Quad quad, Color color);
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color);
