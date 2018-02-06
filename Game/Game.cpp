@@ -424,6 +424,8 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	gameState->missionElem = playerElem;
 	gameState->missionLaneIndex = missionLaneIndex;
 	gameState->missionStartPoint = missionStartPoint;
+
+	gameState->time += seconds;
 }
 
 // TODO: many things are recalculated, merge GameUpdate with GameDraw?
@@ -486,4 +488,35 @@ void GameDraw(GameStorage* gameStorage) {
 		DrawVehicle(renderer, gameState->playerVehicle.vehicle);
 	else
 		DrawPlayerHuman(renderer, &gameState->playerHuman);
+
+	Renderer maskRenderer = gameState->maskRenderer;
+	Color black = {0.0f, 0.0f, 0.0f};
+	ClearScreen(maskRenderer, black);
+	Bitmap maskBitmap = maskRenderer.bitmap;
+
+	float seeDistance = 15.0f;
+	float seeDistance2 = 16.0f;
+	float baseBrightness = 0.1f;
+	unsigned int* maskPixel = (unsigned int*)maskBitmap.memory;
+	for (int row = 0; row < maskBitmap.height; ++row) {
+		for (int col = 0; col < maskBitmap.width; ++col) {
+			Point pixelPosition = {};
+			pixelPosition.x = (float)col;
+			pixelPosition.y = (float)row;
+			Point position = PixelToCoord(*renderer.camera, pixelPosition);
+			float distance = Distance(position, playerPosition);
+			float grey = 0.0f;
+			if (distance <= seeDistance)
+				grey = baseBrightness;
+			else if (distance <= seeDistance2)
+				grey = baseBrightness * (1.0f - (distance - seeDistance) / (seeDistance2 - seeDistance));
+			else
+				grey = 0.0f;
+			Color color = Color{grey, grey, grey};
+			*maskPixel = ColorCode(color);
+			maskPixel++;
+		}
+	}
+
+	ApplyBitmapMask(renderer.bitmap, maskRenderer.bitmap);
 }

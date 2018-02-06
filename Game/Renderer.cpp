@@ -26,9 +26,12 @@ static inline void SetPixelCheck(Bitmap bitmap, int row, int col, int colorCode)
 		SetPixel(bitmap, row, col, colorCode);
 }
 
-static inline unsigned int MixColorCodes(unsigned int colorCode1, unsigned int colorCode2) {
-	// TODO: is ANDing a good idea here?
-	return (colorCode1 & colorCode2);
+static inline Color ColorProd(Color color1, Color color2) {
+	Color result = {};
+	result.red   = color1.red   * color2.red;
+	result.green = color1.green * color2.green;
+	result.blue  = color1.blue  * color2.blue;
+	return result;
 }
 
 void ApplyBitmapMask(Bitmap bitmap, Bitmap mask) {
@@ -37,7 +40,11 @@ void ApplyBitmapMask(Bitmap bitmap, Bitmap mask) {
 
 	for (int row = 0; row < bitmap.height; ++row) {
 		for (int col = 0; col < bitmap.width; ++col) {
-			*pixel = MixColorCodes(*pixel, *maskPixel);
+			Color color1 = ColorFromCode(*pixel);
+			Color color2 = ColorFromCode(*maskPixel);
+			Color color = ColorProd(color1, color2);
+			unsigned int code = ColorCode(color);
+			*pixel = code;
 
 			pixel++;
 			maskPixel++;

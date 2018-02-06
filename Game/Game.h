@@ -26,6 +26,8 @@ struct GameAssets {
 };
 
 struct GameState {
+	float time;
+
 	Camera camera;
 
 	Renderer renderer;
