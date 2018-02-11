@@ -5,10 +5,6 @@
 #include "Point.h"
 #include "Renderer.h"
 
-static inline unsigned int* GetPixelAddress(Bitmap bitmap, int row, int col) {
-	return (unsigned int*)bitmap.memory + row * bitmap.width + col;
-}
-
 static inline unsigned int GetPixel(Bitmap bitmap, int row, int col) {
 	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
 

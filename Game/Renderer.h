@@ -26,6 +26,10 @@ struct Renderer {
 	Camera* camera;
 };
 
+inline unsigned int* GetPixelAddress(Bitmap bitmap, int row, int col) {
+	return (unsigned int*)bitmap.memory + row * bitmap.width + col;
+}
+
 void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena);
 
 void ApplyBitmapMask(Bitmap bitmap, Bitmap mask);

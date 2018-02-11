@@ -48,6 +48,22 @@ inline Color ColorAdd(Color color1, Color color2) {
 	return result;
 }
 
+inline Color ColorSum(Color color1, Color color2) {
+	Color result = {};
+	result.red   = Min2(color1.red   + color2.red,   1.0f);
+	result.green = Min2(color1.green + color2.green, 1.0f);
+	result.blue  = Min2(color1.blue  + color2.blue,  1.0f);
+	return result;
+}
+
+inline Color ColorMax(Color color1, Color color2) {
+	Color result = {};
+	result.red   = Max2(color1.red,   color2.red);
+	result.green = Max2(color1.green, color2.green);
+	result.blue  = Max2(color1.blue,  color2.blue);
+	return result;
+}
+
 inline Color ColorProd(float times, Color color) {
 	Color result = {};
 	result.red   = (times * color.red);

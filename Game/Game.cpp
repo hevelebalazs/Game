@@ -4,6 +4,7 @@
 #include "Building.h"
 #include "Game.h"
 #include "GridMap.h"
+#include "Light.h"
 #include "Math.h"
 #include "Memory.h"
 #include "Path.h"
@@ -490,31 +491,47 @@ void GameDraw(GameStorage* gameStorage) {
 		DrawPlayerHuman(renderer, &gameState->playerHuman);
 
 	Renderer maskRenderer = gameState->maskRenderer;
-	Color black = {0.0f, 0.0f, 0.0f};
-	ClearScreen(maskRenderer, black);
+	Color dark = {0.2f, 0.2f, 0.2f};
+	ClearScreen(maskRenderer, dark);
 	Bitmap maskBitmap = maskRenderer.bitmap;
 
-	float seeDistance = 15.0f;
-	float seeDistance2 = 16.0f;
-	float baseBrightness = 0.1f;
-	unsigned int* maskPixel = (unsigned int*)maskBitmap.memory;
-	for (int row = 0; row < maskBitmap.height; ++row) {
-		for (int col = 0; col < maskBitmap.width; ++col) {
-			Point pixelPosition = {};
-			pixelPosition.x = (float)col;
-			pixelPosition.y = (float)row;
-			Point position = PixelToCoord(*renderer.camera, pixelPosition);
-			float distance = Distance(position, playerPosition);
-			float grey = 0.0f;
-			if (distance <= seeDistance)
-				grey = baseBrightness;
-			else if (distance <= seeDistance2)
-				grey = baseBrightness * (1.0f - (distance - seeDistance) / (seeDistance2 - seeDistance));
-			else
-				grey = 0.0f;
-			Color color = Color{grey, grey, grey};
-			*maskPixel = ColorCode(color);
-			maskPixel++;
+	if (gameState->isPlayerVehicle) {
+		Vehicle* vehicle = &gameState->playerVehicle.vehicle;
+		
+		Point addWidth = PointProd(
+			(vehicle->width * 0.25f), 
+			RotationVector(vehicle->angle + 0.5f * PI)
+		);
+		Point lightCenter1 = PointDiff(vehicle->position, addWidth);
+		Point lightCenter2 = PointSum(vehicle->position, addWidth);
+
+		float brightness = 0.8f;
+		float maxDistance = 15.0f;
+		float minDistance = 4.0f;
+		float minAngle = NormalizeAngle(vehicle->angle - 0.1f);
+		float maxAngle = NormalizeAngle(vehicle->angle + 0.1f);
+		LightSector(maskRenderer, lightCenter1, minDistance, maxDistance, minAngle, maxAngle, brightness);
+		LightSector(maskRenderer, lightCenter2, minDistance, maxDistance, minAngle, maxAngle, brightness);
+	}
+
+	for (int i = 0; i < gameState->map.roadCount; ++i) {
+		Road* road = gameState->map.roads + i;
+		float length = RoadLength(road);
+		float roadX = 0.0f;
+		while (roadX < length) {
+			float roadY = -road->width * 0.5f;
+			Point roadCoord = Point{roadX, roadY};
+			Point position = PointFromRoadCoord(road, roadCoord, 1);
+			LightCircle(maskRenderer, position, 15.0f, 0.8f);
+			roadX += 50.0f;
+		}
+		roadX = 25.0f;
+		while (roadX < length) {
+			float roadY = road->width * 0.5f;
+			Point roadCoord = Point{roadX, roadY};
+			Point position = PointFromRoadCoord(road, roadCoord, 1);
+			LightCircle(maskRenderer, position, 15.0f, 0.8f);
+			roadX += 50.0f;
 		}
 	}
 

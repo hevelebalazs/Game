@@ -1,4 +1,6 @@
 #pragma once
+
+#include "Math.h"
 #include "Point.h"
 
 union Line {
@@ -23,6 +25,30 @@ float Distance(Point point1, Point point2);
 
 float VectorLength(Point vector);
 float VectorAngle(Point vector);
+
+inline float LineAngle(Point startPoint, Point endPoint) {
+	Point diff = PointDiff(endPoint, startPoint);
+	float angle = VectorAngle(diff);
+	return angle;
+}
+
+
+inline float NormalizeAngle(float angle) {
+	while (angle > PI)
+		angle -= 2.0f * PI;
+	while (angle < -PI)
+		angle += 2.0f * PI;
+	return angle;
+}
+
+inline bool IsAngleBetween(float minAngle, float angle, float maxAngle) {
+	bool result = false;
+	if (minAngle > maxAngle)
+		result = (angle <= maxAngle || angle >= minAngle);
+	else
+		result = (minAngle <= angle && angle <= maxAngle);
+	return result;
+}
 
 Point RotationVector(float angle);
 
