@@ -95,8 +95,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	playerHuman->human.healthPoints = maxHealthPoints;
 
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
-	Vehicle* vehicle = &playerVehicle->vehicle;;
-	playerVehicle->defaultColor   = Color{0.0f, 0.0f, 1.0f};
+	Vehicle* vehicle = &playerVehicle->vehicle;
+	playerVehicle->defaultColor   = Color{1.0f, 1.0f, 1.0f};
 	playerVehicle->maxEngineForce = 1000.0f;
 	playerVehicle->breakForce     = 1000.0f;
 	playerVehicle->mass           = 200.0f;
@@ -114,7 +114,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		Vehicle* vehicle = &autoVehicle->vehicle;
 
 		vehicle->angle = 0.0f;
-		vehicle->color = Color{0.0f, 0.0f, 1.0f};
+		vehicle->color = Color{1.0f, 1.0f, 1.0f};
 		vehicle->position = randomBuilding->connectPointClose;
 		vehicle->length = 7.5f;
 		vehicle->width = 5.0f;
@@ -134,7 +134,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 
 		human->position = position;
 		human->inBuilding = 0;
-		human->color = RandomColor();
+		human->isPolice = 
+		human->isPolice = (RandomBetween(0.0f, 1.0f) <= 0.1);
 		human->map = &gameState->map;
 		human->moveSpeed = RandomBetween(2.0f, 10.0f);
 		human->healthPoints = maxHealthPoints;
@@ -328,12 +329,10 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->onMission) {
 			gameState->playerVehicle.defaultColor = missionHighlightColor;
 			gameState->playerVehicle.vehicle.color = missionHighlightColor;
-			gameState->playerHuman.human.color = missionHighlightColor;
 		}
 		else {
 			gameState->playerVehicle.defaultColor = Color{0.0f, 0.0f, 1.0f};
 			gameState->playerVehicle.vehicle.color = Color{0.0f, 0.0f, 1.0f};
-			gameState->playerHuman.human.color = Color{0.0f, 0.0f, 0.0f};
 		}
 
 		FreePath(gameState->missionPath, &gameState->pathPool);
@@ -490,6 +489,8 @@ void GameDraw(GameStorage* gameStorage) {
 	else
 		DrawPlayerHuman(renderer, &gameState->playerHuman);
 
+	// TODO: put this whole lighting thing in a function
+	/*
 	Renderer maskRenderer = gameState->maskRenderer;
 	Color dark = {0.2f, 0.2f, 0.2f};
 	ClearScreen(maskRenderer, dark);
@@ -536,4 +537,12 @@ void GameDraw(GameStorage* gameStorage) {
 	}
 
 	ApplyBitmapMask(renderer.bitmap, maskRenderer.bitmap);
+	*/
+
+	for (int i = 0; i < gameState->autoHumanCount; ++i) {
+		AutoHuman* autoHuman = gameState->autoHumans + i;
+		Human* human = &autoHuman->human;
+		if (human->isPolice)
+			DrawPoliceRadius(renderer, human, 15.0f);
+	}
 }

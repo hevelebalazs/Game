@@ -13,7 +13,7 @@ struct Human {
 	Map* map;
 	Building* inBuilding;
 
-	Color color;
+	int isPolice;
 
 	Point position;
 	float moveSpeed;
@@ -51,6 +51,16 @@ inline bool IsHumanCrossedByLine(Human* human, Line line) {
 		return true;
 	else
 		return false;
+}
+
+inline void DrawPoliceRadius(Renderer renderer, Human* human, float radius) {
+	Color color = {0.0f, 0.0f, 1.0f};
+	Point position = human->position;
+	float left   = position.x - radius;
+	float right  = position.x + radius;
+	float top    = position.y - radius;
+	float bottom = position.y + radius;
+	DrawRectOutline(renderer, top, left, bottom, right, color);
 }
 
 void MoveHuman(Human* human, DirectedPoint point);

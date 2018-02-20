@@ -95,9 +95,6 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemAr
 
 void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool) {
 	autoHuman->dead = true;
-	// TODO: create a global variable for this color?
-	autoHuman->human.color = Color{0.0f, 0.0f, 0.0f};
-
 	if (autoHuman->moveNode) {
 		FreePath(autoHuman->moveNode, pathPool);
 		autoHuman->moveNode = 0;

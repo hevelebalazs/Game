@@ -41,11 +41,19 @@ void DrawHuman(Renderer renderer, Human human) {
 	float radius = humanRadius;
 	Point position = human.position;
 
+	Color color = {};
+	if (human.healthPoints == 0)
+		color = Color{0.0f, 0.0f, 0.0f};
+	else if (human.isPolice)
+		color = Color{0.0f, 0.0f, 1.0f};
+	else
+		color = Color{1.0f, 1.0f, 1.0f};
+
 	DrawRect(
 		renderer,
 		position.y - radius, position.x - radius,
 		position.y + radius, position.x + radius,
-		human.color
+		color
 	);
 
 	if (human.healthPoints < maxHealthPoints)

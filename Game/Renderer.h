@@ -129,6 +129,18 @@ void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, fl
 void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color);
 
+inline void DrawRectOutline(Renderer renderer, float top, float left, float bottom, float right, Color color) {
+	Point topLeft     = Point{left, top};
+	Point topRight    = Point{right, top};
+	Point bottomLeft  = Point{left, bottom};
+	Point bottomRight = Point{right, bottom};
+
+	Bresenham(renderer, topLeft, topRight, color);
+	Bresenham(renderer, topRight, bottomRight, color);
+	Bresenham(renderer, bottomRight, bottomLeft, color);
+	Bresenham(renderer, bottomLeft, topLeft, color);
+}
+
 // TODO: change the order of parameters to left, right, top, bottom
 inline void WorldTextureRect(Renderer renderer, float top, float left, float bottom, float right, Texture texture) {
 	Camera camera = *renderer.camera;
