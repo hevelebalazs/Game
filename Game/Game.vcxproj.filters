@@ -51,9 +51,6 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Human.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
     <ClCompile Include="AutoHuman.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -79,6 +76,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Human.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Lab\RoadLab.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -153,6 +156,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab\RoadLab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

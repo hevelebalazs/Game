@@ -75,7 +75,7 @@ static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, f
 	}
 }
 
-static void ConnectIntersections(Intersection* intersection1, Intersection* intersection2, Road* road, float roadWidth) {
+static void ConnectIntersections(Intersection* intersection1, Intersection* intersection2, Road* road) {
 	if (intersection1->position.y == intersection2->position.y) {
 		Intersection* left;
 		Intersection* right;
@@ -89,10 +89,10 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 			right = intersection1;
 		}
 
-		road->endPoint1.x = left->position.x + roadWidth / 2.0f;
+		road->endPoint1.x = left->position.x + LaneWidth;
 		road->endPoint1.y = left->position.y;
 
-		road->endPoint2.x = right->position.x - roadWidth / 2.0f;
+		road->endPoint2.x = right->position.x - LaneWidth;
 		road->endPoint2.y = right->position.y;
 
 		left->rightRoad = road;
@@ -115,10 +115,10 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 		}
 
 		road->endPoint1.x = top->position.x;
-		road->endPoint1.y = top->position.y + roadWidth / 2.0f;
+		road->endPoint1.y = top->position.y + LaneWidth;
 
 		road->endPoint2.x = bottom->position.x;
-		road->endPoint2.y = bottom->position.y - roadWidth / 2.0f;
+		road->endPoint2.y = bottom->position.y - LaneWidth;
 
 		bottom->topRoad = road;
 		top->bottomRoad = road;
@@ -126,8 +126,6 @@ static void ConnectIntersections(Intersection* intersection1, Intersection* inte
 		road->intersection1 = top;
 		road->intersection2 = bottom;
 	}
-
-	road->width = roadWidth;
 }
 
 // TODO: can the recursion cause any performance or memory issue?
@@ -247,8 +245,6 @@ Map CreateGridMap(float width, float height, float intersectionDistance, MemAren
 
 	InitRandom();
 
-	float roadWidth = intersectionDistance / 5.0f;
-
 	int startRow = rand() % rowCount;
 	int startCol = rand() % colCount;
 
@@ -309,7 +305,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance, MemAren
 				endConnected = true;
 			}
 
-			ConnectIntersections(startIntersection, endIntersection, &map.roads[createdRoadCount], roadWidth);
+			ConnectIntersections(startIntersection, endIntersection, &map.roads[createdRoadCount]);
 			createdRoadCount++;
 
 			startIntersection = endIntersection;
@@ -466,7 +462,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance, MemAren
 			else 
 				rightIntersection = rightRoad->intersection1;
 
-			ConnectIntersections(leftIntersection, rightIntersection, rightRoad, roadWidth);
+			ConnectIntersections(leftIntersection, rightIntersection, rightRoad);
 			RemoveRoad(&map, leftRoad);
 			RemoveIntersection(&map, intersection);
 		}
@@ -486,7 +482,7 @@ Map CreateGridMap(float width, float height, float intersectionDistance, MemAren
 			else 
 				bottomIntersection = bottomRoad->intersection2;
 
-			ConnectIntersections(topIntersection, bottomIntersection, bottomRoad, roadWidth);
+			ConnectIntersections(topIntersection, bottomIntersection, bottomRoad);
 			RemoveRoad(&map, topRoad);
 			RemoveIntersection(&map, intersection);
 		}
@@ -500,8 +496,6 @@ Map CreateGridMap(float width, float height, float intersectionDistance, MemAren
 
 		InitTrafficLights(intersection);
 	}
-
-	connectRoadWidth = roadWidth / 5.0f;
 
 	for (int i = 0; i < map.buildingCount; ++i) {
 		Building* building = &map.buildings[i];

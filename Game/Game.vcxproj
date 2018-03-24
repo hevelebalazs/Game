@@ -80,7 +80,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Full</Optimization>
+      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -130,6 +130,7 @@
     <ClCompile Include="GridMap.cpp" />
     <ClCompile Include="Human.cpp" />
     <ClCompile Include="Intersection.cpp" />
+    <ClCompile Include="Lab\RoadLab.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MapElem.cpp" />
     <ClCompile Include="Math.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="GridMap.h" />
     <ClInclude Include="Human.h" />
     <ClInclude Include="Intersection.h" />
+    <ClInclude Include="Lab\RoadLab.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapElem.h" />

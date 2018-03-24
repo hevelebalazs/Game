@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Renderer.h"
-#include "Road.h"
-#include "Texture.h"
+#include "Renderer.hpp"
+#include "Road.hpp"
+#include "Texture.hpp"
 
 struct Road;
 struct GameAssets;
@@ -88,8 +88,8 @@ static inline int QuarterIndex(Intersection* intersection, Point point) {
 static inline Point IntersectionSidewalkCorner(Intersection* intersection, int quarterIndex) {
 	Point result = intersection->position;
 
-	extern float SideWalkWidth;
-	float distance = (GetIntersectionRoadWidth(*intersection) * 0.5f) + (SideWalkWidth * 0.5f);
+	extern float sideWalkWidth;
+	float distance = (GetIntersectionRoadWidth(*intersection) * 0.5f) + (sideWalkWidth * 0.5f);
 
 	if (quarterIndex == QuarterTopLeft || quarterIndex == QuarterBottomLeft)
 		result.x -= distance;

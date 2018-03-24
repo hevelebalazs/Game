@@ -1,7 +1,12 @@
-#include "Building.h"
-#include "Game.h"
-#include "Geometry.h"
-#include "Math.h"
+#pragma once
+
+#include "BuildingType.hpp"
+#include "Geometry.hpp"
+#include "MapElem.hpp"
+#include "Memory.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
+#include "Road.hpp"
 
 extern float connectRoadWidth = 5.0f;
 extern float entranceWidth = 3.0f;
@@ -10,6 +15,56 @@ extern float wallWidth = 0.5f;
 static float doorWidth = 3.0f;
 static float minRoomSide = 5.0f;
 static float maxRoomSide = 20.0f;
+
+struct MapElem;
+struct GameAssets;
+
+enum CrossType {
+	CrossNone,
+	CrossWall,
+	CrossEntrance
+};
+
+struct BuildingCrossInfo {
+	Building* building;
+	Point crossPoint;
+	Point corner1;
+	Point corner2;
+	CrossType type;
+};
+
+struct BuildingInside {
+	int wallCount;
+	Line* walls;
+};
+
+struct Building {
+	// TODO: remove this
+	BuildingType type;
+
+	// TODO: save four corner points instead
+	float top;
+	float left;
+	float bottom;
+	float right;
+
+	float height;
+
+	bool roadAround;
+
+	Point connectPointClose;
+	Point connectPointFarShow;
+	Point connectPointFar;
+
+	Point entrancePoint1;
+	Point entrancePoint2;
+
+	int connectTreeHeight;
+
+	MapElem connectElem;
+
+	BuildingInside* inside;
+};
 
 static Line ConnectingLine(Point point1, Point point2) {
 	Line result = {};
@@ -394,6 +449,71 @@ void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpAr
 	ArenaPopTo(tmpArena, wallHelper.walls);
 }
 
+Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPoint) {
+	Point result = {};
+	float minDistanceSquare = 0.0f;
+	bool foundAny = false;
+
+	Point topLeft = {building.left,  building.top};
+	Point topRight = {building.right, building.top};
+	Point bottomLeft = {building.left,  building.bottom};
+	Point bottomRight = {building.right, building.bottom};
+
+	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) {
+		Point intersection = LineIntersection(topLeft, topRight, closePoint, farPoint);
+		intersection.x = closePoint.x;
+		intersection.y = building.top;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
+	}
+
+	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) {
+		Point intersection = LineIntersection(topRight, bottomRight, closePoint, farPoint);
+		intersection.x = building.right;
+		intersection.y = closePoint.y;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
+	}
+
+	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) {
+		Point intersection = LineIntersection(bottomRight, bottomLeft, closePoint, farPoint);
+		intersection.x = closePoint.x;
+		intersection.y = building.bottom;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
+	}
+
+	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) {
+		Point intersection = LineIntersection(bottomLeft, topLeft, closePoint, farPoint);
+		intersection.x = building.left;
+		intersection.y = closePoint.y;
+		float distanceSquare = DistanceSquare(closePoint, intersection);
+
+		if (foundAny == false || distanceSquare < minDistanceSquare) {
+			minDistanceSquare = distanceSquare;
+			foundAny = true;
+			result = intersection;
+		}
+	}
+
+	return result;
+}
+
 // TODO: rewrite this using vector maths
 // TODO: should this be in GridMapCreator.cpp?
 void ConnectBuildingToElem(Building* building, MapElem elem) {
@@ -409,11 +529,11 @@ void ConnectBuildingToElem(Building* building, MapElem elem) {
 			building->connectPointClose.y = center.y;
 			
 			if (building->right < road->endPoint1.x) {
-				building->connectPointFarShow.x = road->endPoint1.x - LaneWidth;
+				building->connectPointFarShow.x = road->endPoint1.x - (road->width * 0.5f);
 				building->connectPointClose.x = building->right;
 			}
 			else {
-				building->connectPointFarShow.x = road->endPoint1.x + LaneWidth;
+				building->connectPointFarShow.x = road->endPoint1.x + (road->width * 0.5f);
 				building->connectPointClose.x = building->left;
 			}
 		}
@@ -424,11 +544,11 @@ void ConnectBuildingToElem(Building* building, MapElem elem) {
 			building->connectPointClose.x = center.x;
 
 			if (building->bottom < road->endPoint1.y) {
-				building->connectPointFarShow.y = road->endPoint1.y - LaneWidth;
+				building->connectPointFarShow.y = road->endPoint1.y - (road->width * 0.5f);
 				building->connectPointClose.y = building->bottom;
 			}
 			else {
-				building->connectPointFarShow.y = road->endPoint1.y + LaneWidth;
+				building->connectPointFarShow.y = road->endPoint1.y + (road->width * 0.5f);
 				building->connectPointClose.y = building->top;
 			}
 		}
@@ -710,71 +830,6 @@ BuildingCrossInfo ExtBuildingInsideClosestCrossInfo(Building* building, float ra
 					result.type = CrossWall;
 				}
 			}
-		}
-	}
-
-	return result;
-}
-
-Point ClosestBuildingCrossPoint(Building building, Point closePoint, Point farPoint) {
-	Point result = {};
-	float minDistanceSquare = 0.0f;
-	bool foundAny = false;
-
-	Point topLeft = {building.left,  building.top};
-	Point topRight = {building.right, building.top};
-	Point bottomLeft = {building.left,  building.bottom};
-	Point bottomRight = {building.right, building.bottom};
-
-	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) {
-		Point intersection = LineIntersection(topLeft, topRight, closePoint, farPoint);
-		intersection.x = closePoint.x;
-		intersection.y = building.top;
-		float distanceSquare = DistanceSquare(closePoint, intersection);
-
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
-			minDistanceSquare = distanceSquare;
-			foundAny = true;
-			result = intersection;
-		}
-	}
-
-	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) {
-		Point intersection = LineIntersection(topRight, bottomRight, closePoint, farPoint);
-		intersection.x = building.right;
-		intersection.y = closePoint.y;
-		float distanceSquare = DistanceSquare(closePoint, intersection);
-
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
-			minDistanceSquare = distanceSquare;
-			foundAny = true;
-			result = intersection;
-		}
-	}
-
-	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) {
-		Point intersection = LineIntersection(bottomRight, bottomLeft, closePoint, farPoint);
-		intersection.x = closePoint.x;
-		intersection.y = building.bottom;
-		float distanceSquare = DistanceSquare(closePoint, intersection);
-
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
-			minDistanceSquare = distanceSquare;
-			foundAny = true;
-			result = intersection;
-		}
-	}
-
-	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) {
-		Point intersection = LineIntersection(bottomLeft, topLeft, closePoint, farPoint);
-		intersection.x = building.left;
-		intersection.y = closePoint.y;
-		float distanceSquare = DistanceSquare(closePoint, intersection);
-
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
-			minDistanceSquare = distanceSquare;
-			foundAny = true;
-			result = intersection;
 		}
 	}
 

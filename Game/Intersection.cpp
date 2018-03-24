@@ -47,24 +47,24 @@ bool IsPointOnIntersectionSidewalk(Point point, Intersection intersection) {
 	float bottom = intersection.position.y + roadWidth * 0.5f;
 
 	if (!intersection.topRoad) {
-		if (IsPointInRect(point, left, right, top - sideWalkWidth, top))
+		if (IsPointInRect(point, left, right, top - SideWalkWidth, top))
 			return true;
 	}
 	if (!intersection.bottomRoad) {
-		if (IsPointInRect(point, left, right, bottom, bottom + sideWalkWidth))
+		if (IsPointInRect(point, left, right, bottom, bottom + SideWalkWidth))
 			return true;
 	}
 	if (!intersection.leftRoad) {
-		if (IsPointInRect(point, left - sideWalkWidth, left, top, bottom))
+		if (IsPointInRect(point, left - SideWalkWidth, left, top, bottom))
 			return true;
 	}
 	if (!intersection.rightRoad) {
-		if (IsPointInRect(point, right, right + sideWalkWidth, top, bottom))
+		if (IsPointInRect(point, right, right + SideWalkWidth, top, bottom))
 			return true;
 	}
 
 	float roadDistance = roadWidth * 0.5f;
-	float sidewalkDistance = roadDistance + sideWalkWidth;
+	float sidewalkDistance = roadDistance + SideWalkWidth;
 	float absX = Abs(point.x - intersection.position.x);
 	float absY = Abs(point.y - intersection.position.y);
 
@@ -259,16 +259,8 @@ void DrawTrafficLights(Renderer renderer, Intersection intersection) {
 }
 
 float GetIntersectionRoadWidth(Intersection intersection) {
-	if (intersection.leftRoad)
-		return intersection.leftRoad->width;
-	if (intersection.rightRoad)
-		return intersection.rightRoad->width;
-	if (intersection.topRoad)
-		return intersection.topRoad->width;
-	if (intersection.bottomRoad)
-		return intersection.bottomRoad->width;
-
-	return 0.0f;
+	float width = (LaneWidth * 2.0f);
+	return width;
 }
 
 void HighlightIntersection(Renderer renderer, Intersection intersection, Color color) {
@@ -297,21 +289,21 @@ void HighlightIntersectionSidewalk(Renderer renderer, Intersection intersection,
 	float bottom = position.y + roadWidth * 0.5f;
 
 	if (!intersection.topRoad)
-		DrawRect(renderer, top - sideWalkWidth, left, top, right, color);
+		DrawRect(renderer, top - SideWalkWidth, left, top, right, color);
 
 	if (!intersection.bottomRoad)
-		DrawRect(renderer, bottom, left, bottom + sideWalkWidth, right, color);
+		DrawRect(renderer, bottom, left, bottom + SideWalkWidth, right, color);
 
 	if (!intersection.topRoad)
-		top -= sideWalkWidth;
+		top -= SideWalkWidth;
 	if (!intersection.bottomRoad)
-		bottom += sideWalkWidth;
+		bottom += SideWalkWidth;
 
 	if (!intersection.leftRoad)
-		DrawRect(renderer, top, left - sideWalkWidth, bottom, left, color);
+		DrawRect(renderer, top, left - SideWalkWidth, bottom, left, color);
 	
 	if (!intersection.rightRoad)
-		DrawRect(renderer, top, right, bottom, right + sideWalkWidth, color);
+		DrawRect(renderer, top, right, bottom, right + SideWalkWidth, color);
 }
 
 static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection intersection, Texture sidewalkTexture) {
@@ -325,24 +317,24 @@ static inline void DrawIntersectionSidewalk(Renderer renderer, Intersection inte
 
 	if (!intersection.topRoad)
 		// DrawRect(renderer, top - sideWalkWidth, left, top, right, sideWalkColor);
-		WorldTextureRect(renderer, top - sideWalkWidth, left, top, right, sidewalkTexture);
+		WorldTextureRect(renderer, top - SideWalkWidth, left, top, right, sidewalkTexture);
 
 	if (!intersection.bottomRoad)
 		// DrawRect(renderer, bottom, left, bottom + sideWalkWidth, right, sideWalkColor);
-		WorldTextureRect(renderer, bottom, left, bottom + sideWalkWidth, right, sidewalkTexture);
+		WorldTextureRect(renderer, bottom, left, bottom + SideWalkWidth, right, sidewalkTexture);
 
 	if (!intersection.topRoad)
-		top -= sideWalkWidth;
+		top -= SideWalkWidth;
 	if (!intersection.bottomRoad)
-		bottom += sideWalkWidth;
+		bottom += SideWalkWidth;
 
 	if (!intersection.leftRoad)
 		// DrawRect(renderer, top, left - sideWalkWidth, bottom, left, sideWalkColor);
-		WorldTextureRect(renderer, top, left - sideWalkWidth, bottom, left, sidewalkTexture);
+		WorldTextureRect(renderer, top, left - SideWalkWidth, bottom, left, sidewalkTexture);
 	
 	if (!intersection.rightRoad)
 		// DrawRect(renderer, top, right, bottom, right + sideWalkWidth, sideWalkColor);
-		WorldTextureRect(renderer, top, right, bottom, right + sideWalkWidth, sidewalkTexture);
+		WorldTextureRect(renderer, top, right, bottom, right + SideWalkWidth, sidewalkTexture);
 }
 
 void DrawIntersection(Renderer renderer, Intersection intersection, GameAssets* assets) {

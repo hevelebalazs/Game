@@ -405,8 +405,8 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem elemStart, Po
 			
 				PushRoadSidewalk(path, road, endLaneIndex);
 			
-				float parallelDistance = (sideWalkWidth * 0.5f);
-				float perpendicularDistance = (road->width * 0.5f) + (sideWalkWidth * 0.5f);
+				float parallelDistance = (SideWalkWidth * 0.5f);
+				float perpendicularDistance = (LaneWidth) + (SideWalkWidth * 0.5f);
 				if (road->intersection1 == intersection) {
 					if (endLaneIndex > 0)
 						point = PointFromPositiveRoadCoord(road, Point{parallelDistance, perpendicularDistance});
@@ -1066,8 +1066,8 @@ static DirectedPoint NextFromRoadSidewalkToIntersectionSidewalk
 		Point resultRoadCoord = {};
 		resultRoadCoord.x = road->crossingDistance;
 
-		float perpendicularDistance = (road->width * 0.5f) + (sideWalkWidth * 0.5f);
-		if (Abs(startRoadCoord.x - road->crossingDistance) <= crossingWidth * 0.5f)
+		float perpendicularDistance = (LaneWidth) + (SideWalkWidth * 0.5f);
+		if (Abs(startRoadCoord.x - road->crossingDistance) <= CrossingWidth * 0.5f)
 			resultRoadCoord.y = (endSidewalkIndex * perpendicularDistance);
 		else
 			resultRoadCoord.y = (sidewalkIndex * perpendicularDistance);
@@ -1076,8 +1076,8 @@ static DirectedPoint NextFromRoadSidewalkToIntersectionSidewalk
 	}
 	else {
 		float roadLength = RoadLength(road);
-		float parallelDistance = sideWalkWidth * 0.5f;
-		float perpendicularDistance = road->width * 0.5f + sideWalkWidth * 0.5f;
+		float parallelDistance = SideWalkWidth * 0.5f;
+		float perpendicularDistance = LaneWidth + SideWalkWidth * 0.5f;
 
 		if (sidewalkIndex > 0) {
 			if (road->intersection1 == intersection)
@@ -1107,9 +1107,9 @@ static bool EndFromRoadSidewalkToIntersectionSidewalk
 
 		float roadLength = RoadLength(road);
 		if (intersectionRoadCoord.x < (roadLength * 0.5f))
-			result = IsBetween(pointRoadCoord.x, 0.0f, sideWalkWidth);
+			result = IsBetween(pointRoadCoord.x, 0.0f, SideWalkWidth);
 		else
-			result = IsBetween(pointRoadCoord.x, roadLength - sideWalkWidth, roadLength);
+			result = IsBetween(pointRoadCoord.x, roadLength - SideWalkWidth, roadLength);
 	}
 
 	return result;
@@ -1132,14 +1132,14 @@ static DirectedPoint NextFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Roa
 	if (pointLaneIndex == nextRoadLaneIndex) {
 		float roadLength = RoadLength(road);
 		if (nextRoadCoord.x < roadLength * 0.5f)
-			pointRoadCoord.x = sideWalkWidth * 0.5f;
+			pointRoadCoord.x = SideWalkWidth * 0.5f;
 		else
-			pointRoadCoord.x = roadLength - sideWalkWidth * 0.5f;
+			pointRoadCoord.x = roadLength - SideWalkWidth * 0.5f;
 	}
 	else {
-		if ((pointRoadCoord.x >= road->crossingDistance - crossingWidth * 0.5f) 
-			&& (pointRoadCoord.x <= road->crossingDistance + crossingWidth * 0.5f))
-			pointRoadCoord.y = nextRoadLaneIndex * (road->width * 0.5f + sideWalkWidth * 0.5f); 
+		if ((pointRoadCoord.x >= road->crossingDistance - CrossingWidth * 0.5f) 
+			&& (pointRoadCoord.x <= road->crossingDistance + CrossingWidth * 0.5f))
+			pointRoadCoord.y = nextRoadLaneIndex * (LaneWidth + SideWalkWidth * 0.5f); 
 		else
 			pointRoadCoord.x = road->crossingDistance;
 	}
@@ -1159,9 +1159,9 @@ static bool EndFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Road* road, R
 
 	float roadLength = RoadLength(road);
 	if (nextRoadCoord.x < roadLength * 0.5f)
-		result = (pointRoadCoord.x < sideWalkWidth);
+		result = (pointRoadCoord.x < SideWalkWidth);
 	else
-		result = (pointRoadCoord.x > roadLength - sideWalkWidth);
+		result = (pointRoadCoord.x > roadLength - SideWalkWidth);
 
 	return result;
 }

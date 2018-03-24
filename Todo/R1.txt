@@ -1,0 +1,17 @@
+[R1] Custom road endpoints
+
+Description:
+Make road endpoints be arbitrary selected
+points in the plane.
+A road shouldn't always be aligned to the
+grid.
+
+Remove negative road coordinate, keep only
+positive one.
+Create RoadPoint that is a point in road
+coordinates.
+
+TODO:
+- Is there anything that doesn't work
+  with custom endpoint roads?
+- Remove negative road coord

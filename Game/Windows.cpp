@@ -12,6 +12,7 @@
 #include "PlayerHuman.h"
 #include "PlayerVehicle.h"
 #include "Renderer.h"
+#include "Lab/RoadLab.h"
 #include "Vehicle.h"
 
 static bool running;
@@ -183,7 +184,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	return result;
 }
 
-int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
+void RunGame(HINSTANCE instance)
 {
 	WNDCLASS windowClass = {};
 
@@ -194,7 +195,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	if (!RegisterClass(&windowClass)) {
 		OutputDebugStringA("Failed to register window class!\n");
-		return 1;
+		return;
 	}
 
 	HWND window = CreateWindowEx(
@@ -214,7 +215,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 	if (!window) {
 		OutputDebugStringA("Failed to create window!\n");
-		return 1;
+		return;
 	}
 
 	HDC context = GetDC(window);
@@ -282,6 +283,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 		QueryPerformanceCounter(&lastCounter);
 	}
+}
 
+
+int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
+{
+	// RunGame(instance);
+	RoadLab(instance);
 	return 0;
 }
