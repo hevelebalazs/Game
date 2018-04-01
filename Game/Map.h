@@ -3,7 +3,6 @@
 #include "Bitmap.h"
 #include "Building.h"
 #include "BuildingType.h"
-#include "Intersection.h"
 #include "MapElem.h"
 #include "Memory.h"
 #include "Renderer.h"
@@ -11,8 +10,8 @@
 struct GameAssets;
 
 struct Map {
-	Intersection* intersections;
-	int intersectionCount = 0;
+	Junction* junctions;
+	int junctionCount = 0;
 
 	Road* roads;
 	int roadCount = 0;
@@ -24,10 +23,10 @@ struct Map {
 	float height = 0;
 };
 
-Intersection* RandomIntersection(Map map);
-Intersection* IntersectionAtPoint(Map map, Point point, float maxDistance);
+Junction* RandomJunction(Map map);
+Junction* JunctionAtPoint(Map map, Point point, float maxDistance);
 
-MapElem ClosestRoadOrIntersection(Map map, Point point);
+MapElem ClosestRoadOrJunction(Map map, Point point);
 
 Building* RandomBuilding(Map map);
 Building* ClosestBuilding(Map map, Point point, BuildingType type);

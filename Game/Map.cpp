@@ -3,28 +3,28 @@
 #include "Map.h"
 #include "Math.h"
 
-Intersection* RandomIntersection(Map map) {
-	int intersectionIndex = RandMod(map.intersectionCount);
+Junction* RandomJunction(Map map) {
+	int junctionIndex = RandMod(map.junctionCount);
 
-	return &map.intersections[intersectionIndex];
+	return &map.junctions[junctionIndex];
 }
 
-Intersection* IntersectionAtPoint(Map map, Point point, float maxDistance) {
+Junction* JunctionAtPoint(Map map, Point point, float maxDistance) {
 	float maxDistanceSquare = maxDistance * maxDistance;
 
-	Intersection* result = 0;
+	Junction* result = 0;
 
-	for (int i = 0; i < map.intersectionCount; ++i) {
-		float distanceSquare = DistanceSquare(point, map.intersections[i].position);
+	for (int i = 0; i < map.junctionCount; ++i) {
+		float distanceSquare = DistanceSquare(point, map.junctions[i].position);
 
 		if (distanceSquare <= maxDistanceSquare) 
-			result = &map.intersections[i];
+			result = &map.junctions[i];
 	}
 
 	return result;
 };
 
-MapElem ClosestRoadOrIntersection(Map map, Point point) {
+MapElem ClosestRoadOrJunction(Map map, Point point) {
 	MapElem result = {};
 	result.type = MapElemNone;
 
@@ -55,24 +55,22 @@ MapElem ClosestRoadOrIntersection(Map map, Point point) {
 		}
 	}
 
-	Intersection* closestIntersection = 0;
-	for (int i = 0; i < map.intersectionCount; ++i) {
-		Intersection* intersection = &map.intersections[i];
+	Junction* closestJunction = 0;
+	for (int i = 0; i < map.junctionCount; ++i) {
+		Junction* junction = &map.junctions[i];
 
-		float halfRoadWidth = GetIntersectionRoadWidth(*intersection) * 0.5f;
-
-		bool betweenX = (Abs(intersection->position.x - point.x) <= halfRoadWidth);
-		bool betweenY = (Abs(intersection->position.y - point.y) <= halfRoadWidth);
+		bool betweenX = (Abs(junction->position.x - point.x) <= LaneWidth);
+		bool betweenY = (Abs(junction->position.y - point.y) <= LaneWidth);
 
 		if (betweenX || betweenY) {
-			float distanceSquare = DistanceSquare(intersection->position, point);
+			float distanceSquare = DistanceSquare(junction->position, point);
 
-			if ((!closestRoad && !closestIntersection) || distanceSquare < minDistanceSquare) {
-				closestIntersection = intersection;
+			if ((!closestRoad && !closestJunction) || distanceSquare < minDistanceSquare) {
+				closestJunction = junction;
 				minDistanceSquare = distanceSquare;
 
-				result.type = MapElemIntersection;
-				result.intersection = intersection;
+				result.type = MapElemJunction;
+				result.junction = junction;
 			}
 		}
 	}
@@ -179,9 +177,9 @@ MapElem RoadElemAtPoint(Map map, Point point) {
 		}
 	}
 
-	for (int i = 0; i < map.intersectionCount; ++i) {
-		if (IsPointOnIntersection(point, map.intersections[i])) {
-			result = IntersectionElem(&map.intersections[i]);
+	for (int i = 0; i < map.junctionCount; ++i) {
+		if (IsPointOnJunction(point, map.junctions[i])) {
+			result = JunctionElem(&map.junctions[i]);
 			return result;
 		}
 	}
@@ -205,9 +203,9 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	MapElem result = {};
 	result.type = MapElemNone;
 
-	for (int i = 0; i < map.intersectionCount; ++i) {
-		if (IsPointOnIntersectionSidewalk(point, map.intersections[i])) {
-			result = IntersectionSidewalkElem(&map.intersections[i]);
+	for (int i = 0; i < map.junctionCount; ++i) {
+		if (IsPointOnJunctionSidewalk(point, map.junctions[i])) {
+			result = JunctionSidewalkElem(&map.junctions[i]);
 			return result;
 		}
 	}
@@ -231,8 +229,8 @@ void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets) {
 	Color color = Color{0.0f, 1.0f, 0.0f};
 	WorldTextureRect(renderer, 0, 0, map->height, map->width, assets->grassTexture);
 
-	for (int i = 0; i < map->intersectionCount; ++i)
-		DrawIntersection(renderer, map->intersections[i], assets);
+	for (int i = 0; i < map->junctionCount; ++i)
+		DrawJunction(renderer, map->junctions[i], assets);
 
 	for (int i = 0; i < map->roadCount; ++i)
 		DrawRoad(renderer, map->roads[i], assets);
@@ -240,8 +238,8 @@ void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets) {
 	for (int i = 0; i < map->buildingCount; ++i)
 		DrawConnectRoad(renderer, map->buildings[i], assets->roadTexture);
 
-	for (int i = 0; i < map->intersectionCount; ++i)
-		DrawTrafficLights(renderer, map->intersections[i]);
+	for (int i = 0; i < map->junctionCount; ++i)
+		DrawTrafficLights(renderer, map->junctions[i]);
 }
 
 // TODO: there are two instances of mergesort in the code

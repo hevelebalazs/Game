@@ -34,7 +34,7 @@ struct GameState {
 	Renderer maskRenderer;
 	
 	Map map;
-	Intersection* selectedIntersection;
+	Junction* selectedJunction;
 
 	AutoVehicle autoVehicles[100];
 	int autoVehicleCount = 100;
@@ -49,7 +49,7 @@ struct GameState {
 
 	bool isPlayerVehicle;
 
-	Intersection* missionIntersection;
+	Junction* missionJunction;
 	bool showFullMap;
 	bool onMission;
 	PathNode* missionPath;

@@ -60,19 +60,19 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena,
 						MapElem moveElem = moveNode->elem;
 						MapElem nextElem = nextNode->elem;
 
-						if (moveElem.type == MapElemRoad && nextElem.type == MapElemIntersection) {
+						if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) {
 							Road* road = moveElem.road;
-							Intersection* intersection = nextElem.intersection;
+							Junction* junction = nextElem.junction;
 							TrafficLight* trafficLight = 0;
 
-							if (intersection->leftRoad == road)
-								trafficLight = &intersection->leftTrafficLight;
-							else if (intersection->rightRoad == road)
-								trafficLight = &intersection->rightTrafficLight;
-							else if (intersection->topRoad == road)
-								trafficLight = &intersection->topTrafficLight;
-							else if (intersection->bottomRoad == road)
-								trafficLight = &intersection->bottomTrafficLight;
+							if (junction->leftRoad == road)
+								trafficLight = &junction->leftTrafficLight;
+							else if (junction->rightRoad == road)
+								trafficLight = &junction->rightTrafficLight;
+							else if (junction->topRoad == road)
+								trafficLight = &junction->topTrafficLight;
+							else if (junction->bottomRoad == road)
+								trafficLight = &junction->bottomTrafficLight;
 
 							if (trafficLight && (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow))
 								stop = true;

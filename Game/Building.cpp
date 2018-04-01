@@ -433,41 +433,39 @@ void ConnectBuildingToElem(Building* building, MapElem elem) {
 			}
 		}
 	}
-	else if (elem.type == MapElemIntersection) {
-		Intersection* intersection = elem.intersection;
+	else if (elem.type == MapElemJunction) {
+		Junction* junction = elem.junction;
 
-		float halfRoadWidth = GetIntersectionRoadWidth(*intersection) * 0.5f;
-
-		bool betweenX = (Abs(center.x - intersection->position.x) <= halfRoadWidth);
-		bool betweenY = (Abs(center.y - intersection->position.y) <= halfRoadWidth);
+		bool betweenX = (Abs(center.x - junction->position.x) <= LaneWidth);
+		bool betweenY = (Abs(center.y - junction->position.y) <= LaneWidth);
 
 		if (betweenX) {
-			building->connectPointFar.y = intersection->position.y;
+			building->connectPointFar.y = junction->position.y;
 			building->connectPointFar.x = center.x;
 			building->connectPointFarShow.x = center.x;
 			building->connectPointClose.x = center.x;
 
-			if (center.y > intersection->position.y) {
-				building->connectPointFarShow.y = building->connectPointFar.y + halfRoadWidth;
+			if (center.y > junction->position.y) {
+				building->connectPointFarShow.y = building->connectPointFar.y + LaneWidth;
 				building->connectPointClose.y = building->top;
 			}
 			else {
-				building->connectPointFarShow.y = building->connectPointFar.y - halfRoadWidth;
+				building->connectPointFarShow.y = building->connectPointFar.y - LaneWidth;
 				building->connectPointClose.y = building->bottom;
 			}
 		}
 		else if (betweenY) {
-			building->connectPointFar.x = intersection->position.x;
+			building->connectPointFar.x = junction->position.x;
 			building->connectPointFar.y = center.y;
 			building->connectPointFarShow.y = center.y;
 			building->connectPointClose.y = center.y;
 
-			if (center.x > intersection->position.x) {
-				building->connectPointFarShow.x = building->connectPointFar.x + halfRoadWidth;
+			if (center.x > junction->position.x) {
+				building->connectPointFarShow.x = building->connectPointFar.x + LaneWidth;
 				building->connectPointClose.x = building->left;
 			}
 			else {
-				building->connectPointFarShow.x = building->connectPointFar.x - halfRoadWidth;
+				building->connectPointFarShow.x = building->connectPointFar.x - LaneWidth;
 				building->connectPointClose.x = building->right;
 			}
 		}

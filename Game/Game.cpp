@@ -19,7 +19,7 @@ void TogglePlayerVehicle(GameState* gameState) {
 	else playerPosition = gameState->playerHuman.human.position;
 
 	MapElem playerOnElem = RoadElemAtPoint(gameState->map, playerPosition);
-	if (playerOnElem.type == MapElemRoad || playerOnElem.type == MapElemIntersection) {
+	if (playerOnElem.type == MapElemRoad || playerOnElem.type == MapElemJunction) {
 		if (gameState->isPlayerVehicle) {
 			gameState->isPlayerVehicle = false;
 			gameState->playerHuman.human.position = playerPosition;
@@ -88,8 +88,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	WinResize(gameState, windowWidth, windowHeight);
 
 	PlayerHuman* playerHuman = &gameState->playerHuman;
-	Intersection* startIntersection = RandomIntersection(gameState->map);
-	playerHuman->human.position = startIntersection->position;
+	Junction* startJunction = RandomJunction(gameState->map);
+	playerHuman->human.position = startJunction->position;
 	playerHuman->human.map = &gameState->map;
 	playerHuman->human.moveSpeed = 5.0f;
 	playerHuman->human.healthPoints = maxHealthPoints;
@@ -128,9 +128,9 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		AutoHuman* autoHuman = gameState->autoHumans + i;
 		Human* human = &autoHuman->human;
 
-		Intersection* intersection = RandomIntersection(gameState->map);
+		Junction* junction = RandomJunction(gameState->map);
 		int quarterIndex = RandomQuarterIndex();
-		Point position = IntersectionSidewalkCorner(intersection, quarterIndex);
+		Point position = JunctionSidewalkCorner(junction, quarterIndex);
 
 		human->position = position;
 		human->inBuilding = 0;
@@ -139,7 +139,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		human->map = &gameState->map;
 		human->moveSpeed = RandomBetween(2.0f, 10.0f);
 		human->healthPoints = maxHealthPoints;
-		autoHuman->onIntersection = intersection;
+		autoHuman->onJunction = junction;
 	}
 
 	Camera* camera = &gameState->camera;
@@ -150,11 +150,11 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	gameState->renderer.camera = camera;
 	gameState->maskRenderer.camera = camera;
 
-	gameState->missionIntersection = RandomIntersection(gameState->map);
+	gameState->missionJunction = RandomJunction(gameState->map);
 	gameState->onMission = false;
 
-	MapElem startElem = IntersectionElem(startIntersection);
-	MapElem endElem = IntersectionElem(gameState->missionIntersection);
+	MapElem startElem = JunctionElem(startJunction);
+	MapElem endElem = JunctionElem(gameState->missionJunction);
 	gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem, 
 										  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 
@@ -178,9 +178,9 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	MemArena* arena = &gameStorage->arena;
 	MemArena* tmpArena = &gameStorage->tmpArena;
 
-	for (int i = 0; i < gameState->map.intersectionCount; ++i) {
-		Intersection* intersection = &gameState->map.intersections[i];
-		UpdateTrafficLights(intersection, seconds);
+	for (int i = 0; i < gameState->map.junctionCount; ++i) {
+		Junction* junction = &gameState->map.junctions[i];
+		UpdateTrafficLights(junction, seconds);
 	}
 
 	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
@@ -249,12 +249,12 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 			if (angleCos < minAngleCos)
 				TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
 		}
-		else if (onElemAfter.type == MapElemIntersection) {
-			Intersection* intersection = onElemAfter.intersection;
+		else if (onElemAfter.type == MapElemJunction) {
+			Junction* junction = onElemAfter.junction;
 
 			if (onElemBefore.type == MapElemRoad) {
 				Road* road = onElemBefore.road;
-				TrafficLight* trafficLight = TrafficLightOfRoad(intersection, road);
+				TrafficLight* trafficLight = TrafficLightOfRoad(junction, road);
 
 				if (trafficLight && trafficLight->color == TrafficLightRed)
 					TurnPlayerVehicleRed(&gameState->playerVehicle, 0.5f);
@@ -317,13 +317,13 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	else
 		playerElem = PedestrianElemAtPoint(gameState->map, playerPosition);
 
-	if ((playerElem.type == MapElemIntersection || playerElem.type == MapElemIntersectionSidewalk)
-		&& (playerElem.intersection == gameState->missionIntersection)
+	if ((playerElem.type == MapElemJunction || playerElem.type == MapElemJunctionSidewalk)
+		&& (playerElem.junction == gameState->missionJunction)
 	) {
-		Intersection* startIntersection = gameState->missionIntersection;
-		Intersection* endIntersection = RandomIntersection(gameState->map);
+		Junction* startJunction = gameState->missionJunction;
+		Junction* endJunction = RandomJunction(gameState->map);
 
-		gameState->missionIntersection = endIntersection;
+		gameState->missionJunction = endJunction;
 		gameState->onMission = !gameState->onMission;
 
 		if (gameState->onMission) {
@@ -338,14 +338,14 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		FreePath(gameState->missionPath, &gameState->pathPool);
 	
 		if (gameState->isPlayerVehicle) {
-			MapElem startElem = IntersectionElem(startIntersection);
-			MapElem endElem = IntersectionElem(endIntersection);
+			MapElem startElem = JunctionElem(startJunction);
+			MapElem endElem = JunctionElem(endJunction);
 			gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem,
 												  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 		}
 		else {
-			MapElem startElem = IntersectionSidewalkElem(startIntersection);
-			MapElem endElem = IntersectionSidewalkElem(endIntersection);
+			MapElem startElem = JunctionSidewalkElem(startJunction);
+			MapElem endElem = JunctionSidewalkElem(endJunction);
 			gameState->missionPath = ConnectPedestrianElems(&gameState->map, startElem, playerPosition, endElem,
 														  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 		}
@@ -380,23 +380,23 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		FreePath(gameState->missionPath, &gameState->pathPool);
 
 		if (gameState->isPlayerVehicle) {
-			if (playerElem.type == MapElemIntersection) {
-				MapElem pathEndElem = IntersectionElem(gameState->missionIntersection);
+			if (playerElem.type == MapElemJunction) {
+				MapElem pathEndElem = JunctionElem(gameState->missionJunction);
 
 				gameState->missionPath = ConnectElems(&gameState->map, playerElem, pathEndElem, 
 													  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 			}
 			else if (playerElem.type == MapElemRoad) {
-				Intersection* startIntersection = 0;
+				Junction* startJunction = 0;
 				if (missionLaneIndex > 0)
-					startIntersection = playerElem.road->intersection2;
+					startJunction = playerElem.road->junction2;
 				else if (missionLaneIndex < 0)
-					startIntersection = playerElem.road->intersection1;
+					startJunction = playerElem.road->junction1;
 
-				MapElem startIntersectionElem = IntersectionElem(startIntersection);
-				MapElem pathEndElem = IntersectionElem(gameState->missionIntersection);
+				MapElem startJunctionElem = JunctionElem(startJunction);
+				MapElem pathEndElem = JunctionElem(gameState->missionJunction);
 
-				gameState->missionPath = ConnectElems(&gameState->map, startIntersectionElem, pathEndElem,
+				gameState->missionPath = ConnectElems(&gameState->map, startJunctionElem, pathEndElem,
 													  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
 
 				gameState->missionPath = PrefixPath(playerElem, gameState->missionPath, &gameState->pathPool);
@@ -407,10 +407,10 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		}
 		else {
 			if (playerElem.type == MapElemRoadSidewalk 
-					 || playerElem.type == MapElemIntersectionSidewalk 
+					 || playerElem.type == MapElemJunctionSidewalk 
 					 || playerElem.type == MapElemCrossing
 			) {
-				MapElem sidewalkElemEnd = IntersectionSidewalkElem(gameState->missionIntersection);
+				MapElem sidewalkElemEnd = JunctionSidewalkElem(gameState->missionJunction);
 
 				gameState->missionPath = ConnectPedestrianElems(&gameState->map, playerElem, playerPosition, sidewalkElemEnd,
 															  &gameStorage->arena, &gameStorage->tmpArena, &gameState->pathPool);
@@ -461,8 +461,8 @@ void GameDraw(GameStorage* gameStorage) {
 		DrawGroundElems(renderer, &gameState->map, &gameState->assets);
 
 		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
-		if (gameState->missionIntersection)
-			// HighlightIntersection(gameState->renderer, *gameState->missionIntersection, missionHighlightColor);
+		if (gameState->missionJunction)
+			// HighlightJunction(gameState->renderer, *gameState->missionJunction, missionHighlightColor);
 
 		if (gameState->missionPath) {
 			DirectedPoint startPoint = {};

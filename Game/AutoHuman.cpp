@@ -9,11 +9,11 @@ void InitAutoHumanMovement(AutoHuman* autoHuman) {
 	autoHuman->moveSeconds = 0.0f;
 }
 
-void MoveAutoHumanToIntersection(AutoHuman* autoHuman, Intersection* intersection, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
+void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
 	Human* human = &autoHuman->human;
 
-	MapElem targetElem = IntersectionSidewalkElem(autoHuman->onIntersection);
-	MapElem nextElem = IntersectionSidewalkElem(intersection);
+	MapElem targetElem = JunctionSidewalkElem(autoHuman->onJunction);
+	MapElem nextElem = JunctionSidewalkElem(junction);
 
 	autoHuman->moveNode = ConnectPedestrianElems(human->map, targetElem, human->position, nextElem,
 												 arena, tmpArena, pathPool);
@@ -27,7 +27,7 @@ void MoveAutoHumanToIntersection(AutoHuman* autoHuman, Intersection* intersectio
 
 		InitAutoHumanMovement(autoHuman);
 
-		autoHuman->moveTargetIntersection = intersection;
+		autoHuman->moveTargetJunction = junction;
 	}
 }
 
@@ -37,14 +37,14 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemAr
 
 	Human* human = &autoHuman->human;
 
-	if (autoHuman->moveTargetIntersection) {
+	if (autoHuman->moveTargetJunction) {
 		// TODO: should there be a limit on the interation number?
 		while (seconds > 0.0f) {
 			PathNode* moveNode = autoHuman->moveNode;
 
 			if (!moveNode) {
-				autoHuman->onIntersection = autoHuman->moveTargetIntersection;
-				autoHuman->moveTargetIntersection = 0;
+				autoHuman->onJunction = autoHuman->moveTargetJunction;
+				autoHuman->moveTargetJunction = 0;
 				break;
 			}
 
@@ -88,8 +88,8 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemAr
 		}
 	}
 	else {
-		Intersection* targetIntersection = RandomIntersection(*human->map);
-		MoveAutoHumanToIntersection(autoHuman, targetIntersection, arena, tmpArena, pathPool);
+		Junction* targetJunction = RandomJunction(*human->map);
+		MoveAutoHumanToJunction(autoHuman, targetJunction, arena, tmpArena, pathPool);
 	}
 }
 

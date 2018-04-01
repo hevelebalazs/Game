@@ -9,10 +9,10 @@
 struct AutoHuman {
 	Human human;
 
-	Intersection* onIntersection;
+	Junction* onJunction;
 
 	PathNode* moveNode;
-	Intersection* moveTargetIntersection;
+	Junction* moveTargetJunction;
 
 	DirectedPoint moveStartPoint;
 	DirectedPoint moveEndPoint;
@@ -22,7 +22,7 @@ struct AutoHuman {
 	bool dead;
 };
 
-void MoveAutoHumanToIntersection(AutoHuman* autoHuman, Intersection* intersection, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
 void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
 
 void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Intersection.h"
 #include "Map.h"
 #include "Path.h"
 #include "Point.h"

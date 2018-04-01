@@ -5,15 +5,15 @@ enum MapElemType {
 	MapElemRoad,
 	MapElemRoadSidewalk,
 	MapElemCrossing,
-	MapElemIntersection,
-	MapElemIntersectionSidewalk,
+	MapElemJunction,
+	MapElemJunctionSidewalk,
 	MapElemBuilding,
 	MapElemBuildingConnector
 };
 
 struct Building;
 struct Color;
-struct Intersection;
+struct Junction;
 struct Renderer;
 struct Road;
 
@@ -22,7 +22,7 @@ struct MapElem {
 
 	union {
 		Building* building;
-		Intersection* intersection;
+		Junction* junction;
 		Road* road;
 		void* address;
 	};
@@ -52,18 +52,18 @@ inline MapElem CrossingElem(Road* road) {
 	return result;
 }
 
-inline MapElem IntersectionElem(Intersection* intersection) {
+inline MapElem JunctionElem(Junction* junction) {
 	MapElem result = {};
-	result.type = MapElemIntersection;
-	result.intersection = intersection;
+	result.type = MapElemJunction;
+	result.junction = junction;
 
 	return result;
 }
 
-inline MapElem IntersectionSidewalkElem(Intersection* intersection) {
+inline MapElem JunctionSidewalkElem(Junction* junction) {
 	MapElem result = {};
-	result.type = MapElemIntersectionSidewalk;
-	result.intersection = intersection;
+	result.type = MapElemJunctionSidewalk;
+	result.junction = junction;
 
 	return result;
 }

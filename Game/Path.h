@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Building.h"
-#include "Intersection.h"
 #include "Map.h"
 #include "Memory.h"
 #include "Renderer.h"
