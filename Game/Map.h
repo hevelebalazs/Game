@@ -24,6 +24,7 @@ struct Map {
 };
 
 Junction* RandomJunction(Map map);
+Junction* GetJunctionAtPoint(Map* map, Point point);
 Junction* JunctionAtPoint(Map map, Point point, float maxDistance);
 
 MapElem ClosestRoadOrJunction(Map map, Point point);

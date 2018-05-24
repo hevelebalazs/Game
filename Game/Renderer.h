@@ -26,6 +26,8 @@ struct Renderer {
 	Camera* camera;
 };
 
+void ResizeCamera(Camera* camera, int width, int height);
+
 inline unsigned int* GetPixelAddress(Bitmap bitmap, int row, int col) {
 	return (unsigned int*)bitmap.memory + row * bitmap.width + col;
 }
@@ -127,6 +129,7 @@ void DrawHorizontalTrapezoid(Renderer renderer, Point topLeft, Point topRight, P
 void DrawVerticalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Color color);
 void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
 void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float lineWidth);
+void DrawWorldTextureLine(Renderer renderer, Point point1, Point point2, float lineWidth, Texture texture);
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color);
 
 inline void DrawRectOutline(Renderer renderer, float top, float left, float bottom, float right, Color color) {
@@ -252,5 +255,10 @@ inline void WorldTextureGridLine(Renderer renderer, Point point1, Point point2, 
 	WorldTextureRect(renderer, top, left, bottom, right, texture);
 }
 
+void DrawPolyOutline(Renderer renderer, Point* points, int pointN, Color color);
+void DrawPoly(Renderer renderer, Point* points, int pointN, Color color);
+void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture texture);
+
 void DrawQuad(Renderer renderer, Quad quad, Color color);
+void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture);
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color);

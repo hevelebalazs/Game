@@ -19,6 +19,16 @@ float Max2(float x, float y) {
 		return y;
 }
 
+float Max3(float x, float y, float z) 
+{
+	float max = x;
+	if (y > max) 
+		max = y;
+	if (z > max)
+		max = z;
+	return max;
+}
+
 void InitRandom() {
 	srand((unsigned int)time(0));
 }

@@ -2,6 +2,13 @@
 
 #include <stdlib.h>
 
+#include "Debug.h"
+
+#define Byte (8)
+#define KiloByte (1024 * Byte)
+#define MegaByte (1024 * KiloByte)
+#define GigaByte (1024 * MegaByte)
+
 struct MemArena {
 	char* baseAddress;
 	unsigned int usedSize;
@@ -17,7 +24,15 @@ inline MemArena CreateMemArena(unsigned int maxSize) {
 	return result;
 }
 
+inline void ArenaReset(MemArena* arena)
+{
+	arena->usedSize = 0;
+}
+
+#include <stdio.h>
+
 inline void* ArenaAlloc(MemArena* arena, unsigned int size) {
+	Assert(arena->usedSize + size <= arena->maxSize);
 	if (arena->usedSize + size <= arena->maxSize) {
 		char* result = arena->baseAddress + arena->usedSize;
 		arena->usedSize += size;

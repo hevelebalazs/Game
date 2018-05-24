@@ -25,10 +25,11 @@ DirectedPoint StartNodePoint(PathNode* node);
 DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint);
 bool IsNodeEndPoint(PathNode* node, DirectedPoint point);
 
+void ResetPathPool(PathPool* pathPool);
 PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool);
-PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
-PathNode* ConnectPedestrianElems(Map* map, MapElem elemStart, Point startPoint, MapElem elemEnd, 
-							   MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* tmpArena, PathPool* pathPool);
+PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, int startSubIndex, MapElem endElem, int endSubIndex,
+							   MemArena* arena, PathPool* pathPool);
 
 void FreePathNode(PathNode* node, PathPool* pathPool);
 void FreePath(PathNode* firstNode, PathPool* pathPool);

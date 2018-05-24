@@ -21,7 +21,7 @@ void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, Mem
 	MapElem targetElem = BuildingElem(autoVehicle->inBuilding);
 	MapElem nextElem = BuildingElem(building);
 
-	autoVehicle->moveNode = ConnectElems(autoVehicle->vehicle.map, targetElem, nextElem, arena, tmpArena, pathPool);
+	autoVehicle->moveNode = ConnectElems(autoVehicle->vehicle.map, targetElem, nextElem, tmpArena, pathPool);
 
 	if (autoVehicle->moveNode) {
 		autoVehicle->moveStartPoint = StartNodePoint(autoVehicle->moveNode);
@@ -65,14 +65,10 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena,
 							Junction* junction = nextElem.junction;
 							TrafficLight* trafficLight = 0;
 
-							if (junction->leftRoad == road)
-								trafficLight = &junction->leftTrafficLight;
-							else if (junction->rightRoad == road)
-								trafficLight = &junction->rightTrafficLight;
-							else if (junction->topRoad == road)
-								trafficLight = &junction->topTrafficLight;
-							else if (junction->bottomRoad == road)
-								trafficLight = &junction->bottomTrafficLight;
+							for (int i = 0; i < junction->roadN; ++i) {
+								if (junction->roads[i] == road)
+									trafficLight = &junction->trafficLights[i];
+							}
 
 							if (trafficLight && (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow))
 								stop = true;

@@ -279,6 +279,13 @@ inline Color TextureColor(Texture texture, float x, float y) {
 	return color;
 }
 
+inline unsigned int TextureColorCode(Texture texture, float x, float y)
+{
+	Color color = TextureColor(texture, x, y);
+	unsigned int colorCode = ColorCode(color);
+	return colorCode;
+}
+
 inline unsigned int ColorCodeLerp(unsigned int colorCode1, unsigned char ratio, unsigned int colorCode2) {
 	struct ColorCode {
 		union {

@@ -20,6 +20,7 @@ struct Bitmap {
 
 #define BitmapBytesPerPixel 4
 
+void ResizeBitmap(Bitmap* bitmap, int width, int height);
 Color RandomColor();
 
 inline unsigned int ColorCode(Color color) {

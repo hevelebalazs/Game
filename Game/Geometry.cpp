@@ -1,7 +1,16 @@
 #include <math.h>
+
+#include "Debug.h"
 #include "Geometry.h"
 
 // TODO: create a type that always represents a unit vector?
+
+void Poly16Add(Poly16* poly, Point point)
+{
+	Assert(poly->pointN < 16);
+	poly->points[poly->pointN] = point;
+	poly->pointN++;
+}
 
 float DistanceSquare(Point point1, Point point2) {
 	return (point1.x - point2.x) * (point1.x - point2.x) +
@@ -76,10 +85,33 @@ Point LineIntersection(Point line11, Point line12, Point line21, Point line22) {
 
 	float detDown = Determinant(detX1, detY1, detX2, detY2);
 
+	Assert(detDown != 0.0f);
 	if (detDown == 0.0f) 
 		return Point{0.0f, 0.0f};
 	else 
 		return Point{(detXUp / detDown), (detYUp / detDown)};
+}
+
+Point LineIntersection(Line line1, Line line2) {
+	Point intersection = LineIntersection(line1.p1, line1.p2, line2.p1, line2.p2);
+	return intersection;
+}
+
+bool IsPointInPoly(Point point, Point* points, int pointN)
+{
+	bool isInside = false;
+	if (pointN >= 3) {
+		isInside = true;
+		int prev = pointN - 1;
+		for (int i = 0; i < pointN; ++i) {
+			if (!TurnsRight(points[prev], points[i], point)) {
+				isInside = false;
+				break;
+			}
+			prev = i;
+		}
+	}
+	return isInside;
 }
 
 float DotProduct(Point vector1, Point vector2) {

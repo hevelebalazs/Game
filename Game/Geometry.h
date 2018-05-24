@@ -15,6 +15,13 @@ union Line {
 	};
 };
 
+struct Poly16 {
+	Point points[16];
+	int pointN;
+};
+
+void Poly16Add(Poly16* poly, Point point);
+
 struct Quad {
 	Point points[4];
 };
@@ -67,10 +74,13 @@ inline bool TurnsRight(Point point1, Point point2, Point point3) {
 
 bool DoLinesCross(Point line11, Point line12, Point line21, Point line22);
 Point LineIntersection(Point line11, Point line12, Point line21, Point line22);
+Point LineIntersection(Line line1, Line line2);
 
 float DotProduct(Point vector1, Point vector2);
 Point NormalVector(Point vector);
 Point ParallelVector(Point vector, Point base);
+
+bool IsPointInPoly(Point point, Point* points, int pointN);
 
 // TODO: create a Rect struct?
 // TODO: use this everywhere

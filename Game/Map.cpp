@@ -9,6 +9,19 @@ Junction* RandomJunction(Map map) {
 	return &map.junctions[junctionIndex];
 }
 
+Junction* GetJunctionAtPoint(Map* map, Point point)
+{
+	Junction* result = 0;
+	for (int i = 0; i < map->junctionCount; ++i) {
+		Junction* junction = map->junctions + i;
+		if (IsPointOnJunction(point, junction)) {
+			result = junction;
+			break;
+		}
+	}
+	return result;
+}
+
 Junction* JunctionAtPoint(Map map, Point point, float maxDistance) {
 	float maxDistanceSquare = maxDistance * maxDistance;
 
@@ -43,7 +56,7 @@ MapElem ClosestRoadOrJunction(Map map, Point point) {
 			((road->endPoint2.y <= point.y) && (point.y <= road->endPoint1.y));
 
 		if (betweenX || betweenY) {
-			float distanceSquare = DistanceSquareFromRoad(*road, point);
+			float distanceSquare = DistanceSquareFromRoad(road, point);
 
 			if (!closestRoad || distanceSquare < minDistanceSquare) {
 				closestRoad = road;
@@ -171,15 +184,17 @@ MapElem RoadElemAtPoint(Map map, Point point) {
 	result.type = MapElemNone;
 
 	for (int i = 0; i < map.roadCount; ++i) {
-		if (IsPointOnRoad(point, map.roads[i])) {
-			result = RoadElem(&map.roads[i]);
+		Road* road = map.roads + i;
+		if (IsPointOnRoad(point, road)) {
+			result = RoadElem(road);
 			return result;
 		}
 	}
 
 	for (int i = 0; i < map.junctionCount; ++i) {
-		if (IsPointOnJunction(point, map.junctions[i])) {
-			result = JunctionElem(&map.junctions[i]);
+		Junction* junction = map.junctions + i;
+		if (IsPointOnJunction(point, junction)) {
+			result = JunctionElem(junction);
 			return result;
 		}
 	}
@@ -204,20 +219,22 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	result.type = MapElemNone;
 
 	for (int i = 0; i < map.junctionCount; ++i) {
-		if (IsPointOnJunctionSidewalk(point, map.junctions[i])) {
-			result = JunctionSidewalkElem(&map.junctions[i]);
+		Junction* junction = map.junctions + i;
+		if (IsPointOnJunctionSidewalk(point, junction)) {
+			result = JunctionSidewalkElem(junction);
 			return result;
 		}
 	}
 
 	for (int i = 0; i < map.roadCount; ++i) {
-		if (IsPointOnRoadSidewalk(point, map.roads[i])) {
-			result = RoadSidewalkElem(&map.roads[i]);
+		Road* road = map.roads + i;
+		if (IsPointOnRoadSidewalk(point, road)) {
+			result = RoadSidewalkElem(road);
 			return result;
 		}
 
-		if (IsPointOnCrossing(point, map.roads[i])) {
-			result = CrossingElem(&map.roads[i]);
+		if (IsPointOnCrossing(point, road)) {
+			result = CrossingElem(road);
 			return result;
 		}
 	}
@@ -230,16 +247,16 @@ void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets) {
 	WorldTextureRect(renderer, 0, 0, map->height, map->width, assets->grassTexture);
 
 	for (int i = 0; i < map->junctionCount; ++i)
-		DrawJunction(renderer, map->junctions[i], assets);
+		DrawJunction(renderer, map->junctions + i);
 
 	for (int i = 0; i < map->roadCount; ++i)
-		DrawRoad(renderer, map->roads[i], assets);
+		DrawRoad(renderer, map->roads + i);
 
 	for (int i = 0; i < map->buildingCount; ++i)
 		DrawConnectRoad(renderer, map->buildings[i], assets->roadTexture);
 
 	for (int i = 0; i < map->junctionCount; ++i)
-		DrawTrafficLights(renderer, map->junctions[i]);
+		DrawTrafficLights(renderer, map->junctions + i);
 }
 
 // TODO: there are two instances of mergesort in the code

@@ -14,9 +14,11 @@ void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena*
 
 	MapElem targetElem = JunctionSidewalkElem(autoHuman->onJunction);
 	MapElem nextElem = JunctionSidewalkElem(junction);
+	int startCornerIndex = GetClosestJunctionCornerIndex(autoHuman->onJunction, autoHuman->human.position);
+	int endCornerIndex = GetRandomJunctionCornerIndex(junction);
 
-	autoHuman->moveNode = ConnectPedestrianElems(human->map, targetElem, human->position, nextElem,
-												 arena, tmpArena, pathPool);
+	autoHuman->moveNode = ConnectPedestrianElems(human->map, targetElem, startCornerIndex, nextElem, endCornerIndex,
+												 tmpArena, pathPool);
 
 	if (autoHuman->moveNode) {
 		// autoHuman->moveStartPoint = StartNodePoint(autoHuman->moveNode);

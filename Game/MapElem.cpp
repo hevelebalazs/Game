@@ -9,11 +9,11 @@ void HighlightMapElem(Renderer renderer, MapElem mapElem, Color color) {
 	else if (mapElem.type == MapElemBuildingConnector)
 		HighlightBuildingConnector(renderer, *mapElem.building, color);
 	else if (mapElem.type == MapElemJunction)
-		HighlightJunction(renderer, *mapElem.junction, color);
+		HighlightJunction(renderer, mapElem.junction, color);
 	else if (mapElem.type == MapElemJunctionSidewalk) 
-		HighlightJunctionSidewalk(renderer, *mapElem.junction, color);
+		HighlightJunctionSidewalk(renderer, mapElem.junction, color);
 	else if (mapElem.type == MapElemRoad)
-		HighlightRoad(renderer, *mapElem.road, color);
+		HighlightRoad(renderer, mapElem.road, color);
 	else if (mapElem.type == MapElemRoadSidewalk)
-		HighlightRoadSidewalk(renderer, *mapElem.road, color);
+		HighlightRoadSidewalk(renderer, mapElem.road, color);
 }

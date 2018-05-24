@@ -75,57 +75,17 @@ static void GenerateBuildings(Map* map, BuildArea area, float buildingPadding, f
 	}
 }
 
+static void AddRoad(Junction* junction, Road* road) {
+	Assert(junction->roadN < JunctionMaxRoadN);
+	junction->roads[junction->roadN] = road;
+	junction->roadN++;
+}
+
 static void ConnectJunctions(Junction* junction1, Junction* junction2, Road* road) {
-	if (junction1->position.y == junction2->position.y) {
-		Junction* left;
-		Junction* right;
-
-		if (junction1->position.x < junction2->position.x) {
-			left = junction1;
-			right = junction2;
-		}
-		else {
-			left = junction2;
-			right = junction1;
-		}
-
-		road->endPoint1.x = left->position.x + LaneWidth;
-		road->endPoint1.y = left->position.y;
-
-		road->endPoint2.x = right->position.x - LaneWidth;
-		road->endPoint2.y = right->position.y;
-
-		left->rightRoad = road;
-		right->leftRoad = road;
-
-		road->junction1 = left;
-		road->junction2 = right;
-	}
-	else {
-		Junction* top;
-		Junction* bottom;
-
-		if (junction1->position.y < junction2->position.y) {
-			top = junction1;
-			bottom = junction2;
-		}
-		else {
-			top = junction2;
-			bottom = junction1;
-		}
-
-		road->endPoint1.x = top->position.x;
-		road->endPoint1.y = top->position.y + LaneWidth;
-
-		road->endPoint2.x = bottom->position.x;
-		road->endPoint2.y = bottom->position.y - LaneWidth;
-
-		bottom->topRoad = road;
-		top->bottomRoad = road;
-
-		road->junction1 = top;
-		road->junction2 = bottom;
-	}
+	AddRoad(junction1, road);
+	AddRoad(junction2, road);
+	road->junction1 = junction1;
+	road->junction2 = junction2;
 }
 
 // TODO: can the recursion cause any performance or memory issue?
@@ -154,37 +114,21 @@ static void ReindexRoad(Road* road, Junction* oldJunction, Junction* newJunction
 		road->junction2 = newJunction;
 }
 
-static void RemoveJunction(Map* map, Junction* junction) {
+void RemoveJunction(Map* map, Junction* junction) {
 	Junction* oldJunction = &map->junctions[map->junctionCount - 1];
 	map->junctionCount--;
 
 	*junction = *oldJunction;
 
-	if (junction->leftRoad)   
-		ReindexRoad(junction->leftRoad,   oldJunction, junction);
-
-	if (junction->rightRoad)  
-		ReindexRoad(junction->rightRoad,  oldJunction, junction);
-
-	if (junction->topRoad)  
-		ReindexRoad(junction->topRoad,    oldJunction, junction);
-
-	if (junction->bottomRoad)
-		ReindexRoad(junction->bottomRoad, oldJunction, junction);
+	for (int i = 0; i < junction->roadN; ++i)
+		ReindexRoad(junction->roads[i], oldJunction, junction);
 }
 
-static void ReindexJunction(Junction* junction, Road* oldRoad, Road* road) {
-	if (junction->leftRoad == oldRoad) 
-		junction->leftRoad = road;
-
-	if (junction->rightRoad == oldRoad) 
-		junction->rightRoad = road;
-
-	if (junction->topRoad == oldRoad) 
-		junction->topRoad = road;
-
-	if (junction->bottomRoad == oldRoad) 
-		junction->bottomRoad = road;
+void ReindexJunction(Junction* junction, Road* oldRoad, Road* road) {
+	for (int i = 0; i < junction->roadN; ++i) {
+		if (junction->roads[i] == oldRoad)
+			junction->roads[i] = road;
+	}
 }
 
 static void RemoveRoad(Map* map, Road* road) {
@@ -198,6 +142,18 @@ static void RemoveRoad(Map* map, Road* road) {
 
 	if (road->junction2) 
 		ReindexJunction(road->junction2, oldRoad, road);
+}
+
+bool AreJunctionsConnected(Junction* junction1, Junction* junction2) {
+	bool result = false;
+	for (int i = 0; i < junction1->roadN; ++i) {
+		Road* road = junction1->roads[i];
+		if (road->junction1 == junction2 || road->junction2 == junction2) {
+			result = true;
+			break;
+		}
+	}
+	return result;
 }
 
 // TODO: separate this into smaller functions?
@@ -262,26 +218,14 @@ Map CreateGridMap(float width, float height, float junctionDistance, MemArena* a
 
 			GridPosition endPosition = startPosition;
 
-			if (direction == GridMapRight) {
-				if (startJunction->rightRoad) 
-					createRoad = false;
+			if (direction == GridMapRight)
 				endPosition.col++;
-			}
-			else if (direction == GridMapLeft) {
-				if (startJunction->leftRoad) 
-					createRoad = false;
+			else if (direction == GridMapLeft)
 				endPosition.col--;
-			}
-			else if (direction == GridMapDown) {
-				if (startJunction->bottomRoad) 
-					createRoad = false;
+			else if (direction == GridMapDown)
 				endPosition.row++;
-			}
-			else if (direction == GridMapUp) {
-				if (startJunction->topRoad) 
-					createRoad = false;
+			else if (direction == GridMapUp)
 				endPosition.row--;
-			}
 
 			if (endPosition.col < 0 || endPosition.col >= colCount) 
 				createRoad = false;
@@ -289,21 +233,16 @@ Map CreateGridMap(float width, float height, float junctionDistance, MemArena* a
 			if (endPosition.row < 0 || endPosition.row >= rowCount) 
 				createRoad = false;
 
+			Junction *endJunction = &map.junctions[endPosition.row * colCount + endPosition.col];
+			if (!AreJunctionsConnected(startJunction, endJunction))
+				createRoad = false;
+
 			if (!createRoad) 
 				break;
 
-			Junction *endJunction = &map.junctions[endPosition.row * colCount + endPosition.col];
-
-			bool endConnected;
-
-			if (!endJunction->bottomRoad && !endJunction->topRoad &&
-				!endJunction->leftRoad && !endJunction->rightRoad) {
-				endConnected = false;
+			bool endConnected = (endJunction->roadN > 0);
+			if (!endConnected)
 				connectedPositions[connectedCount++] = {endPosition.row, endPosition.col};
-			}
-			else {
-				endConnected = true;
-			}
 
 			ConnectJunctions(startJunction, endJunction, &map.roads[createdRoadCount]);
 			createdRoadCount++;
@@ -314,8 +253,7 @@ Map CreateGridMap(float width, float height, float junctionDistance, MemArena* a
 			if (endConnected) {
 				if (rand() % 2 < 1) 
 					break;
-			}
-			else {
+			} else {
 				if (rand() % 5 < 1) 
 					break;
 			}
@@ -373,10 +311,10 @@ Map CreateGridMap(float width, float height, float junctionDistance, MemArena* a
 			if (row < rowCount && col < colCount) 
 				bottomRightJunction = &map.junctions[(row) * colCount + (col)];
 
-			bool roadOnLeft = (topLeftJunction != 0) && (topLeftJunction->bottomRoad != 0);
-			bool roadOnRight = (topRightJunction != 0) && (topRightJunction->bottomRoad != 0);
-			bool roadOnTop = (topLeftJunction != 0) && (topLeftJunction->rightRoad != 0);
-			bool roadOnBottom = (bottomLeftJunction != 0) && (bottomLeftJunction->rightRoad != 0);
+			bool roadOnLeft   = AreJunctionsConnected(topLeftJunction,    bottomLeftJunction);
+			bool roadOnRight  = AreJunctionsConnected(topRightJunction,   bottomRightJunction);
+			bool roadOnTop    = AreJunctionsConnected(topLeftJunction,    topRightJunction);
+			bool roadOnBottom = AreJunctionsConnected(bottomLeftJunction, bottomRightJunction);
 
 			bool createArea = false;
 
@@ -432,70 +370,8 @@ Map CreateGridMap(float width, float height, float junctionDistance, MemArena* a
 
 	ArenaPopTo(tmpArena, gridAreas);
 
-	int i = 0;
-	while (i < map.junctionCount) {
-		Junction* junction = &map.junctions[i];
-
-		int roadCount = 0;
-
-		if (junction->leftRoad)   roadCount++;
-		if (junction->rightRoad)  roadCount++;
-		if (junction->topRoad)    roadCount++;
-		if (junction->bottomRoad) roadCount++;
-
-		if (roadCount == 0) {
-			RemoveJunction(&map, junction);
-		}
-		else if (roadCount == 2 && junction->leftRoad && junction->rightRoad) {
-			Road* leftRoad = junction->leftRoad;
-			Road* rightRoad = junction->rightRoad;
-			Junction* leftJunction = 0;
-			Junction* rightJunction = 0;
-
-			if (leftRoad->junction1 == junction)
-				leftJunction = leftRoad->junction2;
-			else 
-				leftJunction = leftRoad->junction1;
-
-			if (rightRoad->junction1 == junction) 
-				rightJunction = rightRoad->junction2;
-			else 
-				rightJunction = rightRoad->junction1;
-
-			ConnectJunctions(leftJunction, rightJunction, rightRoad);
-			RemoveRoad(&map, leftRoad);
-			RemoveJunction(&map, junction);
-		}
-		else if (roadCount == 2 && junction->topRoad && junction->bottomRoad) {
-			Road* topRoad = junction->topRoad;
-			Road* bottomRoad = junction->bottomRoad;
-			Junction* topJunction = 0;
-			Junction* bottomJunction = 0;
-
-			if (topRoad->junction1 == junction) 
-				topJunction = topRoad->junction2;
-			else 
-				topJunction = topRoad->junction1;
-
-			if (bottomRoad->junction1 == junction) 
-				bottomJunction = bottomRoad->junction2;
-			else 
-				bottomJunction = bottomRoad->junction2;
-
-			ConnectJunctions(topJunction, bottomJunction, bottomRoad);
-			RemoveRoad(&map, topRoad);
-			RemoveJunction(&map, junction);
-		}
-		else {
-			i++;
-		}
-	}
-
-	for (int i = 0; i < map.junctionCount; ++i) {
-		Junction* junction = &map.junctions[i];
-
-		InitTrafficLights(junction);
-	}
+	for (int i = 0; i < map.junctionCount; ++i)
+		InitTrafficLights(&map.junctions[i]);
 
 	for (int i = 0; i < map.buildingCount; ++i) {
 		Building* building = &map.buildings[i];

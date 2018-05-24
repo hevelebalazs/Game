@@ -4,7 +4,8 @@
 #include "Math.h"
 #include "Point.h"
 #include "Renderer.h"
-#include "Texture.h"
+
+#define JunctionMaxRoadN 4
 
 extern Color RoadColor;
 extern float LaneWidth;
@@ -16,11 +17,16 @@ extern Color SidewalkColor;
 extern float SidewalkWidth;
 extern float CrossingWidth;
 
+extern float JunctionRadius;
+extern int   InvalidJunctionCornerIndex;
+
 extern float TrafficLightRadius;
 extern float TrafficLightSwitchTime;
 extern float TrafficLightYellowTime;
 
-struct GameAssets;
+extern int   LeftRoadSidewalkIndex;
+extern int   RightRoadSidewalkIndex;
+
 struct Road;
 struct Junction;
 
@@ -47,85 +53,94 @@ struct TrafficLight {
 	float timeLeft;
 };
 
-// TODO: name this QuarterIndex
-enum {
-	QuarterNone,
-	QuarterTopLeft,
-	QuarterTopRight,
-	QuarterBottomLeft,
-	QuarterBottomRight
-};
-
 struct Junction {
 	Point position;
 
-	Road* roads[4];
-	TrafficLight trafficLights[4];
-	// TODO: create an array of these
-	Road* leftRoad = 0;
-	Road* rightRoad = 0;
-	Road* topRoad = 0;
-	Road* bottomRoad = 0;
-
-	// TODO: create an array of these, each should correspond to a road
-	TrafficLight leftTrafficLight;
-	TrafficLight rightTrafficLight;
-	TrafficLight topTrafficLight;
-	TrafficLight bottomTrafficLight;
+	int roadN;
+	// NOTE: roads are in clockwise order!
+	Road* roads[JunctionMaxRoadN];
+	TrafficLight trafficLights[JunctionMaxRoadN];
+	float stopDistances[JunctionMaxRoadN];
 };
 
 // Road
 float RoadLength(Road* road);
 void GenerateCrossing(Road* road);
 
-DirectedPoint RoadLeavePoint(Road road, int endPointIndex);
-DirectedPoint RoadEnterPoint(Road road, int endPointIndex);
+DirectedPoint GetRoadLeavePoint(Junction* junction, Road* road);
+DirectedPoint GetRoadEnterPoint(Junction* junction, Road* road);
 
-float DistanceSquareFromRoad(Road road, Point point);
-Point ClosestRoadPoint(Road road, Point point);
-Point ClosestLanePoint(Road road, int laneIndex, Point point);
+float DistanceSquareFromRoad(Road* road, Point point);
+Point ClosestRoadPoint(Road* road, Point point);
+Point ClosestLanePoint(Road* road, int laneIndex, Point point);
 
-bool IsPointOnRoad(Point point, Road road);
-bool IsPointOnRoadSide(Point point, Road road);
-bool IsPointOnRoadSidewalk(Point point, Road road);
-bool IsPointOnCrossing(Point point, Road road);
+bool IsPointOnRoad(Point point, Road* road);
+bool IsPointOnRoadSidewalk(Point point, Road* road);
+bool IsPointOnCrossing(Point point, Road* road);
 
-int LaneIndex(Road road, Point point);
-Point LaneDirection(Road road, int laneIndex);
+int LaneIndex(Road* road, Point point);
+Point LaneDirection(Road* road, int laneIndex);
 
-int RoadSidewalkIndex(Road road, Point point);
+int RoadSidewalkIndex(Road* road, Point point);
 
-float DistanceOnLane(Road road, int laneIndex, Point point);
-DirectedPoint TurnPointFromLane(Road road, int laneIndex, Point point);
-DirectedPoint TurnPointToLane(Road road, int laneIndex, Point point);
+float DistanceOnLane(Road* road, int laneIndex, Point point);
+DirectedPoint TurnPointFromLane(Road* road, int laneIndex, Point point);
+DirectedPoint TurnPointToLane(Road* road, int laneIndex, Point point);
 
 // Road coordinate system
-Point FromRoadCoord1(Road road, float along, float side);
-Point FromRoadCoord2(Road road, float along, float side);
-Point FromRoadCoord(Road road, Point roadCoord1);
-Point ToRoadCoord(Road road, Point point);
+Point FromRoadCoord1(Road* road, float along, float side);
+Point FromRoadCoord2(Road* road, float along, float side);
+Point FromRoadCoord(Road* road, Point roadCoord1);
+Point ToRoadCoord(Road* road, Point point);
 
 // Road graphics
-void HighlightRoadSidewalk(Renderer renderer, Road road, Color color);
-void HighlightRoad(Renderer renderer, Road road, Color color);
-void DrawRoad(Renderer renderer, Road road, GameAssets* assets);
-void DrawRoad(Renderer renderer, Road road);
+void HighlightRoadSidewalk(Renderer renderer, Road* road, Color color);
+void HighlightRoad(Renderer renderer, Road* road, Color color);
+void DrawCrossing(Renderer renderer, Road* road);
+void DrawRoad(Renderer renderer, Road* road);
+void DrawRoadSidewalk(Renderer renderer, Road* road);
 
 // Junction
-int RandomQuarterIndex();
+bool IsValidJunctionCornerIndex(Junction* junction, int cornerIndex);
+
+int GetClockwiseJunctionCornerIndexDistance(Junction* junction, int startCornerIndex, int endCornerIndex);
+int GetCounterClockwiseJunctionCornerIndexDistance(Junction* junction, int startCornerIndex, int endCornerIndex);
+
+int GetRoadOutLeftJunctionCornerIndex(Junction* junction, Road* road);
+int GetRoadOutRightJunctionCornerIndex(Junction* junction, Road* road);
+
+int GetRoadLeftSidewalkJunctionCornerIndex(Junction* junction, Road* road);
+int GetRoadRightSidewalkJunctionCornerIndex(Junction* junction, Road* road);
+int GetRoadSidewalkJunctionCornerIndex(Junction* junction, Road* road, int sidewalkIndex);
+Point GetRoadLeftSidewalkJunctionCorner(Junction* junction, Road* road);
+Point GetRoadRightSidewalkJunctionCorner(Junction* junction, Road* road);
+
+int GetRoadJunctionCornerSidewalkIndex(Junction* junction, Road* road, int cornerIndex);
+
+int GetPreviousJunctionCornerIndex(Junction* junction, int cornerIndex);
+int GetNextJunctionCornerIndex(Junction* junction, int cornerIndex);
+int GetRandomJunctionCornerIndex(Junction* junction);
+int GetJunctionRoadIndex(Junction* junction, Road* road);
+
+Point OtherRoadPoint(Junction* junction, Road* road);
+void AddRoad(Junction* junction, Road* road);
+void ConnectJunctions(Junction* junction1, Junction* junction2, Road* road);
+
+Point GetJunctionCorner(Junction* junction, int cornerIndex);
+int GetClosestJunctionCornerIndex(Junction* junction, Point point);
+Point GetClosestJunction(Junction* junction, Point point);
 
 TrafficLight* TrafficLightOfRoad(Junction* junction, Road* road);
-bool IsPointOnJunction(Point point, Junction junction);
-bool IsPointOnJunctionSidewalk(Point point, Junction junction);
+bool IsPointOnJunction(Point point, Junction* junction);
+bool IsPointOnJunctionSidewalk(Point point, Junction* junction);
 
 void InitTrafficLights(Junction* junction);
 void UpdateTrafficLights(Junction* junction, float seconds);
-void DrawTrafficLights(Renderer renderer, Junction junction);
+void DrawTrafficLights(Renderer renderer, Junction* junction);
 
-void HighlightJunctionSidewalk(Renderer renderer, Junction junction, Color color);
-void HighlightJunction(Renderer renderer, Junction junction, Color color);
-void DrawJunction(Renderer renderer, Junction junction, GameAssets* assets);
-void DrawJunction(Renderer renderer, Junction junction);
+void CalculateStopDistances(Junction* junction);
+void HighlightJunctionSidewalk(Renderer renderer, Junction* junction, Color color);
+void HighlightJunction(Renderer renderer, Junction* junction, Color color);
 
-int QuarterIndex(Junction* junction, Point point);
-Point JunctionSidewalkCorner(Junction* junction, int quarterIndex);
+void DrawJunctionSidewalk(Renderer renderer, Junction* junction);
+void DrawJunction(Renderer renderer, Junction* junction);

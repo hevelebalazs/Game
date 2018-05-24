@@ -5,6 +5,12 @@
 #include "Point.h"
 #include "Renderer.h"
 
+void ResizeCamera(Camera* camera, int width, int height)
+{
+	camera->screenSize = Point{(float)width, (float)height};
+	camera->center = PointProd(0.5f, camera->screenSize);
+}
+
 static inline unsigned int GetPixel(Bitmap bitmap, int row, int col) {
 	unsigned int* pixelAddress = GetPixelAddress(bitmap, row, col);
 
@@ -523,6 +529,21 @@ void DrawLine(Renderer renderer, Point point1, Point point2, Color color, float 
 	DrawQuad(renderer, quad, color);
 }
 
+void DrawWorldTextureLine(Renderer renderer, Point point1, Point point2, float lineWidth, Texture texture)
+{
+	Point direction = PointDirection(point2, point1);
+	Point turnedDirection = TurnVectorToRight(direction);
+	
+	float halfLineWidth = lineWidth * 0.5f;
+	Quad quad = {};
+	Point pointProduct = PointProd(halfLineWidth, turnedDirection);
+	quad.points[0] = PointDiff(point1, pointProduct);
+	quad.points[1] = PointSum (point1, pointProduct);
+	quad.points[2] = PointSum (point2, pointProduct);
+	quad.points[3] = PointDiff(point2, pointProduct);
+	DrawWorldTextureQuad(renderer, quad, texture);
+}
+
 // TODO: change the order to left, right, top, bottom
 // TODO: make this function take two points instead of four floats?
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color) {
@@ -564,6 +585,131 @@ void DrawRect(Renderer renderer, float top, float left, float bottom, float righ
 			*pixel = colorCode;
 		}
 	}
+}
+
+void DrawPolyOutline(Renderer renderer, Point* points, int pointN, Color color) {
+	int prev = pointN - 1;
+	for (int i = 0; i < pointN; ++i) {
+		Bresenham(renderer, points[prev], points[i], color);
+		prev = i;
+	}
+}
+
+void DrawPoly(Renderer renderer, Point* points, int pointN, Color color) {
+	unsigned int colorCode = ColorCode(color);
+
+	for (int i = 0; i < pointN; ++i)
+		points[i] = CoordToPixel(*renderer.camera, points[i]);
+
+	Bitmap bitmap = renderer.bitmap;
+	int minX = bitmap.width;
+	int minY = bitmap.height;
+	int maxX = 0;
+	int maxY = 0;
+
+	for (int i = 0; i < pointN; ++i) {
+		int pointX = (int)points[i].x;
+		int pointY = (int)points[i].y;
+
+		if (pointX < minX)
+			minX = pointX;
+		if (pointX > maxX)
+			maxX = pointX;
+		if (pointY < minY)
+			minY = pointY;
+		if (pointY > maxY)
+			maxY = pointY;
+	}
+
+	if (minX < 0)
+		minX = 0;
+	if (maxX >= bitmap.width)
+		maxX = bitmap.width - 1;
+	if (minY < 0)
+		minY = 0;
+	if (maxY >= bitmap.height)
+		maxY = bitmap.height - 1;
+
+	unsigned int *pixel = 0;
+	for (int row = minY; row < maxY; ++row) {
+		for (int col = minX; col < maxX; ++col) {
+			Point testPoint = { (float)col, (float)row };
+
+			bool drawPoint = true;
+
+			int prev = pointN - 1;
+			for (int i = 0; i < pointN; ++i) {
+				// TODO: is using cross product faster than these calls?
+				if (!TurnsRight(points[prev], points[i], testPoint)) {
+					drawPoint = false;
+					break;
+				}
+				prev = i;
+			}
+
+			if (drawPoint) {
+				pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
+				*pixel = colorCode;
+			}
+		}
+	}
+
+	for (int i = 0; i < pointN; ++i)
+		points[i] = PixelToCoord(*renderer.camera, points[i]);
+}
+
+void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture texture)
+{
+	Bitmap bitmap = renderer.bitmap;
+	Camera* camera = renderer.camera;
+	int minX = bitmap.width;
+	int minY = bitmap.height;
+	int maxX = 0;
+	int maxY = 0;
+
+	for (int i = 0; i < pointN; ++i) {
+		Point pointInPixels = CoordToPixel(*camera, points[i]);
+		int pointX = (int)pointInPixels.x;
+		int pointY = (int)pointInPixels.y;
+		minX = IntMin2(minX, pointX);
+		maxX = IntMax2(maxX, pointX);
+		minY = IntMin2(minY, pointY);
+		maxY = IntMax2(maxY, pointY);
+	}
+
+	minX = IntMax2(minX, 0);
+	maxX = IntMin2(maxX, bitmap.width - 1);
+	minY = IntMax2(minY, 0);
+	maxY = IntMin2(maxY, bitmap.height - 1);
+
+	unsigned int *pixel = 0;
+	for (int row = minY; row <= maxY; ++row) {
+		for (int col = minX; col <= maxX; ++col) {
+			Point testPoint = { (float)col, (float)row };
+
+			bool drawPoint = true;
+
+			int prev = pointN - 1;
+			for (int i = 0; i < pointN; ++i) {
+				Point prevPoint = CoordToPixel(*camera, points[prev]);
+				Point thisPoint = CoordToPixel(*camera, points[i]);
+				if (!TurnsRight(prevPoint, thisPoint, testPoint)) {
+					drawPoint = false;
+					break;
+				}
+				prev = i;
+			}
+
+			if (drawPoint) {
+				pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
+				Point testCoordPoint = PixelToCoord(*camera, testPoint);
+				*pixel = TextureColorCode(texture, testCoordPoint.x * 10.0f, testCoordPoint.y * 10.0f);
+			}
+		}
+	}
+
+	for (int i = 0; i < pointN; ++i)
+		points[i] = PixelToCoord(*renderer.camera, points[i]);
 }
 
 void DrawQuad(Renderer renderer, Quad quad, Color color) {
@@ -621,6 +767,60 @@ void DrawQuad(Renderer renderer, Quad quad, Color color) {
 			if (drawPoint) {
 				pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
 				*pixel = colorCode;
+			}
+		}
+	}
+}
+
+void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture)
+{
+	Bitmap bitmap = renderer.bitmap;
+	Camera camera = *renderer.camera;
+	int minX = bitmap.width;
+	int minY = bitmap.height;
+	int maxX = 0;
+	int maxY = 0;
+	for (int i = 0; i < 4; ++i) {
+		Point pixelPoint = CoordToPixel(camera, quad.points[i]);
+		int pointX = (int)pixelPoint.x;
+		int pointY = (int)pixelPoint.y;
+		minX = IntMin2(minX, pointX);
+		maxX = IntMax2(maxX, pointX);
+		minY = IntMin2(minY, pointY);
+		maxY = IntMax2(maxY, pointY);
+	}
+	minX = IntMax2(minX, 0);
+	maxX = IntMin2(maxX, bitmap.width - 1);
+	minY = IntMax2(minY, 0);
+	maxY = IntMin2(maxY, bitmap.height - 1);
+
+	unsigned int *pixel = 0;
+	for (int row = minY; row < maxY; ++row) {
+		for (int col = minX; col < maxX; ++col) {
+			Point testPoint = { (float)col, (float)row };
+
+			bool drawPoint = true;
+
+			Point pixelPoints[4] = {
+				CoordToPixel(camera, quad.points[0]),
+				CoordToPixel(camera, quad.points[1]),
+				CoordToPixel(camera, quad.points[2]),
+				CoordToPixel(camera, quad.points[3])
+			};
+
+			if (!TurnsRight(pixelPoints[0], pixelPoints[1], testPoint))
+				drawPoint = false;
+			else if (!TurnsRight(pixelPoints[1], pixelPoints[2], testPoint))
+				drawPoint = false;
+			else if (!TurnsRight(pixelPoints[2], pixelPoints[3], testPoint))
+				drawPoint = false;
+			else if (!TurnsRight(pixelPoints[3], pixelPoints[0], testPoint))
+				drawPoint = false;
+
+			if (drawPoint) {
+				pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
+				Point testCoordPoint = PixelToCoord(camera, testPoint);
+				*pixel = TextureColorCode(texture, testCoordPoint.x * 10.0f, testCoordPoint.y * 10.0f);
 			}
 		}
 	}

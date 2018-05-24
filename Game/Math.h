@@ -38,6 +38,7 @@ inline int IntMax2(int i1, int i2) {
 // TODO: these should be inline functions
 float Min2(float x, float y);
 float Max2(float x, float y);
+float Max3(float x, float y, float z);
 
 inline float Sqrt(float x) {
 	return sqrtf(x);
