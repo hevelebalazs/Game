@@ -19,6 +19,7 @@ extern float CrossingWidth;
 
 extern float JunctionRadius;
 extern int   InvalidJunctionCornerIndex;
+extern float MinimumJunctionDistance;
 
 extern float TrafficLightRadius;
 extern float TrafficLightSwitchTime;
@@ -142,5 +143,6 @@ void CalculateStopDistances(Junction* junction);
 void HighlightJunctionSidewalk(Renderer renderer, Junction* junction, Color color);
 void HighlightJunction(Renderer renderer, Junction* junction, Color color);
 
+void DrawJunctionPlaceholder(Renderer renderer, Junction* junction, Color color);
 void DrawJunctionSidewalk(Renderer renderer, Junction* junction);
 void DrawJunction(Renderer renderer, Junction* junction);

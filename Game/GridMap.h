@@ -1,5 +1,5 @@
 #include "Map.h"
+#include "Math.h"
+#include "Memory.h"
 
-struct MemArena;
-
-Map CreateGridMap(float width, float height, float junctionDistance, MemArena* arena, MemArena* tmpArena);
+void GenerateGridMap(Map* map, int junctionRowN, int junctionColN, int roadN, MemArena* tmpArena);

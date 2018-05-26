@@ -1,5 +1,6 @@
 #include "RoadLab.h"
 
+#include "../GridMap.h"
 #include "../Map.h"
 #include "../Memory.h"
 #include "../Path.h"
@@ -7,7 +8,6 @@
 #include "../Renderer.h"
 #include "../Road.h"
 
-float MinimumJunctionDistance = 10.0f * LaneWidth;
 float PathLineWidth = 0.25f * LaneWidth;
 Color ValidColor     = Color{0.0f, 0.8f, 0.0f};
 Color InvalidColor   = Color{0.8f, 0.0f, 0.0f};
@@ -21,7 +21,9 @@ enum RoadLabMode {
 	SidewalkPathBuildingMode
 };
 
-#define RoadLabMaxJunctionN 100
+#define RoadLabMaxJunctionRowN 10
+#define RoadLabMaxJunctionColN 10
+#define RoadLabMaxJunctionN (RoadLabMaxJunctionRowN * RoadLabMaxJunctionColN)
 #define RoadLabMaxRoadN 100
 #define RoadLabMaxPathNodeN 100
 #define RoadLabMemArenaSize (1 * MegaByte)
@@ -55,196 +57,6 @@ struct RoadLabState {
 	Point cameraMoveDragPoint;
 };
 RoadLabState gRoadLabState;
-
-struct JunctionGridPosition {
-	int row;
-	int col;
-};
-
-enum JunctionGridDirection {
-	JunctionGridUp,
-	JunctionGridRight,
-	JunctionGridDown,
-	JunctionGridLeft,
-	JunctionGridDirectionN
-};
-
-static JunctionGridDirection GetRandomJunctionGridDirection()
-{
-	JunctionGridDirection result = (JunctionGridDirection)IntRandom(0, JunctionGridDirectionN - 1);
-	return result;
-}
-
-static JunctionGridPosition GetNextJunctionGridPosition(JunctionGridPosition startPosition, JunctionGridDirection direction)
-{
-	JunctionGridPosition endPosition = startPosition;
-
-	if (direction == JunctionGridUp)
-		endPosition.row--;
-	else if (direction == JunctionGridDown)
-		endPosition.row++;
-
-	if (direction == JunctionGridLeft)
-		endPosition.col--;
-	else if (direction == JunctionGridRight)
-		endPosition.col++;
-
-	return endPosition;
-}
-
-static bool AreJunctionsConnected(Junction* junction1, Junction* junction2)
-{
-	bool areConnected = false;
-	for (int i = 0; i < junction1->roadN; ++i) {
-		Road* road = junction1->roads[i];
-		if (road->junction1 == junction1 && road->junction2 == junction2)
-			areConnected = true;
-		else if (road->junction1 == junction2 && road->junction2 == junction1)
-			areConnected = true;
-
-		if (areConnected)
-			break;
-	}
-	return areConnected;
-}
-
-static void ReindexJunction(Junction* oldJunction, Junction* newJunction)
-{
-	for (int i = 0; i < oldJunction->roadN; ++i) {
-		Road* road = oldJunction->roads[i];
-		if (road->junction1 == oldJunction)
-			road->junction1 = newJunction;
-		else if (road->junction2 == oldJunction)
-			road->junction2 = newJunction;
-		else
-			InvalidCodePath;
-	}
-}
-
-static void GenerateMap(RoadLabState* labState)
-{
-	InitRandom();
-	Map* map = &labState->map;
-	map->roadCount = 0;
-	map->junctionCount = 0;
-	map->roadCount = 0;
-	
-	Camera* camera = &labState->camera;
-	float left = 0.0f;
-	float top  = 0.0f;
-	int rowN = 10;
-	int colN = 10;
-
-	float junctionX = left;
-	float junctionY = top;
-
-	MemArena* arena = &labState->memArena;
-	int junctionN = rowN * colN;
-	map->junctionCount = junctionN;
-	Junction* junctionGrid = map->junctions;
-
-	int roadN = rowN * colN;
-	map->roadCount = roadN;
-	Road* roads = map->roads;
-
-	float JunctionGridDistance = MinimumJunctionDistance * 1.5f;
-	float MaxJunctionDistanceFromOrigin = MinimumJunctionDistance * 0.5f;
-	for (int row = 0; row < rowN; ++row) {
-		for (int col = 0; col < colN; ++col) {
-			Junction* junction = junctionGrid + (row * colN) + col;
-			junction->position.x = junctionX + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
-			junction->position.y = junctionY + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
-			junction->roadN = 0;
-			junctionX += JunctionGridDistance;
-		}
-		junctionY += JunctionGridDistance;
-		junctionX = left + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
-	}
-
-	JunctionGridPosition* connectedJunctionPositions = ArenaPushArray(arena, JunctionGridPosition, rowN * colN);
-	int connectedJunctionN = 0;
-
-	JunctionGridPosition startPosition = {};
-	startPosition.row = IntRandom(0, rowN - 1);
-	startPosition.col = IntRandom(0, colN - 1);
-	connectedJunctionPositions[connectedJunctionN] = startPosition;
-	connectedJunctionN++;
-
-	int createdRoadN = 0;
-	while (1) {
-		int positionIndex = IntRandom(0, connectedJunctionN - 1);
-		JunctionGridPosition junctionPosition = connectedJunctionPositions[positionIndex];
-		JunctionGridDirection direction = GetRandomJunctionGridDirection();
-		while (1) {
-			Junction* junction = junctionGrid + (colN * junctionPosition.row) + junctionPosition.col;
-			JunctionGridPosition nextPosition = GetNextJunctionGridPosition(junctionPosition, direction);
-			Assert(junctionPosition.row != nextPosition.row || junctionPosition.col != nextPosition.col);
-			if (nextPosition.row < 0 || nextPosition.row >= rowN)
-				break;
-			if (nextPosition.col < 0 || nextPosition.col >= colN)
-				break;
-
-			Junction* nextJunction = junctionGrid + (colN * nextPosition.row) + nextPosition.col;
-			if (AreJunctionsConnected(junction, nextJunction))
-				break;
-
-			bool isNextJunctionConnected = (nextJunction->roadN > 0);
-			if (!isNextJunctionConnected) {
-				connectedJunctionPositions[connectedJunctionN] = nextPosition;
-				connectedJunctionN++;
-			}
-
-			ConnectJunctions(junction, nextJunction, roads + createdRoadN);
-			createdRoadN++;
-			if (createdRoadN == roadN)
-				break;
-
-			junction = nextJunction;
-			junctionPosition = nextPosition;
-
-			if (isNextJunctionConnected) {
-				if (IntRandom(0, 2) == 0)
-					break;
-			} else {
-				if (IntRandom(0, 5) == 0)
-					break;
-			}
-		}
-
-		if (createdRoadN == roadN)
-			break;
-	}
-
-	ArenaPopTo(arena, connectedJunctionPositions);
-
-	// NOTE: remove empty junctions
-	int newJunctionN = 0;
-	for (int i = 0; i < junctionN; ++i) {
-		Junction* junction = junctionGrid + i;
-		if (junction->roadN > 0) {
-			Junction* newJunction = junctionGrid + newJunctionN;
-			*newJunction = *junction;
-			ReindexJunction(junction, newJunction);
-			newJunctionN++;
-		}
-	}
-
-	junctionN = newJunctionN;
-	map->junctionCount = newJunctionN;
-
-	for (int i = 0; i < junctionN; ++i) {
-		Junction* junction = junctionGrid + i;
-		if (junction->roadN > 0) {
-			CalculateStopDistances(junction);
-			InitTrafficLights(junction);
-		}
-	}
-
-	for (int i = 0; i < roadN; ++i) {
-		Road* road = roads + i;
-		GenerateCrossing(road);
-	}
-}
 
 static Point GetMousePosition(Camera camera, HWND window)
 {
@@ -302,48 +114,6 @@ static bool CanJunctionBePlacedAtPoint(Map* map, Point point)
 	return valid;
 }
 
-static void DrawJunctionPlaceholder(Renderer renderer, Junction* junction, Color color)
-{
-	Point position = junction->position;
-	float side = LaneWidth + SidewalkWidth;
-	DrawRect(
-		renderer,
-		position.y - side, position.x - side,
-		position.y + side, position.x + side,
-		color
-	);
-
-	side = LaneWidth;
-	DrawRect(
-		renderer,
-		position.y - side, position.x - side,
-		position.y + side, position.x + side,
-		color
-	);
-}
-
-static void SafeDrawJunctionSidewalk(Renderer renderer, Junction* junction)
-{
-	if (junction->roadN >= 1)
-		DrawJunctionSidewalk(renderer, junction);
-}
-
-static void SafeDrawJunction(Renderer renderer, Junction* junction)
-{
-	if (junction->roadN >= 1)
-		DrawJunction(renderer, junction);
-	else
-		DrawJunctionPlaceholder(renderer, junction, RoadColor);
-}
-
-static void SafeHighlightJunction(Renderer renderer, Junction* junction, Color color)
-{
-	if (junction->roadN >= 1)
-		HighlightJunction(renderer, junction, color);
-	else
-		DrawJunctionPlaceholder(renderer, junction, color);
-}
-
 static void HighlightJunctionCorner(Renderer renderer, Junction* junction, int cornerIndex, Color color)
 {
 	float radius = LaneWidth * 0.25f;
@@ -375,18 +145,18 @@ static void RoadLabUpdate(RoadLabState* labState, Point mouse)
 	for (int i = 0; i < map->roadCount; ++i)
 		DrawRoadSidewalk(renderer, map->roads + i);
 	for (int i = 0; i < map->junctionCount; ++i)
-		SafeDrawJunctionSidewalk(renderer, map->junctions + i);
+		DrawJunctionSidewalk(renderer, map->junctions + i);
 
 	for (int i = 0; i < map->roadCount; ++i)
 		DrawRoad(renderer, map->roads + i);
 
 	for (int i = 0; i < map->junctionCount; ++i)
-		SafeDrawJunction(renderer, map->junctions + i);
+		DrawJunction(renderer, map->junctions + i);
 
 	if (labState->labMode == RoadPlacingMode) {
 		Junction* junctionAtMouse = GetJunctionAtPoint(map, mouse);
 		if (junctionAtMouse)
-			SafeHighlightJunction(renderer, junctionAtMouse, HighlightColor);
+			HighlightJunction(renderer, junctionAtMouse, HighlightColor);
 		if (labState->isPreviewOn) {
 			Road* roadPreview = &labState->roadPreview;
 			Junction* junction2 = junctionAtMouse;
@@ -409,9 +179,9 @@ static void RoadLabUpdate(RoadLabState* labState, Point mouse)
 	} else if (labState->labMode == RoadPathBuildingMode) {
 		Junction* junctionAtMouse = GetJunctionAtPoint(&labState->map, mouse);
 		if (junctionAtMouse)
-			SafeHighlightJunction(renderer, junctionAtMouse, HighlightColor);
+			HighlightJunction(renderer, junctionAtMouse, HighlightColor);
 		if (labState->pathJunction1) {
-			SafeHighlightJunction(renderer, labState->pathJunction1, PathColor);
+			HighlightJunction(renderer, labState->pathJunction1, PathColor);
 			if (junctionAtMouse) {
 				if (junctionAtMouse == labState->pathJunction1) {
 					labState->firstPathNode = 0;
@@ -433,7 +203,7 @@ static void RoadLabUpdate(RoadLabState* labState, Point mouse)
 			}
 
 			if (labState->pathJunction2 && labState->pathJunction2 != labState->pathJunction1) {
-				SafeHighlightJunction(renderer, labState->pathJunction2, PathColor);
+				HighlightJunction(renderer, labState->pathJunction2, PathColor);
 				if (labState->firstPathNode)
 					DrawBezierPath(renderer, labState->firstPathNode, PathColor, PathLineWidth);
 			}
@@ -587,7 +357,12 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 					break;
 				}
 				case 'G': {
-					GenerateMap(labState);
+					Map* map = &labState->map;
+					int junctionRowN = RoadLabMaxJunctionRowN;
+					int junctionColN = RoadLabMaxJunctionColN;
+					int roadN = RoadLabMaxRoadN;
+					MemArena* tmpArena = &labState->memArena;
+					GenerateGridMap(map, junctionRowN, junctionColN, roadN, tmpArena);
 					break;
 				}
 			}
@@ -735,11 +510,10 @@ void RoadLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Remove "safe" junction functions?
-// TODO: Use a memory arena everywhere!
 // TODO: Realistic sizes in meters!
 // TODO: Separate all the Windows-specific stuff!
-// TODO: Merge changes to the game!
-//   TODO: Update GridMap.cpp!
+// TODO: Make sure the game runs!
+// TODO: Use a memory arena everywhere?
 // TODO: Fix [R1] todos!
 // NOTE: Textures are delayed to a later project!
+// NOTE: Buildings are delayed to a later project!

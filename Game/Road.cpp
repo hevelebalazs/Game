@@ -20,6 +20,7 @@ extern float CrossingWidth   = 10.0f;
 
 extern float JunctionRadius             = 2.0f * LaneWidth;
 extern int   InvalidJunctionCornerIndex = -1;
+extern float MinimumJunctionDistance    = 10.0f * LaneWidth;
 
 extern float TrafficLightRadius     = 2.0f;
 extern float TrafficLightSwitchTime = 3.0f;
@@ -1161,18 +1162,23 @@ void HighlightJunctionSidewalk(Renderer renderer, Junction* junction, Color colo
 
 void HighlightJunction(Renderer renderer, Junction* junction, Color color)
 {
-	Assert(junction->roadN >= 1);
-	for (int i = 0; i < junction->roadN; ++i) {
-		Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
-		DrawPoly(renderer, poly.points, poly.pointN, color);
+	if (junction->roadN >= 1) {
+		for (int i = 0; i < junction->roadN; ++i) {
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
+			DrawPoly(renderer, poly.points, poly.pointN, color);
+		}
+	} else {
+		DrawJunctionPlaceholder(renderer, junction, color);
 	}
 }
 
 void DrawJunctionSidewalk(Renderer renderer, Junction* junction)
 {
-	for (int i = 0; i < junction->roadN; ++i) {
-		Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth + SidewalkWidth);
-		DrawPoly(renderer, poly.points, poly.pointN, SidewalkColor);
+	if (junction->roadN >= 1) {
+		for (int i = 0; i < junction->roadN; ++i) {
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth + SidewalkWidth);
+			DrawPoly(renderer, poly.points, poly.pointN, SidewalkColor);
+		}
 	}
 }
 
@@ -1209,11 +1215,35 @@ static void DrawJunctionStripes(Renderer renderer, Junction* junction)
 	}
 }
 
+void DrawJunctionPlaceholder(Renderer renderer, Junction* junction, Color color)
+{
+	Point position = junction->position;
+	float side = LaneWidth + SidewalkWidth;
+	DrawRect(
+		renderer,
+		position.y - side, position.x - side,
+		position.y + side, position.x + side,
+		color
+	);
+
+	side = LaneWidth;
+	DrawRect(
+		renderer,
+		position.y - side, position.x - side,
+		position.y + side, position.x + side,
+		color
+	);
+}
+
 void DrawJunction(Renderer renderer, Junction* junction)
 {
-	for (int i = 0; i < junction->roadN; ++i) {
-		Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
-		DrawPoly(renderer, poly.points, poly.pointN, RoadColor);
+	if (junction->roadN >= 1) {
+		for (int i = 0; i < junction->roadN; ++i) {
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
+			DrawPoly(renderer, poly.points, poly.pointN, RoadColor);
+		}
+		DrawJunctionStripes(renderer, junction);
+	} else {
+		DrawJunctionPlaceholder(renderer, junction, RoadColor);
 	}
-	DrawJunctionStripes(renderer, junction);
 }

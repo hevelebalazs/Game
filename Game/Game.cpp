@@ -79,7 +79,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	GameState* gameState = gameStorage->gameState;
 	*gameState = GameState{};
 
-	gameState->map = CreateGridMap((float)600, (float)600, 100, arena, tmpArena);
+	// [R1] Update this!
+	//gameState->map = CreateGridMap((float)600, (float)600, 100, arena, tmpArena);
 
 	int maxPathNodeCount = 10000;
 	gameState->pathPool.maxNodeCount = maxPathNodeCount;
