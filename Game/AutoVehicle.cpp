@@ -17,9 +17,10 @@ void InitAutoVehicleMovement(AutoVehicle* autoVehicle) {
 	autoVehicle->moveSeconds = 0.0f;
 }
 
-void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
-	MapElem targetElem = BuildingElem(autoVehicle->inBuilding);
-	MapElem nextElem = BuildingElem(building);
+void MoveAutoVehicleToJunction(AutoVehicle* autoVehicle, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+{
+	MapElem targetElem = JunctionElem(autoVehicle->onJunction);
+	MapElem nextElem = JunctionElem(junction);
 
 	autoVehicle->moveNode = ConnectElems(autoVehicle->vehicle.map, targetElem, nextElem, tmpArena, pathPool);
 
@@ -29,7 +30,7 @@ void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, Mem
 
 		InitAutoVehicleMovement(autoVehicle);
 
-		autoVehicle->moveTargetBuilding = building;
+		autoVehicle->moveTargetJunction = junction;
 	}
 }
 
@@ -39,14 +40,14 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena,
 	if (autoVehicle->vehicle.moveSpeed == 0.0f)
 		return;
 
-	if (autoVehicle->moveTargetBuilding) {
+	if (autoVehicle->moveTargetJunction) {
 		// TODO: should there be a limit on the iteration number?
 		while (seconds > 0.0f) {
 			PathNode* moveNode = autoVehicle->moveNode;
 
 			if (!moveNode) {
-				autoVehicle->inBuilding = autoVehicle->moveTargetBuilding;
-				autoVehicle->moveTargetBuilding = 0;
+				autoVehicle->onJunction = autoVehicle->moveTargetJunction;
+				autoVehicle->moveTargetJunction = 0;
 				break;
 			}
 
@@ -119,7 +120,7 @@ void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena,
 		}
 	}
 	else {
-		Building* targetBuilding = RandomBuilding(*vehicle->map);
-		MoveAutoVehicleToBuilding(autoVehicle, targetBuilding, arena, tmpArena, pathPool);
+		Junction* targetJunction = RandomJunction(*vehicle->map);
+		MoveAutoVehicleToJunction(autoVehicle, targetJunction, arena, tmpArena, pathPool);
 	}
 }

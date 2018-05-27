@@ -16,6 +16,7 @@ extern float RoadStripeWidth;
 extern Color SidewalkColor;
 extern float SidewalkWidth;
 extern float CrossingWidth;
+extern float CrossingStepLength;
 
 extern float JunctionRadius;
 extern int   InvalidJunctionCornerIndex;

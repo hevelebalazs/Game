@@ -8,10 +8,10 @@
 struct AutoVehicle {
 	Vehicle vehicle;
 
-	Building* inBuilding;
+	Junction* onJunction;
 
 	PathNode* moveNode;
-	Building* moveTargetBuilding;
+	Junction* moveTargetJunction;
 
 	DirectedPoint moveStartPoint;
 	DirectedPoint moveEndPoint;
@@ -20,5 +20,5 @@ struct AutoVehicle {
 	float moveSeconds;
 };
 
-void MoveAutoVehicleToBuilding(AutoVehicle* autoVehicle, Building* building, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+void MoveAutoVehicleToJunction(AutoVehicle* autoVehicle, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
 void UpdateAutoVehicle(AutoVehicle* autoVehicle, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);

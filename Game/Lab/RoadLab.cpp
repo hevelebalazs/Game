@@ -509,11 +509,3 @@ void RoadLab(HINSTANCE instance)
 		ReleaseDC(window, context);
 	}
 }
-
-// TODO: Realistic sizes in meters!
-// TODO: Separate all the Windows-specific stuff!
-// TODO: Make sure the game runs!
-// TODO: Use a memory arena everywhere?
-// TODO: Fix [R1] todos!
-// NOTE: Textures are delayed to a later project!
-// NOTE: Buildings are delayed to a later project!

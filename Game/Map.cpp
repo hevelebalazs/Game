@@ -246,14 +246,15 @@ void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets) {
 	Color color = Color{0.0f, 1.0f, 0.0f};
 	WorldTextureRect(renderer, 0, 0, map->height, map->width, assets->grassTexture);
 
+	for (int i = 0; i < map->roadCount; ++i)
+		DrawRoadSidewalk(renderer, map->roads + i);
 	for (int i = 0; i < map->junctionCount; ++i)
-		DrawJunction(renderer, map->junctions + i);
+		DrawJunctionSidewalk(renderer, map->junctions + i);
 
 	for (int i = 0; i < map->roadCount; ++i)
 		DrawRoad(renderer, map->roads + i);
-
-	for (int i = 0; i < map->buildingCount; ++i)
-		DrawConnectRoad(renderer, map->buildings[i], assets->roadTexture);
+	for (int i = 0; i < map->junctionCount; ++i)
+		DrawJunction(renderer, map->junctions + i);
 
 	for (int i = 0; i < map->junctionCount; ++i)
 		DrawTrafficLights(renderer, map->junctions + i);

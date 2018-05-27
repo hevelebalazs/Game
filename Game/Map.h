@@ -11,16 +11,16 @@ struct GameAssets;
 
 struct Map {
 	Junction* junctions;
-	int junctionCount = 0;
+	int junctionCount;
 
 	Road* roads;
-	int roadCount = 0;
+	int roadCount;
 
 	Building* buildings;
-	int buildingCount = 0;
+	int buildingCount;
 
-	float width = 0;
-	float height = 0;
+	float width;
+	float height;
 };
 
 Junction* RandomJunction(Map map);

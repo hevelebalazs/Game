@@ -1,7 +1,6 @@
 // TODO: use a unity build?
 
 #include "AutoVehicle.h"
-#include "Building.h"
 #include "Game.h"
 #include "GridMap.h"
 #include "Light.h"
@@ -78,9 +77,17 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	gameStorage->gameState = ArenaPushType(arena, GameState);
 	GameState* gameState = gameStorage->gameState;
 	*gameState = GameState{};
+	gameState->autoHumanCount = 30;
+	gameState->autoVehicleCount = 10;
 
-	// [R1] Update this!
-	//gameState->map = CreateGridMap((float)600, (float)600, 100, arena, tmpArena);
+	int junctionRowN = 10;
+	int junctionColN = 10;
+	int junctionN = junctionRowN * junctionColN;
+	int roadN = 100;
+	Map* map = &gameState->map;
+	map->junctions = ArenaPushArray(arena, Junction, junctionN);
+	map->roads = ArenaPushArray(arena, Road, roadN);
+	GenerateGridMap(map, junctionRowN, junctionColN, roadN, tmpArena);
 
 	int maxPathNodeCount = 10000;
 	gameState->pathPool.maxNodeCount = maxPathNodeCount;
@@ -97,31 +104,31 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
 	Vehicle* vehicle = &playerVehicle->vehicle;
-	playerVehicle->defaultColor   = Color{1.0f, 1.0f, 1.0f};
+	playerVehicle->defaultColor   = Color{0.0f, 0.0f, 1.0f};
 	playerVehicle->maxEngineForce = 1000.0f;
 	playerVehicle->breakForce     = 1000.0f;
 	playerVehicle->mass           = 200.0f;
 	
 	vehicle->angle  = 0.0f;
-	vehicle->length = 8.0f;
-	vehicle->width  = 5.0f;
+	vehicle->length = 4.0f;
+	vehicle->width  = 2.5f;
 	vehicle->color  = Color{0.0f, 0.0f, 1.0f};
 
 	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
 		// TODO: create an InitAutoVehicle function?
-		Building* randomBuilding = RandomBuilding(gameState->map);
+		Junction* randomJunction = RandomJunction(gameState->map);
 
 		AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
 		Vehicle* vehicle = &autoVehicle->vehicle;
 
 		vehicle->angle = 0.0f;
-		vehicle->color = Color{1.0f, 1.0f, 1.0f};
-		vehicle->position = randomBuilding->connectPointClose;
-		vehicle->length = 7.5f;
-		vehicle->width = 5.0f;
+		vehicle->color = Color{0.0f, 0.0f, 1.0f};
+		vehicle->position = randomJunction->position;
+		vehicle->length = 4.0f;
+		vehicle->width = 2.5f;
 		vehicle->map = &gameState->map;
 		vehicle->maxSpeed = RandomBetween(MinVehicleSpeed, MaxVehicleSpeed);
-		autoVehicle->inBuilding = randomBuilding;
+		autoVehicle->onJunction = RandomJunction(*map);
 	}
 
 	for (int i = 0; i < gameState->autoHumanCount; ++i) {
@@ -135,8 +142,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 
 		human->position = position;
 		human->inBuilding = 0;
-		human->isPolice = 
-		human->isPolice = (RandomBetween(0.0f, 1.0f) <= 0.1);
+		human->isPolice = 0;
 		human->map = &gameState->map;
 		human->moveSpeed = RandomBetween(2.0f, 10.0f);
 		human->healthPoints = maxHealthPoints;
@@ -285,7 +291,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->targetAltitude = 40.0f + (1.0f * speed);
+		camera->targetAltitude = 25.0f + (1.5f * speed);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
@@ -293,7 +299,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->playerHuman.human.inBuilding)
 			camera->targetAltitude = 15.0f;
 		else
-			camera->targetAltitude = 40.0f;
+			camera->targetAltitude = 25.0f;
 	}
 
 	if (gameState->showFullMap)

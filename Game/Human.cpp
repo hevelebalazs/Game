@@ -1,6 +1,6 @@
 #include "Human.h"
 
-extern float humanRadius = 0.5f;
+extern float humanRadius = 0.25f;
 extern Color humanColor = Color{1.0f, 0.0f, 0.0f};
 extern int maxHealthPoints = 3;
 

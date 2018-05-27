@@ -8,23 +8,24 @@
 #include "Point.h"
 #include "Road.h"
 
-extern Color RoadColor       = {0.5f, 0.5f, 0.5f};
-extern float LaneWidth       = 7.0f;
+extern Color RoadColor			= {0.5f, 0.5f, 0.5f};
+extern float LaneWidth			= 4.0f;
 
-extern Color RoadStripeColor = {1.0f, 1.0f, 1.0f};
-extern float RoadStripeWidth = 0.5f;
+extern Color RoadStripeColor	= {1.0f, 1.0f, 1.0f};
+extern float RoadStripeWidth	= 0.2f;
 
-extern Color SidewalkColor   = {0.4f, 0.4f, 0.4f};
-extern float SidewalkWidth   = 3.0f;
-extern float CrossingWidth   = 10.0f;
+extern Color SidewalkColor		= {0.4f, 0.4f, 0.4f};
+extern float SidewalkWidth		= 2.0f;
+extern float CrossingWidth		= 5.0f;
+extern float CrossingStepLength	= 0.2f * LaneWidth;
 
 extern float JunctionRadius             = 2.0f * LaneWidth;
 extern int   InvalidJunctionCornerIndex = -1;
 extern float MinimumJunctionDistance    = 10.0f * LaneWidth;
 
-extern float TrafficLightRadius     = 2.0f;
-extern float TrafficLightSwitchTime = 3.0f;
-extern float TrafficLightYellowTime = 1.0f;
+extern float TrafficLightRadius     = 0.5f;
+extern float TrafficLightSwitchTime = 4.0f;
+extern float TrafficLightYellowTime = 2.0f;
 
 extern int   LeftRoadSidewalkIndex  = -1;
 extern int   RightRoadSidewalkIndex = +1;
@@ -479,34 +480,29 @@ DirectedPoint TurnPointToLane(Road* road, int laneIndex, Point point)
 	return result;
 }
 
-// [R1]: Update this!
 void HighlightRoadSidewalk(Renderer renderer, Road* road, Color color)
 {
-	float left   = Min2(road->endPoint1.x, road->endPoint2.x);
-	float right  = Max2(road->endPoint1.x, road->endPoint2.x);
-	float top    = Min2(road->endPoint1.y, road->endPoint2.y);
-	float bottom = Max2(road->endPoint1.y, road->endPoint2.y);
-
-	if (road->endPoint1.x == road->endPoint2.x) {
-		left  -= LaneWidth;
-		right += LaneWidth;
-
-		DrawRect(renderer, top, left - SidewalkWidth, bottom, left, color);
-		DrawRect(renderer, top, right, bottom, right + SidewalkWidth, color);
-	}
-	else if (road->endPoint1.y == road->endPoint2.y) {
-		top    -= LaneWidth;
-		bottom += LaneWidth;
-
-		DrawRect(renderer, top - SidewalkWidth, left, top, right, color);
-		DrawRect(renderer, bottom, left, bottom + SidewalkWidth, right, color);
-	}
+	float closeSide = LaneWidth;
+	float farSide   = LaneWidth + SidewalkWidth;
+	Quad leftSidewalkQuad = {
+		FromRoadCoord1(road, 0.0f, -closeSide),
+		FromRoadCoord1(road, 0.0f, -farSide),
+		FromRoadCoord2(road, 0.0f, -farSide),
+		FromRoadCoord2(road, 0.0f, -closeSide)
+	};
+	Quad rightSidewalkQuad = {
+		FromRoadCoord1(road, 0.0f, +closeSide),
+		FromRoadCoord1(road, 0.0f, +farSide),
+		FromRoadCoord2(road, 0.0f, +farSide),
+		FromRoadCoord2(road, 0.0f, +closeSide)
+	};
+	DrawQuad(renderer, leftSidewalkQuad, color);
+	DrawQuad(renderer, rightSidewalkQuad, color);
 }
 
 void DrawCrossing(Renderer renderer, Road* road)
 {
 	Color stepColor = Color{1.0f, 1.0f, 1.0f};
-	float stepSize = 2.0f;
 	float stepDistance = -LaneWidth;
 	bool drawStep = true;
 
@@ -514,7 +510,7 @@ void DrawCrossing(Renderer renderer, Road* road)
 	float crossingSide2 = road->crossingDistance + CrossingWidth * 0.5f;
 
 	while (stepDistance < LaneWidth) {
-		float newStepDistance = stepDistance + stepSize;
+		float newStepDistance = stepDistance + CrossingStepLength;
 		if (newStepDistance > LaneWidth)
 			newStepDistance = LaneWidth;
 
@@ -971,7 +967,7 @@ static Poly16 GetJunctionPolyForRoad(Junction* junction, int roadIndex, float si
 bool IsPointOnJunction(Point point, Junction* junction)
 {
 	bool result = false;
-		if (junction->roadN == 0) {
+	if (junction->roadN == 0) {
 		float x = junction->position.x;
 		float y = junction->position.y;
 		float left   = x - LaneWidth;
@@ -991,26 +987,22 @@ bool IsPointOnJunction(Point point, Junction* junction)
 	return result;
 }
 
-// [R1] Update this!
 bool IsPointOnJunctionSidewalk(Point point, Junction* junction)
 {
-	float roadWidth = 2.0f * LaneWidth;
-
-	Point position = junction->position;
-	float left   = position.x - roadWidth * 0.5f;
-	float right  = position.x + roadWidth * 0.5f;
-	float top    = position.y - roadWidth * 0.5f;
-	float bottom = position.y + roadWidth * 0.5f;
-
-	float roadDistance = roadWidth * 0.5f;
-	float sidewalkDistance = roadDistance + SidewalkWidth;
-	float absX = Abs(point.x - position.x);
-	float absY = Abs(point.y - position.y);
-
-	if (IsBetween(absX, roadDistance, sidewalkDistance) && IsBetween(absY, roadDistance, sidewalkDistance))
-		return true;
-
-	return false;
+	bool isOnSidewalk = false;
+	bool isOnJunction = IsPointOnJunction(point, junction);
+	if (isOnJunction) {
+		isOnSidewalk = false;
+	} else {
+		for (int i = 0; i < junction->roadN; ++i) {
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth + SidewalkWidth);
+			if (IsPointInPoly(point, poly.points, poly.pointN)) {
+				isOnSidewalk = true;
+				break;
+			}
+		}
+	}
+	return isOnSidewalk;
 }
 
 static void StartTrafficLight(TrafficLight* trafficLight)

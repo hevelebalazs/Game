@@ -2,8 +2,8 @@
 #include "Math.h"
 #include "Vehicle.h"
 
-extern float MinVehicleSpeed = 15.0f;
-extern float MaxVehicleSpeed = 30.0f;
+extern float MinVehicleSpeed = 7.5f;
+extern float MaxVehicleSpeed = 15.0f;
 
 // TODO: use a vehicle coordinate system?
 static inline Quad GetVehicleCorners(Vehicle* vehicle) {

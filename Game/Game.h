@@ -2,7 +2,6 @@
 
 #include "AutoVehicle.h"
 #include "AutoHuman.h"
-#include "Building.h"
 #include "MapElem.h"
 #include "Memory.h"
 #include "Path.h"
@@ -37,10 +36,10 @@ struct GameState {
 	Junction* selectedJunction;
 
 	AutoVehicle autoVehicles[100];
-	int autoVehicleCount = 100;
+	int autoVehicleCount;
 
 	AutoHuman autoHumans[300];
-	int autoHumanCount = 300;
+	int autoHumanCount;
 
 	PlayerHuman playerHuman;
 	PlayerVehicle playerVehicle;
