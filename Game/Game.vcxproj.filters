@@ -81,6 +81,9 @@
     <ClCompile Include="Lab\RoadLab.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Lab\CarLab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Map.h">
@@ -153,6 +156,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Game.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab\CarLab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

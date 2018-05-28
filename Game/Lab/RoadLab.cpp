@@ -310,7 +310,7 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 	RoadLabState* labState = &gRoadLabState;
 	LRESULT result = 0;
 
-	switch(message) {
+	switch (message) {
 		case WM_SIZE: {
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
@@ -458,11 +458,7 @@ void RoadLab(HINSTANCE instance)
 	winClass.hInstance = instance;
 	winClass.lpszClassName = "RoadLabWindowClass";
 
-	if (!RegisterClass(&winClass)) {
-		OutputDebugStringA("Failed to register window class!\n");
-		return;
-	}
-
+	Assert(RegisterClass(&winClass));
 	HWND window = CreateWindowEx(
 		0,
 		winClass.lpszClassName,
@@ -477,11 +473,7 @@ void RoadLab(HINSTANCE instance)
 		instance,
 		0
 	);
-
-	if (!window) {
-		OutputDebugStringA("Failed to create window!\n");
-		return;
-	}
+	Assert(window != 0);
 
 	RECT rect = {};
 	GetClientRect(window, &rect);

@@ -9,7 +9,7 @@
 #include "Road.h"
 
 extern Color RoadColor			= {0.5f, 0.5f, 0.5f};
-extern float LaneWidth			= 4.0f;
+extern float LaneWidth			= 4.5f;
 
 extern Color RoadStripeColor	= {1.0f, 1.0f, 1.0f};
 extern float RoadStripeWidth	= 0.2f;

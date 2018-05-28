@@ -130,6 +130,7 @@
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="GridMap.cpp" />
     <ClCompile Include="Human.cpp" />
+    <ClCompile Include="Lab\CarLab.cpp" />
     <ClCompile Include="Lab\RoadLab.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MapElem.cpp" />
@@ -155,6 +156,7 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="GridMap.h" />
     <ClInclude Include="Human.h" />
+    <ClInclude Include="Lab\CarLab.h" />
     <ClInclude Include="Lab\RoadLab.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Map.h" />

@@ -12,6 +12,7 @@
 #include "PlayerHuman.h"
 #include "PlayerVehicle.h"
 #include "Renderer.h"
+#include "Lab/CarLab.h"
 #include "Lab/RoadLab.h"
 #include "Vehicle.h"
 
@@ -288,6 +289,7 @@ void RunGame(HINSTANCE instance)
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
-	RunGame(instance);
+	CarLab(instance);
+	// RunGame(instance);
 	return 0;
 }

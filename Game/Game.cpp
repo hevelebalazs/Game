@@ -77,8 +77,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	gameStorage->gameState = ArenaPushType(arena, GameState);
 	GameState* gameState = gameStorage->gameState;
 	*gameState = GameState{};
-	gameState->autoHumanCount = 30;
-	gameState->autoVehicleCount = 10;
+	gameState->autoHumanCount = 300;
+	gameState->autoVehicleCount = 100;
 
 	int junctionRowN = 10;
 	int junctionColN = 10;
