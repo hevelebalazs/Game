@@ -2,12 +2,64 @@
 
 #include "../Bitmap.h"
 #include "../Debug.h"
+#include "../Math.h"
 
-bool gRunning;
-Bitmap gBitmap;
+static int CarBitmapWidth  = 100;
+static int CarBitmapHeight = 200;
 
-static void CarLabBlit(Bitmap* bitmap, HDC context, RECT rect)
+struct CarLabState {
+	bool running;
+	Bitmap windowBitmap;
+	Bitmap carBitmap;
+};
+CarLabState gCarLabState;
+
+static unsigned int* GetBitmapPixelAddress(Bitmap* bitmap, int row, int col)
 {
+	Assert(row >= 0 && row < bitmap->height);
+	Assert(col >= 0 && col < bitmap->width);
+	unsigned int* pixelAddress = (unsigned int*)bitmap->memory + row * bitmap->width + col;
+	return pixelAddress;
+}
+
+static void FillBitmapWithColor(Bitmap* bitmap, Color color)
+{
+	unsigned int colorCode = ColorCode(color);
+	unsigned int* pixel = (unsigned int*)bitmap->memory;
+	for (int row = 0; row < bitmap->height; ++row) {
+		for (int col = 0; col < bitmap->width; ++col) {
+			*pixel = colorCode;
+			pixel++;
+		}
+	}
+}
+
+static void CopyBitmapToPosition(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int toTop)
+{
+	int rowsToCopy = IntMin2(fromBitmap->height, toBitmap->height - toTop);
+	int colsToCopy = IntMin2(fromBitmap->width,  toBitmap->width  - toLeft);
+	for (int fromRow = 0; fromRow < rowsToCopy; ++fromRow) {
+		int toRow = toTop + fromRow;
+		unsigned int* fromPixel = GetBitmapPixelAddress(fromBitmap, fromRow, 0);
+		unsigned int* toPixel = GetBitmapPixelAddress(toBitmap, toRow, toLeft);
+		for (int fromCol = 0; fromCol < colsToCopy; ++fromCol) {
+			*toPixel = *fromPixel;
+			fromPixel++;
+			toPixel++;
+		}
+	}
+}
+
+static void CopyBitmapToCenter(Bitmap* fromBitmap, Bitmap* toBitmap)
+{
+	int toLeft = (toBitmap->width  / 2) - (fromBitmap->width  / 2);
+	int toTop  = (toBitmap->height / 2) - (fromBitmap->height / 2);
+	CopyBitmapToPosition(fromBitmap, toBitmap, toLeft, toTop);
+}
+
+static void CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
+{
+	Bitmap* bitmap = &carLabState->windowBitmap;
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
 
@@ -21,22 +73,24 @@ static void CarLabBlit(Bitmap* bitmap, HDC context, RECT rect)
 	);
 }
 
-static void CarLabResize(int width, int height)
+static void CarLabResize(CarLabState* carLabState, int width, int height)
 {
-	ResizeBitmap(&gBitmap, width, height);
+	Bitmap* windowBitmap = &carLabState->windowBitmap;
+	ResizeBitmap(windowBitmap, width, height);
 }
 
 static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
 
+	CarLabState* carLabState = &gCarLabState;
 	switch (message) {
 		case WM_SIZE: {
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 			int width = clientRect.right - clientRect.left;
 			int height = clientRect.bottom - clientRect.top;
-			CarLabResize(width, height);
+			CarLabResize(carLabState, width, height);
 			break;
 		}
 
@@ -47,19 +101,19 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			CarLabBlit(&gBitmap, context, clientRect);
+			CarLabBlit(carLabState, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
 		}
 
 		case WM_DESTROY: {
-			gRunning = false;
+			carLabState->running = false;
 			break;
 		}
 
 		case WM_CLOSE: {
-			gRunning = false;
+			carLabState->running = false;
 			break;
 		}
 
@@ -72,24 +126,25 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 	return result;
 }
 
-static void CarLabInit(int windowWidth, int windowHeight)
+static void CarLabInit(CarLabState* carLabState, int windowWidth, int windowHeight)
 {
-	gRunning = true;
-	CarLabResize(windowWidth, windowHeight);
+	carLabState->running = true;
+	CarLabResize(carLabState, windowWidth, windowHeight);
+
+	Bitmap* carBitmap = &carLabState->carBitmap;
+	ResizeBitmap(carBitmap, CarBitmapWidth, CarBitmapHeight);
+	Color carColor = {0.0f, 0.0f, 1.0f};
+	FillBitmapWithColor(carBitmap, carColor);
 }
 
-static void CarLabUpdate(Bitmap* bitmap)
+static void CarLabUpdate(CarLabState* carLabState)
 {
+	Bitmap* windowBitmap = &carLabState->windowBitmap;
 	Color backgroundColor = {0.0f, 0.0f, 0.0f};
-	unsigned int backgroundColorCode = ColorCode(backgroundColor);
+	FillBitmapWithColor(windowBitmap, backgroundColor);
 
-	unsigned int* pixel = (unsigned int*)bitmap->memory;
-	for (int row = 0; row < bitmap->height; ++row) {
-		for (int col = 0; col < bitmap->width; ++col) {
-			*pixel = backgroundColorCode;
-			pixel++;
-		}
-	}
+	Bitmap* carBitmap = &carLabState->carBitmap;
+	CopyBitmapToCenter(carBitmap, windowBitmap);
 }
 
 void CarLab(HINSTANCE instance)
@@ -117,26 +172,28 @@ void CarLab(HINSTANCE instance)
 	);
 	Assert(window != 0);
 
+	CarLabState* carLabState = &gCarLabState;
+
 	RECT rect = {};
 	GetClientRect(window, &rect);
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
-	CarLabInit(width, height);
+	CarLabInit(carLabState, width, height);
 	
 	MSG message = {};
-	while (gRunning) {
+	while (carLabState->running) {
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 		}
 
-		CarLabUpdate(&gBitmap);
+		CarLabUpdate(carLabState);
 
 		RECT rect = {};
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		CarLabBlit(&gBitmap, context, rect);
+		CarLabBlit(carLabState, context, rect);
 		ReleaseDC(window, context);
 	}
 }
