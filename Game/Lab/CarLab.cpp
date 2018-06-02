@@ -6,9 +6,8 @@
 #include "../Memory.h"
 
 #define CarLabTmpMemArenaSize (1 * MegaByte)
-
-static int CarBitmapWidth  = 100;
-static int CarBitmapHeight = 200;
+#define CarBitmapWidth 100
+#define CarBitmapHeight 300
 
 struct CarLabState {
 	bool running;
@@ -103,6 +102,7 @@ static void FloodfillBitmap(Bitmap* bitmap, int row, int col, Color color, MemAr
 {
 	unsigned int paintColorCode = ColorCode(color);
 	unsigned int baseColorCode  = *GetBitmapPixelAddress(bitmap, row, col);
+	Assert(paintColorCode != baseColorCode);
 	int positionN = 0;
 	int* positions = ArenaPushArray(tmpArena, int, 0);
 	ArenaPush(tmpArena, int, row);
@@ -236,53 +236,6 @@ static void CarLabResize(CarLabState* carLabState, int width, int height)
 	ResizeBitmap(windowBitmap, width, height);
 }
 
-static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	LRESULT result = 0;
-
-	CarLabState* carLabState = &gCarLabState;
-	switch (message) {
-		case WM_SIZE: {
-			RECT clientRect = {};
-			GetClientRect(window, &clientRect);
-			int width = clientRect.right - clientRect.left;
-			int height = clientRect.bottom - clientRect.top;
-			CarLabResize(carLabState, width, height);
-			break;
-		}
-
-		case WM_PAINT: {
-			PAINTSTRUCT paint = {};
-			HDC context = BeginPaint(window, &paint);
-
-			RECT clientRect = {};
-			GetClientRect(window, &clientRect);
-
-			CarLabBlit(carLabState, context, clientRect);
-
-			EndPaint(window, &paint);
-			break;
-		}
-
-		case WM_DESTROY: {
-			carLabState->running = false;
-			break;
-		}
-
-		case WM_CLOSE: {
-			carLabState->running = false;
-			break;
-		}
-
-		default: {
-			result = DefWindowProc(window, message, wparam, lparam);
-			break;
-		}
-	}
-
-	return result;
-}
-
 static void DrawBitmapPolyOutline(Bitmap* bitmap, int polyN, int* polyColRow, Color color)
 {
 	for (int i = 0; i < polyN; ++i) {
@@ -299,16 +252,54 @@ static void DrawBitmapPolyOutline(Bitmap* bitmap, int polyN, int* polyColRow, Co
 	}
 }
 
+static Color GetRandomCarColor()
+{
+	Color color = {};
+	float colorSum = RandomBetween(1.0f, 2.0f);
+	color.red = RandomBetween(0.0f, colorSum);
+	if (color.red > 1.0f)
+		color.red = 1.0f;
+	color.green = RandomBetween(0.0f, colorSum - color.red);
+	if (color.green > 1.0f)
+		color.green = 1.0f;
+	color.blue = colorSum - color.red - color.green;
+	if (color.blue > 1.0f)
+		color.blue = 1.0f;
+	return color;
+}
+
+static Color GetRandomWindowColor()
+{
+	Color color = {};
+	color.red   = RandomBetween(0.0f, 0.05f);
+	color.green = RandomBetween(0.0f, 0.05f);
+	color.blue  = RandomBetween(0.0f, 0.25f);
+	return color;
+}
+
+static Color GetShadowColor(Color color)
+{
+	Color shadowColor = {};
+	float brightnessDifference = 0.25f;
+	shadowColor.red   = Max2(0.0f, color.red   - brightnessDifference);
+	shadowColor.green = Max2(0.0f, color.green - brightnessDifference);
+	shadowColor.blue  = Max2(0.0f, color.blue  - brightnessDifference);
+	return shadowColor;
+}
+
 static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 {
-	Color carColor = Color{0.8f, 0.8f, 0.0f};
-	FillBitmapWithColor(carBitmap, carColor);
+	Color backgroundColor = {0.0f, 0.0f, 0.0f};
+	FillBitmapWithColor(carBitmap, backgroundColor);
+
+	Color carColor = GetRandomCarColor();
+	Color shadowColor = GetShadowColor(carColor);
 
 	Color borderColor = Color{0.2f, 0.2f, 0.2f};
-	int carTop    = 0;
-	int carBottom = carBitmap->height - 1;
+	int carTop    = 20;
+	int carBottom = carBitmap->height - 1 - 50;
 	int carLeft   = 0;
-	int carRight  = carBitmap->width - 1;
+	int carRight  = carBitmap->width - 1 - 0;
 
 	int carPoly[] = {
 		carTop,    carLeft,
@@ -316,13 +307,14 @@ static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		carBottom, carRight,
 		carBottom, carLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, carPoly, borderColor);
+	DrawBitmapPolyOutline(carBitmap, 4, carPoly, carColor);
+	FloodfillBitmap(carBitmap, carTop + 1, carLeft + 1, carColor, tmpArena);
 
-	Color windowColor = {0.0f, 0.0f, 0.8f};
-	int frontWindowTop         = carTop + 50;
-	int frontWindowBottom      = frontWindowTop + 30;
-	int frontWindowTopLeft     = carLeft + 5;
-	int frontWindowTopRight    = carRight - 5;
+	Color windowColor = GetRandomWindowColor();
+	int frontWindowTop         = carTop + 60;
+	int frontWindowBottom      = frontWindowTop + 50;
+	int frontWindowTopLeft     = carLeft + 2;
+	int frontWindowTopRight    = carRight - 2;
 	int frontWindowBottomLeft  = frontWindowTopLeft + 10;
 	int frontWindowBottomRight = frontWindowTopRight - 10;
 	int frontWindowPoly[] = {
@@ -338,8 +330,8 @@ static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 
 	int backWindowBottom      = carBottom - 30;
 	int backWindowTop         = backWindowBottom - 20;
-	int backWindowBottomLeft  = carLeft + 5;
-	int backWindowBottomRight = carRight - 5;
+	int backWindowBottomLeft  = carLeft + 2;
+	int backWindowBottomRight = carRight - 2;
 	int backWindowTopLeft     = backWindowBottomLeft + 10;
 	int backWindowTopRight    = backWindowBottomRight - 10;
 	int backWindowPoly[] = {
@@ -416,10 +408,133 @@ static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	int bottomRightWindowCenterRow = (bottomRightWindowTop + bottomRightWindowRightBottom) / 2;
 	int bottomRightWindowCenterCol = (bottomRightWindowLeft + bottomRightWindowRight) / 2;
 	FloodfillBitmap(carBitmap, bottomRightWindowCenterRow, bottomRightWindowCenterCol, windowColor, tmpArena);
+
+	int shadowLeft   = carLeft + 2;
+	int shadowRight  = carRight - 2;
+	int shadowTop    = carTop;
+	int shadowBottom = carBottom;
+	int leftShadowPoly[] = {
+		carTop,            carLeft,
+		shadowTop,         shadowLeft,
+		frontWindowTop,    frontWindowTopLeft,
+		frontWindowBottom, frontWindowBottomLeft,
+		backWindowTop,     backWindowTopLeft,
+		backWindowBottom,  backWindowBottomLeft,
+		shadowBottom,      shadowLeft,
+		carBottom,         carLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 8, leftShadowPoly, shadowColor);
+	FloodfillBitmap(carBitmap, carTop + 1, carLeft + 1, shadowColor, tmpArena);
+
+	int rightShadowPoly[] = {
+		carTop, carRight,
+		carBottom, carRight,
+		shadowBottom, shadowRight,
+		backWindowBottom, backWindowBottomRight,
+		backWindowTop, backWindowTopRight,
+		frontWindowBottom, frontWindowBottomRight,
+		frontWindowTop, frontWindowTopRight,
+		shadowTop, shadowRight
+	};
+	DrawBitmapPolyOutline(carBitmap, 8, rightShadowPoly, shadowColor);
+	FloodfillBitmap(carBitmap, carTop + 1, carRight - 1, shadowColor, tmpArena);
+
+	int frontShadowTopLeft     = carLeft + 5;
+	int frontShadowBottomLeft  = carLeft;
+	int frontShadowTopRight    = carRight - 5;
+	int frontShadowBottomRight = carRight;
+	int frontShadowTop         = carTop - 2;
+	int frontShadowBottom      = carTop;
+	int frontShadowPoly[] = {
+		frontShadowTop,    frontShadowTopLeft,
+		frontShadowTop,    frontShadowTopRight,
+		frontShadowBottom, frontShadowBottomRight,
+		frontShadowBottom, frontShadowBottomLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, frontShadowPoly, shadowColor);
+	int frontShadowCenterRow = (frontShadowTop + frontShadowBottom) / 2;
+	int frontShadowCenterCol = (frontShadowTopLeft + frontShadowTopRight) / 2;
+	FloodfillBitmap(carBitmap, frontShadowCenterRow, frontShadowCenterCol, shadowColor, tmpArena);
+
+	int backShadowTopLeft     = carLeft;
+	int backShadowBottomLeft  = carLeft + 5;
+	int backShadowTopRight    = carRight;
+	int backShadowBottomRight = carRight - 5;
+	int backShadowTop         = carBottom;
+	int backShadowBottom      = carBottom + 2;
+	int backShadowPoly[] = {
+		backShadowTop,    backShadowTopLeft,
+		backShadowTop,    backShadowTopRight,
+		backShadowBottom, backShadowBottomRight,
+		backShadowBottom, backShadowBottomLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, backShadowPoly, shadowColor);
+	int backShadowCenterRow = (backShadowTop + backShadowBottom) / 2;
+	int backShadowCenterCol = (backShadowTopLeft + backShadowTopRight) / 2;
+	FloodfillBitmap(carBitmap, backShadowCenterRow, backShadowCenterCol, shadowColor, tmpArena);
+}
+
+static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+{
+	LRESULT result = 0;
+
+	CarLabState* carLabState = &gCarLabState;
+	switch (message) {
+		case WM_SIZE: {
+			RECT clientRect = {};
+			GetClientRect(window, &clientRect);
+			int width = clientRect.right - clientRect.left;
+			int height = clientRect.bottom - clientRect.top;
+			CarLabResize(carLabState, width, height);
+			break;
+		}
+
+		case WM_PAINT: {
+			PAINTSTRUCT paint = {};
+			HDC context = BeginPaint(window, &paint);
+
+			RECT clientRect = {};
+			GetClientRect(window, &clientRect);
+
+			CarLabBlit(carLabState, context, clientRect);
+	
+			EndPaint(window, &paint);
+			break;
+		}
+
+		case WM_KEYUP: {
+			WPARAM keyCode = wparam;
+				
+			switch (keyCode) {
+				case 'G': {
+					GenerateCarBitmap(&carLabState->carBitmap, &carLabState->tmpArena);
+					break;
+				}
+			}
+			break;
+		}
+
+		case WM_DESTROY: {
+			carLabState->running = false;
+			break;
+		}
+
+		case WM_CLOSE: {
+			carLabState->running = false;
+			break;
+		}
+	
+		default: {
+			result = DefWindowProc(window, message, wparam, lparam);
+			break;
+		}
+	}
+	return result;
 }
 
 static void CarLabInit(CarLabState* carLabState, int windowWidth, int windowHeight)
 {
+	InitRandom();
 	carLabState->running = true;
 	CarLabResize(carLabState, windowWidth, windowHeight);
 
