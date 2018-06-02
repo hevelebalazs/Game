@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "Debug.h"
 #include "Math.h"
 
 extern float PI = 3.14159265358979323f;
@@ -27,6 +28,17 @@ float Max3(float x, float y, float z)
 	if (z > max)
 		max = z;
 	return max;
+}
+
+float Clip(float value, float min, float max)
+{
+	Assert(min < max);
+	float result = value;
+	if (result < min)
+		result = min;
+	if (result > max)
+		result = max;
+	return result;
 }
 
 void InitRandom() {

@@ -39,6 +39,7 @@ inline int IntMax2(int i1, int i2) {
 float Min2(float x, float y);
 float Max2(float x, float y);
 float Max3(float x, float y, float z);
+float Clip(float value, float min, float max);
 
 inline float Sqrt(float x) {
 	return sqrtf(x);
