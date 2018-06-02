@@ -162,6 +162,7 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapElem.h" />
     <ClInclude Include="Math.h" />
+    <ClInclude Include="Memory.h" />
     <ClInclude Include="Path.h" />
     <ClInclude Include="PlayerHuman.h" />
     <ClInclude Include="PlayerVehicle.h" />

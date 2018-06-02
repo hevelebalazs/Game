@@ -3,6 +3,9 @@
 #include "../Bitmap.h"
 #include "../Debug.h"
 #include "../Math.h"
+#include "../Memory.h"
+
+#define CarLabTmpMemArenaSize (1 * MegaByte)
 
 static int CarBitmapWidth  = 100;
 static int CarBitmapHeight = 200;
@@ -11,6 +14,7 @@ struct CarLabState {
 	bool running;
 	Bitmap windowBitmap;
 	Bitmap carBitmap;
+	MemArena tmpArena;
 };
 CarLabState gCarLabState;
 
@@ -20,6 +24,159 @@ static unsigned int* GetBitmapPixelAddress(Bitmap* bitmap, int row, int col)
 	Assert(col >= 0 && col < bitmap->width);
 	unsigned int* pixelAddress = (unsigned int*)bitmap->memory + row * bitmap->width + col;
 	return pixelAddress;
+}
+
+static void PaintBitmapPixel(Bitmap* bitmap, int row, int col, unsigned int colorCode)
+{
+	Assert(row >= 0 && row < bitmap->height);
+	Assert(col >= 0 && col < bitmap->width);
+
+	unsigned int* pixelAddress = GetBitmapPixelAddress(bitmap, row, col);
+	*pixelAddress = colorCode;
+}
+
+struct BresenhamData {
+	int row1, col1;
+	int row2, col2;
+	int rowAbs, colAbs;
+	int rowAdd, colAdd;
+	int error1, error2;
+};
+
+static BresenhamData InitBresenham(int row1, int col1, int row2, int col2)
+{
+	BresenhamData data = {};
+	data.col1 = col1;
+	data.row1 = row1;
+	data.col2 = col2;
+	data.row2 = row2;
+
+	data.rowAbs = IntAbs(data.row1 - data.row2);
+	data.colAbs = IntAbs(data.col1 - data.col2);
+
+	data.colAdd = 1;
+	if (data.col1 > data.col2)
+		data.colAdd = -1;
+
+	data.rowAdd = 1;
+	if (data.row1 > data.row2)
+		data.rowAdd = -1;
+
+	data.error1 = 0;
+	if (data.colAbs > data.rowAbs)
+		data.error1 = data.colAbs / 2;
+	else
+		data.error1 = -data.rowAbs / 2;
+
+	data.error2 = 0;
+	return data;
+}
+
+static void AdvanceBresenham(BresenhamData* data)
+{
+	data->error2 = data->error1;
+	if (data->error2 > -data->colAbs) {
+		data->error1 -= data->rowAbs;
+		data->col1 += data->colAdd;
+	}
+	if (data->error2 < data->rowAbs) {
+		data->error1 += data->colAbs;
+		data->row1 += data->rowAdd;
+	}
+}
+
+static void DrawBitmapBresenhamLine(Bitmap* bitmap, int row1, int col1, int row2, int col2, Color color)
+{
+	unsigned int colorCode = ColorCode(color);
+	BresenhamData data = InitBresenham(row1, col1, row2, col2);
+	while (1) {
+		PaintBitmapPixel(bitmap, data.row1, data.col1, colorCode);
+
+		if (data.row1 == data.row2 && data.col1 == data.col2)
+			break;
+
+		AdvanceBresenham(&data);
+	}
+}
+
+static void FloodfillBitmap(Bitmap* bitmap, int row, int col, Color color, MemArena* tmpArena)
+{
+	unsigned int paintColorCode = ColorCode(color);
+	unsigned int baseColorCode  = *GetBitmapPixelAddress(bitmap, row, col);
+	int positionN = 0;
+	int* positions = ArenaPushArray(tmpArena, int, 0);
+	ArenaPush(tmpArena, int, row);
+	ArenaPush(tmpArena, int, col);
+	positionN++;
+
+	// NOTE: Initial position has to be inserted twice, one for horizontal, one for vertical fill.
+	ArenaPush(tmpArena, int, row);
+	ArenaPush(tmpArena, int, col);
+	positionN++;
+
+	bool fillHorizontally = true;
+	int directionSwitchPosition = 1;
+
+	PaintBitmapPixel(bitmap, row, col, paintColorCode);
+
+	for (int i = 0; i < positionN; ++i) {
+		if (i == directionSwitchPosition) {
+			fillHorizontally = !fillHorizontally;
+			directionSwitchPosition = positionN;
+		}
+		int row = positions[2 * i];
+		int col = positions[2 * i + 1];
+
+		unsigned int* pixelStart = GetBitmapPixelAddress(bitmap, row, col);
+		unsigned int* pixel = 0;
+
+		if (fillHorizontally) {
+			pixel = pixelStart;
+			for (int left = col - 1; left >= 0; --left) {
+				pixel--;
+				if (*pixel != baseColorCode) 
+					break;
+				*pixel = paintColorCode;
+				ArenaPush(tmpArena, int, row);
+				ArenaPush(tmpArena, int, left);
+				positionN++;
+			}
+
+			pixel = pixelStart;
+			for (int right = col + 1; right < bitmap->width; ++right) {
+				pixel++;
+				if (*pixel != baseColorCode)
+					break;
+				*pixel = paintColorCode;
+				ArenaPush(tmpArena, int, row);
+				ArenaPush(tmpArena, int, right);
+				positionN++;
+			}
+		} else {
+			pixel = pixelStart;
+			for (int top = row - 1; top >= 0; --top) {
+				pixel -= bitmap->width;
+				if (*pixel != baseColorCode)
+					break;
+				*pixel = paintColorCode;
+				ArenaPush(tmpArena, int, top);
+				ArenaPush(tmpArena, int, col);
+				positionN++;
+			}
+
+			pixel = pixelStart;
+			for (int bottom = row + 1; bottom < bitmap->height; ++bottom) {
+				pixel += bitmap->width;
+				if (*pixel != baseColorCode)
+					break;
+				*pixel = paintColorCode;
+				ArenaPush(tmpArena, int, bottom);
+				ArenaPush(tmpArena, int, col);
+				positionN++;
+			}
+		}
+	}
+	ArenaPopTo(tmpArena, positions);
 }
 
 static void FillBitmapWithColor(Bitmap* bitmap, Color color)
@@ -126,15 +283,151 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 	return result;
 }
 
+static void DrawBitmapPolyOutline(Bitmap* bitmap, int polyN, int* polyColRow, Color color)
+{
+	for (int i = 0; i < polyN; ++i) {
+		int next = 0;
+		if (i < polyN - 1)
+			next = i + 1;
+		else
+			next = 0;
+		int row1 = polyColRow[2 * i];
+		int col1 = polyColRow[2 * i + 1];
+		int row2 = polyColRow[2 * next];
+		int col2 = polyColRow[2 * next + 1];
+		DrawBitmapBresenhamLine(bitmap, row1, col1, row2, col2, color);
+	}
+}
+
+static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
+{
+	Color carColor = Color{0.8f, 0.8f, 0.0f};
+	FillBitmapWithColor(carBitmap, carColor);
+
+	Color borderColor = Color{0.2f, 0.2f, 0.2f};
+	int carTop    = 0;
+	int carBottom = carBitmap->height - 1;
+	int carLeft   = 0;
+	int carRight  = carBitmap->width - 1;
+
+	int carPoly[] = {
+		carTop,    carLeft,
+		carTop,    carRight,
+		carBottom, carRight,
+		carBottom, carLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, carPoly, borderColor);
+
+	Color windowColor = {0.0f, 0.0f, 0.8f};
+	int frontWindowTop         = carTop + 50;
+	int frontWindowBottom      = frontWindowTop + 30;
+	int frontWindowTopLeft     = carLeft + 5;
+	int frontWindowTopRight    = carRight - 5;
+	int frontWindowBottomLeft  = frontWindowTopLeft + 10;
+	int frontWindowBottomRight = frontWindowTopRight - 10;
+	int frontWindowPoly[] = {
+		frontWindowTop,    frontWindowTopLeft,
+		frontWindowTop,    frontWindowTopRight,
+		frontWindowBottom, frontWindowBottomRight,
+		frontWindowBottom, frontWindowBottomLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, frontWindowPoly, borderColor);
+	int frontWindowCenterRow = (frontWindowTop + frontWindowBottom) / 2;
+	int frontWindowCenterCol = (carLeft + carRight) / 2;
+	FloodfillBitmap(carBitmap, frontWindowCenterRow, frontWindowCenterCol, windowColor, tmpArena);
+
+	int backWindowBottom      = carBottom - 30;
+	int backWindowTop         = backWindowBottom - 20;
+	int backWindowBottomLeft  = carLeft + 5;
+	int backWindowBottomRight = carRight - 5;
+	int backWindowTopLeft     = backWindowBottomLeft + 10;
+	int backWindowTopRight    = backWindowBottomRight - 10;
+	int backWindowPoly[] = {
+		backWindowTop,    backWindowTopLeft,
+		backWindowTop,    backWindowTopRight,
+		backWindowBottom, backWindowBottomRight,
+		backWindowBottom, backWindowBottomLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, backWindowPoly, borderColor);
+	int backWindowCenterRow = (backWindowTop + backWindowBottom) / 2;
+	int backWindowCenterCol = (carLeft + carRight) / 2;
+	FloodfillBitmap(carBitmap, backWindowCenterRow, backWindowCenterCol, windowColor, tmpArena);
+
+	int topLeftWindowLeft     = frontWindowTopLeft - 2;
+	int topLeftWindowRight    = frontWindowBottomLeft - 2;
+	int topLeftWindowLeftTop  = frontWindowTop + 2;
+	int topLeftWindowRightTop = frontWindowBottom + 2;
+	int topLeftWindowBottom   = topLeftWindowRightTop + 25;
+	int topLeftWindowPoly[] = {
+		topLeftWindowLeftTop,  topLeftWindowLeft,
+		topLeftWindowRightTop, topLeftWindowRight,
+		topLeftWindowBottom,   topLeftWindowRight,
+		topLeftWindowBottom,   topLeftWindowLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, topLeftWindowPoly, borderColor);
+	int topLeftWindowCenterRow = (topLeftWindowLeftTop + topLeftWindowBottom) / 2;
+	int topLeftWindowCenterCol = (topLeftWindowLeft + topLeftWindowRight) / 2;
+	FloodfillBitmap(carBitmap, topLeftWindowCenterRow, topLeftWindowCenterCol, windowColor, tmpArena);
+
+	int bottomLeftWindowLeft        = topLeftWindowLeft;
+	int bottomLeftWindowRight       = topLeftWindowRight;
+	int bottomLeftWindowTop         = topLeftWindowBottom + 3;
+	int bottomLeftWindowLeftBottom  = backWindowBottom - 2;
+	int bottomLeftWindowRightBottom = backWindowTop - 2;
+	int bottomLeftWindowPoly[] = {
+		bottomLeftWindowTop,         bottomLeftWindowLeft,
+		bottomLeftWindowTop,         bottomLeftWindowRight,
+		bottomLeftWindowRightBottom, bottomLeftWindowRight,
+		bottomLeftWindowLeftBottom,  bottomLeftWindowLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, bottomLeftWindowPoly, borderColor);
+	int bottomLeftWindowCenterRow = (bottomLeftWindowTop + bottomLeftWindowLeftBottom) / 2;
+	int bottomLeftWindowCenterCol = (bottomLeftWindowLeft + bottomLeftWindowRight) / 2;
+	FloodfillBitmap(carBitmap, bottomLeftWindowCenterRow, bottomLeftWindowCenterCol, windowColor, tmpArena);
+	
+	int topRightWindowLeft = frontWindowBottomRight + 2;
+	int topRightWindowRight = frontWindowTopRight + 2;
+	int topRightWindowLeftTop = frontWindowBottom + 2;
+	int topRightWindowRightTop = frontWindowTop + 2;
+	int topRightWindowBottom = topRightWindowLeftTop + 25;
+	int topRightWindowPoly[] = {
+		topRightWindowLeftTop,  topRightWindowLeft,
+		topRightWindowRightTop, topRightWindowRight,
+		topRightWindowBottom,   topRightWindowRight,
+		topRightWindowBottom,   topRightWindowLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, topRightWindowPoly, borderColor);
+	int topRightWindowCenterRow = (topRightWindowRightTop + topRightWindowBottom) / 2;
+	int topRightWindowCenterCol = (topRightWindowLeft + topRightWindowRight) / 2;
+	FloodfillBitmap(carBitmap, topRightWindowCenterRow, topRightWindowCenterCol, windowColor, tmpArena);
+
+	int bottomRightWindowLeft        = topRightWindowLeft;
+	int bottomRightWindowRight       = topRightWindowRight;
+	int bottomRightWindowTop         = topRightWindowBottom + 3;
+	int bottomRightWindowLeftBottom  = backWindowTop - 2;
+	int bottomRightWindowRightBottom = backWindowBottom - 2;
+	int bottomRightWindowPoly[] = {
+		bottomRightWindowTop,         bottomRightWindowLeft,
+		bottomRightWindowTop,         bottomRightWindowRight,
+		bottomRightWindowRightBottom, bottomRightWindowRight,
+		bottomRightWindowLeftBottom,  bottomRightWindowLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, bottomRightWindowPoly, borderColor);
+	int bottomRightWindowCenterRow = (bottomRightWindowTop + bottomRightWindowRightBottom) / 2;
+	int bottomRightWindowCenterCol = (bottomRightWindowLeft + bottomRightWindowRight) / 2;
+	FloodfillBitmap(carBitmap, bottomRightWindowCenterRow, bottomRightWindowCenterCol, windowColor, tmpArena);
+}
+
 static void CarLabInit(CarLabState* carLabState, int windowWidth, int windowHeight)
 {
 	carLabState->running = true;
 	CarLabResize(carLabState, windowWidth, windowHeight);
 
+	carLabState->tmpArena = CreateMemArena(CarLabTmpMemArenaSize);
+
 	Bitmap* carBitmap = &carLabState->carBitmap;
 	ResizeBitmap(carBitmap, CarBitmapWidth, CarBitmapHeight);
-	Color carColor = {0.0f, 0.0f, 1.0f};
-	FillBitmapWithColor(carBitmap, carColor);
+	GenerateCarBitmap(carBitmap, &carLabState->tmpArena);
 }
 
 static void CarLabUpdate(CarLabState* carLabState)
