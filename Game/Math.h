@@ -41,6 +41,7 @@ float Max2(float x, float y);
 float Max3(float x, float y, float z);
 float Clip(float value, float min, float max);
 int ClipInt(int value, int min, int max);
+float Invert(float value);
 
 inline float Sqrt(float x) {
 	return sqrtf(x);

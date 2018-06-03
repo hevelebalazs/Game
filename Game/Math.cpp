@@ -52,6 +52,13 @@ int ClipInt(int value, int min, int max)
 	return result;
 }
 
+float Invert(float value)
+{
+	Assert(value != 0.0f);
+	float inverseValue = 1.0f / value;
+	return inverseValue;
+}
+
 void InitRandom() {
 	srand((unsigned int)time(0));
 }

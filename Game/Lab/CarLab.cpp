@@ -2,6 +2,7 @@
 
 #include "../Bitmap.h"
 #include "../Debug.h"
+#include "../Geometry.h"
 #include "../Math.h"
 #include "../Memory.h"
 
@@ -16,6 +17,8 @@ struct CarLabState {
 	MemArena tmpArena;
 
 	float zoomValue;
+	float rotationAngle;
+	float rotationAngleAdd;
 };
 CarLabState gCarLabState;
 
@@ -206,7 +209,48 @@ static void FillBitmapWithColor(Bitmap* bitmap, Color color)
 	}
 }
 
-static void StretchBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int toRight, int toTop, int toBottom)
+static void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toCenterRow, int toCenterCol, float scaleValue, float rotationAngle)
+{
+	Point center = {};
+	center.x = (float)toCenterCol;
+	center.y = (float)toCenterRow;
+	Point heightUnitVector = RotationVector(rotationAngle);
+	Point widthUnitVector = TurnVectorToRight(heightUnitVector);
+
+	int maxSide = IntMax2(fromBitmap->width, fromBitmap->height);
+	int left   = IntMax2(toCenterCol - maxSide, 0);
+	int right  = IntMin2(toCenterCol + maxSide, toBitmap->width - 1);
+	int top    = IntMax2(toCenterRow - maxSide, 0);
+	int bottom = IntMin2(toCenterRow + maxSide, toBitmap->height - 1);
+
+	float inverseHeight = Invert(fromBitmap->height * scaleValue);
+	float inverseWidth  = Invert(fromBitmap->width * scaleValue);
+
+	for (int toRow = top; toRow <= bottom; ++toRow) {
+		for (int toCol = left; toCol <= right; ++toCol) {
+			Point position = {};
+			position.x = (float)toCol;
+			position.y = (float)toRow;
+			Point positionVector = PointDiff(position, center);
+			float heightCoordinate = DotProduct(positionVector, heightUnitVector);
+			float widthCoordinate = DotProduct(positionVector, widthUnitVector);
+
+			float heightRatio = 1.0f - (0.5f + (heightCoordinate * inverseHeight));
+			float widthRatio  = 1.0f - (0.5f + (widthCoordinate * inverseWidth));
+			if (!IsBetween(heightRatio, 0.0f, 1.0f))
+				continue;
+			if (!IsBetween(widthRatio, 0.0f, 1.0f))
+				continue;
+
+			Color fillColor = Color{1.0f, 0.0f, 1.0f};
+			unsigned int fromColorCode = GetClosestBitmapColorCode(fromBitmap, heightRatio, widthRatio);
+			unsigned int* pixelAddress = GetBitmapPixelAddress(toBitmap, toRow, toCol);
+			*pixelAddress = fromColorCode;
+		}
+	}
+}
+
+static void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int toRight, int toTop, int toBottom)
 {
 	float toWidth  = (float)(toRight - toLeft);
 	float toHeight = (float)(toBottom - toTop);
@@ -664,6 +708,23 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 			break;
 		}
 
+		case WM_KEYDOWN: {
+			WPARAM keyCode = wparam;
+
+			switch (keyCode) {
+				case 'A': {
+					carLabState->rotationAngleAdd = -0.1f;
+					break;
+				}
+				case 'D': {
+					carLabState->rotationAngleAdd = 0.1f;
+					break;
+				}
+			}
+
+			break;
+		}
+
 		case WM_KEYUP: {
 			WPARAM keyCode = wparam;
 				
@@ -678,6 +739,14 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 				}
 				case 'S': {
 					carLabState->zoomValue *= (1.0f / 1.1f);
+					break;
+				}
+				case 'A': {
+					carLabState->rotationAngleAdd = 0.0f;
+					break;
+				}
+				case 'D': {
+					carLabState->rotationAngleAdd = 0.0f;
 					break;
 				}
 			}
@@ -726,15 +795,10 @@ static void CarLabUpdate(CarLabState* carLabState)
 
 	int halfWindowWidth  = windowBitmap->width / 2;
 	int halfWindowHeight = windowBitmap->height / 2;
-	int halfCarWidth  = carBitmap->width / 2;
-	int halfCarHeight = carBitmap->height / 2;
-	int renderHalfWidth  = Floor((float)halfCarWidth * carLabState->zoomValue);
-	int renderHalfHeight = Floor((float)halfCarHeight * carLabState->zoomValue);
-	int toLeft   = halfWindowWidth  - renderHalfWidth;
-	int toRight  = halfWindowWidth  + renderHalfWidth;
-	int toTop    = halfWindowHeight - renderHalfHeight;
-	int toBottom = halfWindowHeight + renderHalfHeight;
-	StretchBitmap(carBitmap, windowBitmap, toLeft, toRight, toTop, toBottom);
+	carLabState->rotationAngle += carLabState->rotationAngleAdd;
+	float rotationAngle = carLabState->rotationAngle;
+	float scaleValue = carLabState->zoomValue;
+	CopyScaledRotatedBitmap(carBitmap, windowBitmap, halfWindowHeight, halfWindowWidth, scaleValue, rotationAngle);
 }
 
 void CarLab(HINSTANCE instance)
