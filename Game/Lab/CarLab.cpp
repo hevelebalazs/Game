@@ -6,7 +6,7 @@
 #include "../Memory.h"
 
 #define CarLabTmpMemArenaSize (1 * MegaByte)
-#define CarBitmapWidth 100
+#define CarBitmapWidth 140
 #define CarBitmapHeight 300
 
 struct CarLabState {
@@ -277,17 +277,21 @@ static Color GetRandomWindowColor()
 static Color GetShadowColor(Color color)
 {
 	Color shadowColor = {};
-	// float brightnessDifference = 0.25f;
 	float shadowRatio = 0.5f;
 	shadowColor.red   = shadowRatio * color.red;
 	shadowColor.green = shadowRatio * color.green;
 	shadowColor.blue  = shadowRatio * color.blue;
-	/*
-	shadowColor.red   = Max2(0.0f, color.red   - brightnessDifference);
-	shadowColor.green = Max2(0.0f, color.green - brightnessDifference);
-	shadowColor.blue  = Max2(0.0f, color.blue  - brightnessDifference);
-	*/
 	return shadowColor;
+}
+
+static Color GetRandomFrontLampColor()
+{
+	Color color = {};
+	float redGreenValue = RandomBetween(0.0f, 1.0f);
+	color.red   = redGreenValue;
+	color.green = redGreenValue;
+	color.blue  = RandomBetween(0.8f, 1.0f);
+	return color;
 }
 
 static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
@@ -306,12 +310,12 @@ static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	int bitmapBottom = carBitmap->height - 1;
 
 	int frontHoodLength    = IntRandom(65, 70);
-	int frontHoodWidthDiff = IntRandom(3, 7);
+	int frontHoodWidthDiff = IntRandom(0, 5);
 
-	int frontHoodTopLeft     = bitmapLeft + frontHoodWidthDiff;
-	int frontHoodBottomLeft  = bitmapLeft;
-	int frontHoodTopRight    = bitmapRight - frontHoodWidthDiff;
-	int frontHoodBottomRight = bitmapRight;
+	int frontHoodTopLeft     = bitmapLeft + 20 + frontHoodWidthDiff;
+	int frontHoodBottomLeft  = bitmapLeft + 20;
+	int frontHoodTopRight    = bitmapRight - 20 - frontHoodWidthDiff;
+	int frontHoodBottomRight = bitmapRight - 20;
 	int frontHoodTop         = bitmapTop + 20;
 	int frontHoodBottom      = frontHoodTop + frontHoodLength;
 
@@ -320,10 +324,10 @@ static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	int backHoodLength    = IntRandom(20, 30);
 	int backHoodWidthDiff = IntRandom(0, 5);
 
-	int backHoodTopLeft     = bitmapLeft;
-	int backHoodBottomLeft  = bitmapLeft + backHoodWidthDiff;
-	int backHoodTopRight    = bitmapRight;
-	int backHoodBottomRight = bitmapRight - backHoodWidthDiff;
+	int backHoodTopLeft     = bitmapLeft + 20;
+	int backHoodBottomLeft  = bitmapLeft + 20 + backHoodWidthDiff;
+	int backHoodTopRight    = bitmapRight - 20;
+	int backHoodBottomRight = bitmapRight - 20 - backHoodWidthDiff;
 	int backHoodTop         = frontHoodBottom + middlePartLength;
 	int backHoodBottom      = backHoodTop + backHoodLength;
 
@@ -513,6 +517,110 @@ static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	int backShadowCenterRow = (backShadowTop + backShadowBottom) / 2;
 	int backShadowCenterCol = (backShadowTopLeft + backShadowTopRight) / 2;
 	FloodfillBitmap(carBitmap, backShadowCenterRow, backShadowCenterCol, shadowColor, tmpArena);
+
+	int mirrorWidth = IntRandom(8, 12);
+	int mirrorThickness = IntRandom(2, 4);
+	int mirrorRowDiff = IntRandom(3, 6);
+
+	int leftMirrorRight       = frontHoodBottomLeft;
+	int leftMirrorLeft        = leftMirrorRight - mirrorWidth;
+	int leftMirrorRightTop    = frontHoodBottom + 2;
+	int leftMirrorLeftTop     = leftMirrorRightTop + mirrorThickness;
+	int leftMirrorRightBottom = leftMirrorRightTop + mirrorRowDiff;
+	int leftMirrorLeftBottom  = leftMirrorLeftTop + mirrorRowDiff;
+	int leftMirrorPoly[] = {
+		leftMirrorLeftTop,     leftMirrorLeft,
+		leftMirrorRightTop,    leftMirrorRight,
+		leftMirrorRightBottom, leftMirrorRight,
+		leftMirrorLeftBottom,  leftMirrorLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, leftMirrorPoly, shadowColor);
+	int leftMirrorCenterRow = (leftMirrorLeftTop + leftMirrorLeftBottom) / 2;
+	int leftMirrorCenterCol = leftMirrorLeft + 2;
+	FloodfillBitmap(carBitmap, leftMirrorCenterRow, leftMirrorCenterCol, shadowColor, tmpArena);
+
+	int rightMirrorLeft        = frontHoodBottomRight;
+	int rightMirrorRight       = rightMirrorLeft + mirrorWidth;
+	int rightMirrorLeftTop     = frontHoodBottom + 2;
+	int rightMirrorRightTop    = rightMirrorLeftTop + mirrorThickness;
+	int rightMirrorLeftBottom  = rightMirrorLeftTop + mirrorRowDiff;
+	int rightMirrorRightBottom = rightMirrorRightTop + mirrorRowDiff;
+	int rightMirrorPoly[] = {
+		rightMirrorLeftTop,     rightMirrorLeft,
+		rightMirrorRightTop,    rightMirrorRight,
+		rightMirrorRightBottom, rightMirrorRight,
+		rightMirrorLeftBottom,  rightMirrorLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, rightMirrorPoly, shadowColor);
+	int rightMirrorCenterRow = (rightMirrorRightTop + rightMirrorRightBottom) / 2;
+	int rightMirrorCenterCol = rightMirrorRight - 2;
+	FloodfillBitmap(carBitmap, rightMirrorCenterRow, rightMirrorCenterCol, shadowColor, tmpArena);
+
+	Color frontLampColor = GetRandomFrontLampColor();
+	int frontLampWidth  = IntRandom(15, 20);
+	int frontLampHeight = IntRandom(2, 3);
+	int frontLampSideDistance = IntRandom(7, 10);
+
+	int frontLeftLampLeft   = frontHoodTopLeft + frontLampSideDistance;
+	int frontLeftLampRight  = frontLeftLampLeft + frontLampWidth;
+	int frontLeftLampTop    = frontHoodTop;
+	int frontLeftLampBottom = frontLeftLampTop + frontLampHeight;
+	int frontLeftLampPoly[] = {
+		frontLeftLampTop,    frontLeftLampLeft,
+		frontLeftLampTop,    frontLeftLampRight,
+		frontLeftLampBottom, frontLeftLampRight,
+		frontLeftLampBottom, frontLeftLampLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, frontLeftLampPoly, frontLampColor);
+	int frontLeftLampCenterRow = (frontLeftLampTop + frontLeftLampBottom) / 2;
+	int frontLeftLampCenterCol = (frontLeftLampLeft + frontLeftLampRight) / 2;
+	FloodfillBitmap(carBitmap, frontLeftLampCenterRow, frontLeftLampCenterCol, frontLampColor, tmpArena);
+
+	int frontRightLampRight = frontHoodTopRight - frontLampSideDistance;
+	int frontRightLampLeft = frontRightLampRight - frontLampWidth;
+	int frontRightLampTop = frontHoodTop;
+	int frontRightLampBottom = frontRightLampTop + frontLampHeight;
+	int frontRightLampPoly[] = {
+		frontRightLampTop,    frontRightLampLeft,
+		frontRightLampTop,    frontRightLampRight,
+		frontRightLampBottom, frontRightLampRight,
+		frontRightLampBottom, frontRightLampLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, frontRightLampPoly, frontLampColor);
+	int frontRightLampCenterRow = (frontRightLampTop + frontRightLampBottom) / 2;
+	int frontRightLampCenterCol = (frontRightLampLeft + frontRightLampRight) / 2;
+	FloodfillBitmap(carBitmap, frontRightLampCenterRow, frontRightLampCenterCol, frontLampColor, tmpArena);
+
+	Color backLampColor = Color{1.0f, 0.0f, 0.0f};
+	int backLeftLampLeft   = backHoodBottomLeft + 10;
+	int backLeftLampRight  = backLeftLampLeft + 7;
+	int backLeftLampTop    = backHoodBottom;
+	int backLeftLampBottom = backLeftLampTop + 2;
+	int backLeftLampPoly[] = {
+		backLeftLampTop,    backLeftLampLeft,
+		backLeftLampTop,    backLeftLampRight,
+		backLeftLampBottom, backLeftLampRight,
+		backLeftLampBottom, backLeftLampLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, backLeftLampPoly, backLampColor);
+	int backLeftLampCenterRow = (backLeftLampTop + backLeftLampBottom) / 2;
+	int backLeftLampCenterCol = (backLeftLampLeft + backLeftLampRight) / 2;
+	FloodfillBitmap(carBitmap, backLeftLampCenterRow, backLeftLampCenterCol, backLampColor, tmpArena);
+
+	int backRightLampRight = backHoodBottomRight - 10;
+	int backRightLampLeft = backRightLampRight - 7;
+	int backRightLampBottom = backHoodBottom;
+	int backRightLampTop = backRightLampBottom + 2;
+	int backRightLampPoly[] = {
+		backRightLampTop,    backRightLampLeft,
+		backRightLampTop,    backRightLampRight,
+		backRightLampBottom, backRightLampRight,
+		backRightLampBottom, backRightLampLeft
+	};
+	DrawBitmapPolyOutline(carBitmap, 4, backRightLampPoly, backLampColor);
+	int backRightLampCenterRow = (backRightLampTop + backRightLampBottom) / 2;
+	int backRightLampCenterCol = (backRightLampLeft + backRightLampRight) / 2;
+	FloodfillBitmap(carBitmap, backRightLampCenterRow, backRightLampCenterCol, backLampColor, tmpArena);
 }
 
 static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -647,9 +755,7 @@ void CarLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Add mirrors!
-// TODO: Add lamps!
-// TODO: Alpha channel!
+// TODO: Make sure car always fits in the bitmap!
 // TODO: Draw scaled bitmap!
 // TODO: Draw rotated bitmap!
-// TODO: Make sure car always fits in the bitmap!
+// TODO: Alpha channel!
