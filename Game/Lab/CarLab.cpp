@@ -14,6 +14,8 @@ struct CarLabState {
 	Bitmap windowBitmap;
 	Bitmap carBitmap;
 	MemArena tmpArena;
+
+	float zoomValue;
 };
 CarLabState gCarLabState;
 
@@ -23,6 +25,19 @@ static unsigned int* GetBitmapPixelAddress(Bitmap* bitmap, int row, int col)
 	Assert(col >= 0 && col < bitmap->width);
 	unsigned int* pixelAddress = (unsigned int*)bitmap->memory + row * bitmap->width + col;
 	return pixelAddress;
+}
+
+static unsigned int GetClosestBitmapColorCode(Bitmap* bitmap, float heightRatio, float widthRatio)
+{
+	Assert(IsBetween(heightRatio, 0.0f, 1.0f));
+	Assert(IsBetween(widthRatio,  0.0f, 1.0f));
+	int row = Floor(heightRatio * bitmap->height);
+	int col = Floor(widthRatio * bitmap->width);
+	row = ClipInt(row, 0, bitmap->height - 1);
+	col = ClipInt(col, 0, bitmap->width - 1);
+	unsigned int* address = GetBitmapPixelAddress(bitmap, row, col);
+	unsigned int colorCode = *address;
+	return colorCode;
 }
 
 static void PaintBitmapPixel(Bitmap* bitmap, int row, int col, unsigned int colorCode)
@@ -191,27 +206,25 @@ static void FillBitmapWithColor(Bitmap* bitmap, Color color)
 	}
 }
 
-static void CopyBitmapToPosition(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int toTop)
+static void StretchBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int toRight, int toTop, int toBottom)
 {
-	int rowsToCopy = IntMin2(fromBitmap->height, toBitmap->height - toTop);
-	int colsToCopy = IntMin2(fromBitmap->width,  toBitmap->width  - toLeft);
-	for (int fromRow = 0; fromRow < rowsToCopy; ++fromRow) {
-		int toRow = toTop + fromRow;
-		unsigned int* fromPixel = GetBitmapPixelAddress(fromBitmap, fromRow, 0);
-		unsigned int* toPixel = GetBitmapPixelAddress(toBitmap, toRow, toLeft);
-		for (int fromCol = 0; fromCol < colsToCopy; ++fromCol) {
-			*toPixel = *fromPixel;
-			fromPixel++;
-			toPixel++;
+	float toWidth  = (float)(toRight - toLeft);
+	float toHeight = (float)(toBottom - toTop);
+
+	int left   = ClipInt(toLeft,   0, toBitmap->width - 1);
+	int right  = ClipInt(toRight,  0, toBitmap->width - 1);
+	int top    = ClipInt(toTop,    0, toBitmap->height - 1);
+	int bottom = ClipInt(toBottom, 0, toBitmap->height - 1);
+
+	for (int toRow = top; toRow <= bottom; ++toRow) {
+		for (int toCol = left; toCol <= right; ++toCol) {
+			float fromWidthRatio  = (float)(toCol - toLeft) / toWidth;
+			float fromHeightRatio = (float)(toRow - toTop)  / toHeight;
+			unsigned int fromColorCode = GetClosestBitmapColorCode(fromBitmap, fromHeightRatio, fromWidthRatio);
+			unsigned int* toPixelAddress = GetBitmapPixelAddress(toBitmap, toRow, toCol);
+			*toPixelAddress = fromColorCode;
 		}
 	}
-}
-
-static void CopyBitmapToCenter(Bitmap* fromBitmap, Bitmap* toBitmap)
-{
-	int toLeft = (toBitmap->width  / 2) - (fromBitmap->width  / 2);
-	int toTop  = (toBitmap->height / 2) - (fromBitmap->height / 2);
-	CopyBitmapToPosition(fromBitmap, toBitmap, toLeft, toTop);
 }
 
 static void CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
@@ -659,6 +672,14 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 					GenerateCarBitmap(&carLabState->carBitmap, &carLabState->tmpArena);
 					break;
 				}
+				case 'W': {
+					carLabState->zoomValue *= 1.1f;
+					break;
+				}
+				case 'S': {
+					carLabState->zoomValue *= (1.0f / 1.1f);
+					break;
+				}
 			}
 			break;
 		}
@@ -692,16 +713,28 @@ static void CarLabInit(CarLabState* carLabState, int windowWidth, int windowHeig
 	Bitmap* carBitmap = &carLabState->carBitmap;
 	ResizeBitmap(carBitmap, CarBitmapWidth, CarBitmapHeight);
 	GenerateCarBitmap(carBitmap, &carLabState->tmpArena);
+
+	carLabState->zoomValue = 1.0f;
 }
 
 static void CarLabUpdate(CarLabState* carLabState)
 {
 	Bitmap* windowBitmap = &carLabState->windowBitmap;
+	Bitmap* carBitmap = &carLabState->carBitmap;
 	Color backgroundColor = {0.2f, 0.2f, 0.2f};
 	FillBitmapWithColor(windowBitmap, backgroundColor);
 
-	Bitmap* carBitmap = &carLabState->carBitmap;
-	CopyBitmapToCenter(carBitmap, windowBitmap);
+	int halfWindowWidth  = windowBitmap->width / 2;
+	int halfWindowHeight = windowBitmap->height / 2;
+	int halfCarWidth  = carBitmap->width / 2;
+	int halfCarHeight = carBitmap->height / 2;
+	int renderHalfWidth  = Floor((float)halfCarWidth * carLabState->zoomValue);
+	int renderHalfHeight = Floor((float)halfCarHeight * carLabState->zoomValue);
+	int toLeft   = halfWindowWidth  - renderHalfWidth;
+	int toRight  = halfWindowWidth  + renderHalfWidth;
+	int toTop    = halfWindowHeight - renderHalfHeight;
+	int toBottom = halfWindowHeight + renderHalfHeight;
+	StretchBitmap(carBitmap, windowBitmap, toLeft, toRight, toTop, toBottom);
 }
 
 void CarLab(HINSTANCE instance)
@@ -755,7 +788,8 @@ void CarLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Make sure car always fits in the bitmap!
-// TODO: Draw scaled bitmap!
 // TODO: Draw rotated bitmap!
+// TODO: Sub-pixel rendering?
+// TODO: Line anti-aliasing?
 // TODO: Alpha channel!
+// TODO: Make sure car always fits in the bitmap!

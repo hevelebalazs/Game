@@ -41,6 +41,17 @@ float Clip(float value, float min, float max)
 	return result;
 }
 
+int ClipInt(int value, int min, int max)
+{
+	Assert(min < max);
+	int result = value;
+	if (result < min)
+		result = min;
+	if (result > max)
+		result = max;
+	return result;
+}
+
 void InitRandom() {
 	srand((unsigned int)time(0));
 }
@@ -51,6 +62,12 @@ float RandomBetween(float min, float max) {
 
 bool IsBetween(float test, float min, float max) {
 	return (min <= test && test <= max);
+}
+
+bool IsIntBetween(int test, int min, int max)
+{
+	bool isBetween = (min <= test && test <= max);
+	return isBetween;
 }
 
 bool IsPointInRect(Point point, float left, float right, float top, float bottom) {
