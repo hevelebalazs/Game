@@ -37,8 +37,10 @@ inline int IntMax2(int i1, int i2) {
 
 // TODO: these should be inline functions
 float Min2(float x, float y);
+float Min4(float x, float y, float z, float w);
 float Max2(float x, float y);
 float Max3(float x, float y, float z);
+float Max4(float x, float y, float z, float w);
 float Clip(float value, float min, float max);
 int ClipInt(int value, int min, int max);
 float Invert(float value);

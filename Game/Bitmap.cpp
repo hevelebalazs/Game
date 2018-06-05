@@ -25,7 +25,7 @@ void ResizeBitmap(Bitmap* bitmap, int width, int height)
 	bitmap->memory = (void*)(new char[bitmapMemorySize]);
 }
 
-Color RandomColor() {
+Color GetRandomColor() {
 	Color randomColor = {
 		RandomBetween(0.0f, 1.0f),
 		RandomBetween(0.0f, 1.0f),
@@ -53,6 +53,46 @@ Color GetAlphaColor(float red, float green, float blue, float alpha)
 	color.blue  = blue;
 	color.alpha = alpha;
 	return color;
+}
+
+unsigned int GetColorCode(Color color)
+{
+	unsigned char alpha = (unsigned char)(color.alpha * 255);
+	unsigned char red   = (unsigned char)(color.red * 255);
+	unsigned char green = (unsigned char)(color.green * 255);
+	unsigned char blue  = (unsigned char)(color.blue * 255);
+
+	unsigned int colorCode = (alpha << 24) + (red << 16) + (green << 8) + (blue);
+
+	return colorCode;
+}
+
+Color GetColorFromColorCode(unsigned int colorCode)
+{
+	Color color = {};
+	color.alpha = (float)((colorCode & 0xff000000) >> 24) * (1.0f / 255.0f);
+	color.red   = (float)((colorCode & 0x00ff0000) >> 16) * (1.0f / 255.0f);
+	color.green = (float)((colorCode & 0x0000ff00) >>  8) * (1.0f / 255.0f);
+	color.blue  = (float)((colorCode & 0x000000ff) >>  0) * (1.0f / 255.0f);
+	return color;
+}
+
+Color AddColors(Color color1, Color color2)
+{
+	Color result = {};
+	result.red   = (color1.red   + color2.red);
+	result.green = (color1.green + color2.green);
+	result.blue  = (color1.blue  + color2.blue);
+	return result;
+}
+
+Color InterpolateColors(Color color1, float ratio, Color color2)
+{
+	Color result = {};
+	result.red   = Lerp(color1.red,   ratio, color2.red);
+	result.green = Lerp(color1.green, ratio, color2.green);
+	result.blue  = Lerp(color1.blue,  ratio, color2.blue);
+	return result;
 }
 
 static unsigned int* GetBitmapPixelAddress(Bitmap* bitmap, int row, int col)
@@ -137,7 +177,7 @@ static void AdvanceBresenham(BresenhamData* data)
 
 static void DrawBitmapBresenhamLine(Bitmap* bitmap, int row1, int col1, int row2, int col2, Color color)
 {
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 	BresenhamData data = InitBresenham(row1, col1, row2, col2);
 	while (1) {
 		PaintBitmapPixel(bitmap, data.row1, data.col1, colorCode);
@@ -151,7 +191,7 @@ static void DrawBitmapBresenhamLine(Bitmap* bitmap, int row1, int col1, int row2
 
 void FloodfillBitmap(Bitmap* bitmap, int row, int col, Color color, MemArena* tmpArena)
 {
-	unsigned int paintColorCode = ColorCode(color);
+	unsigned int paintColorCode = GetColorCode(color);
 	unsigned int baseColorCode  = *GetBitmapPixelAddress(bitmap, row, col);
 	Assert(paintColorCode != baseColorCode);
 	int positionN = 0;
@@ -232,7 +272,7 @@ void FloodfillBitmap(Bitmap* bitmap, int row, int col, Color color, MemArena* tm
 
 void FillBitmapWithColor(Bitmap* bitmap, Color color)
 {
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 	unsigned int* pixel = (unsigned int*)bitmap->memory;
 	for (int row = 0; row < bitmap->height; ++row) {
 		for (int col = 0; col < bitmap->width; ++col) {
@@ -262,11 +302,25 @@ void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toCenterR
 	inverseWidthVector.x *= inverseWidth;
 	inverseWidthVector.y *= inverseWidth;
 
-	int maxBoundingBoxHalfSize = Floor(Sqrt((width * width + height * height) * 0.25f));
-	int left   = IntMax2(toCenterCol - maxBoundingBoxHalfSize, 0);
-	int right  = IntMin2(toCenterCol + maxBoundingBoxHalfSize, toBitmap->width - 1);
-	int top    = IntMax2(toCenterRow - maxBoundingBoxHalfSize, 0);
-	int bottom = IntMin2(toCenterRow + maxBoundingBoxHalfSize, toBitmap->height - 1);
+	float halfHeight = (float)height * 0.5f;
+	float halfWidth  = (float)width * 0.5f;
+	Point frontCenter = PointSum(center, PointProd(+halfHeight, heightUnitVector));
+	Point frontLeft   = PointSum(frontCenter, PointProd(-halfWidth, widthUnitVector));
+	Point frontRight  = PointSum(frontCenter, PointProd(+halfWidth, widthUnitVector));
+
+	Point backCenter  = PointSum(center, PointProd(-halfHeight, heightUnitVector));
+	Point backLeft    = PointSum(backCenter, PointProd(-halfWidth, widthUnitVector));
+	Point backRight   = PointSum(backCenter, PointProd(+halfWidth, widthUnitVector));
+
+	int leftBoundary   = (int)Min4(frontLeft.x, frontRight.x, backLeft.x, backRight.x);
+	int rightBoundary  = (int)Max4(frontLeft.x, frontRight.x, backLeft.x, backRight.x);
+	int topBoundary    = (int)Min4(frontLeft.y, frontRight.y, backLeft.y, backRight.y);
+	int bottomBoundary = (int)Max4(frontLeft.y, frontRight.y, backLeft.y, backRight.y);
+
+	int left   = IntMax2(leftBoundary, 0);
+	int right  = IntMin2(rightBoundary, toBitmap->width - 1);
+	int top    = IntMax2(topBoundary, 0);
+	int bottom = IntMin2(bottomBoundary, toBitmap->height - 1);
 
 	for (int toRow = top; toRow <= bottom; ++toRow) {
 		for (int toCol = left; toCol <= right; ++toCol) {
@@ -286,7 +340,7 @@ void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toCenterR
 
 			Color fillColor = GetColor(1.0f, 0.0f, 1.0f);
 			unsigned int fromColorCode = GetClosestBitmapColorCode(fromBitmap, heightRatio, widthRatio);
-			Color fromColor = ColorFromCode(fromColorCode);
+			Color fromColor = GetColorFromColorCode(fromColorCode);
 			if (fromColor.alpha != 0.0f) {
 				unsigned int* pixelAddress = GetBitmapPixelAddress(toBitmap, toRow, toCol);
 				*pixelAddress = fromColorCode;

@@ -1,13 +1,12 @@
 #pragma once
 
-#include "AutoVehicle.h"
 #include "AutoHuman.h"
+#include "Car.h"
 #include "MapElem.h"
 #include "Memory.h"
 #include "Path.h"
-#include "Point.h"
 #include "PlayerHuman.h"
-#include "PlayerVehicle.h"
+#include "Point.h"
 #include "Renderer.h"
 #include "Texture.h"
 
@@ -37,18 +36,18 @@ struct GameState {
 	Map map;
 	Junction* selectedJunction;
 
-	AutoVehicle autoVehicles[100];
-	int autoVehicleCount;
+	AutoCar autoCars[100];
+	int autoCarCount;
 
 	AutoHuman autoHumans[300];
 	int autoHumanCount;
 
 	PlayerHuman playerHuman;
-	PlayerVehicle playerVehicle;
+	PlayerCar playerCar;
 
 	PathPool pathPool;
 
-	bool isPlayerVehicle;
+	bool isPlayerCar;
 
 	Junction* missionJunction;
 	bool showFullMap;
@@ -73,7 +72,7 @@ struct GameStorage {
 	MemArena tmpArena;
 };
 
-void TogglePlayerVehicle(GameState* gameState);
+void TogglePlayerCar(GameState* gameState);
 
 void WinResize(GameState* gameState, int width, int height);
 void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight);

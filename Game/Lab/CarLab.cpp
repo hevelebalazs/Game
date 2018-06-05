@@ -1,11 +1,11 @@
 #include "CarLab.h"
 
 #include "../Bitmap.h"
+#include "../Car.h"
 #include "../Debug.h"
 #include "../Geometry.h"
 #include "../Math.h"
 #include "../Memory.h"
-#include "../Vehicle.h"
 
 #define CarLabTmpMemArenaSize (1 * MegaByte)
 
@@ -215,9 +215,3 @@ void CarLab(HINSTANCE instance)
 		ReleaseDC(window, context);
 	}
 }
-
-// TODO: Rename Vehicle to Car!
-// TODO: Remove Car::color!
-// TODO: Sub-pixel rendering?
-// TODO: Line anti-aliasing?
-// TODO: Make sure car always fits in the bitmap!

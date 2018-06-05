@@ -121,7 +121,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AutoHuman.cpp" />
-    <ClCompile Include="AutoVehicle.cpp" />
     <ClCompile Include="Bezier.cpp" />
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="Building.cpp" />
@@ -137,16 +136,14 @@
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="PlayerHuman.cpp" />
-    <ClCompile Include="PlayerVehicle.cpp" />
     <ClCompile Include="Point.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Road.cpp" />
-    <ClCompile Include="Vehicle.cpp" />
+    <ClCompile Include="Car.cpp" />
     <ClCompile Include="Windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AutoHuman.h" />
-    <ClInclude Include="AutoVehicle.h" />
     <ClInclude Include="Bezier.h" />
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Building.h" />
@@ -165,12 +162,11 @@
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Path.h" />
     <ClInclude Include="PlayerHuman.h" />
-    <ClInclude Include="PlayerVehicle.h" />
     <ClInclude Include="Point.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Road.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="Vehicle.h" />
+    <ClInclude Include="Car.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

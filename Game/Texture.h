@@ -198,11 +198,11 @@ inline Texture GrassTexture(int logSide, MemArena* tmpArena) {
 				float bottom = Lerp(bottomLeft, xr, bottomRight);
 				float value  = Lerp(top, yr, bottom);
 
-				Color oldColor = ColorFromCode(*pixel);
+				Color oldColor = GetColorFromColorCode(*pixel);
 				Color newColor = Color{0.0f, value, 0.0f};
 
-				Color color = ColorAdd(oldColor, newColor);
-				*pixel = ColorCode(color);
+				Color color = AddColors(oldColor, newColor);
+				*pixel = GetColorCode(color);
 				pixel++;
 			}
 		}
@@ -216,10 +216,10 @@ inline Texture GrassTexture(int logSide, MemArena* tmpArena) {
 	pixel = result.memory;
 	for (int row = 0; row < result.side; ++row) {
 		for (int col = 0; col < result.side; ++col) {
-			Color color = ColorFromCode(*pixel);
+			Color color = GetColorFromColorCode(*pixel);
 			float green = RandomBetween(color.green * 0.9f, color.green * 1.0f);
 			Color newColor = Color{0.0f, green, 0.0f};
-			*pixel = ColorCode(newColor);
+			*pixel = GetColorCode(newColor);
 			pixel++;
 		}
 	}
@@ -254,7 +254,7 @@ inline unsigned int TextureColorCodeInt(Texture texture, int row, int col) {
 
 inline Color TextureColorInt(Texture texture, int row, int col) {
 	int colorCode = TextureColorCodeInt(texture, row, col);
-	Color result = ColorFromCode(colorCode);
+	Color result = GetColorFromColorCode(colorCode);
 	return result;
 }
 
@@ -271,10 +271,10 @@ inline Color TextureColor(Texture texture, float x, float y) {
 	Color color21 = TextureColorInt(texture, row2, col1);
 	Color color22 = TextureColorInt(texture, row2, col2);
 
-	Color color1 = ColorLerp(color11, rowR, color12);
-	Color color2 = ColorLerp(color21, rowR, color22);
+	Color color1 = InterpolateColors(color11, rowR, color12);
+	Color color2 = InterpolateColors(color21, rowR, color22);
 
-	Color color = ColorLerp(color1, colR, color2);
+	Color color = InterpolateColors(color1, colR, color2);
 
 	return color;
 }
@@ -282,7 +282,7 @@ inline Color TextureColor(Texture texture, float x, float y) {
 inline unsigned int TextureColorCode(Texture texture, float x, float y)
 {
 	Color color = TextureColor(texture, x, y);
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 	return colorCode;
 }
 

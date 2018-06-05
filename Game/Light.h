@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Geometry.h"
-#include "Renderer.h"
 #include "Point.h"
+#include "Renderer.h"
 
 inline void LightSector(Renderer renderer, Point center, float minDistance, float maxDistance, float minAngle, float maxAngle, float baseBrightness) 
 {
@@ -39,10 +39,10 @@ inline void LightSector(Renderer renderer, Point center, float minDistance, floa
 			// TODO: make this code run faster
 			// TODO: create a type for color code?
 			unsigned int* pixel  = GetPixelAddress(bitmap, row, col);
-			Color oldColor = ColorFromCode(*pixel);
+			Color oldColor = GetColorFromColorCode(*pixel);
 			Color newColor = Color{ratio, ratio, ratio};
-			Color color = ColorSum(oldColor, newColor);
-			*pixel = ColorCode(color);
+			Color color = AddColors(oldColor, newColor);
+			*pixel = GetColorCode(color);
 		}
 	}
 }

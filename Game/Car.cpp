@@ -1,23 +1,23 @@
+#include "Car.h"
 #include "Geometry.h"
 #include "Math.h"
-#include "Vehicle.h"
 
-extern float MinVehicleSpeed = 5.0f;
-extern float MaxVehicleSpeed = 10.0f;
+extern float MinCarSpeed = 5.0f;
+extern float MaxCarSpeed = 10.0f;
 
 #define CarBitmapWidth 140
 #define CarBitmapHeight 300
 
-// TODO: use a vehicle coordinate system?
-static inline Quad GetVehicleCorners(Vehicle* vehicle) {
+static inline Quad GetCarCorners(Car* car)
+{
 	Quad result = {};
 
-	Point addWidth = PointProd((vehicle->width * 0.5f), RotationVector(vehicle->angle + PI * 0.5f));
+	Point addWidth = PointProd((car->width * 0.5f), RotationVector(car->angle + PI * 0.5f));
 
-	Point side1 = PointSum(vehicle->position, addWidth);
-	Point side2 = PointDiff(vehicle->position, addWidth);
+	Point side1 = PointSum(car->position, addWidth);
+	Point side2 = PointDiff(car->position, addWidth);
 
-	Point addLength = PointProd((vehicle->length * 0.5f), RotationVector(vehicle->angle));
+	Point addLength = PointProd((car->length * 0.5f), RotationVector(car->angle));
 
 	result.points[0] = PointSum(side1, addLength);
 	result.points[1] = PointDiff(side1, addLength);
@@ -26,16 +26,20 @@ static inline Quad GetVehicleCorners(Vehicle* vehicle) {
 	return result;
 }
 
-Quad GetVehicleStopArea(Vehicle* vehicle) {
-	Point addWidth = PointProd((vehicle->width * 0.5f), RotationVector(vehicle->angle + PI * 0.5f));
+Quad GetCarStopArea(Car* car)
+{
+	Point toFrontUnitVector = RotationVector(car->angle);
+	Point toRightUnitVector = RotationVector(car->angle + PI * 0.5f);
 
-	Point side1 = PointSum(vehicle->position, addWidth);
-	Point side2 = PointDiff(vehicle->position, addWidth);
+	Point addWidth = PointProd(car->width * 0.5f, toRightUnitVector);
+
+	Point side1 = PointSum(car->position, addWidth);
+	Point side2 = PointDiff(car->position, addWidth);
 
 	float stopDistance = 5.0f;
 
-	Point addClose = PointProd((vehicle->length * 0.5f), RotationVector(vehicle->angle));
-	Point addFar = PointProd((vehicle->length * 0.5f + stopDistance), RotationVector(vehicle->angle));
+	Point addClose = PointProd(car->length * 0.5f, toFrontUnitVector);
+	Point addFar = PointProd(car->length * 0.5f + stopDistance, toFrontUnitVector);
 
 	Quad result = {};
 	result.points[0] = PointSum(side1, addClose);
@@ -46,21 +50,23 @@ Quad GetVehicleStopArea(Vehicle* vehicle) {
 	return result;
 }
 
-bool IsVehicleOnPoint(Vehicle* vehicle, Point point) {
-	Quad vehicleCorners = GetVehicleCorners(vehicle);
-	bool result = IsPointInQuad(vehicleCorners, point);
+bool IsCarOnPoint(Car* car, Point point)
+{
+	Quad carCorners = GetCarCorners(car);
+	bool result = IsPointInQuad(carCorners, point);
 	return result;
 }
 
-void MoveVehicle(Vehicle* vehicle, DirectedPoint point) {
-	vehicle->position = point.position;
-	vehicle->angle = VectorAngle(point.direction);
+void MoveCar(Car* car, DirectedPoint point)
+{
+	car->position = point.position;
+	car->angle = VectorAngle(point.direction);
 }
 
-void DrawVehicle(Renderer renderer, Vehicle vehicle)
+void DrawCar(Renderer renderer, Car car)
 {
-	Assert(vehicle.bitmap != 0);
-	DrawScaledRotatedBitmap(renderer, vehicle.bitmap, vehicle.position, vehicle.width, vehicle.length, vehicle.angle);
+	Assert(car.bitmap != 0);
+	DrawScaledRotatedBitmap(renderer, car.bitmap, car.position, car.width, car.length, car.angle);
 }
 
 static Color GetRandomCarColor()
@@ -439,4 +445,180 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	int backRightLampCenterRow = (backRightLampTop + backRightLampBottom) / 2;
 	int backRightLampCenterCol = (backRightLampLeft + backRightLampRight) / 2;
 	FloodfillBitmap(carBitmap, backRightLampCenterRow, backRightLampCenterCol, backLampColor, tmpArena);
+}
+
+void InitAutoCarMovement(AutoCar* autoCar)
+{
+	autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
+
+	// TODO: is this distance close enough?
+	float moveDistance = Distance(autoCar->moveStartPoint.position, autoCar->moveEndPoint.position);
+
+	if (autoCar->car.moveSpeed > 0.0f)
+		autoCar->moveTotalSeconds = (moveDistance / autoCar->car.moveSpeed);
+	else
+		autoCar->moveTotalSeconds = 0.0f;
+	autoCar->moveSeconds = 0.0f;
+}
+
+void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+{
+	MapElem targetElem = JunctionElem(autoCar->onJunction);
+	MapElem nextElem = JunctionElem(junction);
+
+	autoCar->moveNode = ConnectElems(autoCar->car.map, targetElem, nextElem, tmpArena, pathPool);
+
+	if (autoCar->moveNode) {
+		autoCar->moveStartPoint = StartNodePoint(autoCar->moveNode);
+		autoCar->moveEndPoint = NextNodePoint(autoCar->moveNode, autoCar->moveStartPoint);
+
+		InitAutoCarMovement(autoCar);
+
+		autoCar->moveTargetJunction = junction;
+	}
+}
+
+void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+{
+	Car* car = &autoCar->car;
+
+	if (car->moveSpeed == 0.0f)
+		return;
+
+	if (autoCar->moveTargetJunction) {
+		// TODO: should there be a limit on the iteration number?
+		while (seconds > 0.0f) {
+			PathNode* moveNode = autoCar->moveNode;
+
+			if (!moveNode) {
+				autoCar->onJunction = autoCar->moveTargetJunction;
+				autoCar->moveTargetJunction = 0;
+				break;
+			}
+
+			if (moveNode) {
+				bool stop = false;
+
+				if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint)) {
+					PathNode* nextNode = moveNode->next;
+
+					if (nextNode) {
+						MapElem moveElem = moveNode->elem;
+						MapElem nextElem = nextNode->elem;
+
+						if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) {
+							Road* road = moveElem.road;
+							Junction* junction = nextElem.junction;
+							TrafficLight* trafficLight = 0;
+
+							for (int i = 0; i < junction->roadN; ++i) {
+								if (junction->roads[i] == road)
+									trafficLight = &junction->trafficLights[i];
+							}
+
+							if (trafficLight && (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow))
+								stop = true;
+						}
+					}
+				}
+
+				if (stop) {
+					// TODO: use distance square here?
+					float distanceLeft = Distance(car->position, autoCar->moveEndPoint.position);
+
+					// TODO: introduce a "stopDistance" variable?
+					if (distanceLeft < car->length * 0.5f)
+						break;
+				}
+
+				autoCar->moveSeconds += seconds;
+
+				if (autoCar->moveSeconds >= autoCar->moveTotalSeconds) {
+					autoCar->moveStartPoint = autoCar->moveEndPoint;
+
+					seconds = autoCar->moveSeconds - autoCar->moveTotalSeconds;
+
+					if (IsNodeEndPoint(moveNode, autoCar->moveStartPoint)) {
+						moveNode = moveNode->next;
+
+						FreePathNode(autoCar->moveNode, pathPool);
+						autoCar->moveNode = moveNode;
+
+						if (!moveNode)
+							continue;
+					}
+					else {
+						autoCar->moveEndPoint = NextNodePoint(moveNode, autoCar->moveStartPoint);
+
+						InitAutoCarMovement(autoCar);
+					}
+				}
+				else {
+					seconds = 0.0f;
+
+					float moveRatio = (autoCar->moveSeconds / autoCar->moveTotalSeconds);
+
+					DirectedPoint position = Bezier4DirectedPoint(autoCar->moveBezier4, moveRatio);
+					MoveCar(car, position);
+				}
+			}
+		}
+	} else {
+		Junction* targetJunction = RandomJunction(*car->map);
+		MoveAutoCarToJunction(autoCar, targetJunction, arena, tmpArena, pathPool);
+	}
+}
+
+void UpdatePlayerCar(PlayerCar* playerCar, float seconds)
+{
+	Car* car = &playerCar->car;
+
+	float speed = VectorLength(playerCar->velocity);
+
+	Point direction = RotationVector(car->angle);
+
+	Point frontWheel = PointProd(+car->length * 0.5f, direction);
+	Point rearWheel  = PointProd(-car->length * 0.5f, direction);
+
+	float maxControlSpeed = 4.0f;
+	float controlTurnAngle = PI * 0.6f;
+
+	float turnAngle = controlTurnAngle * playerCar->turnDirection;
+	if (speed > maxControlSpeed)
+		turnAngle *= (maxControlSpeed / speed);
+	
+	bool backwards = false;
+	if (DotProduct(direction, playerCar->velocity) < 0.0)
+		backwards = true;
+
+	Point turnDirection = {};
+	if (backwards)
+		turnDirection = RotationVector(car->angle - turnAngle);
+    else
+		turnDirection = RotationVector(car->angle + turnAngle);
+
+	frontWheel = PointSum(frontWheel, PointProd(seconds * speed, turnDirection));
+	rearWheel  = PointSum(rearWheel, PointProd(seconds * speed, direction));
+
+	car->angle = atan2f(frontWheel.y - rearWheel.y, frontWheel.x - rearWheel.x);
+
+	float cDrag = 0.4257f;
+	float cRR = 24.8f;
+
+	Point fTraction = PointProd(playerCar->engineForce, direction);
+	Point fDrag = PointProd(-cDrag * speed, playerCar->velocity);
+	Point fRR = PointProd(-cRR, playerCar->velocity);
+
+	Point force = PointSum(PointSum(fTraction, fDrag), fRR);
+
+	force = PointProd((1.0f / 50.0f), force);
+
+	playerCar->velocity = PointSum(playerCar->velocity, PointProd(seconds, force));
+
+	Point parallel = PointProd(DotProduct(playerCar->velocity, direction), direction);
+	Point perpendicular = PointDiff(playerCar->velocity, parallel);
+
+	playerCar->velocity = PointSum(parallel, PointProd(0.5f, perpendicular));
+
+	car->position = PointSum(car->position, PointProd(seconds, playerCar->velocity));
 }

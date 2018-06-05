@@ -13,6 +13,18 @@ float Min2(float x, float y) {
 		return y;
 }
 
+float Min4(float x, float y, float z, float w)
+{
+	float min = x;
+	if (y < min)
+		min = y;
+	if (z < min)
+		min = z;
+	if (w < min)
+		min = w;
+	return min;
+}
+
 float Max2(float x, float y) {
 	if (x > y)
 		return x;
@@ -27,6 +39,18 @@ float Max3(float x, float y, float z)
 		max = y;
 	if (z > max)
 		max = z;
+	return max;
+}
+
+float Max4(float x, float y, float z, float w)
+{
+	float max = x;
+	if (y > max)
+		max = y;
+	if (z > max)
+		max = z;
+	if (w > max)
+		max = w;
 	return max;
 }
 
