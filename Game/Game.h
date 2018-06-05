@@ -24,6 +24,8 @@ struct GameAssets {
 	Texture roofTextureRight;
 };
 
+#define CarBitmapN 20
+
 struct GameState {
 	float time;
 
@@ -56,6 +58,8 @@ struct GameState {
 	MapElem missionElem;
 	int missionLaneIndex;
 	Point missionStartPoint;
+
+	Bitmap carBitmaps[CarBitmapN];
 
 	GameAssets assets;
 };

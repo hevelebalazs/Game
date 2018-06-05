@@ -102,6 +102,12 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	playerHuman->human.moveSpeed = 5.0f;
 	playerHuman->human.healthPoints = maxHealthPoints;
 
+	for (int i = 0; i < CarBitmapN; ++i) {
+		Bitmap* carBitmap = &gameState->carBitmaps[i];
+		AllocateCarBitmap(carBitmap);
+		GenerateCarBitmap(carBitmap, tmpArena);
+	}
+
 	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
 	Vehicle* vehicle = &playerVehicle->vehicle;
 	playerVehicle->defaultColor   = Color{0.0f, 0.0f, 1.0f};
@@ -110,8 +116,10 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	playerVehicle->mass           = 200.0f;
 	
 	vehicle->angle  = 0.0f;
-	vehicle->length = 4.0f;
-	vehicle->width  = 2.5f;
+	vehicle->length = 5.0f;
+	vehicle->width  = 2.3f;
+	int carBitmapIndex = IntRandom(0, CarBitmapN - 1);
+	vehicle->bitmap = &gameState->carBitmaps[carBitmapIndex];
 	vehicle->color  = Color{0.0f, 0.0f, 1.0f};
 
 	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
@@ -124,10 +132,12 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 		vehicle->angle = 0.0f;
 		vehicle->color = Color{0.0f, 0.0f, 1.0f};
 		vehicle->position = randomJunction->position;
-		vehicle->length = 4.0f;
-		vehicle->width = 2.5f;
+		vehicle->length = 5.0f;
+		vehicle->width = 2.3f;
 		vehicle->map = &gameState->map;
 		vehicle->maxSpeed = RandomBetween(MinVehicleSpeed, MaxVehicleSpeed);
+		int carBitmapIndex = IntRandom(0, CarBitmapN - 1);
+		vehicle->bitmap = &gameState->carBitmaps[carBitmapIndex];
 		autoVehicle->onJunction = RandomJunction(*map);
 	}
 
@@ -291,7 +301,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		// TODO: create a speed variable in PlayerVehicle?
 		float speed = VectorLength(gameState->playerVehicle.velocity);
 
-		camera->targetAltitude = 25.0f + (1.5f * speed);
+		camera->targetAltitude = 20.0f + (0.5f * speed);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
@@ -299,7 +309,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->playerHuman.human.inBuilding)
 			camera->targetAltitude = 15.0f;
 		else
-			camera->targetAltitude = 25.0f;
+			camera->targetAltitude = 15.0f;
 	}
 
 	if (gameState->showFullMap)

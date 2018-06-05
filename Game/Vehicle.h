@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Bitmap.h"
 #include "Map.h"
+#include "Memory.h"
 #include "Path.h"
 #include "Point.h"
 #include "Renderer.h"
@@ -24,9 +26,13 @@ struct Vehicle {
 	float maxSpeed;
 
 	Map* map;
+	Bitmap* bitmap;
 };
 
 Quad GetVehicleStopArea(Vehicle* vehicle);
 bool IsVehicleOnPoint(Vehicle* vehicle, Point point);
 void MoveVehicle(Vehicle* vehicle, DirectedPoint point);
 void DrawVehicle(Renderer renderer, Vehicle vehicle);
+
+void AllocateCarBitmap(Bitmap* carBitmap);
+void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena);

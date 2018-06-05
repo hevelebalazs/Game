@@ -171,6 +171,14 @@ void UpdateCamera(Camera* camera, float seconds) {
 	}
 }
 
+float GetCoordDistanceInPixel(Camera camera, float coordDistance)
+{
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
+	float pixelDistance = coordDistance * unitInPixels;
+	return pixelDistance;
+}
+
 float CoordXtoPixel(Camera camera, float coordX) {
 	// TODO: add unitInPixels to Camera?
 	Assert(camera.altitude != 0.0f);
@@ -829,4 +837,16 @@ void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture)
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color) {
 	Quad quad = {point1, point2, point3, point4};
 	DrawQuad(renderer, quad, color);
+}
+
+void DrawScaledRotatedBitmap(Renderer renderer, Bitmap* bitmap, Point position, float width, float height, float rotationAngle)
+{
+	Camera* camera = renderer.camera;
+	int col = (int)CoordXtoPixel(*camera, position.x);
+	int row = (int)CoordYtoPixel(*camera, position.y);
+
+	float pixelWidth  = GetCoordDistanceInPixel(*camera, width);
+	float pixelHeight = GetCoordDistanceInPixel(*camera, height);
+
+	CopyScaledRotatedBitmap(bitmap, &renderer.bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
 }

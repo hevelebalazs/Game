@@ -17,8 +17,8 @@ void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds) {
 	Point frontWheel = PointProd(vehicle->length * 0.5f, direction);
 	Point rearWheel  = PointProd(-vehicle->length * 0.5f, direction);
 
-	float maxControlSpeed = 5.0f;
-	float controlTurnAngle = PI * 0.5f;
+	float maxControlSpeed = 4.0f;
+	float controlTurnAngle = PI * 0.6f;
 
 	float turnAngle = controlTurnAngle * playerVehicle->turnDirection;
 	if (speed > maxControlSpeed)
@@ -40,7 +40,7 @@ void UpdatePlayerVehicle(PlayerVehicle* playerVehicle, float seconds) {
 	vehicle->angle = atan2f(frontWheel.y - rearWheel.y, frontWheel.x - rearWheel.x);
 
 	float cDrag = 0.4257f;
-	float cRR = 12.8f;
+	float cRR = 24.8f;
 
 	Point fTraction = PointProd(playerVehicle->engineForce, direction);
 	Point fDrag = PointProd(-cDrag * speed, playerVehicle->velocity);

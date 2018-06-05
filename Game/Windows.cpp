@@ -289,7 +289,7 @@ void RunGame(HINSTANCE instance)
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
-	CarLab(instance);
-	// RunGame(instance);
+	// CarLab(instance);
+	RunGame(instance);
 	return 0;
 }
