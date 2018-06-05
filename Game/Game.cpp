@@ -1,41 +1,43 @@
 // TODO: use a unity build?
 
-#include "AutoVehicle.h"
+#include "Car.h"
 #include "Game.h"
 #include "GridMap.h"
 #include "Light.h"
 #include "Math.h"
 #include "Memory.h"
 #include "Path.h"
-#include "PlayerVehicle.h"
 #include "Renderer.h"
-#include "Vehicle.h"
 
-void TogglePlayerVehicle(GameState* gameState) {
+void TogglePlayerCar(GameState* gameState)
+{
 	Point playerPosition = {};
 
-	if (gameState->isPlayerVehicle) playerPosition = gameState->playerVehicle.vehicle.position;
-	else playerPosition = gameState->playerHuman.human.position;
+	if (gameState->isPlayerCar) 
+		playerPosition = gameState->playerCar.car.position;
+	else 
+		playerPosition = gameState->playerHuman.human.position;
 
 	MapElem playerOnElem = RoadElemAtPoint(gameState->map, playerPosition);
 	if (playerOnElem.type == MapElemRoad || playerOnElem.type == MapElemJunction) {
-		if (gameState->isPlayerVehicle) {
-			gameState->isPlayerVehicle = false;
+		if (gameState->isPlayerCar) {
+			gameState->isPlayerCar = false;
 			gameState->playerHuman.human.position = playerPosition;
-		}
-		else {
-			gameState->isPlayerVehicle = true;
-			gameState->playerVehicle.vehicle.position = playerPosition;
+		} else {
+			gameState->isPlayerCar = true;
+			gameState->playerCar.car.position = playerPosition;
 		}
 	}
 }
 
-static inline void ResizeCamera(Camera* camera, int width, int height) {
+static inline void ResizeCamera(Camera* camera, int width, int height)
+{
 	camera->screenSize = Point{(float)width, (float)height};
 	camera->center = PointProd(0.5f, camera->screenSize);
 }
 
-static inline void ResizeBitmap(Bitmap* bitmap, int width, int height) {
+static inline void ResizeBitmap(Bitmap* bitmap, int width, int height)
+{
 	if (bitmap->memory)
 		delete bitmap->memory;
 
@@ -55,7 +57,8 @@ static inline void ResizeBitmap(Bitmap* bitmap, int width, int height) {
 	bitmap->memory = (void*)(new char[bitmapMemorySize]);
 }
 
-void WinResize(GameState* gameState, int width, int height) {
+void WinResize(GameState* gameState, int width, int height)
+{
 	if (!gameState)
 		return;
 
@@ -68,7 +71,8 @@ void WinResize(GameState* gameState, int width, int height) {
 	gameState->maskRenderer.camera = &gameState->camera;
 }
 
-void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
+void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight)
+{
 	gameStorage->arena = CreateMemArena(10u * 1024u * 1024u);
 	gameStorage->tmpArena = CreateMemArena(10u * 1024u * 1024u);
 	MemArena* arena = &gameStorage->arena;
@@ -77,8 +81,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	gameStorage->gameState = ArenaPushType(arena, GameState);
 	GameState* gameState = gameStorage->gameState;
 	*gameState = GameState{};
-	gameState->autoHumanCount = 30;
-	gameState->autoVehicleCount = 10;
+	gameState->autoHumanCount = 300;
+	gameState->autoCarCount = 100;
 
 	int junctionRowN = 10;
 	int junctionColN = 10;
@@ -102,33 +106,40 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 	playerHuman->human.moveSpeed = 5.0f;
 	playerHuman->human.healthPoints = maxHealthPoints;
 
-	PlayerVehicle* playerVehicle = &gameState->playerVehicle;
-	Vehicle* vehicle = &playerVehicle->vehicle;
-	playerVehicle->defaultColor   = Color{0.0f, 0.0f, 1.0f};
-	playerVehicle->maxEngineForce = 1000.0f;
-	playerVehicle->breakForce     = 1000.0f;
-	playerVehicle->mass           = 200.0f;
-	
-	vehicle->angle  = 0.0f;
-	vehicle->length = 4.0f;
-	vehicle->width  = 2.5f;
-	vehicle->color  = Color{0.0f, 0.0f, 1.0f};
+	for (int i = 0; i < CarBitmapN; ++i) {
+		Bitmap* carBitmap = &gameState->carBitmaps[i];
+		AllocateCarBitmap(carBitmap);
+		GenerateCarBitmap(carBitmap, tmpArena);
+	}
 
-	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
-		// TODO: create an InitAutoVehicle function?
+	PlayerCar* playerCar = &gameState->playerCar;
+	Car* car = &playerCar->car;
+	playerCar->maxEngineForce = 1000.0f;
+	playerCar->breakForce     = 1000.0f;
+	playerCar->mass           = 200.0f;
+	
+	car->angle  = 0.0f;
+	car->length = 5.0f;
+	car->width  = 2.3f;
+	int carBitmapIndex = IntRandom(0, CarBitmapN - 1);
+	car->bitmap = &gameState->carBitmaps[carBitmapIndex];
+
+	for (int i = 0; i < gameState->autoCarCount; ++i) {
+		// TODO: create an InitAutoCar function?
 		Junction* randomJunction = RandomJunction(gameState->map);
 
-		AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
-		Vehicle* vehicle = &autoVehicle->vehicle;
+		AutoCar* autoCar = &gameState->autoCars[i];
+		Car* car = &autoCar->car;
 
-		vehicle->angle = 0.0f;
-		vehicle->color = Color{0.0f, 0.0f, 1.0f};
-		vehicle->position = randomJunction->position;
-		vehicle->length = 4.0f;
-		vehicle->width = 2.5f;
-		vehicle->map = &gameState->map;
-		vehicle->maxSpeed = RandomBetween(MinVehicleSpeed, MaxVehicleSpeed);
-		autoVehicle->onJunction = RandomJunction(*map);
+		car->angle = 0.0f;
+		car->position = randomJunction->position;
+		car->length = 5.0f;
+		car->width = 2.3f;
+		car->map = &gameState->map;
+		car->maxSpeed = RandomBetween(MinCarSpeed, MaxCarSpeed);
+		int carBitmapIndex = IntRandom(0, CarBitmapN - 1);
+		car->bitmap = &gameState->carBitmaps[carBitmapIndex];
+		autoCar->onJunction = RandomJunction(*map);
 	}
 
 	for (int i = 0; i < gameState->autoHumanCount; ++i) {
@@ -180,7 +191,8 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight) {
 }
 
 // TODO: get rid of the mousePosition parameter?
-void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
+void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition)
+{
 	GameState* gameState = gameStorage->gameState;
 	MemArena* arena = &gameStorage->arena;
 	MemArena* tmpArena = &gameStorage->tmpArena;
@@ -190,41 +202,41 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		UpdateTrafficLights(junction, seconds);
 	}
 
-	for (int i = 0; i < gameState->autoVehicleCount; ++i) {
-		AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
-		Vehicle* vehicle = &autoVehicle->vehicle;
+	for (int i = 0; i < gameState->autoCarCount; ++i) {
+		AutoCar* autoCar = &gameState->autoCars[i];
+		Car* car = &autoCar->car;
 
-		vehicle->moveSpeed = vehicle->maxSpeed;
+		car->moveSpeed = car->maxSpeed;
 
-		// TODO: move this logic to UpdateAutoVehicle?
-		Quad stopArea = GetVehicleStopArea(vehicle);
+		// TODO: move this logic to UpdateAutoCar?
+		Quad stopArea = GetCarStopArea(car);
 
 		Point playerPosition = {};
-		if (gameState->isPlayerVehicle)
-			playerPosition = gameState->playerVehicle.vehicle.position;
+		if (gameState->isPlayerCar)
+			playerPosition = gameState->playerCar.car.position;
 		else
 			playerPosition = gameState->playerHuman.human.position;
 
 		if (IsPointInQuad(stopArea, playerPosition))
-				vehicle->moveSpeed = 0.0f;
+				car->moveSpeed = 0.0f;
 
 		for (int i = 0; i < gameState->autoHumanCount; ++i) {
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			Human* human = &autoHuman->human;
 			if (IsPointInQuad(stopArea, human->position))
-				vehicle->moveSpeed = 0.0f;
+				car->moveSpeed = 0.0f;
 		}
 
-		for (int i = 0; i < gameState->autoVehicleCount; ++i) {
-			AutoVehicle* testAutoVehicle = &gameState->autoVehicles[i];
-			if (autoVehicle == testAutoVehicle)
+		for (int i = 0; i < gameState->autoCarCount; ++i) {
+			AutoCar* testAutoCar = &gameState->autoCars[i];
+			if (autoCar == testAutoCar)
 				continue;
-			Vehicle* testVehicle = &testAutoVehicle->vehicle;
-			if (IsPointInQuad(stopArea, testVehicle->position))
-				vehicle->moveSpeed = 0.0f;
+			Car* testCar = &testAutoCar->car;
+			if (IsPointInQuad(stopArea, testCar->position))
+				car->moveSpeed = 0.0f;
 		}
 
-		UpdateAutoVehicle(autoVehicle, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
+		UpdateAutoCar(autoCar, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
 	for (int i = 0; i < gameState->autoHumanCount; ++i) {
@@ -232,48 +244,17 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		UpdateAutoHuman(autoHuman, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
-	if (gameState->isPlayerVehicle) {
-		MapElem onElemBefore = RoadElemAtPoint(gameState->map, gameState->playerVehicle.vehicle.position);
+	if (gameState->isPlayerCar) {
+		MapElem onElemBefore = RoadElemAtPoint(gameState->map, gameState->playerCar.car.position);
 
-		UpdatePlayerVehicle(&gameState->playerVehicle, seconds);
-
-		MapElem onElemAfter = RoadElemAtPoint(gameState->map, gameState->playerVehicle.vehicle.position);
-
-		if (onElemAfter.type == MapElemNone) {
-			TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
-		}
-		else if (onElemAfter.type == MapElemRoad) {
-			Road* road = onElemAfter.road;
-
-			int laneIndex = LaneIndex(road, gameState->playerVehicle.vehicle.position);
-			Point laneDirection = LaneDirection(road, laneIndex);
-
-			Point vehicleDirection = RotationVector(gameState->playerVehicle.vehicle.angle);
-			float angleCos = DotProduct(laneDirection, vehicleDirection);
-
-			float minAngleCos = 0.0f;
-
-			if (angleCos < minAngleCos)
-				TurnPlayerVehicleRed(&gameState->playerVehicle, 0.2f);
-		}
-		else if (onElemAfter.type == MapElemJunction) {
-			Junction* junction = onElemAfter.junction;
-
-			if (onElemBefore.type == MapElemRoad) {
-				Road* road = onElemBefore.road;
-				TrafficLight* trafficLight = TrafficLightOfRoad(junction, road);
-
-				if (trafficLight && trafficLight->color == TrafficLightRed)
-					TurnPlayerVehicleRed(&gameState->playerVehicle, 0.5f);
-			}
-		}
+		UpdatePlayerCar(&gameState->playerCar, seconds);
 
 		for (int i = 0; i < gameState->autoHumanCount; ++i) {
 			// TODO: use array + index instead of &array[index] everywhere
 			AutoHuman* autoHuman = gameState->autoHumans + i;
 			Point autoHumanPoint = autoHuman->human.position;
 
-			if (IsVehicleOnPoint(&gameState->playerVehicle.vehicle, autoHumanPoint)) {
+			if (IsCarOnPoint(&gameState->playerCar.car, autoHumanPoint)) {
 				KillAutoHuman(autoHuman, &gameState->pathPool);
 			}
 		}
@@ -285,13 +266,13 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	
 	Camera* camera = gameState->renderer.camera;
 
-	if (gameState->isPlayerVehicle) {
-		camera->center = gameState->playerVehicle.vehicle.position;
+	if (gameState->isPlayerCar) {
+		camera->center = gameState->playerCar.car.position;
 
-		// TODO: create a speed variable in PlayerVehicle?
-		float speed = VectorLength(gameState->playerVehicle.velocity);
+		// TODO: create a speed variable in PlayerCar?
+		float speed = VectorLength(gameState->playerCar.velocity);
 
-		camera->targetAltitude = 25.0f + (1.5f * speed);
+		camera->targetAltitude = 20.0f + (1.0f * speed);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
@@ -299,7 +280,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		if (gameState->playerHuman.human.inBuilding)
 			camera->targetAltitude = 15.0f;
 		else
-			camera->targetAltitude = 25.0f;
+			camera->targetAltitude = 15.0f;
 	}
 
 	if (gameState->showFullMap)
@@ -310,8 +291,8 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	// TODO: create StartMission function?
 	Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 	Point playerPosition = {};
-	if (gameState->isPlayerVehicle)
-		playerPosition = gameState->playerVehicle.vehicle.position;
+	if (gameState->isPlayerCar)
+		playerPosition = gameState->playerCar.car.position;
 	else
 		playerPosition = gameState->playerHuman.human.position;
 
@@ -319,7 +300,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	missionStartPoint = playerPosition;
 
 	MapElem playerElem = {};
-	if (gameState->isPlayerVehicle)
+	if (gameState->isPlayerCar)
 		playerElem = RoadElemAtPoint(gameState->map, playerPosition);
 	else
 		playerElem = PedestrianElemAtPoint(gameState->map, playerPosition);
@@ -333,18 +314,9 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 		gameState->missionJunction = endJunction;
 		gameState->onMission = !gameState->onMission;
 
-		if (gameState->onMission) {
-			gameState->playerVehicle.defaultColor = missionHighlightColor;
-			gameState->playerVehicle.vehicle.color = missionHighlightColor;
-		}
-		else {
-			gameState->playerVehicle.defaultColor = Color{0.0f, 0.0f, 1.0f};
-			gameState->playerVehicle.vehicle.color = Color{0.0f, 0.0f, 1.0f};
-		}
-
 		FreePath(gameState->missionPath, &gameState->pathPool);
 	
-		if (gameState->isPlayerVehicle) {
+		if (gameState->isPlayerCar) {
 			MapElem startElem = JunctionElem(startJunction);
 			MapElem endElem = JunctionElem(endJunction);
 			gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem,
@@ -388,7 +360,7 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 	if (recalculatePath) {
 		FreePath(gameState->missionPath, &gameState->pathPool);
 
-		if (gameState->isPlayerVehicle) {
+		if (gameState->isPlayerCar) {
 			if (playerElem.type == MapElemJunction) {
 				MapElem pathEndElem = JunctionElem(gameState->missionJunction);
 
@@ -435,7 +407,8 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition) {
 }
 
 // TODO: many things are recalculated, merge GameUpdate with GameDraw?
-void GameDraw(GameStorage* gameStorage) {
+void GameDraw(GameStorage* gameStorage)
+{
 	GameState* gameState = gameStorage->gameState;
 	Renderer renderer = gameState->renderer;
 
@@ -443,8 +416,8 @@ void GameDraw(GameStorage* gameStorage) {
 	ClearScreen(renderer, clearColor);
 
 	Point playerPosition = {};
-	if (gameState->isPlayerVehicle)
-		playerPosition = gameState->playerVehicle.vehicle.position;
+	if (gameState->isPlayerCar)
+		playerPosition = gameState->playerCar.car.position;
 	else
 		playerPosition = gameState->playerHuman.human.position;
 
@@ -477,9 +450,9 @@ void GameDraw(GameStorage* gameStorage) {
 			// DrawBezierPathFromPoint(gameState->renderer, gameState->missionPath, startPoint, missionHighlightColor, 1.0f);
 		}
 
-		for (int i = 0; i < gameState->autoVehicleCount; ++i) {
-			AutoVehicle* autoVehicle = &gameState->autoVehicles[i];
-			DrawVehicle(renderer, autoVehicle->vehicle);
+		for (int i = 0; i < gameState->autoCarCount; ++i) {
+			AutoCar* autoCar = &gameState->autoCars[i];
+			DrawCar(renderer, autoCar->car);
 		}
 
 		for (int i = 0; i < gameState->autoHumanCount; ++i) {
@@ -490,8 +463,8 @@ void GameDraw(GameStorage* gameStorage) {
 		DrawBuildings(renderer, &gameState->map, &gameStorage->tmpArena, &gameState->assets);
 	}
 
-	if (gameState->isPlayerVehicle)
-		DrawVehicle(renderer, gameState->playerVehicle.vehicle);
+	if (gameState->isPlayerCar)
+		DrawCar(renderer, gameState->playerCar.car);
 	else
 		DrawPlayerHuman(renderer, &gameState->playerHuman);
 
@@ -502,21 +475,21 @@ void GameDraw(GameStorage* gameStorage) {
 	ClearScreen(maskRenderer, dark);
 	Bitmap maskBitmap = maskRenderer.bitmap;
 
-	if (gameState->isPlayerVehicle) {
-		Vehicle* vehicle = &gameState->playerVehicle.vehicle;
+	if (gameState->isPlayerCar) {
+		Car* car = &gameState->playerCar.car;
 		
 		Point addWidth = PointProd(
-			(vehicle->width * 0.25f), 
-			RotationVector(vehicle->angle + 0.5f * PI)
+			(car->width * 0.25f), 
+			RotationVector(car->angle + 0.5f * PI)
 		);
-		Point lightCenter1 = PointDiff(vehicle->position, addWidth);
-		Point lightCenter2 = PointSum(vehicle->position, addWidth);
+		Point lightCenter1 = PointDiff(car->position, addWidth);
+		Point lightCenter2 = PointSum(car->position, addWidth);
 
 		float brightness = 0.8f;
 		float maxDistance = 15.0f;
 		float minDistance = 4.0f;
-		float minAngle = NormalizeAngle(vehicle->angle - 0.1f);
-		float maxAngle = NormalizeAngle(vehicle->angle + 0.1f);
+		float minAngle = NormalizeAngle(car->angle - 0.1f);
+		float maxAngle = NormalizeAngle(car->angle + 0.1f);
 		LightSector(maskRenderer, lightCenter1, minDistance, maxDistance, minAngle, maxAngle, brightness);
 		LightSector(maskRenderer, lightCenter2, minDistance, maxDistance, minAngle, maxAngle, brightness);
 	}

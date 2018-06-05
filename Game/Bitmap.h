@@ -1,13 +1,16 @@
 #pragma once
 
 #include <windows.h>
+
 #include "Math.h"
+#include "Memory.h"
 #include "Point.h"
 
 struct Color {
 	float red;
 	float green;
 	float blue;
+	float alpha;
 };
 
 struct Bitmap {
@@ -21,62 +24,18 @@ struct Bitmap {
 #define BitmapBytesPerPixel 4
 
 void ResizeBitmap(Bitmap* bitmap, int width, int height);
-Color RandomColor();
+Color GetRandomColor();
 
-inline unsigned int ColorCode(Color color) {
-	unsigned char red = (unsigned char)(color.red * 255);
-	unsigned char green = (unsigned char)(color.green * 255);
-	unsigned char blue = (unsigned char)(color.blue * 255);
+Color GetColor(float red, float green, float blue);
+Color GetAlphaColor(float red, float green, float blue, float alpha);
 
-	unsigned int colorCode = (red << 16) + (green << 8) + (blue);
+unsigned int GetColorCode(Color color);
+Color GetColorFromColorCode(unsigned int colorCode);
+Color AddColors(Color color1, Color color2);
+Color InterpolateColors(Color color1, float ratio, Color color2);
 
-	return colorCode;
-}
-
-inline Color ColorFromCode(unsigned int colorCode) {
-	Color color = {};
-	color.red   = (float)((colorCode & 0x00ff0000) >> 16) * (1.0f / 255.0f);
-	color.green = (float)((colorCode & 0x0000ff00) >>  8) * (1.0f / 255.0f);
-	color.blue  = (float)((colorCode & 0x000000ff) >>  0) * (1.0f / 255.0f);
-	return color;
-}
-
-inline Color ColorAdd(Color color1, Color color2) {
-	Color result = {};
-	result.red   = (color1.red   + color2.red);
-	result.green = (color1.green + color2.green);
-	result.blue  = (color1.blue  + color2.blue);
-	return result;
-}
-
-inline Color ColorSum(Color color1, Color color2) {
-	Color result = {};
-	result.red   = Min2(color1.red   + color2.red,   1.0f);
-	result.green = Min2(color1.green + color2.green, 1.0f);
-	result.blue  = Min2(color1.blue  + color2.blue,  1.0f);
-	return result;
-}
-
-inline Color ColorMax(Color color1, Color color2) {
-	Color result = {};
-	result.red   = Max2(color1.red,   color2.red);
-	result.green = Max2(color1.green, color2.green);
-	result.blue  = Max2(color1.blue,  color2.blue);
-	return result;
-}
-
-inline Color ColorProd(float times, Color color) {
-	Color result = {};
-	result.red   = (times * color.red);
-	result.green = (times * color.green);
-	result.blue  = (times * color.blue);
-	return result;
-}
-
-inline Color ColorLerp(Color color1, float ratio, Color color2) {
-	Color result = {};
-	result.red   = Lerp(color1.red,   ratio, color2.red);
-	result.green = Lerp(color1.green, ratio, color2.green);
-	result.blue  = Lerp(color1.blue,  ratio, color2.blue);
-	return result;
-}
+void FloodfillBitmap(Bitmap* bitmap, int row, int col, Color color, MemArena* tmpArena);
+void FillBitmapWithColor(Bitmap* bitmap, Color color);
+void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toCenterRow, int toCenterCol, float width, float height, float rotationAngle);
+void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int toRight, int toTop, int toBottom);
+void DrawBitmapPolyOutline(Bitmap* bitmap, int polyN, int* polyColRow, Color color);

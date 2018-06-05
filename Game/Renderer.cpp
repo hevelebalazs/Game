@@ -42,10 +42,10 @@ void ApplyBitmapMask(Bitmap bitmap, Bitmap mask) {
 
 	for (int row = 0; row < bitmap.height; ++row) {
 		for (int col = 0; col < bitmap.width; ++col) {
-			Color color1 = ColorFromCode(*pixel);
-			Color color2 = ColorFromCode(*maskPixel);
+			Color color1 = GetColorFromColorCode(*pixel);
+			Color color2 = GetColorFromColorCode(*maskPixel);
 			Color color = ColorProd(color1, color2);
-			unsigned int code = ColorCode(color);
+			unsigned int code = GetColorCode(color);
 			*pixel = code;
 
 			pixel++;
@@ -60,7 +60,7 @@ struct PixelPosition {
 };
 
 void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena) {
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	Bitmap bitmap = renderer.bitmap;
 	Camera camera = *renderer.camera;
@@ -171,6 +171,14 @@ void UpdateCamera(Camera* camera, float seconds) {
 	}
 }
 
+float GetCoordDistanceInPixel(Camera camera, float coordDistance)
+{
+	Assert(camera.altitude != 0.0f);
+	float unitInPixels = (camera.screenSize.y / camera.altitude);
+	float pixelDistance = coordDistance * unitInPixels;
+	return pixelDistance;
+}
+
 float CoordXtoPixel(Camera camera, float coordX) {
 	// TODO: add unitInPixels to Camera?
 	Assert(camera.altitude != 0.0f);
@@ -225,7 +233,7 @@ Point PixelToCoord(Camera camera, Point pixel) {
 }
 
 void ClearScreen(Renderer renderer, Color color) {
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	unsigned int *pixel = (unsigned int*)renderer.bitmap.memory;
 	for (int row = 0; row < renderer.bitmap.height; ++row) {
@@ -297,7 +305,7 @@ inline void BresenhamAdvance(BresenhamContext* context) {
 
 void Bresenham(Renderer renderer, Point point1, Point point2, Color color) {
 	Bitmap bitmap = renderer.bitmap;
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	BresenhamContext context = BresenhamInitCoord(renderer, point1, point2);
 	while (1) {
@@ -374,7 +382,7 @@ void DrawHorizontalTrapezoid(Renderer renderer, Point topLeft, Point topRight, P
 	}
 
 	Bitmap bitmap = renderer.bitmap;
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	BresenhamContext leftLine = BresenhamInitCoord(renderer, topLeft, bottomLeft);
 	BresenhamContext rightLine = BresenhamInitCoord(renderer, topRight, bottomRight);
@@ -441,7 +449,7 @@ void DrawVerticalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Poi
 	}
 
 	Bitmap bitmap = renderer.bitmap;
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	BresenhamContext topLine = BresenhamInitCoord(renderer, topLeft, topRight);
 	BresenhamContext bottomLine = BresenhamInitCoord(renderer, bottomLeft, bottomRight);
@@ -547,7 +555,7 @@ void DrawWorldTextureLine(Renderer renderer, Point point1, Point point2, float l
 // TODO: change the order to left, right, top, bottom
 // TODO: make this function take two points instead of four floats?
 void DrawRect(Renderer renderer, float top, float left, float bottom, float right, Color color) {
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	Camera camera = *renderer.camera;
 	int topPixel =    (int)CoordYtoPixel(camera, top);
@@ -596,7 +604,7 @@ void DrawPolyOutline(Renderer renderer, Point* points, int pointN, Color color) 
 }
 
 void DrawPoly(Renderer renderer, Point* points, int pointN, Color color) {
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	for (int i = 0; i < pointN; ++i)
 		points[i] = CoordToPixel(*renderer.camera, points[i]);
@@ -713,7 +721,7 @@ void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture 
 }
 
 void DrawQuad(Renderer renderer, Quad quad, Color color) {
-	unsigned int colorCode = ColorCode(color);
+	unsigned int colorCode = GetColorCode(color);
 
 	for (int i = 0; i < 4; ++i)
 		quad.points[i] = CoordToPixel(*renderer.camera, quad.points[i]);
@@ -829,4 +837,16 @@ void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture)
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color) {
 	Quad quad = {point1, point2, point3, point4};
 	DrawQuad(renderer, quad, color);
+}
+
+void DrawScaledRotatedBitmap(Renderer renderer, Bitmap* bitmap, Point position, float width, float height, float rotationAngle)
+{
+	Camera* camera = renderer.camera;
+	int col = (int)CoordXtoPixel(*camera, position.x);
+	int row = (int)CoordYtoPixel(*camera, position.y);
+
+	float pixelWidth  = GetCoordDistanceInPixel(*camera, width);
+	float pixelHeight = GetCoordDistanceInPixel(*camera, height);
+
+	CopyScaledRotatedBitmap(bitmap, &renderer.bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
 }

@@ -3,17 +3,16 @@
 #include <stdio.h>
 
 #include "AutoHuman.h"
-#include "AutoVehicle.h"
 #include "Bitmap.h"
 #include "Game.h"
 #include "GridMap.h"
 #include "Human.h"
 #include "Path.h"
 #include "PlayerHuman.h"
-#include "PlayerVehicle.h"
 #include "Renderer.h"
+
+#include "Lab/CarLab.h"
 #include "Lab/RoadLab.h"
-#include "Vehicle.h"
 
 static bool running;
 
@@ -94,22 +93,22 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			switch (keyCode) {
 				case 'W': {
 					globalGameState->playerHuman.moveUp = false;
-					globalGameState->playerVehicle.engineForce = 0.0f;
+					globalGameState->playerCar.engineForce = 0.0f;
 					break;
 				}
 				case 'S': {
 					globalGameState->playerHuman.moveDown = false;
-					globalGameState->playerVehicle.engineForce = 0.0f;
+					globalGameState->playerCar.engineForce = 0.0f;
 					break;
 				}
 				case 'A': {
 					globalGameState->playerHuman.moveLeft = false;
-					globalGameState->playerVehicle.turnDirection = 0.0f;
+					globalGameState->playerCar.turnDirection = 0.0f;
 					break;
 				}
 				case 'D': {
 					globalGameState->playerHuman.moveRight = false;
-					globalGameState->playerVehicle.turnDirection = 0.0f;
+					globalGameState->playerCar.turnDirection = 0.0f;
 					break;
 				}
 				case VK_TAB: {
@@ -126,26 +125,26 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			switch (keyCode) {
 				case 'W': {
 					globalGameState->playerHuman.moveUp = true;
-					globalGameState->playerVehicle.engineForce = globalGameState->playerVehicle.maxEngineForce;
+					globalGameState->playerCar.engineForce = globalGameState->playerCar.maxEngineForce;
 					break;
 				}
 				case 'S': {
 					globalGameState->playerHuman.moveDown = true;
-					globalGameState->playerVehicle.engineForce = -globalGameState->playerVehicle.breakForce;
+					globalGameState->playerCar.engineForce = -globalGameState->playerCar.breakForce;
 					break;
 				}
 				case 'A': {
 					globalGameState->playerHuman.moveLeft = true;
-					globalGameState->playerVehicle.turnDirection = -1.0f;
+					globalGameState->playerCar.turnDirection = -1.0f;
 					break;
 				}
 				case 'D': {
 					globalGameState->playerHuman.moveRight = true;
-					globalGameState->playerVehicle.turnDirection = 1.0f;
+					globalGameState->playerCar.turnDirection = 1.0f;
 					break;
 				}
 				case 'F': {
-					TogglePlayerVehicle(globalGameState);
+					TogglePlayerCar(globalGameState);
 					break;
 				}
 				case VK_TAB: {
@@ -158,7 +157,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		}
 
 		case WM_LBUTTONDOWN: {
-			if (!globalGameState->isPlayerVehicle) {
+			if (!globalGameState->isPlayerCar) {
 				Point mousePosition = WinMousePosition(window);
 				ShootBullet(&globalGameState->playerHuman, mousePosition);
 			}
@@ -288,6 +287,7 @@ void RunGame(HINSTANCE instance)
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
+	// CarLab(instance);
 	RunGame(instance);
 	return 0;
 }

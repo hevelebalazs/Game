@@ -41,6 +41,7 @@ void UpdateCamera(Camera* camera, float seconds);
 
 // TODO: make these inline functions
 // TODO: rename CoordX to X and CoordY to Y?
+// TODO: Why do these return floats and not ints?
 float CoordXtoPixel(Camera camera, float coordX);
 float CoordYtoPixel(Camera camera, float coordY);
 Point CoordToPixel(Camera camera, Point coord);
@@ -262,3 +263,5 @@ void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture 
 void DrawQuad(Renderer renderer, Quad quad, Color color);
 void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture);
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color);
+
+void DrawScaledRotatedBitmap(Renderer renderer, Bitmap* bitmap, Point position, float width, float height, float rotationAngle);

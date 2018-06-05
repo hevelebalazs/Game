@@ -37,8 +37,13 @@ inline int IntMax2(int i1, int i2) {
 
 // TODO: these should be inline functions
 float Min2(float x, float y);
+float Min4(float x, float y, float z, float w);
 float Max2(float x, float y);
 float Max3(float x, float y, float z);
+float Max4(float x, float y, float z, float w);
+float Clip(float value, float min, float max);
+int ClipInt(int value, int min, int max);
+float Invert(float value);
 
 inline float Sqrt(float x) {
 	return sqrtf(x);
@@ -51,8 +56,8 @@ inline float Abs(float x) {
 		return -x;
 }
 
-inline float Floor(float x) {
-	return floorf(x);
+inline int Floor(float x) {
+	return (int)floorf(x);
 }
 
 inline float Lerp(float value1, float ratio, float value2) {
@@ -70,5 +75,6 @@ inline void SeedRandom(int seed) {
 void InitRandom();
 float RandomBetween(float min, float max);
 bool IsBetween(float test, float min, float max);
+bool IsIntBetween(int test, int min, int max);
 
 bool IsPointInRect(Point point, float left, float right, float top, float bottom);

@@ -566,7 +566,7 @@ static inline PathHelper PathHelperForMap(Map* map, MemArena* arena) {
 	return helper;
 }
 
-// TODO: rename this to VehiclePath?
+// TODO: rename this to CarPath?
 PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* tmpArena, PathPool* pathPool) {
 	if (elemStart.type == MapElemRoadSidewalk || elemStart.type == MapElemJunctionSidewalk) 
 		return 0;
