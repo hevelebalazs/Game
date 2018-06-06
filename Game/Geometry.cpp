@@ -1,7 +1,7 @@
 #include <math.h>
 
-#include "Debug.h"
-#include "Geometry.h"
+#include "Debug.hpp"
+#include "Geometry.hpp"
 
 // TODO: create a type that always represents a unit vector?
 

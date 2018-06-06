@@ -1,4 +1,4 @@
-#include "AutoHuman.h"
+#include "AutoHuman.hpp"
 
 void InitAutoHumanMovement(AutoHuman* autoHuman) {
 	Human* human = &autoHuman->human;

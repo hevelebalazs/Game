@@ -2,17 +2,17 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "AutoHuman.h"
-#include "Bitmap.h"
-#include "Game.h"
-#include "GridMap.h"
-#include "Human.h"
-#include "Path.h"
-#include "PlayerHuman.h"
-#include "Renderer.h"
+#include "AutoHuman.hpp"
+#include "Bitmap.hpp"
+#include "Game.hpp"
+#include "GridMap.hpp"
+#include "Human.hpp"
+#include "Path.hpp"
+#include "PlayerHuman.hpp"
+#include "Renderer.hpp"
 
-#include "Lab/CarLab.h"
-#include "Lab/RoadLab.h"
+#include "Lab/CarLab.hpp"
+#include "Lab/RoadLab.hpp"
 
 static bool running;
 

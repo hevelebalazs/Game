@@ -1,7 +1,7 @@
-#include "Game.h"
-#include "Geometry.h"
-#include "Map.h"
-#include "Math.h"
+#include "Game.hpp"
+#include "Geometry.hpp"
+#include "Map.hpp"
+#include "Math.hpp"
 
 Junction* RandomJunction(Map map) {
 	int junctionIndex = RandMod(map.junctionCount);

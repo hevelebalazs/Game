@@ -1,14 +1,14 @@
 #pragma once
 
-#include "AutoHuman.h"
-#include "Car.h"
-#include "MapElem.h"
-#include "Memory.h"
-#include "Path.h"
-#include "PlayerHuman.h"
-#include "Point.h"
-#include "Renderer.h"
-#include "Texture.h"
+#include "AutoHuman.hpp"
+#include "Car.hpp"
+#include "MapElem.hpp"
+#include "Memory.hpp"
+#include "Path.hpp"
+#include "PlayerHuman.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
+#include "Texture.hpp"
 
 // TODO: rename this and remove from Game
 struct GameAssets {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Human.h"
-#include "Math.h"
-#include "Memory.h"
-#include "Path.h"
-#include "Renderer.h"
+#include "Human.hpp"
+#include "Math.hpp"
+#include "Memory.hpp"
+#include "Path.hpp"
+#include "Renderer.hpp"
 
 struct AutoHuman {
 	Human human;

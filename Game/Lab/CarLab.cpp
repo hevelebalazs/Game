@@ -1,11 +1,11 @@
-#include "CarLab.h"
+#include "CarLab.hpp"
 
-#include "../Bitmap.h"
-#include "../Car.h"
-#include "../Debug.h"
-#include "../Geometry.h"
-#include "../Math.h"
-#include "../Memory.h"
+#include "../Bitmap.hpp"
+#include "../Car.hpp"
+#include "../Debug.hpp"
+#include "../Geometry.hpp"
+#include "../Math.hpp"
+#include "../Memory.hpp"
 
 #define CarLabTmpMemArenaSize (1 * MegaByte)
 

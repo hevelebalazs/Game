@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Bitmap.h"
-#include "Math.h"
-#include "Point.h"
-#include "Renderer.h"
+#include "Bitmap.hpp"
+#include "Math.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
 
 #define JunctionMaxRoadN 4
 

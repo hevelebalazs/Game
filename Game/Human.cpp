@@ -1,4 +1,4 @@
-#include "Human.h"
+#include "Human.hpp"
 
 extern float humanRadius = 0.25f;
 extern Color humanColor = Color{1.0f, 0.0f, 0.0f};

@@ -1,12 +1,12 @@
-#include "RoadLab.h"
+#include "RoadLab.hpp"
 
-#include "../GridMap.h"
-#include "../Map.h"
-#include "../Memory.h"
-#include "../Path.h"
-#include "../Point.h"
-#include "../Renderer.h"
-#include "../Road.h"
+#include "../GridMap.hpp"
+#include "../Map.hpp"
+#include "../Memory.hpp"
+#include "../Path.hpp"
+#include "../Point.hpp"
+#include "../Renderer.hpp"
+#include "../Road.hpp"
 
 float PathLineWidth = 0.25f * LaneWidth;
 Color ValidColor     = Color{0.0f, 0.8f, 0.0f};

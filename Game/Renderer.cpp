@@ -1,9 +1,9 @@
-#include "Debug.h"
-#include "Geometry.h"
-#include "Math.h"
-#include "Memory.h"
-#include "Point.h"
-#include "Renderer.h"
+#include "Debug.hpp"
+#include "Geometry.hpp"
+#include "Math.hpp"
+#include "Memory.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
 
 void ResizeCamera(Camera* camera, int width, int height)
 {

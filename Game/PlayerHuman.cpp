@@ -1,10 +1,10 @@
-#include "Game.h"
-#include "Geometry.h"
-#include "Human.h"
-#include "Math.h"
-#include "PlayerHuman.h"
-#include "Point.h"
-#include "Renderer.h"
+#include "Game.hpp"
+#include "Geometry.hpp"
+#include "Human.hpp"
+#include "Math.hpp"
+#include "PlayerHuman.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
 
 float aimDistance = 50.0f;
 float bulletTotalSeconds = 0.2f;

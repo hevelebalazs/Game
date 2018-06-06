@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Math.h"
-#include "Point.h"
+#include "Math.hpp"
+#include "Point.hpp"
 
 union Line {
 	struct {
@@ -81,17 +81,6 @@ Point NormalVector(Point vector);
 Point ParallelVector(Point vector, Point base);
 
 bool IsPointInPoly(Point point, Point* points, int pointN);
-
-// TODO: create a Rect struct?
-// TODO: use this everywhere
-inline bool IsPointInRect(Point point, float left, float right, float top, float bottom) {
-	bool result = true;
-
-	if (point.x < left || point.x > right) result = false;
-	else if (point.y < top || point.y > bottom) result = false;
-
-	return result;
-}
 
 // TODO: create a Quad struct?
 inline bool IsPointInQuad(Quad quad, Point point) {

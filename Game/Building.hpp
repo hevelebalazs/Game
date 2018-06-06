@@ -1,12 +1,12 @@
 #pragma once
 
-#include "BuildingType.h"
-#include "Geometry.h"
-#include "MapElem.h"
-#include "Memory.h"
-#include "Point.h"
-#include "Renderer.h"
-#include "Road.h"
+#include "BuildingType.hpp"
+#include "Geometry.hpp"
+#include "MapElem.hpp"
+#include "Memory.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
+#include "Road.hpp"
 
 extern float connectRoadWidth;
 extern float entranceWidth;
@@ -65,7 +65,7 @@ struct Building {
 void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpArena);
 
 void ConnectBuildingToElem(Building* lding, MapElem elem);
-bool IsPointInBuilding(Point point, Building uilding);
+bool IsPointInBuilding(Point point, Building building);
 bool IsPointInExtBuilding(Point point, Building building, float radius);
 bool IsBuildingCrossed(Building building, Point point1, Point point2);
 BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, float extRadius, Point closePoint, Point farPoint);

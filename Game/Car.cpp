@@ -1,6 +1,6 @@
-#include "Car.h"
-#include "Geometry.h"
-#include "Math.h"
+#include "Car.hpp"
+#include "Geometry.hpp"
+#include "Math.hpp"
 
 extern float MinCarSpeed = 5.0f;
 extern float MaxCarSpeed = 10.0f;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Building.h"
-#include "Map.h"
-#include "Path.h"
-#include "Point.h"
-#include "Renderer.h"
+#include "Building.hpp"
+#include "Map.hpp"
+#include "Path.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
 
 extern float humanRadius;
 extern int maxHealthPoints;

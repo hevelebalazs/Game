@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Bezier.h"
-#include "Bitmap.h"
-#include "Map.h"
-#include "Memory.h"
-#include "Path.h"
-#include "Point.h"
-#include "Renderer.h"
+#include "Bezier.hpp"
+#include "Bitmap.hpp"
+#include "Map.hpp"
+#include "Memory.hpp"
+#include "Path.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
 
 extern float MinCarSpeed;
 extern float MaxCarSpeed;

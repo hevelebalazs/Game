@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Geometry.h"
-#include "Point.h"
-#include "Renderer.h"
+#include "Geometry.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
 
 inline void LightSector(Renderer renderer, Point center, float minDistance, float maxDistance, float minAngle, float maxAngle, float baseBrightness) 
 {

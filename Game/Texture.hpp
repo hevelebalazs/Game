@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Math.h"
-#include "Memory.h"
-#include "Renderer.h"
+#include "Math.hpp"
+#include "Memory.hpp"
+#include "Renderer.hpp"
 
 struct Texture {
 	int side; // NOTE: power of two

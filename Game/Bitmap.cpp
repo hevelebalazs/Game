@@ -1,7 +1,7 @@
-#include "Bitmap.h"
-#include "Debug.h"
-#include "Geometry.h"
-#include "Math.h"
+#include "Bitmap.hpp"
+#include "Debug.hpp"
+#include "Geometry.hpp"
+#include "Math.hpp"
 
 void ResizeBitmap(Bitmap* bitmap, int width, int height)
 {

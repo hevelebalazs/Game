@@ -1,7 +1,7 @@
-#include "Building.h"
-#include "Game.h"
-#include "Geometry.h"
-#include "Math.h"
+#include "Building.hpp"
+#include "Game.hpp"
+#include "Geometry.hpp"
+#include "Math.hpp"
 
 extern float connectRoadWidth = 5.0f;
 extern float entranceWidth = 3.0f;

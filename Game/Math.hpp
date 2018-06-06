@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "Point.h"
+#include "Point.hpp"
 
 extern float PI;
 

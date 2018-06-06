@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Bitmap.h"
-#include "Building.h"
-#include "BuildingType.h"
-#include "MapElem.h"
-#include "Memory.h"
-#include "Renderer.h"
+#include "Bitmap.hpp"
+#include "Building.hpp"
+#include "BuildingType.hpp"
+#include "MapElem.hpp"
+#include "Memory.hpp"
+#include "Renderer.hpp"
 
 struct GameAssets;
 

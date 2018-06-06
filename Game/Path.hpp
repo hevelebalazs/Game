@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Building.h"
-#include "Map.h"
-#include "Memory.h"
-#include "Renderer.h"
-#include "Road.h"
+#include "Building.hpp"
+#include "Map.hpp"
+#include "Memory.hpp"
+#include "Renderer.hpp"
+#include "Road.hpp"
 
 struct PathNode {
 	// TODO: create a MapSubElem struct?

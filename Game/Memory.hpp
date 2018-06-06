@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-#include "Debug.h"
+#include "Debug.hpp"
 
 #define Byte (8)
 #define KiloByte (1024 * Byte)

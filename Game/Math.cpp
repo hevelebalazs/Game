@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "Debug.h"
-#include "Math.h"
+#include "Debug.hpp"
+#include "Math.hpp"
 
 extern float PI = 3.14159265358979323f;
 

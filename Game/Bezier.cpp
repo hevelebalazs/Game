@@ -1,6 +1,6 @@
-#include "Bezier.h"
-#include "Geometry.h"
-#include "Point.h"
+#include "Bezier.hpp"
+#include "Geometry.hpp"
+#include "Point.hpp"
 
 Bezier4 TurnBezier4(DirectedPoint startPoint, DirectedPoint endPoint) {
 	Bezier4 result = {};

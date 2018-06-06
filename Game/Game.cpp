@@ -1,13 +1,13 @@
 // TODO: use a unity build?
 
-#include "Car.h"
-#include "Game.h"
-#include "GridMap.h"
-#include "Light.h"
-#include "Math.h"
-#include "Memory.h"
-#include "Path.h"
-#include "Renderer.h"
+#include "Car.hpp"
+#include "Game.hpp"
+#include "GridMap.hpp"
+#include "Light.hpp"
+#include "Math.hpp"
+#include "Memory.hpp"
+#include "Path.hpp"
+#include "Renderer.hpp"
 
 void TogglePlayerCar(GameState* gameState)
 {

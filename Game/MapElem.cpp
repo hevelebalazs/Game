@@ -1,7 +1,7 @@
-#include "Building.h"
-#include "MapElem.h"
-#include "Renderer.h"
-#include "Road.h"
+#include "Building.hpp"
+#include "MapElem.hpp"
+#include "Renderer.hpp"
+#include "Road.hpp"
 
 void HighlightMapElem(Renderer renderer, MapElem mapElem, Color color) {
 	if (mapElem.type == MapElemBuilding)

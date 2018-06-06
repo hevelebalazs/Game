@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Game.h"
-#include "Human.h"
-#include "Point.h"
+#include "Game.hpp"
+#include "Human.hpp"
+#include "Point.hpp"
 
 struct Bullet {
 	DirectedPoint position;

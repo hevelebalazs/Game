@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "Debug.h"
-#include "Game.h"
-#include "Geometry.h"
-#include "Math.h"
-#include "Point.h"
-#include "Road.h"
+#include "Debug.hpp"
+#include "Game.hpp"
+#include "Geometry.hpp"
+#include "Math.hpp"
+#include "Point.hpp"
+#include "Road.hpp"
 
 extern Color RoadColor			= {0.5f, 0.5f, 0.5f};
 extern float LaneWidth			= 4.0f;

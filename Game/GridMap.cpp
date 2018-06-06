@@ -1,4 +1,4 @@
-#include "GridMap.h"
+#include "GridMap.hpp"
 
 static void GenerateGridMapJunctions(Map* map, int junctionRowN, int junctionColN)
 {

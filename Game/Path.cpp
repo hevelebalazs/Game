@@ -1,7 +1,7 @@
-#include "Bezier.h"
-#include "Geometry.h"
-#include "Memory.h"
-#include "Path.h"
+#include "Bezier.hpp"
+#include "Geometry.hpp"
+#include "Memory.hpp"
+#include "Path.hpp"
 
 struct Path {
 	int nodeCount;

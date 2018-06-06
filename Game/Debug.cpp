@@ -1,4 +1,4 @@
-#include "Debug.h"
+#include "Debug.hpp"
 
 int Log(const char* format, ...)
 {

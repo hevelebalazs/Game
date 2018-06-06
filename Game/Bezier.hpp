@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Bitmap.h"
-#include "Point.h"
-#include "Renderer.h"
+#include "Bitmap.hpp"
+#include "Point.hpp"
+#include "Renderer.hpp"
 
 struct Bezier4 {
 	Point points[4];

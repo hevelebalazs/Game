@@ -1,4 +1,4 @@
-#include "Point.h"
+#include "Point.hpp"
 
 Point PointSum(Point point1, Point point2) {
 	Point result = {};

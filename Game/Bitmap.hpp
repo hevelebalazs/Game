@@ -2,9 +2,9 @@
 
 #include <windows.h>
 
-#include "Math.h"
-#include "Memory.h"
-#include "Point.h"
+#include "Math.hpp"
+#include "Memory.hpp"
+#include "Point.hpp"
 
 struct Color {
 	float red;
