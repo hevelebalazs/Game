@@ -7,8 +7,7 @@
 
 void ResizeCamera(Camera* camera, int width, int height)
 {
-	camera->screenSize = Point{(float)width, (float)height};
-	camera->center = PointProd(0.5f, camera->screenSize);
+	camera->screenPixelSize = Point{(float)width, (float)height};
 }
 
 static inline unsigned int GetPixel(Bitmap bitmap, int row, int col) {
@@ -68,8 +67,8 @@ void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena) 
 	int positionCount = 0;
 	PixelPosition* positions = ArenaPushArray(tmpArena, PixelPosition, 0);
 	
-	int row = (int)CoordYtoPixel(camera, start.y);
-	int col = (int)CoordXtoPixel(camera, start.x);
+	int row = (int)UnitYtoPixel(camera, start.y);
+	int col = (int)UnitXtoPixel(camera, start.x);
 
 	ArenaPush(tmpArena, int, row);
 	ArenaPush(tmpArena, int, col);
@@ -151,85 +150,94 @@ void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena) 
 	ArenaPopTo(tmpArena, positions);
 }
 
-void SmoothZoom(Camera* camera, float altitude) {
-	camera->targetAltitude = altitude;
-}
-
-void UpdateCamera(Camera* camera, float seconds) {
-	if (camera->altitude == camera->targetAltitude) {
-		return;
-	}
-	else if (camera->altitude < camera->targetAltitude) {
-		camera->altitude += seconds * camera->moveSpeed;
-		if (camera->altitude > camera->targetAltitude)
-			camera->altitude = camera->targetAltitude;
-	}
-	else {
-		camera->altitude -= seconds * camera->moveSpeed;
-		if (camera->altitude < camera->targetAltitude)
-			camera->altitude = camera->targetAltitude;
-	}
-}
-
-float GetCoordDistanceInPixel(Camera camera, float coordDistance)
+void SmoothZoom(Camera* camera, float pixelPerUnit)
 {
-	Assert(camera.altitude != 0.0f);
-	float unitInPixels = (camera.screenSize.y / camera.altitude);
-	float pixelDistance = coordDistance * unitInPixels;
+	camera->targetUnitInPixels = pixelPerUnit;
+}
+
+#define PixelPerUnitChangeSpeed 10.0f
+
+void UpdateCamera(Camera* camera, float seconds)
+{
+	if (camera->unitInPixels != camera->targetUnitInPixels) {
+		if (camera->unitInPixels < camera->targetUnitInPixels) {
+			camera->unitInPixels += seconds * PixelPerUnitChangeSpeed;
+			if (camera->unitInPixels > camera->targetUnitInPixels)
+				camera->unitInPixels = camera->targetUnitInPixels;
+		} else {
+			camera->unitInPixels -= seconds * PixelPerUnitChangeSpeed;
+			if (camera->unitInPixels < camera->targetUnitInPixels)
+				camera->unitInPixels = camera->targetUnitInPixels;
+		}
+	}
+}
+
+float GetUnitDistanceInPixel(Camera camera, float unitDistance)
+{
+	float pixelDistance = unitDistance * camera.unitInPixels;
 	return pixelDistance;
 }
 
-float CoordXtoPixel(Camera camera, float coordX) {
-	// TODO: add unitInPixels to Camera?
-	Assert(camera.altitude != 0.0f);
-	float unitInPixels = (camera.screenSize.y / camera.altitude);
-
-	return (camera.screenSize.x * 0.5f) + ((coordX - camera.center.x) * (unitInPixels));
+float UnitXtoPixel(Camera camera, float unitX)
+{
+	float pixelX = (camera.screenPixelSize.x * 0.5f) + ((unitX - camera.center.x) * camera.unitInPixels);
+	return pixelX;
 }
 
-float CoordYtoPixel(Camera camera, float coordY) {
-	Assert(camera.altitude != 0.0f);
-	float unitInPixels = (camera.screenSize.y / camera.altitude);
-
-	return (camera.screenSize.y * 0.5f) + ((coordY - camera.center.y) * (unitInPixels));
+float UnitYtoPixel(Camera camera, float unitY)
+{
+	float pixelY = (camera.screenPixelSize.y * 0.5f) + ((unitY - camera.center.y) * camera.unitInPixels);
+	return pixelY;
 }
 
-Point CoordToPixel(Camera camera, Point coord) {
-	Assert(camera.altitude != 0.0f);
-	float unitInPixels = (camera.screenSize.y / camera.altitude);
-
-	Point result =  Point {
-		CoordXtoPixel(camera, coord.x),
-		CoordYtoPixel(camera, coord.y)
+Point UnitToPixel(Camera camera, Point unit)
+{
+	Point result = Point {
+		UnitXtoPixel(camera, unit.x),
+		UnitYtoPixel(camera, unit.y)
 	};
-
 	return result;
 }
 
-float PixelToCoordX(Camera camera, float pixelX) {
-	Assert(camera.altitude != 0.0f);
-	float unitInPixels = (camera.screenSize.y / camera.altitude);
-
-	float result = camera.center.x + ((pixelX - (camera.screenSize.x * 0.5f)) / unitInPixels);
-	return result;
+float PixelToUnitX(Camera camera, float pixelX)
+{
+	float pixelInUnits = Invert(camera.unitInPixels);
+	float unitX = camera.center.x + (pixelX - camera.screenPixelSize.x * 0.5f) * pixelInUnits;
+	return unitX;
 }
 
-float PixelToCoordY(Camera camera, float pixelY) {
-	Assert(camera.altitude != 0.0f);
-	float unitInPixels = (camera.screenSize.y / camera.altitude);
-
-	float result = camera.center.y + ((pixelY - (camera.screenSize.y * 0.5f)) / unitInPixels);
-	return result;
+float PixelToUnitY(Camera camera, float pixelY) 
+{
+	float pixelInUnits = Invert(camera.unitInPixels);
+	float unitY = camera.center.y + (pixelY - camera.screenPixelSize.y * 0.5f) * pixelInUnits;
+	return unitY;
 }
 
-Point PixelToCoord(Camera camera, Point pixel) {
-	Assert(camera.altitude != 0.0f);
-	float unitInPixels = (camera.screenSize.y / camera.altitude);
-
+Point PixelToUnit(Camera camera, Point pixel) {
 	Point result = {};
-	result.x = PixelToCoordX(camera, pixel.x);
-	result.y = PixelToCoordY(camera, pixel.y);
+	result.x = PixelToUnitX(camera, pixel.x);
+	result.y = PixelToUnitY(camera, pixel.y);
 	return result;
+}
+
+float CameraLeftSide(Camera* camera)
+{
+	return PixelToUnitX(*camera, 0);
+}
+
+float CameraRightSide(Camera* camera)
+{
+	return PixelToUnitX(*camera, camera->screenPixelSize.x - 1);
+}
+
+float CameraTopSide(Camera* camera)
+{
+	return PixelToUnitY(*camera, 0);
+}
+
+float CameraBottomSide(Camera* camera)
+{
+	return PixelToUnitY(*camera, camera->screenPixelSize.y - 1);
 }
 
 void ClearScreen(Renderer renderer, Color color) {
@@ -283,10 +291,10 @@ inline BresenhamContext BresenhamInitPixel(Point pixelPoint1, Point pixelPoint2)
 	return context;
 }
 
-inline BresenhamContext BresenhamInitCoord(Renderer renderer, Point point1, Point point2) {
+inline BresenhamContext BresenhamInitUnit(Renderer renderer, Point point1, Point point2) {
 	Camera camera = *renderer.camera;
-	Point pixelPoint1 = CoordToPixel(camera, point1);
-	Point pixelPoint2 = CoordToPixel(camera, point2);
+	Point pixelPoint1 = UnitToPixel(camera, point1);
+	Point pixelPoint2 = UnitToPixel(camera, point2);
 	BresenhamContext context = BresenhamInitPixel(pixelPoint1, pixelPoint2);
 	return context;
 }
@@ -307,7 +315,7 @@ void Bresenham(Renderer renderer, Point point1, Point point2, Color color) {
 	Bitmap bitmap = renderer.bitmap;
 	unsigned int colorCode = GetColorCode(color);
 
-	BresenhamContext context = BresenhamInitCoord(renderer, point1, point2);
+	BresenhamContext context = BresenhamInitUnit(renderer, point1, point2);
 	while (1) {
 		SetPixelCheck(bitmap, context.y1, context.x1, colorCode);
 
@@ -353,8 +361,8 @@ inline Point LineAtY(Point linePoint1, Point linePoint2, float y) {
 // TODO: check this for performance issues
 void DrawHorizontalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Color color) {
 	Camera* camera = renderer.camera;
-	float cameraTop     = CameraTopCoord(renderer.camera);
-	float cameraBottom  = CameraBottomCoord(renderer.camera);
+	float cameraTop     = CameraTopSide(renderer.camera);
+	float cameraBottom  = CameraBottomSide(renderer.camera);
 
 	if (topLeft.y < cameraTop) {
 		if (bottomLeft.y < cameraTop)
@@ -384,11 +392,11 @@ void DrawHorizontalTrapezoid(Renderer renderer, Point topLeft, Point topRight, P
 	Bitmap bitmap = renderer.bitmap;
 	unsigned int colorCode = GetColorCode(color);
 
-	BresenhamContext leftLine = BresenhamInitCoord(renderer, topLeft, bottomLeft);
-	BresenhamContext rightLine = BresenhamInitCoord(renderer, topRight, bottomRight);
+	BresenhamContext leftLine = BresenhamInitUnit(renderer, topLeft, bottomLeft);
+	BresenhamContext rightLine = BresenhamInitUnit(renderer, topRight, bottomRight);
 
-	int top = (int)CoordYtoPixel(*renderer.camera, topLeft.y);
-	int bottom = (int)CoordYtoPixel(*renderer.camera, bottomLeft.y);
+	int top = (int)UnitYtoPixel(*renderer.camera, topLeft.y);
+	int bottom = (int)UnitYtoPixel(*renderer.camera, bottomLeft.y);
 	if (bottom < top)
 		return;
 
@@ -420,8 +428,8 @@ void DrawHorizontalTrapezoid(Renderer renderer, Point topLeft, Point topRight, P
 // TODO: check this for performance issues
 void DrawVerticalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Color color) {
 	Camera* camera = renderer.camera;
-	float cameraLeft  = CameraLeftCoord(renderer.camera);
-	float cameraRight = CameraRightCoord(renderer.camera);
+	float cameraLeft  = CameraLeftSide(renderer.camera);
+	float cameraRight = CameraRightSide(renderer.camera);
 
 	if (topLeft.x < cameraLeft) {
 		if (topRight.x < cameraLeft)
@@ -451,11 +459,11 @@ void DrawVerticalTrapezoid(Renderer renderer, Point topLeft, Point topRight, Poi
 	Bitmap bitmap = renderer.bitmap;
 	unsigned int colorCode = GetColorCode(color);
 
-	BresenhamContext topLine = BresenhamInitCoord(renderer, topLeft, topRight);
-	BresenhamContext bottomLine = BresenhamInitCoord(renderer, bottomLeft, bottomRight);
+	BresenhamContext topLine = BresenhamInitUnit(renderer, topLeft, topRight);
+	BresenhamContext bottomLine = BresenhamInitUnit(renderer, bottomLeft, bottomRight);
 
-	int left = (int)CoordXtoPixel(*renderer.camera, topLeft.x);
-	int right = (int)CoordXtoPixel(*renderer.camera, topRight.x);
+	int left = (int)UnitXtoPixel(*renderer.camera, topLeft.x);
+	int right = (int)UnitXtoPixel(*renderer.camera, topRight.x);
 	if (right < left)
 		return;
 
@@ -558,10 +566,10 @@ void DrawRect(Renderer renderer, float top, float left, float bottom, float righ
 	unsigned int colorCode = GetColorCode(color);
 
 	Camera camera = *renderer.camera;
-	int topPixel =    (int)CoordYtoPixel(camera, top);
-	int leftPixel =   (int)CoordXtoPixel(camera, left);
-	int bottomPixel = (int)CoordYtoPixel(camera, bottom);
-	int rightPixel =  (int)CoordXtoPixel(camera, right);
+	int topPixel =    (int)UnitYtoPixel(camera, top);
+	int leftPixel =   (int)UnitXtoPixel(camera, left);
+	int bottomPixel = (int)UnitYtoPixel(camera, bottom);
+	int rightPixel =  (int)UnitXtoPixel(camera, right);
 
 	if (topPixel > bottomPixel) {
 		int tmp = topPixel;
@@ -607,7 +615,7 @@ void DrawPoly(Renderer renderer, Point* points, int pointN, Color color) {
 	unsigned int colorCode = GetColorCode(color);
 
 	for (int i = 0; i < pointN; ++i)
-		points[i] = CoordToPixel(*renderer.camera, points[i]);
+		points[i] = UnitToPixel(*renderer.camera, points[i]);
 
 	Bitmap bitmap = renderer.bitmap;
 	int minX = bitmap.width;
@@ -663,7 +671,7 @@ void DrawPoly(Renderer renderer, Point* points, int pointN, Color color) {
 	}
 
 	for (int i = 0; i < pointN; ++i)
-		points[i] = PixelToCoord(*renderer.camera, points[i]);
+		points[i] = PixelToUnit(*renderer.camera, points[i]);
 }
 
 void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture texture)
@@ -676,7 +684,7 @@ void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture 
 	int maxY = 0;
 
 	for (int i = 0; i < pointN; ++i) {
-		Point pointInPixels = CoordToPixel(*camera, points[i]);
+		Point pointInPixels = UnitToPixel(*camera, points[i]);
 		int pointX = (int)pointInPixels.x;
 		int pointY = (int)pointInPixels.y;
 		minX = IntMin2(minX, pointX);
@@ -699,8 +707,8 @@ void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture 
 
 			int prev = pointN - 1;
 			for (int i = 0; i < pointN; ++i) {
-				Point prevPoint = CoordToPixel(*camera, points[prev]);
-				Point thisPoint = CoordToPixel(*camera, points[i]);
+				Point prevPoint = UnitToPixel(*camera, points[prev]);
+				Point thisPoint = UnitToPixel(*camera, points[i]);
 				if (!TurnsRight(prevPoint, thisPoint, testPoint)) {
 					drawPoint = false;
 					break;
@@ -710,21 +718,21 @@ void DrawWorldTexturePoly(Renderer renderer, Point* points, int pointN, Texture 
 
 			if (drawPoint) {
 				pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
-				Point testCoordPoint = PixelToCoord(*camera, testPoint);
-				*pixel = TextureColorCode(texture, testCoordPoint.x * 10.0f, testCoordPoint.y * 10.0f);
+				Point testUnitPoint = PixelToUnit(*camera, testPoint);
+				*pixel = TextureColorCode(texture, testUnitPoint.x * 10.0f, testUnitPoint.y * 10.0f);
 			}
 		}
 	}
 
 	for (int i = 0; i < pointN; ++i)
-		points[i] = PixelToCoord(*renderer.camera, points[i]);
+		points[i] = PixelToUnit(*renderer.camera, points[i]);
 }
 
 void DrawQuad(Renderer renderer, Quad quad, Color color) {
 	unsigned int colorCode = GetColorCode(color);
 
 	for (int i = 0; i < 4; ++i)
-		quad.points[i] = CoordToPixel(*renderer.camera, quad.points[i]);
+		quad.points[i] = UnitToPixel(*renderer.camera, quad.points[i]);
 
 	Bitmap bitmap = renderer.bitmap;
 	int minX = bitmap.width;
@@ -789,7 +797,7 @@ void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture)
 	int maxX = 0;
 	int maxY = 0;
 	for (int i = 0; i < 4; ++i) {
-		Point pixelPoint = CoordToPixel(camera, quad.points[i]);
+		Point pixelPoint = UnitToPixel(camera, quad.points[i]);
 		int pointX = (int)pixelPoint.x;
 		int pointY = (int)pixelPoint.y;
 		minX = IntMin2(minX, pointX);
@@ -810,10 +818,10 @@ void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture)
 			bool drawPoint = true;
 
 			Point pixelPoints[4] = {
-				CoordToPixel(camera, quad.points[0]),
-				CoordToPixel(camera, quad.points[1]),
-				CoordToPixel(camera, quad.points[2]),
-				CoordToPixel(camera, quad.points[3])
+				UnitToPixel(camera, quad.points[0]),
+				UnitToPixel(camera, quad.points[1]),
+				UnitToPixel(camera, quad.points[2]),
+				UnitToPixel(camera, quad.points[3])
 			};
 
 			if (!TurnsRight(pixelPoints[0], pixelPoints[1], testPoint))
@@ -827,8 +835,8 @@ void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture)
 
 			if (drawPoint) {
 				pixel = (unsigned int*)bitmap.memory + row * bitmap.width + col;
-				Point testCoordPoint = PixelToCoord(camera, testPoint);
-				*pixel = TextureColorCode(texture, testCoordPoint.x * 10.0f, testCoordPoint.y * 10.0f);
+				Point testUnitPoint = PixelToUnit(camera, testPoint);
+				*pixel = TextureColorCode(texture, testUnitPoint.x * 10.0f, testUnitPoint.y * 10.0f);
 			}
 		}
 	}
@@ -842,11 +850,21 @@ void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3,
 void DrawScaledRotatedBitmap(Renderer renderer, Bitmap* bitmap, Point position, float width, float height, float rotationAngle)
 {
 	Camera* camera = renderer.camera;
-	int col = (int)CoordXtoPixel(*camera, position.x);
-	int row = (int)CoordYtoPixel(*camera, position.y);
+	int col = (int)UnitXtoPixel(*camera, position.x);
+	int row = (int)UnitYtoPixel(*camera, position.y);
 
-	float pixelWidth  = GetCoordDistanceInPixel(*camera, width);
-	float pixelHeight = GetCoordDistanceInPixel(*camera, height);
+	float pixelWidth  = GetUnitDistanceInPixel(*camera, width);
+	float pixelHeight = GetUnitDistanceInPixel(*camera, height);
 
 	CopyScaledRotatedBitmap(bitmap, &renderer.bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
+}
+
+void DrawStretchedBitmap(Renderer renderer, Bitmap* bitmap, float left, float right, float top, float bottom)
+{
+	Camera* camera = renderer.camera;
+	int pixelLeft   = (int)UnitXtoPixel(*camera, left);
+	int pixelRight  = (int)UnitXtoPixel(*camera, right);
+	int pixelTop    = (int)UnitYtoPixel(*camera, top);
+	int pixelBottom = (int)UnitYtoPixel(*camera, bottom);
+	CopyStretchedBitmap(bitmap, &renderer.bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
 }

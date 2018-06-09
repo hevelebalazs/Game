@@ -11,13 +11,10 @@
 
 struct Camera {
 	Point center;
-	// TODO: should half of this, a screenRadius be saved instead?
-	Point screenSize;
+	Point screenPixelSize;
 
-	float moveSpeed;
-	float targetAltitude;
-	// TODO: rename altitude to z?
-	float altitude;
+	float unitInPixels;
+	float targetUnitInPixels;
 };
 
 // TODO: rename this to RenderContext or some other "passive" noun?
@@ -36,92 +33,24 @@ void FloodFill(Renderer renderer, Point start, Color color, MemArena* tmpArena);
 
 void ApplyBitmapMask(Bitmap bitmap, Bitmap mask);
 
-void SmoothZoom(Camera* camera, float altitude);
+void SmoothZoom(Camera* camera, float pixelPerUnit);
 void UpdateCamera(Camera* camera, float seconds);
 
-// TODO: make these inline functions
-// TODO: rename CoordX to X and CoordY to Y?
+float GetUnitDistanceInPixel(Camera camera, float unitDistance);
+
 // TODO: Why do these return floats and not ints?
-float CoordXtoPixel(Camera camera, float coordX);
-float CoordYtoPixel(Camera camera, float coordY);
-Point CoordToPixel(Camera camera, Point coord);
+float UnitXtoPixel(Camera camera, float unitX);
+float UnitYtoPixel(Camera camera, float unitY);
+Point UnitToPixel(Camera camera, Point unit);
 
-float PixelToCoordX(Camera camera, float pixelX);
-float PixelToCoordY(Camera camera, float pixelY);
-Point PixelToCoord(Camera camera, Point pixel);
+float PixelToUnitX(Camera camera, float pixelX);
+float PixelToUnitY(Camera camera, float pixelY);
+Point PixelToUnit(Camera camera, Point pixel);
 
-inline float CameraLeftCoord(Camera* camera) {
-	return PixelToCoordX(*camera, 0);
-}
-
-inline float CameraRightCoord(Camera* camera) {
-	return PixelToCoordX(*camera, camera->screenSize.x - 1);
-}
-
-inline float CameraTopCoord(Camera* camera) {
-	return PixelToCoordY(*camera, 0);
-}
-
-inline float CameraBottomCoord(Camera* camera) {
-	return PixelToCoordY(*camera, camera->screenSize.y - 1);
-}
-
-// TODO: handle Z coordinate at render level only
-//       outside code shouldn't need to call a project-to-ground and then a render function
-inline float ProjectXToGround(Camera camera, float x, float z) {
-	float result = 0.0f;
-
-	float ratio = 0.0f;
-	float distZ = (camera.altitude - z);
-	if (distZ <= 0.0f) {
-		ratio = 100.0f;
-	}
-	else {
-		ratio = (camera.altitude / distZ);
-	}
-	
-	result = camera.center.x + (x - camera.center.x) * ratio;
-	return result;
-}
-
-inline float ProjectYToGround(Camera camera, float y, float z) {
-	float result = 0.0f;
-
-	float ratio = 0.0f;
-	float distZ = (camera.altitude - z);
-	if (distZ <= 0.0f)
-		ratio = 100.0f;
-	else
-		ratio = (camera.altitude / distZ);
-
-	result = camera.center.y + (y - camera.center.y) * ratio;
-	return result;
-}
-
-inline Point ProjectPointToGround(Camera camera, Point point, float z) {
-	Point result = {};
-	
-	float ratio = 0.0f;
-	float distZ = (camera.altitude - z);
-	if (distZ <= 0.0f) {
-		float widthCoord = (CameraRightCoord(&camera) - CameraLeftCoord(&camera)) * 0.5f;
-		float absX = Abs(point.x - camera.center.x);
-		float ratioX = (widthCoord / absX);
-
-		float heightCoord = (CameraBottomCoord(&camera) - CameraTopCoord(&camera)) * 0.5f;
-		float absY = Abs(point.y - camera.center.y);
-		float ratioY = (heightCoord / absY);
-
-		ratio = Max2(ratioX, ratioY);
-	}
-	else {
-		ratio = (camera.altitude / distZ);
-	}
-
-	result.x = camera.center.x + (point.x - camera.center.x) * ratio;
-	result.y = camera.center.y + (point.y - camera.center.y) * ratio;
-	return result;
-}
+float CameraLeftSide(Camera* camera);
+float CameraRightSide(Camera* camera);
+float CameraTopSide(Camera* camera);
+float CameraBottomSide(Camera* camera);
 
 void ClearScreen(Renderer renderer, Color color);
 
@@ -148,10 +77,10 @@ inline void DrawRectOutline(Renderer renderer, float top, float left, float bott
 // TODO: change the order of parameters to left, right, top, bottom
 inline void WorldTextureRect(Renderer renderer, float top, float left, float bottom, float right, Texture texture) {
 	Camera camera = *renderer.camera;
-	int topPixel =    (int)CoordYtoPixel(camera, top);
-	int leftPixel =   (int)CoordXtoPixel(camera, left);
-	int bottomPixel = (int)CoordYtoPixel(camera, bottom);
-	int rightPixel =  (int)CoordXtoPixel(camera, right);
+	int topPixel =    (int)UnitYtoPixel(camera, top);
+	int leftPixel =   (int)UnitXtoPixel(camera, left);
+	int bottomPixel = (int)UnitYtoPixel(camera, bottom);
+	int rightPixel =  (int)UnitXtoPixel(camera, right);
 
 	if (topPixel > bottomPixel) {
 		int tmp = topPixel;
@@ -180,27 +109,26 @@ inline void WorldTextureRect(Renderer renderer, float top, float left, float bot
 	float textureZoom = 16.0f;
 
 	Point topLeftPixel = {(float)leftPixel, (float)topPixel};
-	Point topLeftCoord = PixelToCoord(camera, topLeftPixel);
+	Point topLeftUnit = PixelToUnit(camera, topLeftPixel);
 	// NOTE: optimization stuff
-	topLeftCoord.x *= textureZoom;
-	topLeftCoord.y *= textureZoom;
+	topLeftUnit.x *= textureZoom;
+	topLeftUnit.y *= textureZoom;
 
-	Assert(camera.screenSize.y > 0.0f);
-	float coordPerPixel = (camera.altitude / camera.screenSize.y);
+	float unitPerPixel = Invert(camera.unitInPixels);
 	// NOTE: optimization stuff
-	coordPerPixel *= textureZoom;
+	unitPerPixel *= textureZoom;
 
-	int subCoordPerPixel = (int)(coordPerPixel * 255.0f);
+	int subUnitPerPixel = (int)(unitPerPixel * 255.0f);
 
 	unsigned int* topLeft = (unsigned int*)bitmap.memory + topPixel * bitmap.width + leftPixel;
 
 	// TODO: try to optimize this code
-	Point worldCoord = topLeftCoord;
-	int leftx  = (((int)(worldCoord.x)) & (texture.side - 1));
-	int topy   = (((int)(worldCoord.y)) & (texture.side - 1));
+	Point worldUnit = topLeftUnit;
+	int leftx  = (((int)(worldUnit.x)) & (texture.side - 1));
+	int topy   = (((int)(worldUnit.y)) & (texture.side - 1));
 
-	int leftsubx = (int)((worldCoord.x - Floor(worldCoord.x)) * 255.0f);
-	int topsuby = (int)((worldCoord.y - Floor(worldCoord.y)) * 255.0f);
+	int leftsubx = (int)((worldUnit.x - Floor(worldUnit.x)) * 255.0f);
+	int topsuby = (int)((worldUnit.y - Floor(worldUnit.y)) * 255.0f);
 
 	int x = leftx;
 	int y = topy;
@@ -219,14 +147,14 @@ inline void WorldTextureRect(Renderer renderer, float top, float left, float bot
 			//*pixel = TextureColorCode(texture, x, subx, y, suby);
 			pixel++;
 
-			subx += subCoordPerPixel;
+			subx += subUnitPerPixel;
 			if (subx > 0xFF) {
 				x = ((x + (subx >> 8)) & (texture.side - 1));
 				subx = (subx & 0xFF);
 			}
 		}
 
-		suby += subCoordPerPixel;
+		suby += subUnitPerPixel;
 		if (suby > 0xFF) {
 			y = ((y + (suby >> 8)) & (texture.side - 1));
 			suby = (suby & 0xFF);
@@ -265,3 +193,4 @@ void DrawWorldTextureQuad(Renderer renderer, Quad quad, Texture texture);
 void DrawQuadPoints(Renderer renderer, Point point1, Point point2, Point point3, Point point4, Color color);
 
 void DrawScaledRotatedBitmap(Renderer renderer, Bitmap* bitmap, Point position, float width, float height, float rotationAngle);
+void DrawStretchedBitmap(Renderer renderer, Bitmap* bitmap, float left, float right, float top, float bottom);

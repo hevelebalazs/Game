@@ -1,16 +1,17 @@
 #include "GridMap.hpp"
 
+static float JunctionGridDistance = MinimumJunctionDistance * 1.5f;
+static float MaxJunctionDistanceFromOrigin = MinimumJunctionDistance * 0.5f;
+
 static void GenerateGridMapJunctions(Map* map, int junctionRowN, int junctionColN)
 {
-	float left = 0.0f;
-	float top  = 0.0f;
+	float left = -(junctionRowN * JunctionGridDistance) / 2;
+	float top  = -(junctionColN * JunctionGridDistance) / 2;
 
 	float junctionX = left;
 	float junctionY = top;
 
 	map->junctionCount = (junctionRowN * junctionColN);
-	float JunctionGridDistance = MinimumJunctionDistance * 1.5f;
-	float MaxJunctionDistanceFromOrigin = MinimumJunctionDistance * 0.5f;
 	for (int row = 0; row < junctionRowN; ++row) {
 		for (int col = 0; col < junctionColN; ++col) {
 			Junction* junction = map->junctions + (row * junctionColN) + col;

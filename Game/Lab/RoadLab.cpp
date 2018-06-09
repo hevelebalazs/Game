@@ -68,7 +68,7 @@ static Point GetMousePosition(Camera camera, HWND window)
 	point.x = (float)cursorPoint.x;
 	point.y = (float)cursorPoint.y;
 
-	point = PixelToCoord(camera, point);
+	point = PixelToUnit(camera, point);
 
 	return point;
 }
@@ -81,7 +81,7 @@ static void RoadLabResize(RoadLabState* labState, int width, int height)
 	Renderer* renderer = &labState->renderer;
 	ResizeBitmap(&renderer->bitmap, width, height);
 	renderer->camera = camera;
-	camera->altitude = 200.0f;
+	camera->unitInPixels = 50.0f;
 }
 
 static void RoadLabBlit(Renderer renderer, HDC context, RECT rect)
@@ -388,10 +388,10 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 
 		case WM_MOUSEWHEEL: {
 			short wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
-			if (wheelDeltaParam > 0.0f)
-				labState->camera.altitude /= 1.10f;
-			else if (wheelDeltaParam < 0.0f)
-				labState->camera.altitude *= 1.10f;
+			if (wheelDeltaParam > 0)
+				labState->camera.unitInPixels *= 1.10f;
+			else if (wheelDeltaParam < 0)
+				labState->camera.unitInPixels /= 1.10f;
 			break;
 		}
 
@@ -433,9 +433,6 @@ static void RoadLabInit(RoadLabState* labState, int windowWidth, int windowHeigh
 	map->junctionCount = 0;
 	map->buildingCount = 0;
 
-	map->width  = float(windowWidth);
-	map->height = float(windowHeight);
-
 	PathPool* pathPool = &labState->pathPool;
 	pathPool->maxNodeCount = RoadLabMaxPathNodeN;
 	pathPool->nodes = labState->pathNodes;
@@ -443,7 +440,7 @@ static void RoadLabInit(RoadLabState* labState, int windowWidth, int windowHeigh
 	pathPool->nodeCount = 0;
 
 	Camera* camera = &labState->camera;
-	camera->altitude = 500.0f;
+	camera->unitInPixels = 10.0f;
 
 	labState->memArena = CreateMemArena(RoadLabMemArenaSize);
 }
@@ -458,7 +455,7 @@ void RoadLab(HINSTANCE instance)
 	winClass.hInstance = instance;
 	winClass.lpszClassName = "RoadLabWindowClass";
 
-	Assert(RegisterClass(&winClass));
+	Verify(RegisterClass(&winClass));
 	HWND window = CreateWindowEx(
 		0,
 		winClass.lpszClassName,

@@ -12,6 +12,7 @@
 #include "Renderer.hpp"
 
 #include "Lab/CarLab.hpp"
+#include "Lab/MapLab.hpp"
 #include "Lab/RoadLab.hpp"
 
 static bool running;
@@ -32,7 +33,7 @@ static Point WinMousePosition(HWND window) {
 	point.x = (float)cursorPoint.x;
 	point.y = (float)cursorPoint.y;
 
-	point = PixelToCoord(*globalGameState->renderer.camera, point);
+	point = PixelToUnit(*globalGameState->renderer.camera, point);
 
 	return point;
 }
@@ -287,7 +288,7 @@ void RunGame(HINSTANCE instance)
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
 {
-	// CarLab(instance);
-	RunGame(instance);
+	MapLab(instance);
+	// RunGame(instance);
 	return 0;
 }

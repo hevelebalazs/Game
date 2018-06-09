@@ -3,6 +3,8 @@
 #include "Map.hpp"
 #include "Math.hpp"
 
+extern Color GrassColor = Color{0.0f, 0.8f, 0.0f};
+
 Junction* RandomJunction(Map map) {
 	int junctionIndex = RandMod(map.junctionCount);
 
@@ -242,9 +244,8 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	return result;
 }
 
-void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets) {
-	Color color = Color{0.0f, 1.0f, 0.0f};
-	WorldTextureRect(renderer, 0, 0, map->height, map->width, assets->grassTexture);
+void DrawGroundElems(Renderer renderer, Map* map) {
+	ClearScreen(renderer, GrassColor);
 
 	for (int i = 0; i < map->roadCount; ++i)
 		DrawRoadSidewalk(renderer, map->roads + i);
@@ -372,7 +373,7 @@ void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* ass
 }
 
 void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets) {
-	DrawGroundElems(renderer, map, assets);
+	DrawGroundElems(renderer, map);
 	DrawBuildings(renderer, map, arena, assets);
 }
 

@@ -7,6 +7,8 @@
 #include "Memory.hpp"
 #include "Renderer.hpp"
 
+extern Color GrassColor;
+
 struct GameAssets;
 
 struct Map {
@@ -18,9 +20,6 @@ struct Map {
 
 	Building* buildings;
 	int buildingCount;
-
-	float width;
-	float height;
 };
 
 Junction* RandomJunction(Map map);
@@ -38,6 +37,6 @@ Building* BuildingAtPoint(Map map, Point point);
 MapElem RoadElemAtPoint(Map map, Point point);
 MapElem PedestrianElemAtPoint(Map map, Point point);
 
-void DrawGroundElems(Renderer renderer, Map* map, GameAssets* assets);
+void DrawGroundElems(Renderer renderer, Map* map);
 void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets);
 void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets);

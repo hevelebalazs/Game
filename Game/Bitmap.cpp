@@ -105,12 +105,10 @@ static unsigned int* GetBitmapPixelAddress(Bitmap* bitmap, int row, int col)
 
 static unsigned int GetClosestBitmapColorCode(Bitmap* bitmap, float heightRatio, float widthRatio)
 {
-	Assert(IsBetween(heightRatio, 0.0f, 1.0f));
-	Assert(IsBetween(widthRatio,  0.0f, 1.0f));
-	int row = Floor(heightRatio * bitmap->height);
-	int col = Floor(widthRatio * bitmap->width);
-	row = ClipInt(row, 0, bitmap->height - 1);
-	col = ClipInt(col, 0, bitmap->width - 1);
+	int row = Floor(heightRatio * (bitmap->height - 1));
+	int col = Floor(widthRatio * (bitmap->width - 1));
+	Assert(IsIntBetween(row, 0, bitmap->height - 1));
+	Assert(IsIntBetween(col, 0, bitmap->width - 1));
 	unsigned int* address = GetBitmapPixelAddress(bitmap, row, col);
 	unsigned int colorCode = *address;
 	return colorCode;
@@ -354,19 +352,46 @@ void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int t
 	float toWidth  = (float)(toRight - toLeft);
 	float toHeight = (float)(toBottom - toTop);
 
-	int left   = ClipInt(toLeft,   0, toBitmap->width - 1);
-	int right  = ClipInt(toRight,  0, toBitmap->width - 1);
-	int top    = ClipInt(toTop,    0, toBitmap->height - 1);
-	int bottom = ClipInt(toBottom, 0, toBitmap->height - 1);
+	int left   = ClipInt(toLeft,    0, toBitmap->width);
+	int right  = ClipInt(toRight,  -1, toBitmap->width - 1);
+	int top    = ClipInt(toTop,     0, toBitmap->height);
+	int bottom = ClipInt(toBottom, -1, toBitmap->height - 1);
 
+	
+	float fromHeightStart = ((float)fromBitmap->height - 1.0f) * ((float)top - toTop) / toHeight;
+	float fromHeightAdd   = ((float)fromBitmap->height - 1.0f) / toHeight;
+	float fromWidthStart  = ((float)fromBitmap->width  - 1.0f) * ((float)left - toLeft) / toWidth;
+	float fromWidthAdd    = ((float)fromBitmap->width  - 1.0f) / toWidth;
+
+	float fromHeight = fromHeightStart;
+	float fromWidth = fromWidthStart;
+
+	unsigned int* fromRowFirstPixelAddress = GetBitmapPixelAddress(fromBitmap, (int)fromHeight, (int)fromWidth);
+	unsigned int* toRowFirstPixelAddress = GetBitmapPixelAddress(toBitmap, top, left);
+
+	int prevFromRow = (int)fromHeight;
 	for (int toRow = top; toRow <= bottom; ++toRow) {
+		int fromRow = (int)fromHeight;
+		fromWidth = fromWidthStart;
+		int prevFromCol = (int)fromWidth;
+		unsigned int* fromPixelAddress = fromRowFirstPixelAddress;		
+		unsigned int* toPixelAddress = toRowFirstPixelAddress;
 		for (int toCol = left; toCol <= right; ++toCol) {
-			float fromWidthRatio  = (float)(toCol - toLeft) / toWidth;
-			float fromHeightRatio = (float)(toRow - toTop)  / toHeight;
-			unsigned int fromColorCode = GetClosestBitmapColorCode(fromBitmap, fromHeightRatio, fromWidthRatio);
-			unsigned int* toPixelAddress = GetBitmapPixelAddress(toBitmap, toRow, toCol);
-			*toPixelAddress = fromColorCode;
+			int fromCol = (int)fromWidth;
+			fromPixelAddress += (fromCol - prevFromCol);
+			prevFromCol = fromCol;
+
+			toPixelAddress++;
+
+			*toPixelAddress = *fromPixelAddress;
+			fromWidth += fromWidthAdd;
 		}
+
+		fromHeight += fromHeightAdd;
+		fromRowFirstPixelAddress += fromBitmap->width * (fromRow - prevFromRow);
+		prevFromRow = fromRow;
+
+		toRowFirstPixelAddress += toBitmap->width;
 	}
 }
 

@@ -32,8 +32,9 @@ void TogglePlayerCar(GameState* gameState)
 
 static inline void ResizeCamera(Camera* camera, int width, int height)
 {
-	camera->screenSize = Point{(float)width, (float)height};
-	camera->center = PointProd(0.5f, camera->screenSize);
+	camera->screenPixelSize.x = (float)width; 
+	camera->screenPixelSize.y = (float)height;
+	camera->center = PointProd(0.5f, camera->screenPixelSize);
 }
 
 static inline void ResizeBitmap(Bitmap* bitmap, int width, int height)
@@ -161,8 +162,7 @@ void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight)
 	}
 
 	Camera* camera = &gameState->camera;
-	camera->moveSpeed = 100.0f;
-	camera->altitude = 30.0f;
+	camera->unitInPixels = 50.0f;
 	camera->center = Point{(float)windowWidth * 0.5f, (float)windowHeight * 0.5f};
 
 	gameState->renderer.camera = camera;
@@ -272,19 +272,19 @@ void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition)
 		// TODO: create a speed variable in PlayerCar?
 		float speed = VectorLength(gameState->playerCar.velocity);
 
-		camera->targetAltitude = 20.0f + (1.0f * speed);
+		camera->targetUnitInPixels = 50.0f - (1.0f * speed);
 	}
 	else {
 		camera->center = gameState->playerHuman.human.position;
 
 		if (gameState->playerHuman.human.inBuilding)
-			camera->targetAltitude = 15.0f;
+			camera->targetUnitInPixels = 50.0f;
 		else
-			camera->targetAltitude = 15.0f;
+			camera->targetUnitInPixels = 50.0f;
 	}
 
 	if (gameState->showFullMap)
-		camera->targetAltitude = 1000.0f;
+		camera->targetUnitInPixels = 0.1f;
 
 	UpdateCamera(camera, seconds);
 
@@ -437,7 +437,7 @@ void GameDraw(GameStorage* gameStorage)
 		}
 	}
 	else {
-		DrawGroundElems(renderer, &gameState->map, &gameState->assets);
+		DrawGroundElems(renderer, &gameState->map);
 
 		Color missionHighlightColor = {0.0f, 1.0f, 1.0f};
 		if (gameState->missionJunction)

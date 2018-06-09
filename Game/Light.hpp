@@ -7,13 +7,13 @@
 inline void LightSector(Renderer renderer, Point center, float minDistance, float maxDistance, float minAngle, float maxAngle, float baseBrightness) 
 {
 	Point radius = Point{maxDistance, maxDistance};
-	Point topLeftCoord = PointDiff(center, radius);
-	Point bottomRightCoord = PointSum(center, radius);
+	Point topLeft = PointDiff(center, radius);
+	Point bottomRight = PointSum(center, radius);
 
 	Bitmap bitmap = renderer.bitmap;
 	Camera* camera = renderer.camera;
-	Point topLeftPixel = CoordToPixel(*camera, topLeftCoord);
-	Point bottomRightPixel = CoordToPixel(*camera, bottomRightCoord);
+	Point topLeftPixel = UnitToPixel(*camera, topLeft);
+	Point bottomRightPixel = UnitToPixel(*camera, bottomRight);
 
 	int top    = IntMax2((int)topLeftPixel.y, 0);
 	int bottom = IntMin2((int)bottomRightPixel.y, bitmap.height - 1);
@@ -25,7 +25,7 @@ inline void LightSector(Renderer renderer, Point center, float minDistance, floa
 			Point pixelPosition = {};
 			pixelPosition.x = (float)col;
 			pixelPosition.y = (float)row;
-			Point position = PixelToCoord(*camera, pixelPosition);
+			Point position = PixelToUnit(*camera, pixelPosition);
 			float distance = Distance(center, position);
 			float angle = LineAngle(center, position);
 
