@@ -2,7 +2,6 @@
 
 #include "BuildingType.hpp"
 #include "Geometry.hpp"
-#include "MapElem.hpp"
 #include "Memory.hpp"
 #include "Point.hpp"
 #include "Renderer.hpp"
@@ -12,7 +11,6 @@ extern float connectRoadWidth;
 extern float entranceWidth;
 extern float wallWidth;
 
-struct MapElem;
 struct GameAssets;
 
 enum CrossType {
@@ -21,6 +19,7 @@ enum CrossType {
 	CrossEntrance
 };
 
+struct Building;
 struct BuildingCrossInfo {
 	Building* building;
 	Point crossPoint;
@@ -57,14 +56,14 @@ struct Building {
 
 	int connectTreeHeight;
 
-	MapElem connectElem;
+	Road* connectRoad;
 
 	BuildingInside* inside;
 };
 
 void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpArena);
 
-void ConnectBuildingToElem(Building* lding, MapElem elem);
+void ConnectBuildingToRoad(Building* building, Road* road);
 bool IsPointInBuilding(Point point, Building building);
 bool IsPointInExtBuilding(Point point, Building building, float radius);
 bool IsBuildingCrossed(Building building, Point point1, Point point2);

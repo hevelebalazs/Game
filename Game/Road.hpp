@@ -102,6 +102,8 @@ void DrawCrossing(Renderer renderer, Road* road);
 void DrawRoad(Renderer renderer, Road* road);
 void DrawRoadSidewalk(Renderer renderer, Road* road);
 
+void DrawTexturedRoad(Renderer renderer, Road* road, Texture roadTexure);
+
 // Junction
 bool IsValidJunctionCornerIndex(Junction* junction, int cornerIndex);
 

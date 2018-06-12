@@ -103,7 +103,7 @@ static void RoadLabBlit(Renderer renderer, HDC context, RECT rect)
 static bool CanJunctionBePlacedAtPoint(Map* map, Point point)
 {
 	bool valid = true;
-	for (int i = 0; i < map->junctionCount; ++i) {
+	for (int i = 0; i < map->junctionN; ++i) {
 		Junction* junction = map->junctions + i;
 		float distance = Distance(point, junction->position);
 		if (distance < MinimumJunctionDistance) {
@@ -139,19 +139,19 @@ static void RoadLabUpdate(RoadLabState* labState, Point mouse)
 	ClearScreen(renderer, black);
 
 	float seconds = 0.1f;
-	for (int i = 0; i < map->junctionCount; ++i)
-		UpdateTrafficLights(map->junctions + i, seconds);
+	for (int i = 0; i < map->junctionN; ++i)
+		UpdateTrafficLights(&map->junctions[i], seconds);
 
-	for (int i = 0; i < map->roadCount; ++i)
-		DrawRoadSidewalk(renderer, map->roads + i);
-	for (int i = 0; i < map->junctionCount; ++i)
-		DrawJunctionSidewalk(renderer, map->junctions + i);
+	for (int i = 0; i < map->roadN; ++i)
+		DrawRoadSidewalk(renderer, &map->roads[i]);
+	for (int i = 0; i < map->junctionN; ++i)
+		DrawJunctionSidewalk(renderer, &map->junctions[i]);
 
-	for (int i = 0; i < map->roadCount; ++i)
-		DrawRoad(renderer, map->roads + i);
+	for (int i = 0; i < map->roadN; ++i)
+		DrawRoad(renderer, &map->roads[i]);
 
-	for (int i = 0; i < map->junctionCount; ++i)
-		DrawJunction(renderer, map->junctions + i);
+	for (int i = 0; i < map->junctionN; ++i)
+		DrawJunction(renderer, &map->junctions[i]);
 
 	if (labState->labMode == RoadPlacingMode) {
 		Junction* junctionAtMouse = GetJunctionAtPoint(map, mouse);
@@ -191,8 +191,8 @@ static void RoadLabUpdate(RoadLabState* labState, Point mouse)
 					ResetPathPool(&labState->pathPool);
 					labState->firstPathNode = ConnectElems(
 						&labState->map,
-						JunctionElem(labState->pathJunction1),
-						JunctionElem(labState->pathJunction2),
+						GetJunctionElem(labState->pathJunction1),
+						GetJunctionElem(labState->pathJunction2),
 						&labState->memArena,
 						&labState->pathPool
 					);
@@ -224,9 +224,9 @@ static void RoadLabUpdate(RoadLabState* labState, Point mouse)
 				ResetPathPool(&labState->pathPool);
 				labState->firstPathNode = ConnectPedestrianElems(
 					&labState->map,
-					JunctionSidewalkElem(junction1),
+					GetJunctionSidewalkElem(junction1),
 					corner1,
-					JunctionSidewalkElem(junctionAtMouse),
+					GetJunctionSidewalkElem(junctionAtMouse),
 					cornerAtMouse,
 					&labState->memArena,
 					&labState->pathPool
@@ -244,8 +244,8 @@ static void RoadLabUpdate(RoadLabState* labState, Point mouse)
 			DrawPath(renderer, labState->firstPathNode, PathColor, PathLineWidth);
 	}
 
-	for (int i = 0; i < map->junctionCount; ++i)
-		DrawTrafficLights(renderer, map->junctions + i);
+	for (int i = 0; i < map->junctionN; ++i)
+		DrawTrafficLights(renderer, &map->junctions[i]);
 }
 
 static void UpdateJunction(Junction* junction)
@@ -265,10 +265,10 @@ static void RoadLabClick(RoadLabState* labState, Point mouse)
 			Junction* junction1 = roadPreview->junction1;
 			Junction* junction2 = GetJunctionAtPoint(map, mouse);
 			if (junction2 && junction1 != junction2) {
-				Assert(map->roadCount < RoadLabMaxRoadN);
-				Road* road = map->roads + map->roadCount;
+				Assert(map->roadN < RoadLabMaxRoadN);
+				Road* road = map->roads + map->roadN;
 				ConnectJunctions(junction1, junction2, road);
-				map->roadCount++;
+				map->roadN++;
 				labState->isPreviewOn = false;
 				UpdateJunction(junction1);
 				UpdateJunction(junction2);
@@ -288,9 +288,9 @@ static void RoadLabClick(RoadLabState* labState, Point mouse)
 		Junction junctionPreview = labState->junctionPreview;
 		bool valid = CanJunctionBePlacedAtPoint(map, junctionPreview.position);
 		if (valid) {
-			Assert(map->junctionCount < RoadLabMaxJunctionN);
-			map->junctions[map->junctionCount] = junctionPreview;
-			map->junctionCount++;
+			Assert(map->junctionN < RoadLabMaxJunctionN);
+			map->junctions[map->junctionN] = junctionPreview;
+			map->junctionN++;
 		}
 	} else if (labState->labMode == RoadPathBuildingMode) {
 		labState->pathJunction1 = GetJunctionAtPoint(&labState->map, mouse);
@@ -429,9 +429,9 @@ static void RoadLabInit(RoadLabState* labState, int windowWidth, int windowHeigh
 	map->junctions = labState->junctions;
 	map->buildings = 0;
 
-	map->roadCount = 0;
-	map->junctionCount = 0;
-	map->buildingCount = 0;
+	map->roadN = 0;
+	map->junctionN = 0;
+	map->buildingN = 0;
 
 	PathPool* pathPool = &labState->pathPool;
 	pathPool->maxNodeCount = RoadLabMaxPathNodeN;

@@ -463,8 +463,8 @@ void InitAutoCarMovement(AutoCar* autoCar)
 
 void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
-	MapElem targetElem = JunctionElem(autoCar->onJunction);
-	MapElem nextElem = JunctionElem(junction);
+	MapElem targetElem = GetJunctionElem(autoCar->onJunction);
+	MapElem nextElem = GetJunctionElem(junction);
 
 	autoCar->moveNode = ConnectElems(autoCar->car.map, targetElem, nextElem, tmpArena, pathPool);
 
@@ -564,7 +564,7 @@ void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* t
 			}
 		}
 	} else {
-		Junction* targetJunction = RandomJunction(*car->map);
+		Junction* targetJunction = GetRandomJunction(car->map);
 		MoveAutoCarToJunction(autoCar, targetJunction, arena, tmpArena, pathPool);
 	}
 }

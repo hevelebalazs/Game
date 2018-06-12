@@ -49,9 +49,8 @@ static void MoveHuman(Human* human, Point moveVector) {
 				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, humanRadius, human->position, pointToGo);
 			else
 				human->inBuilding = 0;
-		}
-		else {
-			crossInfo = ClosestExtBuildingCrossInfo(*human->map, humanRadius, human->position, pointToGo);
+		} else {
+			crossInfo = GetClosestExtBuildingCrossInfo(human->map, humanRadius, human->position, pointToGo);
 
 			if (crossInfo.type == CrossEntrance)
 				human->inBuilding = crossInfo.building;

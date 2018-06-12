@@ -12,8 +12,8 @@ void InitAutoHumanMovement(AutoHuman* autoHuman) {
 void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
 	Human* human = &autoHuman->human;
 
-	MapElem targetElem = JunctionSidewalkElem(autoHuman->onJunction);
-	MapElem nextElem = JunctionSidewalkElem(junction);
+	MapElem targetElem = GetJunctionSidewalkElem(autoHuman->onJunction);
+	MapElem nextElem = GetJunctionSidewalkElem(junction);
 	int startCornerIndex = GetClosestJunctionCornerIndex(autoHuman->onJunction, autoHuman->human.position);
 	int endCornerIndex = GetRandomJunctionCornerIndex(junction);
 
@@ -90,7 +90,7 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemAr
 		}
 	}
 	else {
-		Junction* targetJunction = RandomJunction(*human->map);
+		Junction* targetJunction = GetRandomJunction(human->map);
 		MoveAutoHumanToJunction(autoHuman, targetJunction, arena, tmpArena, pathPool);
 	}
 }

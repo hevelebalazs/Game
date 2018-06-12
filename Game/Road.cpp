@@ -637,13 +637,18 @@ void DrawRoad(Renderer renderer, Road* road)
 
 void DrawRoadSidewalk(Renderer renderer, Road* road)
 {
-	Point side1 = FromRoadCoord1(road, 0.0, -LaneWidth - SidewalkWidth * 0.5f);
-	Point side2 = FromRoadCoord2(road, 0.0, -LaneWidth - SidewalkWidth * 0.5f);
+	Point side1 = FromRoadCoord1(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
+	Point side2 = FromRoadCoord2(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
 	DrawLine(renderer, side1, side2, SidewalkColor, SidewalkWidth);
 
 	side1 = FromRoadCoord1(road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
 	side2 = FromRoadCoord2(road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
 	DrawLine(renderer, side1, side2, SidewalkColor, SidewalkWidth);
+}
+
+void DrawTexturedRoad(Renderer renderer, Road* road, Texture roadTexture)
+{
+	DrawWorldTextureLine(renderer, road->endPoint1, road->endPoint2, 2.0f * LaneWidth, roadTexture);
 }
 
 // Junction

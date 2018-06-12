@@ -1,17 +1,17 @@
 #include "GridMap.hpp"
 
-static float JunctionGridDistance = MinimumJunctionDistance * 1.5f;
-static float MaxJunctionDistanceFromOrigin = MinimumJunctionDistance * 0.5f;
-
 static void GenerateGridMapJunctions(Map* map, int junctionRowN, int junctionColN)
 {
+	static float JunctionGridDistance = MinimumJunctionDistance * 1.5f;
+	static float MaxJunctionDistanceFromOrigin = MinimumJunctionDistance * 0.5f;
+
 	float left = -(junctionRowN * JunctionGridDistance) / 2;
 	float top  = -(junctionColN * JunctionGridDistance) / 2;
 
 	float junctionX = left;
 	float junctionY = top;
 
-	map->junctionCount = (junctionRowN * junctionColN);
+	map->junctionN = (junctionRowN * junctionColN);
 	for (int row = 0; row < junctionRowN; ++row) {
 		for (int col = 0; col < junctionColN; ++col) {
 			Junction* junction = map->junctions + (row * junctionColN) + col;
@@ -79,7 +79,7 @@ static bool AreJunctionsConnected(Junction* junction1, Junction* junction2)
 
 static void GenerateGridMapRoads(Map* map, int junctionRowN, int junctionColN, int roadN, MemArena* tmpArena)
 {
-	JunctionGridPosition* connectedJunctionPositions = ArenaPushArray(tmpArena, JunctionGridPosition, map->junctionCount);
+	JunctionGridPosition* connectedJunctionPositions = ArenaPushArray(tmpArena, JunctionGridPosition, map->junctionN);
 	int connectedJunctionN = 0;
 
 	JunctionGridPosition startPosition = {};
@@ -88,7 +88,7 @@ static void GenerateGridMapRoads(Map* map, int junctionRowN, int junctionColN, i
 	connectedJunctionPositions[connectedJunctionN] = startPosition;
 	connectedJunctionN++;
 
-	map->roadCount = roadN;
+	map->roadN = roadN;
 
 	int createdRoadN = 0;
 	while (1) {
@@ -154,7 +154,7 @@ static void ReindexJunction(Junction* oldJunction, Junction* newJunction)
 static void RemoveEmptyJunctions(Map* map)
 {
 	int newJunctionN = 0;
-	for (int i = 0; i < map->junctionCount; ++i) {
+	for (int i = 0; i < map->junctionN; ++i) {
 		Junction* junction = map->junctions + i;
 		if (junction->roadN > 0) {
 			Junction* newJunction = map->junctions + newJunctionN;
@@ -164,12 +164,12 @@ static void RemoveEmptyJunctions(Map* map)
 		}
 	}
 
-	map->junctionCount = newJunctionN;
+	map->junctionN = newJunctionN;
 }
 
 static void InitJunctions(Map* map)
 {
-	for (int i = 0; i < map->junctionCount; ++i) {
+	for (int i = 0; i < map->junctionN; ++i) {
 		Junction* junction = map->junctions + i;
 		if (junction->roadN > 0) {
 			CalculateStopDistances(junction);
@@ -180,7 +180,7 @@ static void InitJunctions(Map* map)
 
 static void GenerateCrossings(Map* map)
 {
-	for (int i = 0; i < map->roadCount; ++i) {
+	for (int i = 0; i < map->roadN; ++i) {
 		Road* road = map->roads + i;
 		GenerateCrossing(road);
 	}

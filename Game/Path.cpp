@@ -29,21 +29,21 @@ static inline void PushElem(Path* path, MapElem elem) {
 
 static inline PathNode RoadNode(Road* road) {
 	PathNode node = {};
-	node.elem = RoadElem(road);
+	node.elem = GetRoadElem(road);
 	node.next = 0;
 	return node;
 }
 
 static inline PathNode JunctionNode(Junction* junction) {
 	PathNode node = {};
-	node.elem = JunctionElem(junction);
+	node.elem = GetJunctionElem(junction);
 	node.next = 0;
 	return node;
 }
 
 static inline PathNode BuildingNode(Building* building) {
 	PathNode node = {};
-	node.elem = BuildingElem(building);
+	node.elem = GetBuildingElem(building);
 	node.next = 0;
 	return node;
 }
@@ -87,12 +87,7 @@ struct PathHelper {
 };
 
 static void PushFromBuildingToRoadElem(Path* path, Building* building) {
-	while (building->connectElem.type == MapElemBuilding) {
-		PushBuilding(path, building);
-		building = building->connectElem.building;
-	}
-
-	PushBuilding(path, building);
+	// TODO: Update this in a Building project!
 }
 
 static void PushFromRoadElemToBuilding(Path* path, Building *building) {
@@ -142,9 +137,9 @@ static inline void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem e
 		return;
 	}
 
-	for (int i = 0; i < map->junctionCount; ++i) 
+	for (int i = 0; i < map->junctionN; ++i) 
 		helper->isJunctionHelper[i] = 0;
-	for (int i = 0; i < map->roadCount; ++i)
+	for (int i = 0; i < map->roadN; ++i)
 		helper->isRoadHelper[i] = 0;
 
 	if (elemStart.type == MapElemRoad)
@@ -455,52 +450,25 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, in
 	}
 }
 
-Building* CommonAncestor(Building* building1, Building* building2) {
-	while (building1->connectTreeHeight != building2->connectTreeHeight) {
-		if (building1->connectTreeHeight > building2->connectTreeHeight)
-			building1 = building1->connectElem.building;
-		if (building2->connectTreeHeight > building1->connectTreeHeight)
-			building2 = building2->connectElem.building;
-	}
-
-	while (building1 && building2 && building1->connectTreeHeight > 1 && building2->connectTreeHeight > 1) {
-		if (building1 == building2)
-			return building1;
-
-		building1 = building1->connectElem.building;
-		building2 = building2->connectElem.building;
-	}
-
-	if (building1 == building2)
-		return building1;
-	else
-		return 0;
+Building* CommonAncestor(Building* building1, Building* building2)
+{
+	Building* building = 0;
+	// TODO: Update this in a Building project!
+	return building;
 }
 
 static void PushDownTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
-	while (buildingStart != buildingEnd) {
-		PushBuilding(path, buildingStart);
-
-		buildingStart = buildingStart->connectElem.building;
-	}
-
-	PushBuilding(path, buildingEnd);
+	// TODO: Update this in a Building project!
 }
 
 static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
-	int startIndex = path->nodeCount;
-	PushDownTheTree(path, buildingEnd, buildingStart);
-
-	int endIndex = path->nodeCount - 1;
-	InvertSegment(path, startIndex, endIndex);
+	// TODO: Update this in a Building project!
 }
 
 MapElem GetConnectRoadElem(Building* building) {
-	while (building->connectElem.type == MapElemBuilding) {
-		building = building->connectElem.building;
-	}
-
-	return building->connectElem;
+	MapElem result = {};
+	// TODO: Update this in a Building project!
+	return result;
 }
 
 static PathNode* GetFreePathNode(PathPool* pathPool) {
@@ -558,10 +526,10 @@ PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool) {
 
 static inline PathHelper PathHelperForMap(Map* map, MemArena* arena) {
 	PathHelper helper = {};
-	helper.nodes = ArenaPushArray(arena, PathNode, map->junctionCount + map->roadCount);
-	helper.isJunctionHelper = ArenaPushArray(arena, int, map->junctionCount);
-	helper.isRoadHelper = ArenaPushArray(arena, int, map->roadCount);
-	helper.sourceIndex = ArenaPushArray(arena, int, map->junctionCount + map->roadCount);
+	helper.nodes = ArenaPushArray(arena, PathNode, map->junctionN + map->roadN);
+	helper.isJunctionHelper = ArenaPushArray(arena, int, map->junctionN);
+	helper.isRoadHelper = ArenaPushArray(arena, int, map->roadN);
+	helper.sourceIndex = ArenaPushArray(arena, int, map->junctionN + map->roadN);
 
 	return helper;
 }
@@ -614,10 +582,10 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 	}
 	
 	if (!finished) {
-		for (int i = 0; i < map->roadCount; ++i)
+		for (int i = 0; i < map->roadN; ++i)
 			helper.isRoadHelper[i] = 0;
 
-		for (int i = 0; i < map->junctionCount; ++i)
+		for (int i = 0; i < map->junctionN; ++i)
 			helper.isJunctionHelper[i] = 0;
 
 		MapElem roadElemStart = {};
@@ -726,10 +694,10 @@ PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, int startSubIndex,
 	PathHelper helper = PathHelperForMap(map, arena);
 	// TODO: create a ResetPathHelper function?
 	//       or move this to where the helper is actually used?
-	for (int i = 0; i < map->roadCount; ++i)
+	for (int i = 0; i < map->roadN; ++i)
 		helper.isRoadHelper[i] = 0;
 
-	for (int i = 0; i < map->junctionCount; ++i)
+	for (int i = 0; i < map->junctionN; ++i)
 		helper.isJunctionHelper[i] = 0;
 
 	Path path = {};
@@ -738,11 +706,11 @@ PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, int startSubIndex,
 
 	MapElem startSidewalkElem = startElem;
 	if (startElem.type == MapElemCrossing)
-		startSidewalkElem = RoadSidewalkElem(startElem.road);
+		startSidewalkElem = GetRoadSidewalkElem(startElem.road);
 
 	MapElem endSidewalkElem = endElem;
 	if (endElem.type == MapElemCrossing)
-		endSidewalkElem = RoadSidewalkElem(endElem.road);
+		endSidewalkElem = GetRoadSidewalkElem(endElem.road);
 
 	PushConnectSidewalkElems(&path, map, startSidewalkElem, startSubIndex, endSidewalkElem, endSubIndex, &helper);
 	PathNode* firstNode = PushPathToPool(path, pathPool);
@@ -880,18 +848,7 @@ bool EndFromBuildingToNothing(DirectedPoint point, Building* building) {
 DirectedPoint NextFromBuildingToBuilding(DirectedPoint startPoint, Building* building, Building* nextBuilding) {
 	DirectedPoint result = {};
 
-	// TODO: add direction
-	if (building->connectElem.type == MapElemBuilding && building->connectElem.building == nextBuilding) {
-		if (PointEqual(startPoint.position, building->connectPointClose))
-			result.position = building->connectPointFar;
-		else
-			result.position = NextPointAroundBuilding(building, startPoint.position, building->connectPointClose);
-	} else if (nextBuilding->connectElem.type == MapElemBuilding && nextBuilding->connectElem.building == building) {
-		if (PointEqual(startPoint.position, building->connectPointFar) || PointEqual(startPoint.position, building->connectPointFarShow))
-			result.position = building->connectPointClose;
-		else
-			result.position = NextPointAroundBuilding(building, startPoint.position, nextBuilding->connectPointFar);
-	}
+	// TODO: Update this in a Building project!
 
 	return result;
 }
@@ -899,10 +856,7 @@ DirectedPoint NextFromBuildingToBuilding(DirectedPoint startPoint, Building* bui
 bool EndFromBuildingToBuilding(DirectedPoint point, Building* building, Building* nextBuilding) {
 	bool result = false;
 
-	if (building->connectElem.type == MapElemBuilding && building->connectElem.building == nextBuilding)
-		result = PointEqual(point.position, building->connectPointFar);
-	else if (nextBuilding->connectElem.type == MapElemBuilding && nextBuilding->connectElem.building == building)
-		result = PointEqual(point.position, nextBuilding->connectPointFar);
+	// TODO: Update this in a Building project!
 
 	return result;
 }

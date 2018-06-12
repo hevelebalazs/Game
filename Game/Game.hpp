@@ -2,7 +2,6 @@
 
 #include "AutoHuman.hpp"
 #include "Car.hpp"
-#include "MapElem.hpp"
 #include "Memory.hpp"
 #include "Path.hpp"
 #include "PlayerHuman.hpp"

@@ -5,6 +5,7 @@
 #include "../Map.hpp"
 #include "../Memory.hpp"
 #include "../Renderer.hpp"
+#include "../Texture.hpp"
 
 float MapTileSide = 50.0f;
 
@@ -54,6 +55,8 @@ struct MapLabState {
 	MemArena arena;
 	MemArena tmpArena;
 	Map map;
+
+	Texture roadTexture;
 };
 MapLabState gMapLabState;
 
@@ -213,6 +216,8 @@ static void MapLabInit(MapLabState* labState, int windowWidth, int windowHeight)
 	map->junctions = ArenaPushArray(&labState->arena, Junction, MaxJunctionN);
 	map->roads = ArenaPushArray(&labState->arena, Road, MaxRoadN);
 	GenerateGridMap(map, MaxJunctionRowN, MaxJunctionColN, MaxRoadN, &labState->tmpArena);
+
+	labState->roadTexture = RandomGreyTexture(8, 100, 150);
 }
 
 static TileIndex GetTileIndexContainingPoint(MapLabState* labState, Point point)
@@ -254,6 +259,9 @@ static void GenerateTileBitmap(MapLabState* labState, TileIndex tileIndex, Bitma
 	renderer.bitmap = *bitmap;
 	renderer.camera = &camera;
 	DrawGroundElems(renderer, &labState->map);
+	Map* map = &labState->map;
+	for (int i = 0; i < map->roadN; ++i)
+		DrawTexturedRoad(renderer, &map->roads[i], labState->roadTexture);
 }
 
 static bool IsTileCached(MapLabState* labState, TileIndex tileIndex)
@@ -437,6 +445,7 @@ void MapLab(HINSTANCE instance)
 }
 
 // TODO: Replace color codes with world texture!
+	// TODO: Draw textured bitmap or apply texture afterward?
 // TODO: Renderer refactoring
 // TODO: Rename to MapTileLab?
 // TODO: Pull out common Lab functions?

@@ -5,17 +5,18 @@
 
 extern Color GrassColor = Color{0.0f, 0.8f, 0.0f};
 
-Junction* RandomJunction(Map map) {
-	int junctionIndex = RandMod(map.junctionCount);
-
-	return &map.junctions[junctionIndex];
+Junction* GetRandomJunction(Map* map)
+{
+	int junctionIndex = RandMod(map->junctionN);
+	Junction* junction = &map->junctions[junctionIndex];
+	return junction;
 }
 
 Junction* GetJunctionAtPoint(Map* map, Point point)
 {
 	Junction* result = 0;
-	for (int i = 0; i < map->junctionCount; ++i) {
-		Junction* junction = map->junctions + i;
+	for (int i = 0; i < map->junctionN; ++i) {
+		Junction* junction = &map->junctions[i];
 		if (IsPointOnJunction(point, junction)) {
 			result = junction;
 			break;
@@ -24,55 +25,36 @@ Junction* GetJunctionAtPoint(Map* map, Point point)
 	return result;
 }
 
-Junction* JunctionAtPoint(Map map, Point point, float maxDistance) {
-	float maxDistanceSquare = maxDistance * maxDistance;
-
-	Junction* result = 0;
-
-	for (int i = 0; i < map.junctionCount; ++i) {
-		float distanceSquare = DistanceSquare(point, map.junctions[i].position);
-
-		if (distanceSquare <= maxDistanceSquare) 
-			result = &map.junctions[i];
-	}
-
-	return result;
-};
-
-MapElem ClosestRoadOrJunction(Map map, Point point) {
+MapElem GetClosestRoadElem(Map* map, Point point)
+{
 	MapElem result = {};
-	result.type = MapElemNone;
 
 	Road* closestRoad = 0;
 	float minDistanceSquare = 0.0f;
-
-	for (int i = 0; i < map.roadCount; ++i) {
-		Road* road = &map.roads[i];
+	for (int i = 0; i < map->roadN; ++i) {
+		Road* road = &map->roads[i];
 
 		bool betweenX =
 			((road->endPoint1.x <= point.x) && (point.x <= road->endPoint2.x)) ||
 			((road->endPoint2.x <= point.x) && (point.x <= road->endPoint1.x));
-
 		bool betweenY =
 			((road->endPoint1.y <= point.y) && (point.y <= road->endPoint2.y)) ||
 			((road->endPoint2.y <= point.y) && (point.y <= road->endPoint1.y));
 
 		if (betweenX || betweenY) {
 			float distanceSquare = DistanceSquareFromRoad(road, point);
-
 			if (!closestRoad || distanceSquare < minDistanceSquare) {
 				closestRoad = road;
 				minDistanceSquare = distanceSquare;
 
-				result.type = MapElemRoad;
-				result.road = road;
+				result = GetRoadElem(road);
 			}
 		}
 	}
 
 	Junction* closestJunction = 0;
-	for (int i = 0; i < map.junctionCount; ++i) {
-		Junction* junction = &map.junctions[i];
+	for (int i = 0; i < map->junctionN; ++i) {
+		Junction* junction = &map->junctions[i];
 
 		bool betweenX = (Abs(junction->position.x - point.x) <= LaneWidth);
 		bool betweenY = (Abs(junction->position.y - point.y) <= LaneWidth);
@@ -84,49 +66,40 @@ MapElem ClosestRoadOrJunction(Map map, Point point) {
 				closestJunction = junction;
 				minDistanceSquare = distanceSquare;
 
-				result.type = MapElemJunction;
-				result.junction = junction;
+				result = GetJunctionElem(junction);
 			}
 		}
 	}
-
 	return result;
 }
 
-Building* BuildingAtPoint(Map map, Point point) {
-	Building* result = 0;
-
-	for (int i = 0; i < map.buildingCount; ++i) {
-		if (IsPointInBuilding(point, map.buildings[i])) 
-			result = &map.buildings[i];
-	}
-
+static Point GetBuildingCenter(Building* building)
+{
+	Point result = {};
+	result.x = (building->left + building->right) * 0.5f;
+	result.y = (building->top + building->bottom) * 0.5f;
 	return result;
 }
 
-Building* RandomBuilding(Map map) {
-	int buildingIndex = RandMod(map.buildingCount);
-
-	return &map.buildings[buildingIndex];
+Building* GetRandomBuilding(Map* map)
+{
+	int buildingIndex = RandMod(map->buildingN);
+	Building* building = &map->buildings[buildingIndex];
+	return building;
 }
 
-Building* ClosestBuilding(Map map, Point point, BuildingType type) {
+Building* GetClosestBuilding(Map* map, Point point, BuildingType type)
+{
 	Building* result = 0;
+
 	float minDistanceSquare = 0.0f;
-
-	for (int i = 0; i < map.buildingCount; ++i) {
-		Building* building = &map.buildings[i];
+	for (int i = 0; i < map->buildingN; ++i) {
+		Building* building = &map->buildings[i];
 		if (building->type != type) 
 			continue;
 
-		// TODO: make a function for this, since it is used a lot?
-		Point center = {
-			(building->left + building->right) * 0.5f,
-			(building->top + building->bottom) * 0.5f
-		};
-
+		Point center = GetBuildingCenter(building);
 		float distanceSquare = DistanceSquare(point, center);
-
 		if (!result || distanceSquare < minDistanceSquare) {
 			result = building;
 			minDistanceSquare = distanceSquare;
@@ -136,17 +109,16 @@ Building* ClosestBuilding(Map map, Point point, BuildingType type) {
 	return result;
 }
 
-BuildingCrossInfo ClosestExtBuildingCrossInfo(Map map, float radius, Point closePoint, Point farPoint) {
+BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, float radius, Point closePoint, Point farPoint)
+{
 	BuildingCrossInfo result = {};
+
 	float minDistanceSquare = 0.0f;
-
-	for (int i = 0; i < map.buildingCount; ++i) {
-		BuildingCrossInfo crossInfo = ExtBuildingClosestCrossInfo(&map.buildings[i], radius, closePoint, farPoint);
-
+	for (int i = 0; i < map->buildingN; ++i) {
+		BuildingCrossInfo crossInfo = ExtBuildingClosestCrossInfo(&map->buildings[i], radius, closePoint, farPoint);
 		if (crossInfo.building) {
 			// TODO: is it a problem that this distanceSquare is calculated twice?
 			float distanceSquare = DistanceSquare(closePoint, crossInfo.crossPoint);
-
 			if (!result.building || distanceSquare < minDistanceSquare) {
 				minDistanceSquare = distanceSquare;
 				result = crossInfo;
@@ -157,12 +129,13 @@ BuildingCrossInfo ClosestExtBuildingCrossInfo(Map map, float radius, Point close
 	return result;
 }
 
-Building* ClosestCrossedBuilding(Map map, Point pointClose, Point pointFar, Building* excludedBuilding) {
+Building* GetClosestCrossedBuilding(Map* map, Point pointClose, Point pointFar, Building* excludedBuilding)
+{
 	Building* result = 0;
-	float minDistanceSquare = 0.0f;
 
-	for (int i = 0; i < map.buildingCount; ++i) {
-		Building* building = &map.buildings[i];
+	float minDistanceSquare = 0.0f;
+	for (int i = 0; i < map->buildingN; ++i) {
+		Building* building = &map->buildings[i];
 		if (building == excludedBuilding) 
 			continue;
 
@@ -170,7 +143,6 @@ Building* ClosestCrossedBuilding(Map map, Point pointClose, Point pointFar, Buil
 			Point closestCrossPoint = ClosestBuildingCrossPoint(*building, pointClose, pointFar);
 
 			float distanceSquare = DistanceSquare(pointClose, closestCrossPoint);
-
 			if (result == 0 || distanceSquare < minDistanceSquare) {
 				result = building;
 				minDistanceSquare = distanceSquare;
@@ -181,34 +153,46 @@ Building* ClosestCrossedBuilding(Map map, Point pointClose, Point pointFar, Buil
 	return result;
 }
 
-MapElem RoadElemAtPoint(Map map, Point point) {
+Building* GetBuildingAtPoint(Map* map, Point point)
+{
+	Building* result = 0;
+	for (int i = 0; i < map->buildingN; ++i) {
+		if (IsPointInBuilding(point, map->buildings[i])) 
+			result = &map->buildings[i];
+	}
+
+	return result;
+}
+
+MapElem GetRoadElemAtPoint(Map* map, Point point)
+{
 	MapElem result = {};
 	result.type = MapElemNone;
 
-	for (int i = 0; i < map.roadCount; ++i) {
-		Road* road = map.roads + i;
+	for (int i = 0; i < map->roadN; ++i) {
+		Road* road = &map->roads[i];
 		if (IsPointOnRoad(point, road)) {
-			result = RoadElem(road);
+			result = GetRoadElem(road);
 			return result;
 		}
 	}
 
-	for (int i = 0; i < map.junctionCount; ++i) {
-		Junction* junction = map.junctions + i;
+	for (int i = 0; i < map->junctionN; ++i) {
+		Junction* junction = &map->junctions[i];
 		if (IsPointOnJunction(point, junction)) {
-			result = JunctionElem(junction);
+			result = GetJunctionElem(junction);
 			return result;
 		}
 	}
 
-	for (int i = 0; i < map.buildingCount; ++i) {
-		if (IsPointInBuilding(point, map.buildings[i])) {
-			result = BuildingElem(&map.buildings[i]);
+	for (int i = 0; i < map->buildingN; ++i) {
+		if (IsPointInBuilding(point, map->buildings[i])) {
+			result = GetBuildingElem(&map->buildings[i]);
 			return result;
 		}
 
-		if (IsPointOnBuildingConnector(point, map.buildings[i])) {
-			result = BuildingConnectorElem(&map.buildings[i]);
+		if (IsPointOnBuildingConnector(point, map->buildings[i])) {
+			result = GetBuildingConnectorElem(&map->buildings[i]);
 			return result;
 		}
 	}
@@ -216,27 +200,27 @@ MapElem RoadElemAtPoint(Map map, Point point) {
 	return result;
 }
 
-MapElem PedestrianElemAtPoint(Map map, Point point) {
+MapElem GetPedestrianElemAtPoint(Map* map, Point point)
+{
 	MapElem result = {};
-	result.type = MapElemNone;
 
-	for (int i = 0; i < map.junctionCount; ++i) {
-		Junction* junction = map.junctions + i;
+	for (int i = 0; i < map->junctionN; ++i) {
+		Junction* junction = &map->junctions[i];
 		if (IsPointOnJunctionSidewalk(point, junction)) {
-			result = JunctionSidewalkElem(junction);
+			result = GetJunctionSidewalkElem(junction);
 			return result;
 		}
 	}
 
-	for (int i = 0; i < map.roadCount; ++i) {
-		Road* road = map.roads + i;
+	for (int i = 0; i < map->roadN; ++i) {
+		Road* road = &map->roads[i];
 		if (IsPointOnRoadSidewalk(point, road)) {
-			result = RoadSidewalkElem(road);
+			result = GetRoadSidewalkElem(road);
 			return result;
 		}
 
 		if (IsPointOnCrossing(point, road)) {
-			result = CrossingElem(road);
+			result = GetCrossingElem(road);
 			return result;
 		}
 	}
@@ -244,20 +228,21 @@ MapElem PedestrianElemAtPoint(Map map, Point point) {
 	return result;
 }
 
-void DrawGroundElems(Renderer renderer, Map* map) {
+void DrawGroundElems(Renderer renderer, Map* map)
+{
 	ClearScreen(renderer, GrassColor);
 
-	for (int i = 0; i < map->roadCount; ++i)
+	for (int i = 0; i < map->roadN; ++i)
 		DrawRoadSidewalk(renderer, map->roads + i);
-	for (int i = 0; i < map->junctionCount; ++i)
+	for (int i = 0; i < map->junctionN; ++i)
 		DrawJunctionSidewalk(renderer, map->junctions + i);
 
-	for (int i = 0; i < map->roadCount; ++i)
+	for (int i = 0; i < map->roadN; ++i)
 		DrawRoad(renderer, map->roads + i);
-	for (int i = 0; i < map->junctionCount; ++i)
+	for (int i = 0; i < map->junctionN; ++i)
 		DrawJunction(renderer, map->junctions + i);
 
-	for (int i = 0; i < map->junctionCount; ++i)
+	for (int i = 0; i < map->junctionN; ++i)
 		DrawTrafficLights(renderer, map->junctions + i);
 }
 
@@ -270,16 +255,10 @@ struct BuildingHelper {
 	MemArena* arena;
 };
 
-inline Point BuildingCenter(Building* building) {
-	Point result = {};
-	result.x = (building->left + building->right) * 0.5f;
-	result.y = (building->top + building->bottom) * 0.5f;
-	return result;
-}
-
-inline bool AreBuildingsInOrder(Point center, Building building1, Building building2) {
-	Point point1 = BuildingCenter(&building1);
-	Point point2 = BuildingCenter(&building2);
+inline bool AreBuildingsInOrder(Point center, Building building1, Building building2)
+{
+	Point point1 = GetBuildingCenter(&building1);
+	Point point2 = GetBuildingCenter(&building2);
 
 	float dist1 = CityDistance(center, point1);
 	float dist2 = CityDistance(center, point2);
@@ -290,7 +269,8 @@ inline bool AreBuildingsInOrder(Point center, Building building1, Building build
 		return false;
 }
 
-inline void MergeBuildingArrays(BuildingHelper* helper, Point center, int leftStart, int leftEnd, int rightStart, int rightEnd) {
+inline void MergeBuildingArrays(BuildingHelper* helper, Point center, int leftStart, int leftEnd, int rightStart, int rightEnd)
+{
 	int left = leftStart;
 	int right = rightStart;
 
@@ -323,7 +303,8 @@ inline void MergeBuildingArrays(BuildingHelper* helper, Point center, int leftSt
 		helper->buildings[i] = helper->tmpBuildings[i];
 }
 
-inline void SortBuildings(BuildingHelper* helper, Point center) {
+inline void SortBuildings(BuildingHelper* helper, Point center)
+{
 	int length = 1;
 	while (length <= helper->buildingCount) {
 		int leftStart = 0;
@@ -348,8 +329,9 @@ inline void SortBuildings(BuildingHelper* helper, Point center) {
 }
 
 // TODO: move the sorting logic to renderer
-void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets) {
-	for (int i = 0; i < map->buildingCount; ++i)
+void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets)
+{
+	for (int i = 0; i < map->buildingN; ++i)
 		DrawBuilding(renderer, map->buildings[i], assets);
 
 	/*
@@ -372,8 +354,97 @@ void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* ass
 	*/
 }
 
-void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets) {
+void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets)
+{
 	DrawGroundElems(renderer, map);
 	DrawBuildings(renderer, map, arena, assets);
 }
 
+MapElem GetRoadElem(Road* road)
+{
+	MapElem result = {};
+	result.type = MapElemRoad;
+	result.road = road;
+
+	return result;
+}
+
+MapElem GetRoadSidewalkElem(Road* road)
+{
+	MapElem result = {};
+	result.type = MapElemRoadSidewalk;
+	result.road = road;
+
+	return result;
+}
+
+MapElem GetCrossingElem(Road* road)
+{
+	MapElem result = {};
+	result.type = MapElemCrossing;
+	result.road = road;
+
+	return result;
+}
+
+MapElem GetJunctionElem(Junction* junction)
+{
+	MapElem result = {};
+	result.type = MapElemJunction;
+	result.junction = junction;
+
+	return result;
+}
+
+MapElem GetJunctionSidewalkElem(Junction* junction)
+{
+	MapElem result = {};
+	result.type = MapElemJunctionSidewalk;
+	result.junction = junction;
+
+	return result;
+}
+
+MapElem GetBuildingElem(Building* building)
+{
+	MapElem result = {};
+	result.type = MapElemBuilding;
+	result.building = building;
+
+	return result;
+}
+
+MapElem GetBuildingConnectorElem(Building* building)
+{
+	MapElem result = {};
+	result.type = MapElemBuildingConnector;
+	result.building = building;
+
+	return result;
+}
+
+bool AreMapElemsEqual(MapElem elem1, MapElem elem2)
+{
+	if (elem1.type != elem2.type) 
+		return false;
+	else if (elem1.type == MapElemNone) 
+		return true;
+	else
+		return (elem1.address == elem2.address);
+}
+
+void HighlightMapElem(Renderer renderer, MapElem mapElem, Color color)
+{
+	if (mapElem.type == MapElemBuilding)
+		HighlightBuilding(renderer, *mapElem.building, color);
+	else if (mapElem.type == MapElemBuildingConnector)
+		HighlightBuildingConnector(renderer, *mapElem.building, color);
+	else if (mapElem.type == MapElemJunction)
+		HighlightJunction(renderer, mapElem.junction, color);
+	else if (mapElem.type == MapElemJunctionSidewalk) 
+		HighlightJunctionSidewalk(renderer, mapElem.junction, color);
+	else if (mapElem.type == MapElemRoad)
+		HighlightRoad(renderer, mapElem.road, color);
+	else if (mapElem.type == MapElemRoadSidewalk)
+		HighlightRoadSidewalk(renderer, mapElem.road, color);
+}

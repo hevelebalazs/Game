@@ -366,32 +366,34 @@ void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, int toLeft, int t
 	float fromHeight = fromHeightStart;
 	float fromWidth = fromWidthStart;
 
-	unsigned int* fromRowFirstPixelAddress = GetBitmapPixelAddress(fromBitmap, (int)fromHeight, (int)fromWidth);
-	unsigned int* toRowFirstPixelAddress = GetBitmapPixelAddress(toBitmap, top, left);
+	if (top <= bottom && left <= right) {
+		unsigned int* fromRowFirstPixelAddress = GetBitmapPixelAddress(fromBitmap, (int)fromHeight, (int)fromWidth);
+		unsigned int* toRowFirstPixelAddress = GetBitmapPixelAddress(toBitmap, top, left);
 
-	int prevFromRow = (int)fromHeight;
-	for (int toRow = top; toRow <= bottom; ++toRow) {
-		int fromRow = (int)fromHeight;
-		fromWidth = fromWidthStart;
-		int prevFromCol = (int)fromWidth;
-		unsigned int* fromPixelAddress = fromRowFirstPixelAddress;		
-		unsigned int* toPixelAddress = toRowFirstPixelAddress;
-		for (int toCol = left; toCol <= right; ++toCol) {
-			int fromCol = (int)fromWidth;
-			fromPixelAddress += (fromCol - prevFromCol);
-			prevFromCol = fromCol;
+		int prevFromRow = (int)fromHeight;
+		for (int toRow = top; toRow <= bottom; ++toRow) {
+			int fromRow = (int)fromHeight;
+			fromWidth = fromWidthStart;
+			int prevFromCol = (int)fromWidth;
+			unsigned int* fromPixelAddress = fromRowFirstPixelAddress;		
+			unsigned int* toPixelAddress = toRowFirstPixelAddress;
+			for (int toCol = left; toCol <= right; ++toCol) {
+				int fromCol = (int)fromWidth;
+				fromPixelAddress += (fromCol - prevFromCol);
+				prevFromCol = fromCol;
 
-			toPixelAddress++;
+				toPixelAddress++;
 
-			*toPixelAddress = *fromPixelAddress;
-			fromWidth += fromWidthAdd;
+				*toPixelAddress = *fromPixelAddress;
+				fromWidth += fromWidthAdd;
+			}
+
+			fromHeight += fromHeightAdd;
+			fromRowFirstPixelAddress += fromBitmap->width * (fromRow - prevFromRow);
+			prevFromRow = fromRow;
+
+			toRowFirstPixelAddress += toBitmap->width;
 		}
-
-		fromHeight += fromHeightAdd;
-		fromRowFirstPixelAddress += fromBitmap->width * (fromRow - prevFromRow);
-		prevFromRow = fromRow;
-
-		toRowFirstPixelAddress += toBitmap->width;
 	}
 }
 
