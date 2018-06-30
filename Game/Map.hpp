@@ -3,22 +3,24 @@
 #include "Bitmap.hpp"
 #include "Building.hpp"
 #include "BuildingType.hpp"
+#include "Draw.hpp"
+#include "Math.hpp"
 #include "Memory.hpp"
-#include "Renderer.hpp"
+#include "Type.hpp"
 
-extern Color GrassColor;
+#define GrassColor	GetColor(0.0f, 0.8f, 0.0f)
 
 struct GameAssets;
 
 struct Map {
 	Junction* junctions;
-	int junctionN;
+	I32 junctionN;
 
 	Road* roads;
-	int roadN;
+	I32 roadN;
 
 	Building* buildings;
-	int buildingN;
+	I32 buildingN;
 };
 
 enum MapElemType {
@@ -44,22 +46,23 @@ struct MapElem {
 };
 
 Junction* GetRandomJunction(Map* map);
-Junction* GetJunctionAtPoint(Map* map, Point point);
+Junction* GetJunctionAtPoint(Map* map, V2 point);
 
-MapElem GetClosestRoadElem(Map* map, Point point);
+MapElem GetClosestRoadElem(Map* map, V2 point);
 
 Building* GetRandomBuilding(Map* map);
-Building* GetClosestBuilding(Map* map, Point point, BuildingType type);
-BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, float radius, Point closePoint, Point farPoint);
-Building* GetClosestCrossedBuilding(Map* map, Point point1, Point point2, Building* excludedBuilding);
-Building* GetBuildingAtPoint(Map* map, Point point);
+Building* GetClosestBuilding(Map* map, V2 point, BuildingType type);
+BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, F32 radius, V2 closePoint, V2 farPoint);
+Building* GetClosestCrossedBuilding(Map* map, V2 point1, V2 point2, Building* excludedBuilding);
+Building* GetBuildingAtPoint(Map* map, V2 point);
 
-MapElem GetRoadElemAtPoint(Map* map, Point point);
-MapElem GetPedestrianElemAtPoint(Map* map, Point point);
+MapElem GetRoadElemAtPoint(Map* map, V2 point);
+MapElem GetPedestrianElemAtPoint(Map* map, V2 point);
 
-void DrawGroundElems(Renderer renderer, Map* map);
-void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets);
-void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets);
+void DrawGroundElems(Canvas canvas, Map* map);
+void DrawTexturedGroundElems(Canvas canvas, Map* map, Texture grassTexture, Texture roadTexture, Texture sidewalkTexture, Texture stripeTexture);
+void DrawBuildings(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets);
+void DrawMap(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets);
 
 MapElem GetRoadElem(Road* road);
 MapElem GetRoadSidewalkElem(Road* road);
@@ -68,5 +71,5 @@ MapElem GetJunctionElem(Junction* junction);
 MapElem GetJunctionSidewalkElem(Junction* junction);
 MapElem GetBuildingElem(Building* building);
 MapElem GetBuildingConnectorElem(Building* building);
-bool AreMapElemsEqual(MapElem elem1, MapElem elem2);
-void HighlightMapElem(Renderer renderer, MapElem mapElem, Color color);
+B32 AreMapElemsEqual(MapElem elem1, MapElem elem2);
+void HighlightMapElem(Canvas canvas, MapElem mapElem, V4 color);

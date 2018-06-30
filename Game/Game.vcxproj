@@ -80,7 +80,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <SDLCheck>true</SDLCheck>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -132,12 +132,12 @@
     <ClCompile Include="Lab\CarLab.cpp" />
     <ClCompile Include="Lab\MapLab.cpp" />
     <ClCompile Include="Lab\RoadLab.cpp" />
+    <ClCompile Include="Lab\ThreadLab.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="PlayerHuman.cpp" />
-    <ClCompile Include="Point.cpp" />
-    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Draw.cpp" />
     <ClCompile Include="Road.cpp" />
     <ClCompile Include="Car.cpp" />
     <ClCompile Include="Windows.cpp" />
@@ -156,17 +156,18 @@
     <ClInclude Include="Lab\CarLab.hpp" />
     <ClInclude Include="Lab\MapLab.hpp" />
     <ClInclude Include="Lab\RoadLab.hpp" />
+    <ClInclude Include="Lab\ThreadLab.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="Map.hpp" />
     <ClInclude Include="Math.hpp" />
     <ClInclude Include="Memory.hpp" />
     <ClInclude Include="Path.hpp" />
     <ClInclude Include="PlayerHuman.hpp" />
-    <ClInclude Include="Point.hpp" />
-    <ClInclude Include="Renderer.hpp" />
+    <ClInclude Include="Draw.hpp" />
     <ClInclude Include="Road.hpp" />
     <ClInclude Include="Texture.hpp" />
     <ClInclude Include="Car.hpp" />
+    <ClInclude Include="Type.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

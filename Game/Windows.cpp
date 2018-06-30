@@ -4,51 +4,56 @@
 
 #include "AutoHuman.hpp"
 #include "Bitmap.hpp"
+#include "Draw.hpp"
 #include "Game.hpp"
 #include "GridMap.hpp"
 #include "Human.hpp"
 #include "Path.hpp"
 #include "PlayerHuman.hpp"
-#include "Renderer.hpp"
+#include "Type.hpp"
 
 #include "Lab/CarLab.hpp"
 #include "Lab/MapLab.hpp"
 #include "Lab/RoadLab.hpp"
+#include "Lab/ThreadLab.hpp"
 
-static bool running;
+static B32 running;
 
 GameState* globalGameState;
 GameStorage globalGameStorage;
 
-static float globalTargetFPS = 60.0f;
-static float globalTargetFrameS = 1.0f / globalTargetFPS;
-static float globalTargetFrameMS = globalTargetFrameS * 1000.0f;
+static F32 globalTargetFPS = 60.0f;
+static F32 globalTargetFrameS = 1.0f / globalTargetFPS;
+static F32 globalTargetFrameMS = globalTargetFrameS * 1000.0f;
 
-static Point WinMousePosition(HWND window) {
+static V2 WinMousePosition(HWND window)
+{
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
 	ScreenToClient(window, &cursorPoint);
 
-	Point point = {};
-	point.x = (float)cursorPoint.x;
-	point.y = (float)cursorPoint.y;
+	V2 point = {};
+	point.x = (F32)cursorPoint.x;
+	point.y = (F32)cursorPoint.y;
 
-	point = PixelToUnit(*globalGameState->renderer.camera, point);
+	point = PixelToUnit(globalGameState->canvas.camera, point);
 
 	return point;
 }
 
-void WinDraw(HWND window) {
-	Point mousePoint = WinMousePosition(window);
+void WinDraw(HWND window)
+{
+	V2 mousePoint = WinMousePosition(window);
 
 	GameDraw(&globalGameStorage);
 }
 
-void WinUpdate(Renderer renderer, HDC context, RECT clientRect) {
-	int windowWidth = clientRect.right - clientRect.left;
-	int windowHeight = clientRect.bottom - clientRect.top;
+void WinUpdate(Canvas canvas, HDC context, RECT clientRect)
+{
+	I32 windowWidth = clientRect.right - clientRect.left;
+	I32 windowHeight = clientRect.bottom - clientRect.top;
 
-	Bitmap bitmap = renderer.bitmap;
+	Bitmap bitmap = canvas.bitmap;
 
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -69,8 +74,8 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 		case WM_SIZE: {
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
-			int width = clientRect.right - clientRect.left;
-			int height = clientRect.bottom - clientRect.top;
+			I32 width = clientRect.right - clientRect.left;
+			I32 height = clientRect.bottom - clientRect.top;
 			WinResize(globalGameState, width, height);
 			break;
 		}
@@ -82,7 +87,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
 
-			WinUpdate(globalGameState->renderer, context, clientRect);
+			WinUpdate(globalGameState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -159,7 +164,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 
 		case WM_LBUTTONDOWN: {
 			if (!globalGameState->isPlayerCar) {
-				Point mousePosition = WinMousePosition(window);
+				V2 mousePosition = WinMousePosition(window);
 				ShootBullet(&globalGameState->playerHuman, mousePosition);
 			}
 			break;
@@ -224,8 +229,8 @@ void RunGame(HINSTANCE instance)
 	RECT rect;
 	GetClientRect(window, &rect);
 
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
+	I32 width = rect.right - rect.left;
+	I32 height = rect.bottom - rect.top;
 
 	GameInit(&globalGameStorage, width, height);
 	globalGameState = globalGameStorage.gameState;
@@ -240,7 +245,7 @@ void RunGame(HINSTANCE instance)
 	LARGE_INTEGER lastCounter;
 	QueryPerformanceCounter(&lastCounter);
 
-	float elapsedS = globalTargetFrameS;
+	F32 elapsedS = globalTargetFrameS;
 
 	running = true;
 	while (running) {
@@ -252,7 +257,7 @@ void RunGame(HINSTANCE instance)
 			DispatchMessageA(&message);
 		}
 
-		Point mousePosition = WinMousePosition(window);
+		V2 mousePosition = WinMousePosition(window);
 		GameUpdate(&globalGameStorage, elapsedS, mousePosition);
 
 		WinDraw(window);
@@ -262,22 +267,21 @@ void RunGame(HINSTANCE instance)
 
 		HDC context = GetDC(window);
 
-		WinUpdate(globalGameState->renderer, context, rect);
+		WinUpdate(globalGameState->canvas, context, rect);
 
 		ReleaseDC(window, context);
 
 		LARGE_INTEGER nowCounter;
 		QueryPerformanceCounter(&nowCounter);
 
-		long long elapsedUS = nowCounter.QuadPart - lastCounter.QuadPart;
-		float elapsedMS = ((float)elapsedUS * 1000.0f) / (float)counterFrequency.QuadPart;
+		I64 elapsedUS = nowCounter.QuadPart - lastCounter.QuadPart;
+		F32 elapsedMS = ((F32)elapsedUS * 1000.0f) / (F32)counterFrequency.QuadPart;
 
 		if (elapsedMS < globalTargetFrameMS) {
 			DWORD sleepMS = (DWORD)(globalTargetFrameMS - elapsedMS);
 			Sleep(sleepMS);
 			elapsedS = globalTargetFrameS;
-		}
-		else {
+		} else {
 			elapsedS = elapsedMS * 0.001f;
 		}
 
@@ -286,7 +290,7 @@ void RunGame(HINSTANCE instance)
 }
 
 
-int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
+I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
 	MapLab(instance);
 	// RunGame(instance);

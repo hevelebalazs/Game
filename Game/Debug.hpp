@@ -5,6 +5,8 @@
 #include <Windows.h>
 #include <stdio.h>
 
+#include "Type.hpp"
+
 #ifdef DEBUG_MODE
 	#define Assert(value) {if (!(value)) DebugBreak();}
 	#define Verify(call) {if (!(call)) DebugBreak();}
@@ -16,4 +18,4 @@
 #endif
 	
 
-int Log(const char* format, ...);
+I32 Log(const I8* format, ...);

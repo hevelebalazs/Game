@@ -1,46 +1,51 @@
 #pragma once
 
 #include "Math.hpp"
-#include "Point.hpp"
+#include "Type.hpp"
 
 union Line {
 	struct {
-		Point p1;
-		Point p2;
+		V2 p1;
+		V2 p2;
 	};
 
 	struct {
-		float x1, y1;
-		float x2, y2;
+		F32 x1, y1;
+		F32 x2, y2;
 	};
 };
 
 struct Poly16 {
-	Point points[16];
-	int pointN;
+	V2 points[16];
+	I32 pointN;
 };
 
-void Poly16Add(Poly16* poly, Point point);
+void Poly16Add(Poly16* poly, V2 point);
 
 struct Quad {
-	Point points[4];
+	V2 points[4];
 };
 
-float DistanceSquare(Point point1, Point point2);
-float CityDistance(Point point1, Point point2);
-float Distance(Point point1, Point point2);
+V2 MakePoint(F32 x, F32 y);
+Quad MakeQuad(V2 point1, V2 point2, V2 point3, V2 point4);
 
-float VectorLength(Point vector);
-float VectorAngle(Point vector);
+F32 DistanceSquare(V2 point1, V2 point2);
+F32 CityDistance(V2 point1, V2 point2);
+F32 Distance(V2 point1, V2 point2);
 
-inline float LineAngle(Point startPoint, Point endPoint) {
-	Point diff = PointDiff(endPoint, startPoint);
-	float angle = VectorAngle(diff);
+F32 VectorLength(V2 vector);
+F32 VectorAngle(V2 vector);
+
+inline F32 LineAngle(V2 startPoint, V2 endPoint)
+{
+	V2 diff = (endPoint - startPoint);
+	F32 angle = VectorAngle(diff);
 	return angle;
 }
 
 
-inline float NormalizeAngle(float angle) {
+inline F32 NormalizeAngle(F32 angle)
+{
 	while (angle > PI)
 		angle -= 2.0f * PI;
 	while (angle < -PI)
@@ -48,8 +53,9 @@ inline float NormalizeAngle(float angle) {
 	return angle;
 }
 
-inline bool IsAngleBetween(float minAngle, float angle, float maxAngle) {
-	bool result = false;
+inline B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
+{
+	B32 result = false;
 	if (minAngle > maxAngle)
 		result = (angle <= maxAngle || angle >= minAngle);
 	else
@@ -57,34 +63,35 @@ inline bool IsAngleBetween(float minAngle, float angle, float maxAngle) {
 	return result;
 }
 
-Point RotationVector(float angle);
+V2 RotationVector(F32 angle);
+V2 PointDirection(V2 startPoint, V2 endPoint);
 
-Point PointDirection(Point startPoint, Point endPoint);
+inline B32 TurnsRight(V2 point1, V2 point2, V2 point3)
+{
+	F32 dx1 = point2.x - point1.x;
+	F32 dy1 = point2.y - point1.y;
+	F32 dx2 = point3.x - point2.x;
+	F32 dy2 = point3.y - point2.y;
 
-inline bool TurnsRight(Point point1, Point point2, Point point3) {
-	float dx1 = point2.x - point1.x;
-	float dy1 = point2.y - point1.y;
-	float dx2 = point3.x - point2.x;
-	float dy2 = point3.y - point2.y;
-
-	float det = (dx1 * dy2) - (dx2 * dy1);
+	F32 det = (dx1 * dy2) - (dx2 * dy1);
 
 	return (det > 0.0f);
 }
 
-bool DoLinesCross(Point line11, Point line12, Point line21, Point line22);
-Point LineIntersection(Point line11, Point line12, Point line21, Point line22);
-Point LineIntersection(Line line1, Line line2);
+B32 DoLinesCross(V2 line11, V2 line12, V2 line21, V2 line22);
+V2 LineIntersection(V2 line11, V2 line12, V2 line21, V2 line22);
+V2 LineIntersection(Line line1, Line line2);
 
-float DotProduct(Point vector1, Point vector2);
-Point NormalVector(Point vector);
-Point ParallelVector(Point vector, Point base);
+F32 DotProduct(V2 vector1, V2 vector2);
+V2 NormalVector(V2 vector);
+V2 ParallelVector(V2 vector, V2 base);
 
-bool IsPointInPoly(Point point, Point* points, int pointN);
+B32 IsPointInPoly(V2 point, V2* points, I32 pointN);
 
 // TODO: create a Quad struct?
-inline bool IsPointInQuad(Quad quad, Point point) {
-	Point* points = (Point*)quad.points;
+inline B32 IsPointInQuad(Quad quad, V2 point)
+{
+	V2* points = quad.points;
 	if (point.x < points[0].x && point.x < points[1].x && point.x < points[2].x && point.x < points[3].x)
 		return false;
 	if (point.x > points[0].x && point.x > points[1].x && point.x > points[2].x && point.x > points[3].x)
@@ -107,18 +114,20 @@ inline bool IsPointInQuad(Quad quad, Point point) {
 		return true;
 }
 
-inline Point TurnVectorToRight(Point vector) {
-	Point result = {};
+inline V2 TurnVectorToRight(V2 vector)
+{
+	V2 result = {};
 	result.x = -vector.y;
 	result.y = vector.x;
 	return result;
 }
 
-inline Point XYToBase(Point point, Point baseUnit) {
-	float cosa = baseUnit.x;
-	float sina = baseUnit.y;
+inline V2 XYToBase(V2 point, V2 baseUnit)
+{
+	F32 cosa = baseUnit.x;
+	F32 sina = baseUnit.y;
 
-	Point result = {};
+	V2 result = {};
 	result.x = point.x * cosa + point.y * sina;
 	result.y = -point.x * sina + point.y * cosa;
 

@@ -2,32 +2,33 @@
 
 #include "Game.hpp"
 #include "Human.hpp"
-#include "Point.hpp"
+#include "Math.hpp"
+#include "Type.hpp"
 
 struct Bullet {
-	DirectedPoint position;
+	V4 position;
 
 	// TODO: 0 means not active
-	float secondsRemaining;
+	F32 secondsRemaining;
 };
 
 struct PlayerHuman {
 	Human human;
 
-	bool moveUp;
-	bool moveDown;
-	bool moveLeft;
-	bool moveRight;
+	B32 moveUp;
+	B32 moveDown;
+	B32 moveLeft;
+	B32 moveRight;
 
-	Point moveDirection;
+	V2 moveDirection;
 
-	float shootCooldown;
+	F32 shootCooldown;
 	Bullet bullet;
 };
 
 struct GameState;
 
-void ShootBullet(PlayerHuman* playerHuman, Point targetPoint);
+void ShootBullet(PlayerHuman* playerHuman, V2 targetPoint);
 
-void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds, GameState* gameState);
-void DrawPlayerHuman(Renderer renderer, PlayerHuman* playerHuman);
+void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds, GameState* gameState);
+void DrawPlayerHuman(Canvas canvas, PlayerHuman* playerHuman);

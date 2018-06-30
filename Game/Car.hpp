@@ -2,32 +2,33 @@
 
 #include "Bezier.hpp"
 #include "Bitmap.hpp"
+#include "Draw.hpp"
 #include "Map.hpp"
+#include "Math.hpp"
 #include "Memory.hpp"
 #include "Path.hpp"
-#include "Point.hpp"
-#include "Renderer.hpp"
+#include "Type.hpp"
 
-extern float MinCarSpeed;
-extern float MaxCarSpeed;
+#define MinCarSpeed	5.0f
+#define MaxCarSpeed	10.0f
 
 struct Car {
-	Point position;
-	float angle;
-	float length;
-	float width;
+	V2 position;
+	F32 angle;
+	F32 length;
+	F32 width;
 
-	float moveSpeed;
-	float maxSpeed;
+	F32 moveSpeed;
+	F32 maxSpeed;
 
 	Map* map;
 	Bitmap* bitmap;
 };
 
 Quad GetCarStopArea(Car* car);
-bool IsCarOnPoint(Car* car, Point point);
-void MoveCar(Car* car, DirectedPoint point);
-void DrawCar(Renderer renderer, Car car);
+B32 IsCarOnPoint(Car* car, V2 point);
+void MoveCar(Car* car, V4 point);
+void DrawCar(Canvas canvas, Car car);
 
 void AllocateCarBitmap(Bitmap* carBitmap);
 void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena);
@@ -40,28 +41,28 @@ struct AutoCar {
 	PathNode* moveNode;
 	Junction* moveTargetJunction;
 
-	DirectedPoint moveStartPoint;
-	DirectedPoint moveEndPoint;
+	V4 moveStartPoint;
+	V4 moveEndPoint;
 	Bezier4 moveBezier4;
-	float moveTotalSeconds;
-	float moveSeconds;
+	F32 moveTotalSeconds;
+	F32 moveSeconds;
 };
 
 void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
-void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
 
 struct PlayerCar {
 	Car car;
 
-	float mass;
+	F32 mass;
 
-	float engineForce;
-	float maxEngineForce;
-	float breakForce;
+	F32 engineForce;
+	F32 maxEngineForce;
+	F32 breakForce;
 
-	float turnDirection;
+	F32 turnDirection;
 
-	Point velocity;
+	V2 velocity;
 };
 
-void UpdatePlayerCar(PlayerCar* playerCar, float seconds);
+void UpdatePlayerCar(PlayerCar* playerCar, F32 seconds);

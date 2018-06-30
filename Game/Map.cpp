@@ -2,20 +2,19 @@
 #include "Geometry.hpp"
 #include "Map.hpp"
 #include "Math.hpp"
-
-extern Color GrassColor = Color{0.0f, 0.8f, 0.0f};
+#include "Type.hpp"
 
 Junction* GetRandomJunction(Map* map)
 {
-	int junctionIndex = RandMod(map->junctionN);
+	I32 junctionIndex = RandMod(map->junctionN);
 	Junction* junction = &map->junctions[junctionIndex];
 	return junction;
 }
 
-Junction* GetJunctionAtPoint(Map* map, Point point)
+Junction* GetJunctionAtPoint(Map* map, V2 point)
 {
 	Junction* result = 0;
-	for (int i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) {
 		Junction* junction = &map->junctions[i];
 		if (IsPointOnJunction(point, junction)) {
 			result = junction;
@@ -25,24 +24,24 @@ Junction* GetJunctionAtPoint(Map* map, Point point)
 	return result;
 }
 
-MapElem GetClosestRoadElem(Map* map, Point point)
+MapElem GetClosestRoadElem(Map* map, V2 point)
 {
 	MapElem result = {};
 
 	Road* closestRoad = 0;
-	float minDistanceSquare = 0.0f;
-	for (int i = 0; i < map->roadN; ++i) {
+	F32 minDistanceSquare = 0.0f;
+	for (I32 i = 0; i < map->roadN; ++i) {
 		Road* road = &map->roads[i];
 
-		bool betweenX =
+		B32 betweenX =
 			((road->endPoint1.x <= point.x) && (point.x <= road->endPoint2.x)) ||
 			((road->endPoint2.x <= point.x) && (point.x <= road->endPoint1.x));
-		bool betweenY =
+		B32 betweenY =
 			((road->endPoint1.y <= point.y) && (point.y <= road->endPoint2.y)) ||
 			((road->endPoint2.y <= point.y) && (point.y <= road->endPoint1.y));
 
 		if (betweenX || betweenY) {
-			float distanceSquare = DistanceSquareFromRoad(road, point);
+			F32 distanceSquare = DistanceSquareFromRoad(road, point);
 			if (!closestRoad || distanceSquare < minDistanceSquare) {
 				closestRoad = road;
 				minDistanceSquare = distanceSquare;
@@ -53,15 +52,14 @@ MapElem GetClosestRoadElem(Map* map, Point point)
 	}
 
 	Junction* closestJunction = 0;
-	for (int i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) {
 		Junction* junction = &map->junctions[i];
 
-		bool betweenX = (Abs(junction->position.x - point.x) <= LaneWidth);
-		bool betweenY = (Abs(junction->position.y - point.y) <= LaneWidth);
+		B32 betweenX = (Abs(junction->position.x - point.x) <= LaneWidth);
+		B32 betweenY = (Abs(junction->position.y - point.y) <= LaneWidth);
 
 		if (betweenX || betweenY) {
-			float distanceSquare = DistanceSquare(junction->position, point);
-
+			F32 distanceSquare = DistanceSquare(junction->position, point);
 			if ((!closestRoad && !closestJunction) || distanceSquare < minDistanceSquare) {
 				closestJunction = junction;
 				minDistanceSquare = distanceSquare;
@@ -73,9 +71,9 @@ MapElem GetClosestRoadElem(Map* map, Point point)
 	return result;
 }
 
-static Point GetBuildingCenter(Building* building)
+static V2 GetBuildingCenter(Building* building)
 {
-	Point result = {};
+	V2 result = {};
 	result.x = (building->left + building->right) * 0.5f;
 	result.y = (building->top + building->bottom) * 0.5f;
 	return result;
@@ -83,23 +81,23 @@ static Point GetBuildingCenter(Building* building)
 
 Building* GetRandomBuilding(Map* map)
 {
-	int buildingIndex = RandMod(map->buildingN);
+	I32 buildingIndex = RandMod(map->buildingN);
 	Building* building = &map->buildings[buildingIndex];
 	return building;
 }
 
-Building* GetClosestBuilding(Map* map, Point point, BuildingType type)
+Building* GetClosestBuilding(Map* map, V2 point, BuildingType type)
 {
 	Building* result = 0;
 
-	float minDistanceSquare = 0.0f;
-	for (int i = 0; i < map->buildingN; ++i) {
+	F32 minDistanceSquare = 0.0f;
+	for (I32 i = 0; i < map->buildingN; ++i) {
 		Building* building = &map->buildings[i];
 		if (building->type != type) 
 			continue;
 
-		Point center = GetBuildingCenter(building);
-		float distanceSquare = DistanceSquare(point, center);
+		V2 center = GetBuildingCenter(building);
+		F32 distanceSquare = DistanceSquare(point, center);
 		if (!result || distanceSquare < minDistanceSquare) {
 			result = building;
 			minDistanceSquare = distanceSquare;
@@ -109,16 +107,16 @@ Building* GetClosestBuilding(Map* map, Point point, BuildingType type)
 	return result;
 }
 
-BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, float radius, Point closePoint, Point farPoint)
+BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, F32 radius, V2 closePoint, V2 farPoint)
 {
 	BuildingCrossInfo result = {};
 
-	float minDistanceSquare = 0.0f;
-	for (int i = 0; i < map->buildingN; ++i) {
+	F32 minDistanceSquare = 0.0f;
+	for (I32 i = 0; i < map->buildingN; ++i) {
 		BuildingCrossInfo crossInfo = ExtBuildingClosestCrossInfo(&map->buildings[i], radius, closePoint, farPoint);
 		if (crossInfo.building) {
 			// TODO: is it a problem that this distanceSquare is calculated twice?
-			float distanceSquare = DistanceSquare(closePoint, crossInfo.crossPoint);
+			F32 distanceSquare = DistanceSquare(closePoint, crossInfo.crossPoint);
 			if (!result.building || distanceSquare < minDistanceSquare) {
 				minDistanceSquare = distanceSquare;
 				result = crossInfo;
@@ -129,20 +127,20 @@ BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, float radius, Point c
 	return result;
 }
 
-Building* GetClosestCrossedBuilding(Map* map, Point pointClose, Point pointFar, Building* excludedBuilding)
+Building* GetClosestCrossedBuilding(Map* map, V2 pointClose, V2 pointFar, Building* excludedBuilding)
 {
 	Building* result = 0;
 
-	float minDistanceSquare = 0.0f;
-	for (int i = 0; i < map->buildingN; ++i) {
+	F32 minDistanceSquare = 0.0f;
+	for (I32 i = 0; i < map->buildingN; ++i) {
 		Building* building = &map->buildings[i];
 		if (building == excludedBuilding) 
 			continue;
 
 		if (IsBuildingCrossed(*building, pointClose, pointFar)) {
-			Point closestCrossPoint = ClosestBuildingCrossPoint(*building, pointClose, pointFar);
+			V2 closestCrossPoint = ClosestBuildingCrossPoint(*building, pointClose, pointFar);
 
-			float distanceSquare = DistanceSquare(pointClose, closestCrossPoint);
+			F32 distanceSquare = DistanceSquare(pointClose, closestCrossPoint);
 			if (result == 0 || distanceSquare < minDistanceSquare) {
 				result = building;
 				minDistanceSquare = distanceSquare;
@@ -153,10 +151,10 @@ Building* GetClosestCrossedBuilding(Map* map, Point pointClose, Point pointFar, 
 	return result;
 }
 
-Building* GetBuildingAtPoint(Map* map, Point point)
+Building* GetBuildingAtPoint(Map* map, V2 point)
 {
 	Building* result = 0;
-	for (int i = 0; i < map->buildingN; ++i) {
+	for (I32 i = 0; i < map->buildingN; ++i) {
 		if (IsPointInBuilding(point, map->buildings[i])) 
 			result = &map->buildings[i];
 	}
@@ -164,12 +162,12 @@ Building* GetBuildingAtPoint(Map* map, Point point)
 	return result;
 }
 
-MapElem GetRoadElemAtPoint(Map* map, Point point)
+MapElem GetRoadElemAtPoint(Map* map, V2 point)
 {
 	MapElem result = {};
 	result.type = MapElemNone;
 
-	for (int i = 0; i < map->roadN; ++i) {
+	for (I32 i = 0; i < map->roadN; ++i) {
 		Road* road = &map->roads[i];
 		if (IsPointOnRoad(point, road)) {
 			result = GetRoadElem(road);
@@ -177,7 +175,7 @@ MapElem GetRoadElemAtPoint(Map* map, Point point)
 		}
 	}
 
-	for (int i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) {
 		Junction* junction = &map->junctions[i];
 		if (IsPointOnJunction(point, junction)) {
 			result = GetJunctionElem(junction);
@@ -185,7 +183,7 @@ MapElem GetRoadElemAtPoint(Map* map, Point point)
 		}
 	}
 
-	for (int i = 0; i < map->buildingN; ++i) {
+	for (I32 i = 0; i < map->buildingN; ++i) {
 		if (IsPointInBuilding(point, map->buildings[i])) {
 			result = GetBuildingElem(&map->buildings[i]);
 			return result;
@@ -200,11 +198,11 @@ MapElem GetRoadElemAtPoint(Map* map, Point point)
 	return result;
 }
 
-MapElem GetPedestrianElemAtPoint(Map* map, Point point)
+MapElem GetPedestrianElemAtPoint(Map* map, V2 point)
 {
 	MapElem result = {};
 
-	for (int i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) {
 		Junction* junction = &map->junctions[i];
 		if (IsPointOnJunctionSidewalk(point, junction)) {
 			result = GetJunctionSidewalkElem(junction);
@@ -212,7 +210,7 @@ MapElem GetPedestrianElemAtPoint(Map* map, Point point)
 		}
 	}
 
-	for (int i = 0; i < map->roadN; ++i) {
+	for (I32 i = 0; i < map->roadN; ++i) {
 		Road* road = &map->roads[i];
 		if (IsPointOnRoadSidewalk(point, road)) {
 			result = GetRoadSidewalkElem(road);
@@ -228,40 +226,55 @@ MapElem GetPedestrianElemAtPoint(Map* map, Point point)
 	return result;
 }
 
-void DrawGroundElems(Renderer renderer, Map* map)
+void DrawGroundElems(Canvas canvas, Map* map)
 {
-	ClearScreen(renderer, GrassColor);
+	ClearScreen(canvas, GrassColor);
 
-	for (int i = 0; i < map->roadN; ++i)
-		DrawRoadSidewalk(renderer, map->roads + i);
-	for (int i = 0; i < map->junctionN; ++i)
-		DrawJunctionSidewalk(renderer, map->junctions + i);
+	for (I32 i = 0; i < map->roadN; ++i)
+		DrawRoadSidewalk(canvas, map->roads + i);
+	for (I32 i = 0; i < map->junctionN; ++i)
+		DrawJunctionSidewalk(canvas, map->junctions + i);
 
-	for (int i = 0; i < map->roadN; ++i)
-		DrawRoad(renderer, map->roads + i);
-	for (int i = 0; i < map->junctionN; ++i)
-		DrawJunction(renderer, map->junctions + i);
+	for (I32 i = 0; i < map->roadN; ++i)
+		DrawRoad(canvas, map->roads + i);
+	for (I32 i = 0; i < map->junctionN; ++i)
+		DrawJunction(canvas, map->junctions + i);
 
-	for (int i = 0; i < map->junctionN; ++i)
-		DrawTrafficLights(renderer, map->junctions + i);
+	for (I32 i = 0; i < map->junctionN; ++i)
+		DrawTrafficLights(canvas, map->junctions + i);
+}
+
+void DrawTexturedGroundElems(Canvas canvas, Map* map, Texture grassTexture, Texture roadTexture, Texture sidewalkTexture, Texture stripeTexture)
+{
+	FillScreenWithWorldTexture(canvas, grassTexture);
+	
+	for (I32 i = 0; i < map->roadN; ++i)
+		DrawTexturedRoadSidewalk(canvas, &map->roads[i], sidewalkTexture);
+	for (I32 i = 0; i < map->junctionN; ++i)
+		DrawTexturedJunctionSidewalk(canvas, &map->junctions[i], sidewalkTexture);
+
+	for (I32 i = 0; i < map->roadN; ++i)
+		DrawTexturedRoad(canvas, &map->roads[i], roadTexture, stripeTexture);
+	for (I32 i = 0; i < map->junctionN; ++i)
+		DrawTexturedJunction(canvas, &map->junctions[i], roadTexture, stripeTexture);
 }
 
 // TODO: there are two instances of mergesort in the code
 //       pull those two together somehow?
 struct BuildingHelper {
-	int buildingCount;
+	I32 buildingCount;
 	Building* buildings;
 	Building* tmpBuildings;
 	MemArena* arena;
 };
 
-inline bool AreBuildingsInOrder(Point center, Building building1, Building building2)
+static B32 AreBuildingsInOrder(V2 center, Building building1, Building building2)
 {
-	Point point1 = GetBuildingCenter(&building1);
-	Point point2 = GetBuildingCenter(&building2);
+	V2 point1 = GetBuildingCenter(&building1);
+	V2 point2 = GetBuildingCenter(&building2);
 
-	float dist1 = CityDistance(center, point1);
-	float dist2 = CityDistance(center, point2);
+	F32 dist1 = CityDistance(center, point1);
+	F32 dist2 = CityDistance(center, point2);
 
 	if (dist1 > dist2)
 		return true;
@@ -269,14 +282,14 @@ inline bool AreBuildingsInOrder(Point center, Building building1, Building build
 		return false;
 }
 
-inline void MergeBuildingArrays(BuildingHelper* helper, Point center, int leftStart, int leftEnd, int rightStart, int rightEnd)
+static void MergeBuildingArrays(BuildingHelper* helper, V2 center, I32 leftStart, I32 leftEnd, I32 rightStart, I32 rightEnd)
 {
-	int left = leftStart;
-	int right = rightStart;
+	I32 left = leftStart;
+	I32 right = rightStart;
 
-	for (int i = leftStart; i <= rightEnd; ++i) {
-		bool chooseLeft = false;
-		bool chooseRight = false;
+	for (I32 i = leftStart; i <= rightEnd; ++i) {
+		B32 chooseLeft = false;
+		B32 chooseRight = false;
 
 		if (left > leftEnd)
 			chooseRight = true;
@@ -299,23 +312,23 @@ inline void MergeBuildingArrays(BuildingHelper* helper, Point center, int leftSt
 	}
 
 	// TODO: use some version of memcpy here?
-	for (int i = leftStart; i <= rightEnd; ++i)
+	for (I32 i = leftStart; i <= rightEnd; ++i)
 		helper->buildings[i] = helper->tmpBuildings[i];
 }
 
-inline void SortBuildings(BuildingHelper* helper, Point center)
+static void SortBuildings(BuildingHelper* helper, V2 center)
 {
-	int length = 1;
+	I32 length = 1;
 	while (length <= helper->buildingCount) {
-		int leftStart = 0;
+		I32 leftStart = 0;
 		while (leftStart < helper->buildingCount) {
-			int leftEnd = leftStart + (length - 1);
+			I32 leftEnd = leftStart + (length - 1);
 
-			int rightStart = leftEnd + 1;
+			I32 rightStart = leftEnd + 1;
 			if (rightStart >= helper->buildingCount)
 				break;
 
-			int rightEnd = rightStart + (length - 1);
+			I32 rightEnd = rightStart + (length - 1);
 			if (rightEnd >= helper->buildingCount)
 				rightEnd = helper->buildingCount - 1;
 
@@ -328,11 +341,11 @@ inline void SortBuildings(BuildingHelper* helper, Point center)
 	}
 }
 
-// TODO: move the sorting logic to renderer
-void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets)
+// TODO: move the sorting logic to draw.cpp
+void DrawBuildings(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets)
 {
-	for (int i = 0; i < map->buildingN; ++i)
-		DrawBuilding(renderer, map->buildings[i], assets);
+	for (I32 i = 0; i < map->buildingN; ++i)
+		DrawBuilding(canvas, map->buildings[i], assets);
 
 	/*
 	// NOTE: 3d buildings
@@ -340,24 +353,24 @@ void DrawBuildings(Renderer renderer, Map* map, MemArena* arena, GameAssets* ass
 	helper.buildingCount = map->buildingCount;
 	helper.buildings = ArenaPushArray(arena, Building, helper.buildingCount);
 	// TODO: use memcpy for this?
-	for (int i = 0; i < helper.buildingCount; ++i)
+	for (I32 i = 0; i < helper.buildingCount; ++i)
 		helper.buildings[i] = map->buildings[i];
 
 	helper.tmpBuildings = ArenaPushArray(arena, Building, helper.buildingCount);
 
-	SortBuildings(&helper, renderer.camera->center);
+	SortBuildings(&helper, canvas.camera->center);
 	
-	for (int i = 0; i < helper.buildingCount; ++i)
-		DrawBuilding(renderer, helper.buildings[i]);
+	for (I32 i = 0; i < helper.buildingCount; ++i)
+		DrawBuilding(canvas, helper.buildings[i]);
 
 	ArenaPopTo(arena, helper.buildings);
 	*/
 }
 
-void DrawMap(Renderer renderer, Map* map, MemArena* arena, GameAssets* assets)
+void DrawMap(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets)
 {
-	DrawGroundElems(renderer, map);
-	DrawBuildings(renderer, map, arena, assets);
+	DrawGroundElems(canvas, map);
+	DrawBuildings(canvas, map, arena, assets);
 }
 
 MapElem GetRoadElem(Road* road)
@@ -423,7 +436,7 @@ MapElem GetBuildingConnectorElem(Building* building)
 	return result;
 }
 
-bool AreMapElemsEqual(MapElem elem1, MapElem elem2)
+B32 AreMapElemsEqual(MapElem elem1, MapElem elem2)
 {
 	if (elem1.type != elem2.type) 
 		return false;
@@ -433,18 +446,18 @@ bool AreMapElemsEqual(MapElem elem1, MapElem elem2)
 		return (elem1.address == elem2.address);
 }
 
-void HighlightMapElem(Renderer renderer, MapElem mapElem, Color color)
+void HighlightMapElem(Canvas canvas, MapElem mapElem, V4 color)
 {
 	if (mapElem.type == MapElemBuilding)
-		HighlightBuilding(renderer, *mapElem.building, color);
+		HighlightBuilding(canvas, *mapElem.building, color);
 	else if (mapElem.type == MapElemBuildingConnector)
-		HighlightBuildingConnector(renderer, *mapElem.building, color);
+		HighlightBuildingConnector(canvas, *mapElem.building, color);
 	else if (mapElem.type == MapElemJunction)
-		HighlightJunction(renderer, mapElem.junction, color);
+		HighlightJunction(canvas, mapElem.junction, color);
 	else if (mapElem.type == MapElemJunctionSidewalk) 
-		HighlightJunctionSidewalk(renderer, mapElem.junction, color);
+		HighlightJunctionSidewalk(canvas, mapElem.junction, color);
 	else if (mapElem.type == MapElemRoad)
-		HighlightRoad(renderer, mapElem.road, color);
+		HighlightRoad(canvas, mapElem.road, color);
 	else if (mapElem.type == MapElemRoadSidewalk)
-		HighlightRoadSidewalk(renderer, mapElem.road, color);
+		HighlightRoadSidewalk(canvas, mapElem.road, color);
 }

@@ -1,28 +1,32 @@
 #include "MapLab.hpp"
 
 #include "../Debug.hpp"
+#include "../Draw.hpp"
 #include "../Gridmap.hpp"
 #include "../Map.hpp"
 #include "../Memory.hpp"
-#include "../Renderer.hpp"
 #include "../Texture.hpp"
+#include "../Type.hpp"
 
-float MapTileSide = 50.0f;
+F32 MapTileSide = 50.0f;
 
-#define TileBitmapWidth 1024  
+#define TileBitmapWidth 1024
 #define TileBitmapHeight 1024
-#define MaxCachedTileN 16
+#define MaxCachedTileN 64
 #define MaxArenaSize (1 * MegaByte)
 #define MaxTmpArenaSize (1 * MegaByte)
 
-#define MaxJunctionRowN 10
-#define MaxJunctionColN 10
+#define MaxJunctionRowN 20
+#define MaxJunctionColN 20
 #define MaxJunctionN (MaxJunctionRowN * MaxJunctionColN)
-#define MaxRoadN 100
+#define MaxRoadN 400
+
+#define MaxTileGenerateWorkListN MaxCachedTileN
+#define TileGenerateWorkThreadN 5
 
 struct TileIndex {
-	int row;
-	int col;
+	I32 row;
+	I32 col;
 };
 
 struct CachedTile {
@@ -30,53 +34,72 @@ struct CachedTile {
 	Bitmap bitmap;
 };
 
+struct MapLabState;
+struct TileGenerateWork {
+	MapLabState* labState;
+	TileIndex tileIndex;
+	Bitmap* bitmap;
+};
+
+struct TileGenerateWorkList {
+	TileGenerateWork works[MaxTileGenerateWorkListN];
+	volatile I32 workN;
+	volatile I32 firstWorkToDo;
+	HANDLE semaphore;
+};
+
 struct MapLabState {
 	Camera camera;
-	Renderer renderer;
-	bool running;
+	Canvas canvas;
+	B32 running;
 
-	float mapLeft;
-	float mapRight;
-	float mapTop;
-	float mapBottom;
+	F32 mapLeft;
+	F32 mapRight;
+	F32 mapTop;
+	F32 mapBottom;
 
-	int tileRowN;
-	int tileColN;
+	I32 tileRowN;
+	I32 tileColN;
 
-	float visibleWidth;
-	float visibleHeight;
+	F32 visibleWidth;
+	F32 visibleHeight;
 
-	Point playerPosition;
-	Point playerVelocity;
+	V2 playerPosition;
+	V2 playerVelocity;
 
 	CachedTile cachedTiles[MaxCachedTileN];
-	int cachedTileN;
+	I32 cachedTileN;
+
+	TileGenerateWorkList workList;
 
 	MemArena arena;
 	MemArena tmpArena;
 	Map map;
 
+	Texture grassTexture;
 	Texture roadTexture;
+	Texture sidewalkTexture;
+	Texture stripeTexture;
 };
 MapLabState gMapLabState;
 
-static void MapLabResize(MapLabState* labState, int width, int height)
+static void MapLabResize(MapLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
 
-	Renderer* renderer = &labState->renderer;
-	ResizeBitmap(&renderer->bitmap, width, height);
-	renderer->camera = camera;
+	Canvas* canvas = &labState->canvas;
+	ResizeBitmap(&canvas->bitmap, width, height);
+	canvas->camera = camera;
 	camera->unitInPixels = 1.0f;
 }
 
-static void MapLabBlit(Renderer renderer, HDC context, RECT rect)
+static void MapLabBlit(Canvas canvas, HDC context, RECT rect)
 {
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
+	I32 width = rect.right - rect.left;
+	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = renderer.bitmap;
+	Bitmap bitmap = canvas.bitmap;
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
 		          0, 0, width, height,
@@ -96,8 +119,8 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 		case WM_SIZE: {
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
-			int width = clientRect.right - clientRect.left;
-			int height = clientRect.bottom - clientRect.bottom;
+			I32 width = clientRect.right - clientRect.left;
+			I32 height = clientRect.bottom - clientRect.bottom;
 			MapLabResize(labState, width, height);
 			break;
 		}
@@ -109,7 +132,7 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			MapLabBlit(labState->renderer, context, clientRect);
+			MapLabBlit(labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -122,22 +145,24 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 		}
 
 		case WM_KEYDOWN: {
+			F32 speed = 0.3f;
+
 			WPARAM keyCode = wparam;
 			switch(keyCode) {
 				case 'W': {
-					labState->playerVelocity.y = -1.0f;
+					labState->playerVelocity.y = -speed;
 					break;
 				}
 				case 'S': {
-					labState->playerVelocity.y = 1.0f;
+					labState->playerVelocity.y = speed;
 					break;
 				}
 				case 'A': {
-					labState->playerVelocity.x = -1.0f;
+					labState->playerVelocity.x = -speed;
 					break;
 				}
 				case 'D': {
-					labState->playerVelocity.x = 1.0f;
+					labState->playerVelocity.x = speed;
 					break;
 				}
 			}
@@ -162,7 +187,7 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 		}
 
 		case WM_MOUSEWHEEL: {
-			short wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
+			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
 			if (wheelDeltaParam > 0)
 				labState->camera.unitInPixels *= 1.10f;
 			else if (wheelDeltaParam < 0)
@@ -184,53 +209,9 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 	return result;
 }
 
-static void MapLabInit(MapLabState* labState, int windowWidth, int windowHeight)
+static B32 IsTileIndexValid(MapLabState* labState, TileIndex tileIndex)
 {
-	labState->running = true;
-
-	MapLabResize(labState, windowWidth, windowHeight);
-	Camera* camera = &labState->camera;
-	float left   = CameraLeftSide(camera);
-	float right  = CameraRightSide(camera);
-	float top    = CameraTopSide(camera);
-	float bottom = CameraBottomSide(camera);
-
-	labState->mapLeft   = left   + (right  - left)   * 0.05f;
-	labState->mapRight  = right  + (left   - right)  * 0.05f;
-	labState->mapTop    = top    + (bottom - top)    * 0.05f;
-	labState->mapBottom = bottom + (top    - bottom) * 0.05f;
-
-	labState->tileRowN = 10;
-	labState->tileColN = 20;
-
-	labState->visibleWidth  = (right - left) * 0.1f;
-	labState->visibleHeight = (bottom - top) * 0.1f;
-
-	labState->playerPosition.x = (left + right) * 0.5f;
-	labState->playerPosition.y = (top + bottom) * 0.5f;
-
-	labState->arena = CreateMemArena(MaxArenaSize);
-	labState->tmpArena = CreateMemArena(MaxTmpArenaSize);
-
-	Map* map = &labState->map;
-	map->junctions = ArenaPushArray(&labState->arena, Junction, MaxJunctionN);
-	map->roads = ArenaPushArray(&labState->arena, Road, MaxRoadN);
-	GenerateGridMap(map, MaxJunctionRowN, MaxJunctionColN, MaxRoadN, &labState->tmpArena);
-
-	labState->roadTexture = RandomGreyTexture(8, 100, 150);
-}
-
-static TileIndex GetTileIndexContainingPoint(MapLabState* labState, Point point)
-{
-	TileIndex tileIndex = {};
-	tileIndex.col = Floor((point.x - labState->mapLeft) / MapTileSide);
-	tileIndex.row = Floor((point.y - labState->mapTop) / MapTileSide);
-	return tileIndex;
-}
-
-static bool IsTileIndexValid(MapLabState* labState, TileIndex tileIndex)
-{
-	bool isValid = true;
+	B32 isValid = true;
 	if (tileIndex.row < 0 || tileIndex.row >= labState->tileRowN)
 		isValid = false;
 	else if (tileIndex.col < 0 || tileIndex.col >= labState->tileColN)
@@ -238,10 +219,10 @@ static bool IsTileIndexValid(MapLabState* labState, TileIndex tileIndex)
 	return isValid;
 }
 
-static Point GetTileCenter(MapLabState* labState, TileIndex tileIndex)
+static V2 GetTileCenter(MapLabState* labState, TileIndex tileIndex)
 {
 	Assert(IsTileIndexValid(labState, tileIndex));
-	Point tileCenter = {};
+	V2 tileCenter = {};
 	tileCenter.x = labState->mapLeft + (tileIndex.col * MapTileSide)  + (0.5f * MapTileSide);
 	tileCenter.y = labState->mapTop  + (tileIndex.row * MapTileSide) + (0.5f * MapTileSide);
 	return tileCenter;
@@ -251,23 +232,94 @@ static void GenerateTileBitmap(MapLabState* labState, TileIndex tileIndex, Bitma
 {
 	Camera camera = {};
 	camera.center = GetTileCenter(labState, tileIndex);
-	camera.screenPixelSize.x = (float)bitmap->width;
-	camera.screenPixelSize.y = (float)bitmap->height;
-	camera.unitInPixels = (float)bitmap->width / MapTileSide;
+	camera.screenPixelSize.x = (F32)bitmap->width;
+	camera.screenPixelSize.y = (F32)bitmap->height;
+	camera.unitInPixels = (F32)bitmap->width / MapTileSide;
 
-	Renderer renderer = {};
-	renderer.bitmap = *bitmap;
-	renderer.camera = &camera;
-	DrawGroundElems(renderer, &labState->map);
 	Map* map = &labState->map;
-	for (int i = 0; i < map->roadN; ++i)
-		DrawTexturedRoad(renderer, &map->roads[i], labState->roadTexture);
+	Canvas canvas = {};
+	canvas.bitmap = *bitmap;
+	canvas.camera = &camera;
+	DrawTexturedGroundElems(canvas, map, labState->grassTexture, labState->roadTexture, labState->sidewalkTexture, labState->stripeTexture);
 }
 
-static bool IsTileCached(MapLabState* labState, TileIndex tileIndex)
+static DWORD WINAPI TileGenerateWorkProc(LPVOID parameter)
 {
-	bool isCached = false;
-	for (int i = 0; i < labState->cachedTileN; ++i) {
+	TileGenerateWorkList* workList = (TileGenerateWorkList*)parameter;
+	while (1) {
+		if (workList->firstWorkToDo < workList->workN) {
+			I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
+			TileGenerateWork work = workList->works[workIndex];
+			GenerateTileBitmap(work.labState, work.tileIndex, work.bitmap);
+		} else {
+			WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
+		}
+	}
+}
+
+static void PushTileGenerateWork(TileGenerateWorkList* workList, TileGenerateWork work)
+{
+	Assert(workList->workN < MaxTileGenerateWorkListN);
+	workList->works[workList->workN] = work;
+	workList->workN++;
+	ReleaseSemaphore(workList->semaphore, 1, 0);
+}
+
+static void MapLabInit(MapLabState* labState, I32 windowWidth, I32 windowHeight)
+{
+	labState->running = true;
+
+	MapLabResize(labState, windowWidth, windowHeight);
+	Camera* camera = &labState->camera;
+	F32 left   = CameraLeftSide(camera);
+	F32 right  = CameraRightSide(camera);
+	F32 top    = CameraTopSide(camera);
+	F32 bottom = CameraBottomSide(camera);
+
+	labState->mapLeft   = -((MaxJunctionColN + 2) * JunctionGridDistance) * 0.5f;
+	labState->mapRight  = +((MaxJunctionColN + 2) * JunctionGridDistance) * 0.5f;
+	labState->mapTop    = -((MaxJunctionRowN + 2) * JunctionGridDistance) * 0.5f;
+	labState->mapBottom = +((MaxJunctionRowN + 2) * JunctionGridDistance) * 0.5f;
+
+	labState->tileRowN = Floor((labState->mapRight - labState->mapLeft) / (MapTileSide));
+	labState->tileColN = Floor((labState->mapBottom - labState->mapTop) / (MapTileSide));
+
+	labState->workList.semaphore = CreateSemaphore(0, 0, MaxTileGenerateWorkListN, 0);
+	for (F32 i = 0; i < TileGenerateWorkThreadN; ++i)
+		CreateThread(0, 0, TileGenerateWorkProc, &labState->workList, 0, 0);
+
+	labState->visibleWidth  = 300.0f;
+	labState->visibleHeight = 150.0f;
+
+	labState->playerPosition.x = (labState->mapLeft + labState->mapRight) * 0.5f;
+	labState->playerPosition.y = (labState->mapTop + labState->mapBottom) * 0.5f;
+
+	labState->arena = CreateMemArena(MaxArenaSize);
+	labState->tmpArena = CreateMemArena(MaxTmpArenaSize);
+
+	Map* map = &labState->map;
+	map->junctions = ArenaPushArray(&labState->arena, Junction, MaxJunctionN);
+	map->roads = ArenaPushArray(&labState->arena, Road, MaxRoadN);
+	GenerateGridMap(map, MaxJunctionRowN, MaxJunctionColN, MaxRoadN, &labState->tmpArena);
+
+	labState->grassTexture = GrassTexture(8, &labState->tmpArena);
+	labState->roadTexture = RandomGreyTexture(8, 100, 150);
+	labState->sidewalkTexture = RandomGreyTexture(8, 80, 100);
+	labState->stripeTexture = RandomGreyTexture(8, 200, 255);
+}
+
+static TileIndex GetTileIndexContainingPoint(MapLabState* labState, V2 point)
+{
+	TileIndex tileIndex = {};
+	tileIndex.col = Floor((point.x - labState->mapLeft) / MapTileSide);
+	tileIndex.row = Floor((point.y - labState->mapTop) / MapTileSide);
+	return tileIndex;
+}
+
+static B32 IsTileCached(MapLabState* labState, TileIndex tileIndex)
+{
+	B32 isCached = false;
+	for (I32 i = 0; i < labState->cachedTileN; ++i) {
 		TileIndex cachedTileIndex = labState->cachedTiles[i].index;
 		if (cachedTileIndex.row == tileIndex.row && cachedTileIndex.col == tileIndex.col) {
 			isCached = true;
@@ -277,15 +329,15 @@ static bool IsTileCached(MapLabState* labState, TileIndex tileIndex)
 	return isCached;
 }
 
-static CachedTile* GetFarthestCachedTile(MapLabState* labState, Point point)
+static CachedTile* GetFarthestCachedTile(MapLabState* labState, V2 point)
 {
 	Assert(labState->cachedTileN > 0);
 	CachedTile* cachedTile = 0;
-	float maxDistance = 0.0f;
-	for (int i = 0; i < labState->cachedTileN; ++i) {
+	F32 maxDistance = 0.0f;
+	for (I32 i = 0; i < labState->cachedTileN; ++i) {
 		TileIndex tileIndex = labState->cachedTiles[i].index;
-		Point tileCenter = GetTileCenter(labState, tileIndex);
-		float distance = Distance(tileCenter, point);
+		V2 tileCenter = GetTileCenter(labState, tileIndex);
+		F32 distance = Distance(tileCenter, point);
 		if (distance >= maxDistance) {
 			maxDistance = distance;
 			cachedTile = &labState->cachedTiles[i];
@@ -308,13 +360,17 @@ static void CacheTile(MapLabState* labState, TileIndex tileIndex)
 	}
 	Assert(cachedTile != 0);
 	cachedTile->index = tileIndex;
-	GenerateTileBitmap(labState, tileIndex, &cachedTile->bitmap);
+	TileGenerateWork work = {};
+	work.labState = labState;
+	work.tileIndex = tileIndex;
+	work.bitmap = &cachedTile->bitmap;
+	PushTileGenerateWork(&labState->workList, work);
 }
 
 static Bitmap* GetCachedTileBitmap(MapLabState* labState, TileIndex tileIndex)
 {
 	Bitmap* bitmap = 0;
-	for (int i = 0; i < labState->cachedTileN; ++i) {
+	for (I32 i = 0; i < labState->cachedTileN; ++i) {
 		CachedTile* cachedTile = labState->cachedTiles + i;
 		if (cachedTile->index.row == tileIndex.row && cachedTile->index.col == tileIndex.col) {
 			bitmap = &cachedTile->bitmap;
@@ -327,66 +383,72 @@ static Bitmap* GetCachedTileBitmap(MapLabState* labState, TileIndex tileIndex)
 
 static void DrawTile(MapLabState* labState, TileIndex tileIndex)
 {
-	Renderer renderer = labState->renderer;
-	float tileLeft   = labState->mapLeft + (tileIndex.col * MapTileSide);
-	float tileRight  = tileLeft + MapTileSide;
-	float tileTop    = labState->mapTop + (tileIndex.row * MapTileSide);
-	float tileBottom = tileTop + MapTileSide;
+	Canvas canvas = labState->canvas;
+	F32 tileLeft   = labState->mapLeft + (tileIndex.col * MapTileSide);
+	F32 tileRight  = tileLeft + MapTileSide;
+	F32 tileTop    = labState->mapTop + (tileIndex.row * MapTileSide);
+	F32 tileBottom = tileTop + MapTileSide;
 
 	if (!IsTileCached(labState, tileIndex))
 		CacheTile(labState, tileIndex);
 		
 	Bitmap* tileBitmap = GetCachedTileBitmap(labState, tileIndex);
-	DrawStretchedBitmap(renderer, tileBitmap, tileLeft, tileRight, tileTop, tileBottom);
+	DrawStretchedBitmap(canvas, tileBitmap, tileLeft, tileRight, tileTop, tileBottom);
 }
 
-static void MapLabUpdate(MapLabState* labState, Point mousePosition)
+static void MapLabUpdate(MapLabState* labState, V2 mousePosition)
 {
-	Renderer renderer = labState->renderer;
-	Color backgroundColor = GetColor(0.0f, 0.0f, 0.0f);
-	ClearScreen(renderer, backgroundColor);
+	Canvas canvas = labState->canvas;
+	V4 backgroundColor = GetColor(0.0f, 0.0f, 0.0f);
+	ClearScreen(canvas, backgroundColor);
 
-	Color tileGridColor = GetColor(1.0f, 1.0f, 0.0f);
-	Color visibleLineColor = GetColor(1.0f, 0.0f, 1.0f);
+	V4 tileGridColor = GetColor(1.0f, 1.0f, 0.0f);
+	V4 visibleLineColor = GetColor(1.0f, 0.0f, 1.0f);
 
-	labState->playerPosition = PointSum(labState->playerPosition, labState->playerVelocity);
-	renderer.camera->center = labState->playerPosition;
+	labState->playerPosition = (labState->playerPosition + labState->playerVelocity);
+	canvas.camera->center = labState->playerPosition;
 
-	Point playerPosition = labState->playerPosition;
-	float visibleLeft   = playerPosition.x - (labState->visibleWidth * 0.5f);
-	float visibleRight  = playerPosition.x + (labState->visibleWidth * 0.5f);
-	float visibleTop    = playerPosition.y - (labState->visibleHeight * 0.5f);
-	float visibleBottom = playerPosition.y + (labState->visibleHeight * 0.5f);
-	Point visibleTopLeft     = Point{visibleLeft, visibleTop};
-	Point visibleBottomRight = Point{visibleRight, visibleBottom};
+	TileGenerateWorkList* workList = &labState->workList;
+	if (workList->workN == workList->firstWorkToDo) {
+		workList->workN = 0;
+		workList->firstWorkToDo = 0;
+	}
+
+	V2 playerPosition = labState->playerPosition;
+	F32 visibleLeft   = playerPosition.x - (labState->visibleWidth * 0.5f);
+	F32 visibleRight  = playerPosition.x + (labState->visibleWidth * 0.5f);
+	F32 visibleTop    = playerPosition.y - (labState->visibleHeight * 0.5f);
+	F32 visibleBottom = playerPosition.y + (labState->visibleHeight * 0.5f);
+	V2 visibleTopLeft     = MakePoint(visibleLeft, visibleTop);
+	V2 visibleBottomRight = MakePoint(visibleRight, visibleBottom);
 	TileIndex topLeftTileIndex     = GetTileIndexContainingPoint(labState, visibleTopLeft);
 	TileIndex bottomRightTileIndex = GetTileIndexContainingPoint(labState, visibleBottomRight);
-	for (int row = topLeftTileIndex.row; row <= bottomRightTileIndex.row; ++row) {
-		for (int col = topLeftTileIndex.col; col <= bottomRightTileIndex.col; ++col) {
+	for (I32 row = topLeftTileIndex.row; row <= bottomRightTileIndex.row; ++row) {
+		for (I32 col = topLeftTileIndex.col; col <= bottomRightTileIndex.col; ++col) {
 			TileIndex tileIndex = TileIndex{row, col};
 			if (IsTileIndexValid(labState, tileIndex))
 				DrawTile(labState, tileIndex);
 		}
 	}
 
-	Color playerColor = GetColor(1.0f, 0.0f, 0.0f);
-	float playerRadius = 1.0f;
-	float playerLeft   = playerPosition.x - playerRadius;
-	float playerRight  = playerPosition.x + playerRadius;
-	float playerTop    = playerPosition.y - playerRadius;
-	float playerBottom = playerPosition.y + playerRadius;
-	DrawRect(renderer, playerTop, playerLeft, playerBottom, playerRight, playerColor);
+	V4 playerColor = GetColor(1.0f, 0.0f, 0.0f);
+	F32 playerRadius = 1.0f;
+	F32 playerLeft   = playerPosition.x - playerRadius;
+	F32 playerRight  = playerPosition.x + playerRadius;
+	F32 playerTop    = playerPosition.y - playerRadius;
+	F32 playerBottom = playerPosition.y + playerRadius;
+	DrawRect(canvas, playerLeft, playerRight, playerTop, playerBottom, playerColor);
 }
 
-static Point GetMousePosition(Camera camera, HWND window)
+static V2 GetMousePosition(Camera* camera, HWND window)
 {
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
 	ScreenToClient(window, &cursorPoint);
 
-	Point point = {};
-	point.x = (float)cursorPoint.x;
-	point.y = (float)cursorPoint.y;
+	V2 point = {};
+	point.x = (F32)cursorPoint.x;
+	point.y = (F32)cursorPoint.y;
 	point = PixelToUnit(camera, point);
 
 	return point;
@@ -421,8 +483,8 @@ void MapLab(HINSTANCE instance)
 
 	RECT rect = {};
 	GetClientRect(window, &rect);
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
+	I32 width = rect.right - rect.left;
+	I32 height = rect.bottom - rect.top;
 	MapLabInit(labState, width, height);
 
 	MSG message = {};
@@ -432,21 +494,19 @@ void MapLab(HINSTANCE instance)
 			DispatchMessage(&message);
 		}
 
-		Point mousePosition = GetMousePosition(labState->camera, window);
+		V2 mousePosition = GetMousePosition(&labState->camera, window);
 		MapLabUpdate(labState, mousePosition);
 
 		RECT rect = {};
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		MapLabBlit(gMapLabState.renderer, context, rect);
+		MapLabBlit(gMapLabState.canvas, context, rect);
 		ReleaseDC(window, context);
 	}
 }
 
-// TODO: Replace color codes with world texture!
-	// TODO: Draw textured bitmap or apply texture afterward?
-// TODO: Renderer refactoring
-// TODO: Rename to MapTileLab?
+// TODO: Add map tiles to the game!
+// TODO: GroundElemTextures struct?
 // TODO: Pull out common Lab functions?
-// TODO: Multithreading?
+// TODO: Render to screen multithreaded?
