@@ -101,7 +101,7 @@ static void ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 windowH
 static void ThreadLabUpdate(ThreadLabState* labState)
 {
 	Canvas canvas = labState->canvas;
-	V4 backgroundColor = GetColor(0.8f, 1.0f, 1.0f);
+	V4 backgroundColor = MakeColor(0.8f, 1.0f, 1.0f);
 	Bitmap* bitmap = &canvas.bitmap;
 
 	U32 paintColorCode = GetRandomColorCode();

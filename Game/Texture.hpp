@@ -208,7 +208,7 @@ inline Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 				F32 value  = Lerp(top, yr, bottom);
 
 				V4 oldColor = GetColorFromColorCode(*pixel);
-				V4 newColor = GetColor(0.0f, value, 0.0f);
+				V4 newColor = MakeColor(0.0f, value, 0.0f);
 
 				V4 color = AddColors(oldColor, newColor);
 				*pixel = GetColorCode(color);
@@ -227,7 +227,7 @@ inline Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 		for (I32 col = 0; col < result.side; ++col) {
 			V4 color = GetColorFromColorCode(*pixel);
 			F32 green = RandomBetween(color.green * 0.9f, color.green * 1.0f);
-			V4 newColor = GetColor(0.0f, green, 0.0f);
+			V4 newColor = MakeColor(0.0f, green, 0.0f);
 			*pixel = GetColorCode(newColor);
 			pixel++;
 		}

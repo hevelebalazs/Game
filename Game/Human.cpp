@@ -38,11 +38,11 @@ void DrawHuman(Canvas canvas, Human human)
 
 	V4 color = {};
 	if (human.healthPoints == 0)
-		color = GetColor(0.0f, 0.0f, 0.0f);
+		color = MakeColor(0.0f, 0.0f, 0.0f);
 	else if (human.isPolice)
-		color = GetColor(0.0f, 0.0f, 1.0f);
+		color = MakeColor(0.0f, 0.0f, 1.0f);
 	else
-		color = GetColor(1.0f, 1.0f, 1.0f);
+		color = MakeColor(1.0f, 1.0f, 1.0f);
 
 	DrawRect(
 		canvas,

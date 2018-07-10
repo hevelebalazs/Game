@@ -473,7 +473,7 @@ void HighlightRoadSidewalk(Canvas canvas, Road* road, V4 color)
 
 void DrawCrossing(Canvas canvas, Road* road)
 {
-	V4 stepColor = GetColor(1.0f, 1.0f, 1.0f);
+	V4 stepColor = MakeColor(1.0f, 1.0f, 1.0f);
 	F32 stepDistance = -LaneWidth;
 	B32 drawStep = true;
 

@@ -7,13 +7,13 @@
 
 #define JunctionMaxRoadN			4
 
-#define RoadColor					GetColor(0.5f, 0.5f, 0.5f)
+#define RoadColor					MakeColor(0.5f, 0.5f, 0.5f)
 #define LaneWidth					4.0f
 
-#define RoadStripeColor				GetColor(1.0f, 1.0f, 1.0f)
+#define RoadStripeColor				MakeColor(1.0f, 1.0f, 1.0f)
 #define RoadStripeWidth				0.25f
 
-#define SidewalkColor				GetColor(0.4f, 0.4f, 0.4f)
+#define SidewalkColor				MakeColor(0.4f, 0.4f, 0.4f)
 #define SidewalkWidth				2.0f
 #define CrossingWidth				5.0f
 #define CrossingStepLength			(0.2f * LaneWidth)

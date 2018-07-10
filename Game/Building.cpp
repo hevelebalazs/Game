@@ -724,7 +724,7 @@ void DrawBuilding(Canvas canvas, Building building, GameAssets* assets)
 	return;
 	*/
 
-	V4 sideColor = GetColor(0.0f, 0.0f, 0.0f);
+	V4 sideColor = MakeColor(0.0f, 0.0f, 0.0f);
 
 	// WorldTextureRect(draw, building.left, building.right, building.top, building.bottom, assets->roofTexture);
 	F32 width  = (building.right - building.left);
@@ -765,22 +765,22 @@ void DrawBuildingInside(Canvas canvas, Building building)
 
 	switch (building.type) {
 		case BuildingBlack: {
-			color = GetColor(0.75f, 0.75f, 0.75f);
+			color = MakeColor(0.75f, 0.75f, 0.75f);
 			break;
 		}
 
 		case BuildingRed: {
-			color = GetColor(0.75f, 0.0f, 0.0f);
+			color = MakeColor(0.75f, 0.0f, 0.0f);
 			break;
 		}
 
 		case BuildingGreen: {
-			color = GetColor(0.0f, 0.75f, 0.0f);
+			color = MakeColor(0.0f, 0.75f, 0.0f);
 			break;
 		}
 
 		case BuildingBlue: {
-			color = GetColor(0.0f, 0.0f, 0.75f);
+			color = MakeColor(0.0f, 0.0f, 0.75f);
 			break;
 		}
 	}
@@ -1028,7 +1028,7 @@ void DrawVisibleAreaInBuilding(Canvas canvas, Building building, V2 center, MemA
 {
 	BuildingInside* inside = building.inside;
 
-	V4 lineColor = GetColor(1.0f, 1.0f, 1.0f);
+	V4 lineColor = MakeColor(1.0f, 1.0f, 1.0f);
 
 	F32 maxDistance = (building.bottom - building.top) + (building.right - building.left);
 

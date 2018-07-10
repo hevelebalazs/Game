@@ -44,7 +44,7 @@ inline void DrawAutoHuman(Canvas canvas, AutoHuman* autoHuman) {
 			F32 bottom = y + side * 0.5f;
 
 			// TODO: make this a global variable?
-			V4 bloodColor = GetColor(0.0f, 0.0f, 0.0f);
+			V4 bloodColor = MakeColor(1.0f, 0.0f, 0.0f);
 			DrawRect(canvas, left, right, top, bottom, bloodColor);
 		}
 		InitRandom();

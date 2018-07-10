@@ -189,6 +189,14 @@ void GenerateGridMap(Map* map, I32 junctionRowN, I32 junctionColN, I32 roadN, Me
 	Assert(map->junctions != 0);
 	Assert(map->roads != 0);
 
+	map->left   = -((junctionColN + 2) * JunctionGridDistance) * 0.5f;
+	map->right  = +((junctionColN + 2) * JunctionGridDistance) * 0.5f;
+	map->top    = -((junctionRowN + 2) * JunctionGridDistance) * 0.5f;
+	map->bottom = +((junctionRowN + 2) * JunctionGridDistance) * 0.5f;
+
+	map->tileRowN = Floor((map->right - map->left) / (MapTileSide));
+	map->tileColN = Floor((map->bottom - map->top) / (MapTileSide));
+
 	InitRandom();
 
 	GenerateGridMapJunctions(map, junctionRowN, junctionColN);

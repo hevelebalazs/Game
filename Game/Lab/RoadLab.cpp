@@ -10,10 +10,10 @@
 #include "../Type.hpp"
 
 F32 PathLineWidth = 0.25f * LaneWidth;
-V4 ValidColor     = GetColor(0.0f, 0.8f, 0.0f);
-V4 InvalidColor   = GetColor(0.8f, 0.0f, 0.0f);
-V4 HighlightColor = GetColor(0.8f, 1.0f, 1.0f);
-V4 PathColor      = GetColor(0.0f, 0.8f, 0.8f);
+V4 ValidColor     = MakeColor(0.0f, 0.8f, 0.0f);
+V4 InvalidColor   = MakeColor(0.8f, 0.0f, 0.0f);
+V4 HighlightColor = MakeColor(0.8f, 1.0f, 1.0f);
+V4 PathColor      = MakeColor(0.0f, 0.8f, 0.8f);
 
 enum RoadLabMode {
 	RoadPlacingMode,
@@ -136,7 +136,7 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 
 	Map* map = &labState->map;
 	Canvas canvas = labState->canvas;
-	V4 black = GetColor(0.0f, 0.0f, 0.0f);
+	V4 black = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, black);
 
 	F32 seconds = 0.1f;

@@ -8,11 +8,11 @@
 #include "Type.hpp"
 
 #define HumanRadius			0.25f
-#define HumanColor			GetColor(1.0f, 0.0f, 0.0f)
+#define HumanColor			MakeColor(1.0f, 0.0f, 0.0f)
 #define MaxHealthPoints		3
 #define HealthPointPadding	0.1f
-#define	FullHealthColor		GetColor(1.0f, 0.0f, 0.0f)
-#define EmptyHealthColor	GetColor(0.0f, 0.0f, 0.0f)
+#define	FullHealthColor		MakeColor(1.0f, 0.0f, 0.0f)
+#define EmptyHealthColor	MakeColor(0.0f, 0.0f, 0.0f)
 
 struct Human {
 	Map* map;
@@ -61,7 +61,7 @@ inline B32 IsHumanCrossedByLine(Human* human, Line line)
 
 inline void DrawPoliceRadius(Canvas canvas, Human* human, F32 radius)
 {
-	V4 color = GetColor(0.0f, 0.0f, 1.0f);
+	V4 color = MakeColor(0.0f, 0.0f, 1.0f);
 	V2 position = human->position;
 	F32 left   = position.x - radius;
 	F32 right  = position.x + radius;

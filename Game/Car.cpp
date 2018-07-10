@@ -76,7 +76,7 @@ static V4 GetRandomCarColor()
 	green = Clip(green, 0.0f, 1.0f);
 	F32 blue = RandomBetween(0.0f, colorSum - red - green);
 	blue = Clip(blue, 0.0f, 1.0f);
-	V4 color = GetColor(red, green, blue);
+	V4 color = MakeColor(red, green, blue);
 	return color;
 }
 
@@ -85,7 +85,7 @@ static V4 GetRandomWindowColor()
 	F32 red   = RandomBetween(0.0f, 0.05f);
 	F32 green = RandomBetween(0.0f, 0.05f);
 	F32 blue  = RandomBetween(0.0f, 0.25f);
-	V4 color = GetColor(red, green, blue);
+	V4 color = MakeColor(red, green, blue);
 	return color;
 }
 
@@ -95,7 +95,7 @@ static V4 GetShadowColor(V4 color)
 	F32 red   = shadowRatio * color.red;
 	F32 green = shadowRatio * color.green;
 	F32 blue  = shadowRatio * color.blue;
-	V4 shadowColor = GetColor(red, green, blue);
+	V4 shadowColor = MakeColor(red, green, blue);
 	return shadowColor;
 }
 
@@ -105,7 +105,7 @@ static V4 GetRandomFrontLampColor()
 	F32 red   = redGreenValue;
 	F32 green = redGreenValue;
 	F32 blue  = RandomBetween(0.8f, 1.0f);
-	V4 color = GetColor(red, green, blue);
+	V4 color = MakeColor(red, green, blue);
 	return color;
 }
 
@@ -118,13 +118,13 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 {
 	Assert(carBitmap != 0);
 
-	V4 backgroundColor = GetAlphaColor(0.2f, 0.2f, 0.2f, 0.0f);
+	V4 backgroundColor = MakeAlphaColor(0.2f, 0.2f, 0.2f, 0.0f);
 	FillBitmapWithColor(carBitmap, backgroundColor);
 
 	V4 carColor = GetRandomCarColor();
 	V4 shadowColor = GetShadowColor(carColor);
 
-	V4 borderColor = GetColor(0.2f, 0.2f, 0.2f);
+	V4 borderColor = MakeColor(0.2f, 0.2f, 0.2f);
 
 	I32 bitmapLeft   = 0;
 	I32 bitmapRight  = carBitmap->width - 1;
@@ -413,7 +413,7 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 frontRightLampCenterCol = (frontRightLampLeft + frontRightLampRight) / 2;
 	FloodfillBitmap(carBitmap, frontRightLampCenterRow, frontRightLampCenterCol, frontLampColor, tmpArena);
 
-	V4 backLampColor = GetColor(1.0f, 0.0f, 0.0f);
+	V4 backLampColor = MakeColor(1.0f, 0.0f, 0.0f);
 	I32 backLeftLampLeft   = backHoodBottomLeft + 10;
 	I32 backLeftLampRight  = backLeftLampLeft + 7;
 	I32 backLeftLampTop    = backHoodBottom;

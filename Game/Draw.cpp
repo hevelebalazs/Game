@@ -557,23 +557,24 @@ void DrawLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
 	DrawQuad(canvas, quad, color);
 }
 
+#define WorldTextureScale 20.0f
+
 void FillScreenWithWorldTexture(Canvas canvas, Texture texture)
 {
 	Bitmap bitmap = canvas.bitmap;
 	Camera* camera = canvas.camera;
 
-	F32 scale = 10.0f;
 	F32 pixelInUnits = Invert(camera->unitInPixels);
 
 	F32 startX = camera->center.x - (camera->screenPixelSize.x * 0.5f * pixelInUnits);
 	F32 startY = camera->center.y - (camera->screenPixelSize.y * 0.5f * pixelInUnits);
-	startX *= scale;
-	startY *= scale;
+	startX *= WorldTextureScale;
+	startY *= WorldTextureScale;
 
 	F32 addX = pixelInUnits;
 	F32 addY = pixelInUnits;
-	addX *= scale;
-	addY *= scale;
+	addX *= WorldTextureScale;
+	addY *= WorldTextureScale;
 	I32 andVal = (texture.side - 1);
 
 	U32* pixel = bitmap.memory;
@@ -857,18 +858,17 @@ void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture texture
 	minY = IntMax2(minY, 0);
 	maxY = IntMin2(maxY, bitmap.height - 1);
 
-	F32 scale = 10.0f;
 	F32 pixelInUnits = Invert(camera->unitInPixels);
     
     F32 startX = camera->center.x - (camera->screenPixelSize.x * 0.5f * pixelInUnits);
 	F32 startY = camera->center.y - (camera->screenPixelSize.y * 0.5f * pixelInUnits);
-	startX *= scale;
-	startY *= scale;
+	startX *= WorldTextureScale;
+	startY *= WorldTextureScale;
 
 	F32 addX = pixelInUnits;
 	F32 addY = pixelInUnits;
-	addX *= scale;
-	addY *= scale;
+	addX *= WorldTextureScale;
+	addY *= WorldTextureScale;
     
     startX += (minX * addX);
     startY += (minY * addY);
@@ -1014,18 +1014,17 @@ void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
 	minY = IntMax2(minY, 0);
 	maxY = IntMin2(maxY, bitmap.height - 1);
     
-    F32 scale = 10.0f;
 	F32 pixelInUnits = Invert(camera->unitInPixels);
 
 	F32 startX = camera->center.x - (camera->screenPixelSize.x * 0.5f * pixelInUnits);
 	F32 startY = camera->center.y - (camera->screenPixelSize.y * 0.5f * pixelInUnits);
-	startX *= scale;
-	startY *= scale;
+	startX *= WorldTextureScale;
+	startY *= WorldTextureScale;
 
 	F32 addX = pixelInUnits;
 	F32 addY = pixelInUnits;
-	addX *= scale;
-	addY *= scale;
+	addX *= WorldTextureScale;
+	addY *= WorldTextureScale;
     
     startX += (minX * addX);
     startY += (minY * addY);

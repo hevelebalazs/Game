@@ -154,7 +154,7 @@ static void CarLabUpdate(CarLabState* carLabState)
 {
 	Bitmap* windowBitmap = &carLabState->windowBitmap;
 	Bitmap* carBitmap = &carLabState->carBitmap;
-	V4 backgroundColor = GetColor(0.0f, 0.0f, 0.8f);
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.8f);
 	FillBitmapWithColor(windowBitmap, backgroundColor);
 
 	I32 halfWindowWidth  = windowBitmap->width / 2;

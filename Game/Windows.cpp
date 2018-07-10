@@ -292,7 +292,6 @@ void RunGame(HINSTANCE instance)
 
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	MapLab(instance);
-	// RunGame(instance);
+	RunGame(instance);
 	return 0;
 }

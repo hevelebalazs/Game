@@ -4,6 +4,14 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
+void GenerateMapTextures(MapTextures* textures, MemArena* tmpArena)
+{
+	textures->grassTexture    = GrassTexture(8, tmpArena);
+	textures->roadTexture     = RandomGreyTexture(8, 100, 150);
+	textures->sidewalkTexture = RandomGreyTexture(8, 80, 100);
+	textures->stripeTexture   = RandomGreyTexture(8, 200, 255);
+}
+
 Junction* GetRandomJunction(Map* map)
 {
 	I32 junctionIndex = RandMod(map->junctionN);
@@ -244,19 +252,19 @@ void DrawGroundElems(Canvas canvas, Map* map)
 		DrawTrafficLights(canvas, map->junctions + i);
 }
 
-void DrawTexturedGroundElems(Canvas canvas, Map* map, Texture grassTexture, Texture roadTexture, Texture sidewalkTexture, Texture stripeTexture)
+void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures)
 {
-	FillScreenWithWorldTexture(canvas, grassTexture);
+	FillScreenWithWorldTexture(canvas, textures->grassTexture);
 	
 	for (I32 i = 0; i < map->roadN; ++i)
-		DrawTexturedRoadSidewalk(canvas, &map->roads[i], sidewalkTexture);
+		DrawTexturedRoadSidewalk(canvas, &map->roads[i], textures->sidewalkTexture);
 	for (I32 i = 0; i < map->junctionN; ++i)
-		DrawTexturedJunctionSidewalk(canvas, &map->junctions[i], sidewalkTexture);
+		DrawTexturedJunctionSidewalk(canvas, &map->junctions[i], textures->sidewalkTexture);
 
 	for (I32 i = 0; i < map->roadN; ++i)
-		DrawTexturedRoad(canvas, &map->roads[i], roadTexture, stripeTexture);
+		DrawTexturedRoad(canvas, &map->roads[i], textures->roadTexture, textures->stripeTexture);
 	for (I32 i = 0; i < map->junctionN; ++i)
-		DrawTexturedJunction(canvas, &map->junctions[i], roadTexture, stripeTexture);
+		DrawTexturedJunction(canvas, &map->junctions[i], textures->roadTexture, textures->stripeTexture);
 }
 
 // TODO: there are two instances of mergesort in the code
@@ -373,6 +381,12 @@ void DrawMap(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets)
 	DrawBuildings(canvas, map, arena, assets);
 }
 
+void DrawAllTrafficLights(Canvas canvas, Map* map)
+{
+	for (I32 i = 0; i < map->junctionN; ++i)
+		DrawTrafficLights(canvas, &map->junctions[i]);
+}
+
 MapElem GetRoadElem(Road* road)
 {
 	MapElem result = {};
@@ -460,4 +474,163 @@ void HighlightMapElem(Canvas canvas, MapElem mapElem, V4 color)
 		HighlightRoad(canvas, mapElem.road, color);
 	else if (mapElem.type == MapElemRoadSidewalk)
 		HighlightRoadSidewalk(canvas, mapElem.road, color);
+}
+
+B32 IsMapTileIndexValid(Map* map, MapTileIndex tileIndex)
+{
+	B32 isValid = true;
+	if (tileIndex.row < 0 || tileIndex.row >= map->tileRowN)
+		isValid = false;
+	else if (tileIndex.col < 0 || tileIndex.col >= map->tileColN)
+		isValid = false;
+	return isValid;
+}
+
+MapTileIndex GetMapTileIndexContainingPoint(Map* map, V2 point)
+{
+	MapTileIndex tileIndex = {};
+	tileIndex.col = Floor((point.x - map->left) / MapTileSide);
+	tileIndex.row = Floor((point.y - map->top) / MapTileSide);
+	return tileIndex;
+}
+
+B32 IsMapTileCached(Map* map, MapTileIndex tileIndex)
+{
+	B32 isCached = false;
+	for (I32 i = 0; i < map->cachedTileN; ++i) {
+		MapTileIndex cachedTileIndex = map->cachedTiles[i].index;
+		if (cachedTileIndex.row == tileIndex.row && cachedTileIndex.col == tileIndex.col) {
+			isCached = true;
+			break;
+		}
+	}
+	return isCached;
+}
+
+V2 GetMapTileCenter(Map* map, MapTileIndex tileIndex)
+{
+	Assert(IsMapTileIndexValid(map, tileIndex));
+	V2 tileCenter = {};
+	tileCenter.x = map->left + (tileIndex.col * MapTileSide) + (0.5f * MapTileSide);
+	tileCenter.y = map->top  + (tileIndex.row * MapTileSide) + (0.5f * MapTileSide);
+	return tileCenter;
+}
+
+CachedMapTile* GetFarthestCachedMapTile(Map* map, V2 point)
+{
+	Assert(map->cachedTileN > 0);
+	CachedMapTile* cachedTile = 0;
+	F32 maxDistance = 0.0f;
+	for (I32 i = 0; i < map->cachedTileN; ++i) {
+		MapTileIndex tileIndex = map->cachedTiles[i].index;
+		V2 tileCenter = GetMapTileCenter(map, tileIndex);
+		F32 distance = Distance(tileCenter, point);
+		if (distance >= maxDistance) {
+			maxDistance = distance;
+			cachedTile = &map->cachedTiles[i];
+		}
+	}
+	return cachedTile;
+	Assert(cachedTile != 0);
+}
+
+void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitmap, MapTextures* mapTextures)
+{
+	Camera camera = {};
+	camera.center = GetMapTileCenter(map, tileIndex);
+	camera.screenPixelSize.x = (F32)bitmap->width;
+	camera.screenPixelSize.y = (F32)bitmap->height;
+	camera.unitInPixels = (F32)bitmap->width / MapTileSide;
+
+	Canvas canvas = {};
+	canvas.bitmap = *bitmap;
+	canvas.camera = &camera;
+	DrawTexturedGroundElems(canvas, map, mapTextures);
+}
+
+DWORD WINAPI GenerateMapTileWorkProc(LPVOID parameter)
+{
+	GenerateMapTileWorkList* workList = (GenerateMapTileWorkList*)parameter;
+	while (1) {
+		if (workList->firstWorkToDo < workList->workN) {
+			I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
+			GenerateMapTileWork work = workList->works[workIndex];
+			GenerateMapTileBitmap(work.map, work.tileIndex, work.bitmap, work.mapTextures);
+		} else {
+			WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
+		}
+	}
+}
+
+void PushGenerateMapTileWork(GenerateMapTileWorkList* workList, GenerateMapTileWork work)
+{
+	Assert(workList->workN < MaxGenerateMapTileWorkListN);
+	workList->works[workList->workN] = work;
+	workList->workN++;
+	ReleaseSemaphore(workList->semaphore, 1, 0);
+}
+
+void CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures)
+{
+	Assert(!IsMapTileCached(map, tileIndex));
+	CachedMapTile* cachedTile = 0;
+	if (map->cachedTileN < MaxCachedMapTileN) {
+		cachedTile = map->cachedTiles + map->cachedTileN;
+		ResizeBitmap(&cachedTile->bitmap, MapTileBitmapWidth, MapTileBitmapHeight);
+		map->cachedTileN++;
+	} else {
+		V2 tileCenter = GetMapTileCenter(map, tileIndex);
+		cachedTile = GetFarthestCachedMapTile(map, tileCenter);
+	}
+	Assert(cachedTile != 0);
+	cachedTile->index = tileIndex;
+	GenerateMapTileWork work = {};
+	work.map = map;
+	work.tileIndex = tileIndex;
+	work.bitmap = &cachedTile->bitmap;
+	work.mapTextures = textures;
+	PushGenerateMapTileWork(&map->workList, work);
+}
+
+Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
+{
+	Bitmap* bitmap = 0;
+	for (I32 i = 0; i < map->cachedTileN; ++i) {
+		CachedMapTile* cachedTile = map->cachedTiles + i;
+		if (cachedTile->index.row == tileIndex.row && cachedTile->index.col == tileIndex.col) {
+			bitmap = &cachedTile->bitmap;
+			break;
+		}
+	}
+	Assert(bitmap != 0);
+	return bitmap;
+}
+
+void DrawMapTile(Canvas canvas, Map* map, MapTileIndex tileIndex, MapTextures* textures)
+{
+	F32 tileLeft   = map->left + (tileIndex.col * MapTileSide);
+	F32 tileRight  = tileLeft + MapTileSide;
+	F32 tileTop    = map->top + (tileIndex.row * MapTileSide);
+	F32 tileBottom = tileTop + MapTileSide;
+
+	if (!IsMapTileCached(map, tileIndex))
+		CacheMapTile(map, tileIndex, textures);
+		
+	Bitmap* tileBitmap = GetCachedTileBitmap(map, tileIndex);
+	DrawStretchedBitmap(canvas, tileBitmap, tileLeft, tileRight, tileTop, tileBottom);
+}
+
+void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F32 top, F32 bottom, MapTextures* textures)
+{
+	V2 topLeft     = MakePoint(left, top);
+	V2 bottomRight = MakePoint(right, bottom);
+	MapTileIndex topLeftTileIndex     = GetMapTileIndexContainingPoint(map, topLeft);
+	MapTileIndex bottomRightTileIndex = GetMapTileIndexContainingPoint(map, bottomRight);
+	for (I32 row = topLeftTileIndex.row; row <= bottomRightTileIndex.row; ++row) {
+		for (I32 col = topLeftTileIndex.col; col <= bottomRightTileIndex.col; ++col) {
+			MapTileIndex tileIndex = MapTileIndex{row, col};
+			if (IsMapTileIndexValid(map, tileIndex))
+				DrawMapTile(canvas, map, tileIndex, textures);
+		}
+	}
 }

@@ -61,6 +61,7 @@ struct GameState {
 	Bitmap carBitmaps[CarBitmapN];
 
 	GameAssets assets;
+	MapTextures mapTextures;
 };
 
 // TODO: remove gameState reference

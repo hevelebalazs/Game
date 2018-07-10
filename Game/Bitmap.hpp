@@ -20,8 +20,8 @@ void ResizeBitmap(Bitmap* bitmap, I32 width, I32 height);
 V4 GetRandomColor();
 U32 GetRandomColorCode();
 
-V4 GetColor(F32 red, F32 green, F32 blue);
-V4 GetAlphaColor(F32 red, F32 green, F32 blue, F32 alpha);
+V4 MakeColor(F32 red, F32 green, F32 blue);
+V4 MakeAlphaColor(F32 red, F32 green, F32 blue, F32 alpha);
 
 U32 GetColorCode(V4 color);
 V4 GetColorFromColorCode(U32 colorCode);

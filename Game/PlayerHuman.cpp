@@ -173,7 +173,7 @@ void DrawPlayerHuman(Canvas canvas, PlayerHuman* playerHuman)
 		V2 point2 = point1 - (bulletTailLength * bullet->position.direction);
 
 		// TODO: make this a global value
-		V4 bulletColor = GetColor(1.0f, 1.0f, 0.0f);
+		V4 bulletColor = MakeColor(1.0f, 1.0f, 0.0f);
 		Bresenham(canvas, point1, point2, bulletColor);
 	}
 

@@ -175,18 +175,11 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem, 
 										  &gameStorage->tmpArena, &gameState->pathPool);
 
-	GameAssets* assets = &gameState->assets;
-	assets->roadTexture = RandomGreyTexture(6, 100, 127);
-	assets->stripeTexture = RandomGreyTexture(6, 200, 255);
-	assets->sidewalkTexture = RandomGreyTexture(6, 70, 100);
-	assets->grassTexture = GrassTexture(10, &gameStorage->tmpArena);
-	assets->roofTextureDown = RoofTexture(6);
-	assets->roofTextureUp = CopyTexture(&assets->roofTextureDown);
-	RotateTextureUpsideDown(&assets->roofTextureUp);
-	assets->roofTextureRight = CopyTexture(&assets->roofTextureUp);
-	RotateTextureRight(&assets->roofTextureRight);
-	assets->roofTextureLeft = CopyTexture(&assets->roofTextureUp);
-	RotateTextureLeft(&assets->roofTextureLeft);
+	map->workList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
+	for (I32 i = 0; i < GenerateMapTileWorkThreadN; ++i)
+		CreateThread(0, 0, GenerateMapTileWorkProc, &map->workList, 0, 0);
+
+	GenerateMapTextures(&gameState->mapTextures, &gameStorage->tmpArena);
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -249,8 +242,7 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		UpdatePlayerCar(&gameState->playerCar, seconds);
 
 		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
-			// TODO: use array + index instead of &array[index] everywhere
-			AutoHuman* autoHuman = gameState->autoHumans + i;
+			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			V2 autoHumanPoint = autoHuman->human.position;
 
 			if (IsCarOnPoint(&gameState->playerCar.car, autoHumanPoint)) {
@@ -286,7 +278,7 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 	UpdateCamera(camera, seconds);
 
 	// TODO: create StartMission function?
-	V4 missionHighlightColor = GetColor(0.0f, 1.0f, 1.0f);
+	V4 missionHighlightColor = MakeColor(0.0f, 1.0f, 1.0f);
 	V2 playerPosition = {};
 	if (gameState->isPlayerCar)
 		playerPosition = gameState->playerCar.car.position;
@@ -402,7 +394,7 @@ void GameDraw(GameStorage* gameStorage)
 	GameState* gameState = gameStorage->gameState;
 	Canvas canvas = gameState->canvas;
 
-	V4 clearColor = GetColor(0.0f, 0.0f, 0.0f);
+	V4 clearColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, clearColor);
 
 	V2 playerPosition = {};
@@ -416,7 +408,7 @@ void GameDraw(GameStorage* gameStorage)
 		DrawBuildingInside(canvas, *inBuilding);
 
 		if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) {
-			V4 black = GetColor(0.0f, 0.0f, 0.0f);
+			V4 black = MakeColor(0.0f, 0.0f, 0.0f);
 
 			Canvas maskData = gameState->maskCanvas;
 			ClearScreen(maskData, black);
@@ -425,11 +417,18 @@ void GameDraw(GameStorage* gameStorage)
 
 			ApplyBitmapMask(canvas.bitmap, maskData.bitmap);
 		}
-	}
-	else {
-		DrawGroundElems(canvas, &gameState->map);
+	} else {
+		Map* map = &gameState->map;
+		Camera* camera = canvas.camera;
+		float visibleRadius = 10.0f;
+		F32 left   = CameraLeftSide(camera)   - visibleRadius;
+		F32 right  = CameraRightSide(camera)  + visibleRadius;
+		F32 top    = CameraTopSide(camera)    - visibleRadius;
+		F32 bottom = CameraBottomSide(camera) + visibleRadius;
+		DrawVisibleMapTiles(canvas, map, left, right, top, bottom, &gameState->mapTextures);
+		DrawAllTrafficLights(canvas, map);
 
-		V4 missionHighlightColor = GetColor(0.0f, 1.0f, 1.0f);
+		V4 missionHighlightColor = MakeColor(0.0f, 1.0f, 1.0f);
 		if (gameState->missionJunction)
 			// HighlightJunction(gameState->canvas, *gameState->missionJunction, missionHighlightColor);
 

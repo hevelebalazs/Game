@@ -41,7 +41,7 @@ inline void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 			// TODO: create a type for color code?
 			U32* pixel  = GetPixelAddress(bitmap, row, col);
 			V4 oldColor = GetColorFromColorCode(*pixel);
-			V4 newColor = GetColor(ratio, ratio, ratio);
+			V4 newColor = MakeColor(ratio, ratio, ratio);
 			V4 color = AddColors(oldColor, newColor);
 			*pixel = GetColorCode(color);
 		}

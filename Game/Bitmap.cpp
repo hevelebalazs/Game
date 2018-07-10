@@ -26,7 +26,7 @@ void ResizeBitmap(Bitmap* bitmap, I32 width, I32 height)
 
 V4 GetRandomColor()
 {
-	V4 randomColor = GetColor(
+	V4 randomColor = MakeColor(
 		RandomBetween(0.0f, 1.0f),
 		RandomBetween(0.0f, 1.0f),
 		RandomBetween(0.0f, 1.0f)
@@ -42,7 +42,7 @@ U32 GetRandomColorCode()
 	return colorCode;
 }
 
-V4 GetColor(F32 red, F32 green, F32 blue)
+V4 MakeColor(F32 red, F32 green, F32 blue)
 {
 	V4 color = {};
 	color.red   = red;
@@ -52,7 +52,7 @@ V4 GetColor(F32 red, F32 green, F32 blue)
 	return color;
 }
 
-V4 GetAlphaColor(F32 red, F32 green, F32 blue, F32 alpha)
+V4 MakeAlphaColor(F32 red, F32 green, F32 blue, F32 alpha)
 {
 	V4 color = {};
 	color.red   = red;
@@ -342,7 +342,7 @@ void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toCenterR
 			if (!IsBetween(widthRatio, 0.0f, 1.0f))
 				continue;
 
-			V4 fillColor = GetColor(1.0f, 0.0f, 1.0f);
+			V4 fillColor = MakeColor(1.0f, 0.0f, 1.0f);
 			U32 fromColorCode = GetClosestBitmapColorCode(fromBitmap, heightRatio, widthRatio);
 			V4 fromColor = GetColorFromColorCode(fromColorCode);
 			if (fromColor.alpha != 0.0f) {
