@@ -175,9 +175,14 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem, 
 										  &gameStorage->tmpArena, &gameState->pathPool);
 
-	map->workList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
+	map->generateTileWorkList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
 	for (I32 i = 0; i < GenerateMapTileWorkThreadN; ++i)
-		CreateThread(0, 0, GenerateMapTileWorkProc, &map->workList, 0, 0);
+		CreateThread(0, 0, GenerateMapTileWorkProc, &map->generateTileWorkList, 0, 0);
+
+	map->drawTileWorkList.semaphore = CreateSemaphore(0, 0, MaxDrawMapTileWorkListN, 0);
+	map->drawTileWorkList.semaphoreDone = CreateSemaphore(0, 0, MaxDrawMapTileWorkListN, 0);
+	for (I32 i = 0; i < DrawMapTileWorkThreadN; ++i)
+		CreateThread(0, 0, DrawMapTileWorkProc, &map->drawTileWorkList, 0, 0);
 
 	GenerateMapTextures(&gameState->mapTextures, &gameStorage->tmpArena);
 }
@@ -420,7 +425,7 @@ void GameDraw(GameStorage* gameStorage)
 	} else {
 		Map* map = &gameState->map;
 		Camera* camera = canvas.camera;
-		float visibleRadius = 10.0f;
+		float visibleRadius = 50.0f;
 		F32 left   = CameraLeftSide(camera)   - visibleRadius;
 		F32 right  = CameraRightSide(camera)  + visibleRadius;
 		F32 top    = CameraTopSide(camera)    - visibleRadius;

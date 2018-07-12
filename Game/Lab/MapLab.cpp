@@ -183,9 +183,9 @@ static void MapLabInit(MapLabState* labState, I32 windowWidth, I32 windowHeight)
 	GenerateGridMap(map, MaxJunctionRowN, MaxJunctionColN, MaxRoadN, &labState->tmpArena);
 
 	{
-	map->workList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
+	map->generateTileWorkList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
 	for (I32 i = 0; i < GenerateMapTileWorkThreadN; ++i)
-		CreateThread(0, 0, GenerateMapTileWorkProc, &map->workList, 0, 0);
+		CreateThread(0, 0, GenerateMapTileWorkProc, &map->generateTileWorkList, 0, 0);
 	}
 
 	labState->visibleWidth  = 300.0f;
@@ -210,11 +210,7 @@ static void MapLabUpdate(MapLabState* labState, V2 mousePosition)
 	canvas.camera->center = labState->playerPosition;
 	
 	Map* map = &labState->map;
-	GenerateMapTileWorkList* workList = &map->workList;
-	if (workList->workN == workList->firstWorkToDo) {
-		workList->workN = 0;
-		workList->firstWorkToDo = 0;
-	}
+	GenerateMapTileWorkList* workList = &map->generateTileWorkList;
 
 	V2 playerPosition = labState->playerPosition;
 	F32 left   = playerPosition.x - (labState->visibleWidth * 0.5f);
@@ -297,8 +293,3 @@ void MapLab(HINSTANCE instance)
 		ReleaseDC(window, context);
 	}
 }
-
-// [TODO: Render to screen multithreaded?]
-	// TODO: Subpixel rendering to screen?
-// TODO: Pull out common Lab functions?
-// TODO: Eliminate GameAssets?

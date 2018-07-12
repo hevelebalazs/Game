@@ -94,6 +94,7 @@ V4 AddColors(V4 color1, V4 color2)
 
 V4 InterpolateColors(V4 color1, F32 ratio, V4 color2)
 {
+	Assert(IsBetween(ratio, 0.0f, 1.0f));
 	V4 result = {};
 	result.red   = Lerp(color1.red,   ratio, color2.red);
 	result.green = Lerp(color1.green, ratio, color2.green);
@@ -107,6 +108,14 @@ static U32* GetBitmapPixelAddress(Bitmap* bitmap, I32 row, I32 col)
 	Assert(col >= 0 && col < bitmap->width);
 	U32* pixelAddress = bitmap->memory + row * bitmap->width + col;
 	return pixelAddress;
+}
+
+static V4 GetBitmapPixelColor(Bitmap* bitmap, I32 row, I32 col)
+{
+	U32* address = GetBitmapPixelAddress(bitmap, row, col);
+	U32 colorCode = *address;
+	V4 color = GetColorFromColorCode(colorCode);
+	return color;
 }
 
 static U32 GetClosestBitmapColorCode(Bitmap* bitmap, F32 heightRatio, F32 widthRatio)

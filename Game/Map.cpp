@@ -552,21 +552,19 @@ DWORD WINAPI GenerateMapTileWorkProc(LPVOID parameter)
 {
 	GenerateMapTileWorkList* workList = (GenerateMapTileWorkList*)parameter;
 	while (1) {
-		if (workList->firstWorkToDo < workList->workN) {
-			I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
-			GenerateMapTileWork work = workList->works[workIndex];
-			GenerateMapTileBitmap(work.map, work.tileIndex, work.bitmap, work.mapTextures);
-		} else {
-			WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
-		}
+		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
+		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->workDoneN) - 1;
+		workIndex = (workIndex + MaxGenerateMapTileWorkListN) % MaxGenerateMapTileWorkListN;
+		Assert(workIndex != workList->workPushedN % MaxGenerateMapTileWorkListN);
+		GenerateMapTileWork work = workList->works[workIndex];
+		GenerateMapTileBitmap(work.map, work.tileIndex, work.bitmap, work.mapTextures);
 	}
 }
 
 void PushGenerateMapTileWork(GenerateMapTileWorkList* workList, GenerateMapTileWork work)
 {
-	Assert(workList->workN < MaxGenerateMapTileWorkListN);
-	workList->works[workList->workN] = work;
-	workList->workN++;
+	workList->works[workList->workPushedN % MaxGenerateMapTileWorkListN] = work;
+	workList->workPushedN++;
 	ReleaseSemaphore(workList->semaphore, 1, 0);
 }
 
@@ -589,7 +587,7 @@ void CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures)
 	work.tileIndex = tileIndex;
 	work.bitmap = &cachedTile->bitmap;
 	work.mapTextures = textures;
-	PushGenerateMapTileWork(&map->workList, work);
+	PushGenerateMapTileWork(&map->generateTileWorkList, work);
 }
 
 Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
@@ -613,9 +611,6 @@ void DrawMapTile(Canvas canvas, Map* map, MapTileIndex tileIndex, MapTextures* t
 	F32 tileTop    = map->top + (tileIndex.row * MapTileSide);
 	F32 tileBottom = tileTop + MapTileSide;
 
-	if (!IsMapTileCached(map, tileIndex))
-		CacheMapTile(map, tileIndex, textures);
-		
 	Bitmap* tileBitmap = GetCachedTileBitmap(map, tileIndex);
 	DrawStretchedBitmap(canvas, tileBitmap, tileLeft, tileRight, tileTop, tileBottom);
 }
@@ -626,11 +621,51 @@ void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F32 top, 
 	V2 bottomRight = MakePoint(right, bottom);
 	MapTileIndex topLeftTileIndex     = GetMapTileIndexContainingPoint(map, topLeft);
 	MapTileIndex bottomRightTileIndex = GetMapTileIndexContainingPoint(map, bottomRight);
+
 	for (I32 row = topLeftTileIndex.row; row <= bottomRightTileIndex.row; ++row) {
 		for (I32 col = topLeftTileIndex.col; col <= bottomRightTileIndex.col; ++col) {
 			MapTileIndex tileIndex = MapTileIndex{row, col};
-			if (IsMapTileIndexValid(map, tileIndex))
-				DrawMapTile(canvas, map, tileIndex, textures);
+
+			if (!IsMapTileIndexValid(map, tileIndex))
+				continue;
+
+			if (!IsMapTileCached(map, tileIndex))
+				CacheMapTile(map, tileIndex, textures);
+
+			if (IsMapTileIndexValid(map, tileIndex)) {
+				DrawMapTileWork work = {};
+				work.canvas = canvas;
+				work.map = map;
+				work.tileIndex = tileIndex;
+				work.textures = textures;
+				PushDrawMapTileWork(&map->drawTileWorkList, work);
+			}
 		}
 	}
+
+	for (I32 i = 0; i < map->drawTileWorkList.workN; ++i)
+		WaitForSingleObjectEx(map->drawTileWorkList.semaphoreDone, INFINITE, FALSE);
+	map->drawTileWorkList.workN = 0;
+	map->drawTileWorkList.firstWorkToDo = 0;
+}
+
+DWORD WINAPI DrawMapTileWorkProc(LPVOID parameter)
+{
+	DrawMapTileWorkList* workList = (DrawMapTileWorkList*)parameter;
+	while (1) {
+		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
+		Assert (workList->firstWorkToDo < workList->workN);
+		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
+		DrawMapTileWork work = workList->works[workIndex];
+		DrawMapTile(work.canvas, work.map, work.tileIndex, work.textures);
+		ReleaseSemaphore(workList->semaphoreDone, 1, 0);
+	}
+}
+
+void PushDrawMapTileWork(DrawMapTileWorkList* workList, DrawMapTileWork work)
+{
+	Assert(workList->workN < MaxDrawMapTileWorkListN);
+	workList->works[workList->workN] = work;
+	workList->workN++;
+	ReleaseSemaphore(workList->semaphore, 1, 0);
 }

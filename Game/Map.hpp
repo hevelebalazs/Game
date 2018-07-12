@@ -15,7 +15,7 @@
 #define MapTileSide 50.0f
 #define MapTileBitmapWidth 1024
 #define MapTileBitmapHeight 1024
-#define GenerateMapTileWorkThreadN 5
+#define GenerateMapTileWorkThreadN 2
 
 struct GameAssets;
 
@@ -47,9 +47,27 @@ struct GenerateMapTileWork {
 
 struct GenerateMapTileWorkList {
 	GenerateMapTileWork works[MaxGenerateMapTileWorkListN];
+	volatile I32 workDoneN;
+	volatile I32 workPushedN;
+	HANDLE semaphore;
+};
+
+#define MaxDrawMapTileWorkListN MaxCachedMapTileN
+#define DrawMapTileWorkThreadN 10
+
+struct DrawMapTileWork {
+	Canvas canvas;
+	Map* map;
+	MapTileIndex tileIndex;
+	MapTextures* textures;
+};
+
+struct DrawMapTileWorkList {
+	DrawMapTileWork works[MaxDrawMapTileWorkListN];
 	volatile I32 workN;
 	volatile I32 firstWorkToDo;
 	HANDLE semaphore;
+	HANDLE semaphoreDone;
 };
 
 struct Map {
@@ -73,7 +91,8 @@ struct Map {
 	CachedMapTile cachedTiles[MaxCachedMapTileN];
 	I32 cachedTileN;
 	
-	GenerateMapTileWorkList workList;
+	GenerateMapTileWorkList generateTileWorkList;
+	DrawMapTileWorkList drawTileWorkList;
 };
 
 enum MapElemType {
@@ -142,3 +161,6 @@ void CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures);
 Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex);
 void DrawMapTile(Canvas canvas, Map* map, MapTileIndex tileIndex, MapTextures* textures);
 void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F32 top, F32 bottom, MapTextures* textures);
+
+DWORD WINAPI DrawMapTileWorkProc(LPVOID parameter);
+void PushDrawMapTileWork(DrawMapTileWorkList* workList, DrawMapTileWork work);

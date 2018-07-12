@@ -17,6 +17,7 @@ struct RowPaintWorkList {
 	volatile I32 workN;
 	volatile I32 firstWorkToDo;
 	HANDLE semaphore;
+	HANDLE semaphoreDone;
 };
 
 struct ThreadLabState {
@@ -58,7 +59,6 @@ static void ThreadLabBlit(Canvas canvas, HDC context, RECT rect)
 
 static void PaintRow(Bitmap* bitmap, I32 row, U32 colorCode)
 {
-
 	Assert(row >= 0 && row < bitmap->height);
 	U32* pixel = bitmap->memory + (row * bitmap->width);
 	for (I32 col = 0; col < bitmap->width; ++col) {
@@ -71,13 +71,11 @@ static DWORD WINAPI RowPaintWorkProc(LPVOID parameter)
 {
 	RowPaintWorkList* workList = (RowPaintWorkList*)parameter;
 	while (1) {
-		if (workList->firstWorkToDo < workList->workN) {
-			I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
-			RowPaintWork work = workList->works[workIndex];
-			PaintRow(work.bitmap, work.row, work.colorCode);
-		} else {
-			WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
-		}
+		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
+		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
+		RowPaintWork work = workList->works[workIndex];
+		PaintRow(work.bitmap, work.row, work.colorCode);
+		ReleaseSemaphore(workList->semaphoreDone, 1, 0);
 	}
 }
 
@@ -94,6 +92,7 @@ static void ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 windowH
 	labState->running = true;
 	ThreadLabResize(labState, windowWidth, windowHeight);
 	labState->workList.semaphore = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
+	labState->workList.semaphoreDone = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
 	for (I32 i = 0; i < 5; ++i)
 		CreateThread(0, 0, RowPaintWorkProc, &labState->workList, 0, 0);
 }
@@ -117,7 +116,8 @@ static void ThreadLabUpdate(ThreadLabState* labState)
 		PushRowPaintWork(workList, work);
 	}
 
-	Sleep(1000);
+	for (I32 row = 0; row < bitmap->height; ++row)
+		WaitForSingleObjectEx(workList->semaphoreDone, INFINITE, FALSE);
 }
 
 static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
