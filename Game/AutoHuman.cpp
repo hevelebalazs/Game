@@ -1,21 +1,24 @@
 #include "AutoHuman.hpp"
+#include "Type.hpp"
 
-void InitAutoHumanMovement(AutoHuman* autoHuman) {
+void InitAutoHumanMovement(AutoHuman* autoHuman)
+{
 	Human* human = &autoHuman->human;
 
-	float moveDistance = Distance(autoHuman->moveStartPoint.position, autoHuman->moveEndPoint.position);
+	F32 moveDistance = Distance(autoHuman->moveStartPoint.position, autoHuman->moveEndPoint.position);
 
 	autoHuman->moveTotalSeconds = (moveDistance / human->moveSpeed);
 	autoHuman->moveSeconds = 0.0f;
 }
 
-void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
+void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+{
 	Human* human = &autoHuman->human;
 
-	MapElem targetElem = JunctionSidewalkElem(autoHuman->onJunction);
-	MapElem nextElem = JunctionSidewalkElem(junction);
-	int startCornerIndex = GetClosestJunctionCornerIndex(autoHuman->onJunction, autoHuman->human.position);
-	int endCornerIndex = GetRandomJunctionCornerIndex(junction);
+	MapElem targetElem = GetJunctionSidewalkElem(autoHuman->onJunction);
+	MapElem nextElem = GetJunctionSidewalkElem(junction);
+	I32 startCornerIndex = GetClosestJunctionCornerIndex(autoHuman->onJunction, autoHuman->human.position);
+	I32 endCornerIndex = GetRandomJunctionCornerIndex(junction);
 
 	autoHuman->moveNode = ConnectPedestrianElems(human->map, targetElem, startCornerIndex, nextElem, endCornerIndex,
 												 tmpArena, pathPool);
@@ -23,7 +26,7 @@ void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena*
 	if (autoHuman->moveNode) {
 		// autoHuman->moveStartPoint = StartNodePoint(autoHuman->moveNode);
 		autoHuman->moveStartPoint.position = human->position;
-		DirectedPoint humanPosition = {};
+		V4 humanPosition = {};
 		humanPosition.position = human->position;
 		autoHuman->moveEndPoint = NextNodePoint(autoHuman->moveNode, humanPosition);
 
@@ -33,7 +36,8 @@ void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena*
 	}
 }
 
-void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool) {
+void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+{
 	if (autoHuman->dead)
 		return;
 
@@ -66,36 +70,33 @@ void UpdateAutoHuman(AutoHuman* autoHuman, float seconds, MemArena* arena, MemAr
 
 						if (!moveNode)
 							continue;
-					}
-					else {
+					} else {
 						autoHuman->moveEndPoint = NextNodePoint(moveNode, autoHuman->moveStartPoint);
 
 						InitAutoHumanMovement(autoHuman);
 					}
-				}
-				else {
+				} else {
 					seconds = 0.0f;
 
-					float endRatio = (autoHuman->moveSeconds / autoHuman->moveTotalSeconds);
-					float startRatio = (1.0f - endRatio);
+					F32 endRatio = (autoHuman->moveSeconds / autoHuman->moveTotalSeconds);
+					F32 startRatio = (1.0f - endRatio);
 
-					DirectedPoint point = {};
-					point.position = PointSum(
-						PointProd(startRatio, autoHuman->moveStartPoint.position),
-						PointProd(endRatio, autoHuman->moveEndPoint.position)
-					);
+					V4 point = {};
+					point.position = (startRatio * autoHuman->moveStartPoint.position) +
+									 (endRatio * autoHuman->moveEndPoint.position);
+
 					MoveHuman(human, point);
 				}
 			}
 		}
-	}
-	else {
-		Junction* targetJunction = RandomJunction(*human->map);
+	} else {
+		Junction* targetJunction = GetRandomJunction(human->map);
 		MoveAutoHumanToJunction(autoHuman, targetJunction, arena, tmpArena, pathPool);
 	}
 }
 
-void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool) {
+void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
+{
 	autoHuman->dead = true;
 	if (autoHuman->moveNode) {
 		FreePath(autoHuman->moveNode, pathPool);
@@ -104,7 +105,8 @@ void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool) {
 }
 
 // TODO: make this work with a Human instead of an AutoHuman
-void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool) {
+void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
+{
 	Human* human = &autoHuman->human;
 	if (human->healthPoints > 0) {
 		human->healthPoints--;

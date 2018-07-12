@@ -2,13 +2,13 @@
 
 #include "AutoHuman.hpp"
 #include "Car.hpp"
-#include "MapElem.hpp"
+#include "Draw.hpp"
+#include "Math.hpp"
 #include "Memory.hpp"
 #include "Path.hpp"
 #include "PlayerHuman.hpp"
-#include "Point.hpp"
-#include "Renderer.hpp"
 #include "Texture.hpp"
+#include "Type.hpp"
 
 // TODO: rename this and remove from Game
 struct GameAssets {
@@ -26,41 +26,42 @@ struct GameAssets {
 #define CarBitmapN 20
 
 struct GameState {
-	float time;
+	F32 time;
 
 	Camera camera;
 
-	Renderer renderer;
-	Renderer maskRenderer;
+	Canvas canvas;
+	Canvas maskCanvas;
 	
 	Map map;
 	Junction* selectedJunction;
 
 	AutoCar autoCars[100];
-	int autoCarCount;
+	I32 autoCarCount;
 
 	AutoHuman autoHumans[300];
-	int autoHumanCount;
+	I32 autoHumanCount;
 
 	PlayerHuman playerHuman;
 	PlayerCar playerCar;
 
 	PathPool pathPool;
 
-	bool isPlayerCar;
+	B32 isPlayerCar;
 
 	Junction* missionJunction;
-	bool showFullMap;
-	bool onMission;
+	B32 showFullMap;
+	B32 onMission;
 	PathNode* missionPath;
 	// TODO: create a MapPosition structure that contains a positionIndex and a MapElem (and a position)?
 	MapElem missionElem;
-	int missionLaneIndex;
-	Point missionStartPoint;
+	I32 missionLaneIndex;
+	V2 missionStartPoint;
 
 	Bitmap carBitmaps[CarBitmapN];
 
 	GameAssets assets;
+	MapTextures mapTextures;
 };
 
 // TODO: remove gameState reference
@@ -74,7 +75,7 @@ struct GameStorage {
 
 void TogglePlayerCar(GameState* gameState);
 
-void WinResize(GameState* gameState, int width, int height);
-void GameInit(GameStorage* gameStorage, int windowWidth, int windowHeight);
-void GameUpdate(GameStorage* gameStorage, float seconds, Point mousePosition);
+void WinResize(GameState* gameState, I32 width, I32 height);
+void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight);
+void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition);
 void GameDraw(GameStorage* gameStorage);

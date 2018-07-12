@@ -21,9 +21,6 @@
     <ClCompile Include="Map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Point.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Road.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -34,9 +31,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Building.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AutoHuman.cpp">
@@ -57,9 +51,6 @@
     <ClCompile Include="Math.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MapElem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GridMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -76,6 +67,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Car.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Lab\MapLab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Lab\ThreadLab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Draw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -122,9 +122,6 @@
     <ClInclude Include="Map.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MapElem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Math.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -137,12 +134,6 @@
     <ClInclude Include="PlayerHuman.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Point.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Road.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -150,6 +141,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Texture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab\MapLab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab\ThreadLab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Type.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Draw.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

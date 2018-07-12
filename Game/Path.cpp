@@ -2,71 +2,78 @@
 #include "Geometry.hpp"
 #include "Memory.hpp"
 #include "Path.hpp"
+#include "Type.hpp"
 
 struct Path {
-	int nodeCount;
+	I32 nodeCount;
 	PathNode* nodes;
 	MemArena* arena;
 };
 
-static inline void PushNode(Path* path, PathNode node) {
+static void PushNode(Path* path, PathNode node)
+{
 	ArenaPushType(path->arena, PathNode);
 	path->nodes[path->nodeCount] = node;
 	path->nodeCount++;
 }
 
-static inline PathNode ElemNode(MapElem elem) {
+static PathNode ElemNode(MapElem elem)
+{
 	PathNode node = {};
 	node.elem = elem;
 	return node;
 }
 
-static inline void PushElem(Path* path, MapElem elem) {
+static void PushElem(Path* path, MapElem elem)
+{
 	PathNode node = ElemNode(elem);
-
 	PushNode(path, node);
 }
 
-static inline PathNode RoadNode(Road* road) {
+static PathNode RoadNode(Road* road)
+{
 	PathNode node = {};
-	node.elem = RoadElem(road);
+	node.elem = GetRoadElem(road);
 	node.next = 0;
 	return node;
 }
 
-static inline PathNode JunctionNode(Junction* junction) {
+static PathNode JunctionNode(Junction* junction)
+{
 	PathNode node = {};
-	node.elem = JunctionElem(junction);
+	node.elem = GetJunctionElem(junction);
 	node.next = 0;
 	return node;
 }
 
-static inline PathNode BuildingNode(Building* building) {
+static PathNode BuildingNode(Building* building)
+{
 	PathNode node = {};
-	node.elem = BuildingElem(building);
+	node.elem = GetBuildingElem(building);
 	node.next = 0;
 	return node;
 }
 
-static inline void PushRoad(Path* path, Road* road) {
+static void PushRoad(Path* path, Road* road)
+{
 	PathNode node = RoadNode(road);
-
 	PushNode(path, node);
 }
 
-static inline void PushJunction(Path* path, Junction* junction) {
+static void PushJunction(Path* path, Junction* junction)
+{
 	PathNode node = JunctionNode(junction);
-
 	PushNode(path, node);
 }
 
-static inline void PushBuilding(Path* path, Building* building) {
+static void PushBuilding(Path* path, Building* building)
+{
 	PathNode node = BuildingNode(building);
-
 	PushNode(path, node);
 }
 
-static void InvertSegment(Path* path, int startIndex, int endIndex) {
+static void InvertSegment(Path* path, I32 startIndex, I32 endIndex)
+{
 	while (startIndex < endIndex) {
 		PathNode tmpNode = path->nodes[startIndex];
 		path->nodes[startIndex] = path->nodes[endIndex];
@@ -79,32 +86,30 @@ static void InvertSegment(Path* path, int startIndex, int endIndex) {
 
 struct PathHelper {
 	PathNode* nodes;
-	int nodeCount;
+	I32 nodeCount;
 
-	int* isJunctionHelper;
-	int* isRoadHelper;
-	int* sourceIndex;
+	I32* isJunctionHelper;
+	I32* isRoadHelper;
+	I32* sourceIndex;
 };
 
-static void PushFromBuildingToRoadElem(Path* path, Building* building) {
-	while (building->connectElem.type == MapElemBuilding) {
-		PushBuilding(path, building);
-		building = building->connectElem.building;
-	}
-
-	PushBuilding(path, building);
+static void PushFromBuildingToRoadElem(Path* path, Building* building)
+{
+	// TODO: Update this in a Building project!
 }
 
-static void PushFromRoadElemToBuilding(Path* path, Building *building) {
-	int startIndex = path->nodeCount;
+static void PushFromRoadElemToBuilding(Path* path, Building *building)
+{
+	I32 startIndex = path->nodeCount;
 	PushFromBuildingToRoadElem(path, building);
 
-	int endIndex = path->nodeCount - 1;
+	I32 endIndex = path->nodeCount - 1;
 	InvertSegment(path, startIndex, endIndex);
 }
 
-static void AddRoadToHelper(Map* map, Road* road, int sourceIndex, PathHelper* pathHelper) {
-	int roadIndex = (int)(road - map->roads);
+static void AddRoadToHelper(Map* map, Road* road, I32 sourceIndex, PathHelper* pathHelper)
+{
+	I32 roadIndex = (I32)(road - map->roads);
 
 	if (pathHelper->isRoadHelper[roadIndex] == 0) {
 		pathHelper->isRoadHelper[roadIndex] = 1;
@@ -115,8 +120,9 @@ static void AddRoadToHelper(Map* map, Road* road, int sourceIndex, PathHelper* p
 	}
 }
 
-static void AddJunctionToHelper(Map* map, Junction* junction, int sourceIndex, PathHelper* pathHelper) {
-	int junctionIndex = (int)(junction - map->junctions);
+static void AddJunctionToHelper(Map* map, Junction* junction, I32 sourceIndex, PathHelper* pathHelper)
+{
+	I32 junctionIndex = (I32)(junction - map->junctions);
 
 	if (pathHelper->isJunctionHelper[junctionIndex] == 0) {
 		pathHelper->isJunctionHelper[junctionIndex] = 1;
@@ -132,7 +138,8 @@ static void ClearPathHelper(PathHelper* helper)
 	helper->nodeCount = 0;
 }
 
-static inline void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper) {
+static void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper)
+{
 	ClearPathHelper(helper);
 	if (elemStart.address == elemEnd.address) {
 		helper->nodes[helper->nodeCount].elem = elemStart;
@@ -142,9 +149,9 @@ static inline void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem e
 		return;
 	}
 
-	for (int i = 0; i < map->junctionCount; ++i) 
+	for (I32 i = 0; i < map->junctionN; ++i) 
 		helper->isJunctionHelper[i] = 0;
-	for (int i = 0; i < map->roadCount; ++i)
+	for (I32 i = 0; i < map->roadN; ++i)
 		helper->isRoadHelper[i] = 0;
 
 	if (elemStart.type == MapElemRoad)
@@ -160,8 +167,8 @@ static inline void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem e
 	if (elemEnd.type == MapElemJunction) 
 		junctionEnd = elemEnd.junction;
 
-	bool foundElemEnd = false;
-	for (int i = 0; i < helper->nodeCount; ++i) {
+	B32 foundElemEnd = false;
+	for (I32 i = 0; i < helper->nodeCount; ++i) {
 		PathNode node = helper->nodes[i];
 		MapElem elem = node.elem;
 
@@ -181,8 +188,8 @@ static inline void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem e
 			}
 		} else if (elem.type == MapElemJunction) {
 			Junction* junction = elem.junction;
-			bool roadEndFound = false;
-			for (int j = 0; j < junction->roadN; ++j) {
+			B32 roadEndFound = false;
+			for (I32 j = 0; j < junction->roadN; ++j) {
 				Road* road = junction->roads[j];
 				AddRoadToHelper(map, road, i, helper);
 				if (roadEnd && road == roadEnd) {
@@ -200,23 +207,25 @@ static inline void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem e
 		ClearPathHelper(helper);
 }
 
-static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper) {
+static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper)
+{
 	ConnectRoadElemsHelper(map, elemStart, elemEnd, helper);
 
-	int startIndex = path->nodeCount;
-	int nodeIndex = helper->nodeCount - 1;
+	I32 startIndex = path->nodeCount;
+	I32 nodeIndex = helper->nodeCount - 1;
 	while (nodeIndex > -1) {
 		PathNode node = helper->nodes[nodeIndex];
 		PushNode(path, node);
 		nodeIndex = helper->sourceIndex[nodeIndex];
 	}
 
-	int endIndex = path->nodeCount - 1;
+	I32 endIndex = path->nodeCount - 1;
 
 	InvertSegment(path, startIndex, endIndex);
 }
 
-static inline MapElem SidewalkElemToRoadElem(MapElem sidewalkElem) {
+static MapElem SidewalkElemToRoadElem(MapElem sidewalkElem)
+{
 	MapElem roadElem = sidewalkElem;
 
 	if (sidewalkElem.type == MapElemRoadSidewalk)
@@ -227,7 +236,8 @@ static inline MapElem SidewalkElemToRoadElem(MapElem sidewalkElem) {
 	return roadElem;
 }
 
-static inline MapElem RoadElemToSidewalkElem(MapElem roadElem) {
+static MapElem RoadElemToSidewalkElem(MapElem roadElem)
+{
 	MapElem sidewalkElem = roadElem;
 
 	if (roadElem.type == MapElemRoad)
@@ -239,7 +249,8 @@ static inline MapElem RoadElemToSidewalkElem(MapElem roadElem) {
 }
 
 // TODO: create a LaneIndex enum
-static void PushRoadSidewalk(Path* path, Road* road, int laneIndex) {
+static void PushRoadSidewalk(Path* path, Road* road, I32 laneIndex)
+{
 	PathNode node = {};
 	node.elem.type = MapElemRoadSidewalk;
 	node.elem.road = road;
@@ -247,7 +258,8 @@ static void PushRoadSidewalk(Path* path, Road* road, int laneIndex) {
 	PushNode(path, node);
 }
 
-static void PushJunctionSidewalk(Path* path, Junction* junction, int cornerIndex) {
+static void PushJunctionSidewalk(Path* path, Junction* junction, I32 cornerIndex)
+{
 	PathNode node = {};
 	node.elem.type = MapElemJunctionSidewalk;
 	node.elem.junction = junction;
@@ -255,9 +267,10 @@ static void PushJunctionSidewalk(Path* path, Junction* junction, int cornerIndex
 	PushNode(path, node);
 }
 
-static void PushCrossRoad(Path* path, Road* road, Point startPoint, Junction* junction, int quarterIndex) {
+static void PushCrossRoad(Path* path, Road* road, V2 startPoint, Junction* junction, I32 quarterIndex)
+{
 	if (road) {
-		int endLaneIndex = -LaneIndex(road, startPoint);
+		I32 endLaneIndex = -LaneIndex(road, startPoint);
 		PushJunctionSidewalk(path, junction, quarterIndex);
 		PushRoadSidewalk(path, road, endLaneIndex);
 	}
@@ -265,12 +278,12 @@ static void PushCrossRoad(Path* path, Road* road, Point startPoint, Junction* ju
 
 struct PathAroundJunction {
 	Junction* junction;
-	int startCornerIndex;
-	int endCornerIndex;
-	bool goClockwise;
+	I32 startCornerIndex;
+	I32 endCornerIndex;
+	B32 goClockwise;
 };
 
-static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, int startCornerIndex, int endSubElemIndex)
+static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, I32 startCornerIndex, I32 endSubElemIndex)
 {
 	PathAroundJunction result = {};
 	Assert(elem.type == MapElemJunctionSidewalk);
@@ -278,9 +291,9 @@ static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, 
 	result.junction = junction;
 	result.startCornerIndex = startCornerIndex;
 
-	int cornerIndex = startCornerIndex;
-	int leftTargetCornerIndex = 0;
-	int rightTargetCornerIndex = 0;
+	I32 cornerIndex = startCornerIndex;
+	I32 leftTargetCornerIndex = 0;
+	I32 rightTargetCornerIndex = 0;
 	if (nextElem.type == MapElemNone) {
 		Assert(IsValidJunctionCornerIndex(junction, endSubElemIndex));
 		leftTargetCornerIndex = endSubElemIndex;
@@ -293,8 +306,8 @@ static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, 
 		InvalidCodePath;
 	}
 
-	int clockwiseDistance = GetClockwiseJunctionCornerIndexDistance(junction, cornerIndex, leftTargetCornerIndex);
-	int counterClockwiseDistance = GetCounterClockwiseJunctionCornerIndexDistance(junction, cornerIndex, rightTargetCornerIndex);
+	I32 clockwiseDistance = GetClockwiseJunctionCornerIndexDistance(junction, cornerIndex, leftTargetCornerIndex);
+	I32 counterClockwiseDistance = GetCounterClockwiseJunctionCornerIndexDistance(junction, cornerIndex, rightTargetCornerIndex);
 	if (clockwiseDistance < counterClockwiseDistance) {
 		result.goClockwise = true;
 		result.endCornerIndex = leftTargetCornerIndex;
@@ -305,13 +318,13 @@ static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, 
 	return result;
 }
 
-static int GetPathAroundJunctionIndexDistance(PathAroundJunction pathAroundJunction)
+static I32 GetPathAroundJunctionIndexDistance(PathAroundJunction pathAroundJunction)
 {
 	Junction* junction = pathAroundJunction.junction;
-	int startCornerIndex = pathAroundJunction.startCornerIndex;
+	I32 startCornerIndex = pathAroundJunction.startCornerIndex;
 	Assert(IsValidJunctionCornerIndex(junction, startCornerIndex));
-	int endCornerIndex = pathAroundJunction.endCornerIndex;
-	int indexDistance = 0;
+	I32 endCornerIndex = pathAroundJunction.endCornerIndex;
+	I32 indexDistance = 0;
 	if (pathAroundJunction.goClockwise)
 		indexDistance = GetClockwiseJunctionCornerIndexDistance(junction, startCornerIndex, endCornerIndex);
 	else
@@ -322,12 +335,12 @@ static int GetPathAroundJunctionIndexDistance(PathAroundJunction pathAroundJunct
 static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunction)
 {
 	Junction* junction = pathAroundJunction.junction;
-	int startCornerIndex = pathAroundJunction.startCornerIndex;
-	int endCornerIndex = pathAroundJunction.endCornerIndex;
+	I32 startCornerIndex = pathAroundJunction.startCornerIndex;
+	I32 endCornerIndex = pathAroundJunction.endCornerIndex;
 	Assert(IsValidJunctionCornerIndex(junction, startCornerIndex));
 	Assert(IsValidJunctionCornerIndex(junction, endCornerIndex));
 
-	int cornerIndex = startCornerIndex;
+	I32 cornerIndex = startCornerIndex;
 	PushJunctionSidewalk(path, junction, cornerIndex);
 
 	if (junction->roadN == 1) {
@@ -336,10 +349,10 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 	} else if (junction->roadN >= 2) {
 		if (pathAroundJunction.goClockwise) {
 			while (cornerIndex != endCornerIndex) {
-				int nextCornerIndex = GetNextJunctionCornerIndex(junction, cornerIndex);
+				I32 nextCornerIndex = GetNextJunctionCornerIndex(junction, cornerIndex);
 				Road* roadToCross = junction->roads[cornerIndex];
-				int startSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, cornerIndex);
-				int endSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, nextCornerIndex);
+				I32 startSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, cornerIndex);
+				I32 endSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, nextCornerIndex);
 				PushRoadSidewalk(path, roadToCross, startSidewalkIndex);
 				PushRoadSidewalk(path, roadToCross, endSidewalkIndex);
 				PushJunctionSidewalk(path, junction, nextCornerIndex);
@@ -347,10 +360,10 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 			}
 		} else {
 			while (cornerIndex != endCornerIndex) {
-				int previousCornerIndex = GetPreviousJunctionCornerIndex(junction, cornerIndex);
+				I32 previousCornerIndex = GetPreviousJunctionCornerIndex(junction, cornerIndex);
 				Road* roadToCross = junction->roads[previousCornerIndex];
-				int startSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, cornerIndex);
-				int endSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, previousCornerIndex);
+				I32 startSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, cornerIndex);
+				I32 endSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, previousCornerIndex);
 				PushRoadSidewalk(path, roadToCross, startSidewalkIndex);
 				PushRoadSidewalk(path, roadToCross, endSidewalkIndex);
 				PushJunctionSidewalk(path, junction, previousCornerIndex);
@@ -362,8 +375,8 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 	}
 }
 
-static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, int startSubIndex,
-									 MapElem endElem, int endSubIndex, PathHelper* helper) 
+static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I32 startSubIndex,
+									 MapElem endElem, I32 endSubIndex, PathHelper* helper) 
 {
 	MapElem startRoadElem = SidewalkElemToRoadElem(startElem);
 	MapElem endRoadElem = SidewalkElemToRoadElem(endElem);
@@ -372,13 +385,13 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, in
 	// TODO: make ConnectRoadElemsHelper swap the elements by default?
 	ConnectRoadElemsHelper(map, endRoadElem, startRoadElem, helper);
 
-	int subIndex = startSubIndex;
-	int nodeIndex = helper->nodeCount - 1;
+	I32 subIndex = startSubIndex;
+	I32 nodeIndex = helper->nodeCount - 1;
 	while (nodeIndex > -1) {
 		PathNode roadNode = helper->nodes[nodeIndex];
 		MapElem elem = RoadElemToSidewalkElem(roadNode.elem);
 
-		int nextIndex = helper->sourceIndex[nodeIndex];
+		I32 nextIndex = helper->sourceIndex[nodeIndex];
 		PathNode nextRoadNode = {};
 		MapElem nextElem = {};
 		if (nextIndex > -1) {
@@ -388,7 +401,7 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, in
 
 		MapElem nextNextElem = {};
 		if (nextIndex > -1) {
-			int nextNextIndex = helper->sourceIndex[nextIndex];
+			I32 nextNextIndex = helper->sourceIndex[nextIndex];
 			if (nextNextIndex > -1) {
 				PathNode nextNextRoadNode = helper->nodes[nextNextIndex];
 				nextNextElem = RoadElemToSidewalkElem(nextNextRoadNode.elem);
@@ -397,15 +410,15 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, in
 
 		if (elem.type == MapElemJunctionSidewalk) {
 			Junction* junction = elem.junction;
-			int cornerIndex = subIndex;
+			I32 cornerIndex = subIndex;
 			PathAroundJunction pathAroundJunction = GetPathAroundJunction(elem, nextElem, cornerIndex, endSubIndex);
 			PushPathAroundJunction(path, pathAroundJunction);
 
 			if (nextElem.type == MapElemRoadSidewalk) {
 				Road* road = nextElem.road;
-				int leftRoadCornerIndex = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
-				int rightRoadCornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
-				int endCornerIndex = pathAroundJunction.endCornerIndex;
+				I32 leftRoadCornerIndex = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
+				I32 rightRoadCornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
+				I32 endCornerIndex = pathAroundJunction.endCornerIndex;
 				if (endCornerIndex == leftRoadCornerIndex)
 					subIndex = LeftRoadSidewalkIndex;
 				else if (endCornerIndex == rightRoadCornerIndex)
@@ -418,8 +431,8 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, in
 			if (nextElem.type == MapElemJunctionSidewalk) {
 				Junction* junction = nextElem.junction;
 
-				int sidewalkIndexWithoutCrossing = subIndex;
-				int sidewalkIndexWithCrossing = 0;
+				I32 sidewalkIndexWithoutCrossing = subIndex;
+				I32 sidewalkIndexWithCrossing = 0;
 				if (sidewalkIndexWithoutCrossing == LeftRoadSidewalkIndex)
 					sidewalkIndexWithCrossing = RightRoadSidewalkIndex;
 				else if (sidewalkIndexWithoutCrossing == RightRoadSidewalkIndex)
@@ -427,14 +440,14 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, in
 				else
 					InvalidCodePath;
 
-				int cornerIndexWithoutCrossing = GetRoadSidewalkJunctionCornerIndex(junction, road, sidewalkIndexWithoutCrossing);
-				int cornerIndexWithCrossing    = GetRoadSidewalkJunctionCornerIndex(junction, road, sidewalkIndexWithCrossing);
+				I32 cornerIndexWithoutCrossing = GetRoadSidewalkJunctionCornerIndex(junction, road, sidewalkIndexWithoutCrossing);
+				I32 cornerIndexWithCrossing    = GetRoadSidewalkJunctionCornerIndex(junction, road, sidewalkIndexWithCrossing);
 
 				PathAroundJunction pathWithoutCrossing = GetPathAroundJunction(nextElem, nextNextElem, cornerIndexWithoutCrossing, endSubIndex);
 				PathAroundJunction pathWithCrossing    = GetPathAroundJunction(nextElem, nextNextElem, cornerIndexWithCrossing, endSubIndex);
 
-				int distanceWithoutCrossing = GetPathAroundJunctionIndexDistance(pathWithoutCrossing);
-				int distanceWithCrossing    = GetPathAroundJunctionIndexDistance(pathWithCrossing);
+				I32 distanceWithoutCrossing = GetPathAroundJunctionIndexDistance(pathWithoutCrossing);
+				I32 distanceWithCrossing    = GetPathAroundJunctionIndexDistance(pathWithCrossing);
 				
 				if (distanceWithCrossing < distanceWithoutCrossing) {
 					PushRoadSidewalk(path, road, sidewalkIndexWithoutCrossing);
@@ -455,55 +468,32 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, in
 	}
 }
 
-Building* CommonAncestor(Building* building1, Building* building2) {
-	while (building1->connectTreeHeight != building2->connectTreeHeight) {
-		if (building1->connectTreeHeight > building2->connectTreeHeight)
-			building1 = building1->connectElem.building;
-		if (building2->connectTreeHeight > building1->connectTreeHeight)
-			building2 = building2->connectElem.building;
-	}
-
-	while (building1 && building2 && building1->connectTreeHeight > 1 && building2->connectTreeHeight > 1) {
-		if (building1 == building2)
-			return building1;
-
-		building1 = building1->connectElem.building;
-		building2 = building2->connectElem.building;
-	}
-
-	if (building1 == building2)
-		return building1;
-	else
-		return 0;
+Building* CommonAncestor(Building* building1, Building* building2)
+{
+	Building* building = 0;
+	// TODO: Update this in a Building project!
+	return building;
 }
 
-static void PushDownTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
-	while (buildingStart != buildingEnd) {
-		PushBuilding(path, buildingStart);
-
-		buildingStart = buildingStart->connectElem.building;
-	}
-
-	PushBuilding(path, buildingEnd);
+static void PushDownTheTree(Path* path, Building* buildingStart, Building* buildingEnd)
+{
+	// TODO: Update this in a Building project!
 }
 
-static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildingEnd) {
-	int startIndex = path->nodeCount;
-	PushDownTheTree(path, buildingEnd, buildingStart);
-
-	int endIndex = path->nodeCount - 1;
-	InvertSegment(path, startIndex, endIndex);
+static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildingEnd)
+{
+	// TODO: Update this in a Building project!
 }
 
-MapElem GetConnectRoadElem(Building* building) {
-	while (building->connectElem.type == MapElemBuilding) {
-		building = building->connectElem.building;
-	}
-
-	return building->connectElem;
+MapElem GetConnectRoadElem(Building* building)
+{
+	MapElem result = {};
+	// TODO: Update this in a Building project!
+	return result;
 }
 
-static PathNode* GetFreePathNode(PathPool* pathPool) {
+static PathNode* GetFreePathNode(PathPool* pathPool)
+{
 	PathNode* result = 0;
 
 	if (pathPool->firstFreeNode) {
@@ -519,11 +509,12 @@ static PathNode* GetFreePathNode(PathPool* pathPool) {
 	return result;
 }
 
-static PathNode* PushPathToPool(Path path, PathPool* pathPool) {
+static PathNode* PushPathToPool(Path path, PathPool* pathPool)
+{
 	PathNode* result = 0;
 	PathNode* previous = 0;
 
-	for (int i = 0; i < path.nodeCount; ++i) {
+	for (I32 i = 0; i < path.nodeCount; ++i) {
 		PathNode* pathNode = GetFreePathNode(pathPool);
 
 		*pathNode = path.nodes[i];
@@ -547,7 +538,8 @@ void ResetPathPool(PathPool* pathPool)
 	pathPool->nodeCount = 0;
 }
 
-PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool) {
+PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool)
+{
 	PathNode* result = GetFreePathNode(pathPool);
 
 	result->elem = elem;
@@ -556,18 +548,20 @@ PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool) {
 	return result;
 }
 
-static inline PathHelper PathHelperForMap(Map* map, MemArena* arena) {
+static PathHelper PathHelperForMap(Map* map, MemArena* arena)
+{
 	PathHelper helper = {};
-	helper.nodes = ArenaPushArray(arena, PathNode, map->junctionCount + map->roadCount);
-	helper.isJunctionHelper = ArenaPushArray(arena, int, map->junctionCount);
-	helper.isRoadHelper = ArenaPushArray(arena, int, map->roadCount);
-	helper.sourceIndex = ArenaPushArray(arena, int, map->junctionCount + map->roadCount);
+	helper.nodes = ArenaPushArray(arena, PathNode, map->junctionN + map->roadN);
+	helper.isJunctionHelper = ArenaPushArray(arena, I32, map->junctionN);
+	helper.isRoadHelper = ArenaPushArray(arena, I32, map->roadN);
+	helper.sourceIndex = ArenaPushArray(arena, I32, map->junctionN + map->roadN);
 
 	return helper;
 }
 
 // TODO: rename this to CarPath?
-PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* tmpArena, PathPool* pathPool) {
+PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* tmpArena, PathPool* pathPool)
+{
 	if (elemStart.type == MapElemRoadSidewalk || elemStart.type == MapElemJunctionSidewalk) 
 		return 0;
 	if (elemEnd.type == MapElemRoadSidewalk || elemEnd.type == MapElemJunctionSidewalk)
@@ -579,7 +573,7 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 	path.arena = tmpArena;
 	path.nodes = ArenaPushArray(path.arena, PathNode, 0);
 
-	bool finished = false;
+	B32 finished = false;
 
 	if (elemStart.address == elemEnd.address) {
 		PushElem(&path, elemStart);
@@ -614,10 +608,10 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 	}
 	
 	if (!finished) {
-		for (int i = 0; i < map->roadCount; ++i)
+		for (I32 i = 0; i < map->roadN; ++i)
 			helper.isRoadHelper[i] = 0;
 
-		for (int i = 0; i < map->junctionCount; ++i)
+		for (I32 i = 0; i < map->junctionN; ++i)
 			helper.isJunctionHelper[i] = 0;
 
 		MapElem roadElemStart = {};
@@ -646,12 +640,12 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 		}
 
 		if (startConnectRoad && endConnectRoad && startConnectRoad == endConnectRoad) {
-			int startLaneIndex = LaneIndex(startConnectRoad, elemStart.building->connectPointFarShow);
-			int endLaneIndex = LaneIndex(endConnectRoad, elemEnd.building->connectPointFarShow);
+			I32 startLaneIndex = LaneIndex(startConnectRoad, elemStart.building->connectPointFarShow);
+			I32 endLaneIndex = LaneIndex(endConnectRoad, elemEnd.building->connectPointFarShow);
 
 			if (startLaneIndex == endLaneIndex) {
-				float startDistance = DistanceOnLane(startConnectRoad, startLaneIndex, elemStart.building->connectPointFarShow);
-				float endDistance = DistanceOnLane(endConnectRoad, endLaneIndex, elemEnd.building->connectPointFarShow);
+				F32 startDistance = DistanceOnLane(startConnectRoad, startLaneIndex, elemStart.building->connectPointFarShow);
+				F32 endDistance = DistanceOnLane(endConnectRoad, endLaneIndex, elemEnd.building->connectPointFarShow);
 
 				if (startDistance < endDistance) {
 					startConnectRoad = 0;
@@ -663,7 +657,7 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 		if (startConnectRoad) {
 			Building* startBuilding = elemStart.building;
 
-			int laneIndex = LaneIndex(startConnectRoad, startBuilding->connectPointFarShow);
+			I32 laneIndex = LaneIndex(startConnectRoad, startBuilding->connectPointFarShow);
 
 			Junction* startJunction = 0;
 			if (laneIndex == 1)
@@ -681,7 +675,7 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 		if (endConnectRoad) {
 			Building* endBuilding = elemEnd.building;
 
-			int laneIndex = LaneIndex(endConnectRoad, endBuilding->connectPointFarShow);
+			I32 laneIndex = LaneIndex(endConnectRoad, endBuilding->connectPointFarShow);
 				
 			Junction* endJunction = 0;
 			if (laneIndex == 1)
@@ -717,7 +711,7 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 
 // TODO: remove arena from argument list?
 // TODO: rename this to PedestrianPath?
-PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, int startSubIndex, MapElem endElem, int endSubIndex,
+PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, I32 startSubIndex, MapElem endElem, I32 endSubIndex,
 							   MemArena* arena, PathPool* pathPool) 
 {
 	Assert(startElem.type == MapElemJunctionSidewalk || startElem.type == MapElemRoadSidewalk || startElem.type == MapElemCrossing);
@@ -726,10 +720,10 @@ PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, int startSubIndex,
 	PathHelper helper = PathHelperForMap(map, arena);
 	// TODO: create a ResetPathHelper function?
 	//       or move this to where the helper is actually used?
-	for (int i = 0; i < map->roadCount; ++i)
+	for (I32 i = 0; i < map->roadN; ++i)
 		helper.isRoadHelper[i] = 0;
 
-	for (int i = 0; i < map->junctionCount; ++i)
+	for (I32 i = 0; i < map->junctionN; ++i)
 		helper.isJunctionHelper[i] = 0;
 
 	Path path = {};
@@ -738,11 +732,11 @@ PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, int startSubIndex,
 
 	MapElem startSidewalkElem = startElem;
 	if (startElem.type == MapElemCrossing)
-		startSidewalkElem = RoadSidewalkElem(startElem.road);
+		startSidewalkElem = GetRoadSidewalkElem(startElem.road);
 
 	MapElem endSidewalkElem = endElem;
 	if (endElem.type == MapElemCrossing)
-		endSidewalkElem = RoadSidewalkElem(endElem.road);
+		endSidewalkElem = GetRoadSidewalkElem(endElem.road);
 
 	PushConnectSidewalkElems(&path, map, startSidewalkElem, startSubIndex, endSidewalkElem, endSubIndex, &helper);
 	PathNode* firstNode = PushPathToPool(path, pathPool);
@@ -751,14 +745,16 @@ PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, int startSubIndex,
 	return firstNode;
 }
 
-void FreePathNode(PathNode* node, PathPool* pathPool) {
+void FreePathNode(PathNode* node, PathPool* pathPool)
+{
 	if (node) {
 		node->next = pathPool->firstFreeNode;
 		pathPool->firstFreeNode = node;
 	}
 }
 
-void FreePath(PathNode* firstNode, PathPool* pathPool) {
+void FreePath(PathNode* firstNode, PathPool* pathPool)
+{
 	if (firstNode) {
 		PathNode* lastNode = firstNode;
 
@@ -770,8 +766,9 @@ void FreePath(PathNode* firstNode, PathPool* pathPool) {
 	}
 }
 
-// TODO: move this to Renderer.cpp?
-static inline void DrawGridLine(Renderer renderer, Point point1, Point point2, Color color, float width) {
+// TODO: move this to Draw.cpp?
+static void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 width)
+{
 	if (point1.x == point2.x) {
 		point1.x -= width * 0.5f;
 		point2.x += width * 0.5f;
@@ -799,42 +796,47 @@ static inline void DrawGridLine(Renderer renderer, Point point1, Point point2, C
 	}
 
 	DrawRect(
-		renderer,
-		point1.y, point1.x,
-		point2.y, point2.x,
+		canvas,
+		point1.x, point2.x,
+		point1.y, point2.y,
 		color
 	);
 }
 
-Point NextPointAroundBuilding(Building* building, Point startPoint, Point targetPoint) {
+V2 NextPointAroundBuilding(Building* building, V2 startPoint, V2 targetPoint)
+{
+	V2 result = {};
 	if (startPoint.x == building->left && startPoint.y < building->bottom) {
 		if (targetPoint.x == building->left && targetPoint.y > startPoint.y)
-			return targetPoint;
+			result = targetPoint;
 		else
-			return Point{building->left, building->bottom};
+			result = MakePoint(building->left, building->bottom);
 	} else if (startPoint.y == building->bottom && startPoint.x < building->right) {
 		if (targetPoint.y == building->bottom && targetPoint.x > startPoint.x)
-			return targetPoint;
+			result = targetPoint;
 		else
-			return Point{building->right, building->bottom};
+			result = MakePoint(building->right, building->bottom);
 	} else if (startPoint.x == building->right && startPoint.y > building->top) {
 		if (targetPoint.x == building->right && targetPoint.y < startPoint.y)
-			return targetPoint;
+			result = targetPoint;
 		else
-			return Point{building->right, building->top};
+			result = MakePoint(building->right, building->top);
 	} else if (startPoint.y == building->top && startPoint.x > building->left) {
 		if (targetPoint.y == building->top && targetPoint.x < startPoint.x)
-			return targetPoint;
+			result = targetPoint;
 		else
-			return Point{building->left, building->top};
+			result = MakePoint(building->left, building->top);
 	} else {
-		return targetPoint;
+		result = targetPoint;
 	}
+
+	return result;
 }
 
-DirectedPoint StartNodePoint(PathNode* node) {
-	Point position = {};
-	Point direction = {};
+V4 StartNodePoint(PathNode* node)
+{
+	V2 position = {};
+	V2 direction = {};
 
 	MapElem elem = node->elem;
 	if (elem.type == MapElemBuilding) {
@@ -846,22 +848,23 @@ DirectedPoint StartNodePoint(PathNode* node) {
 		position = elem.junction->position;
 	} else if (elem.type == MapElemJunctionSidewalk) {
 		Junction* junction = elem.junction;
-		int cornerIndex = node->subElemIndex;
+		I32 cornerIndex = node->subElemIndex;
 		position = GetJunctionCorner(junction, cornerIndex);
 	} else {
 		InvalidCodePath;
 	}
 
-	DirectedPoint result = {};
+	V4 result = {};
 	result.position = position;
 	result.direction = direction;
 	return result;
 }
 
-DirectedPoint NextFromBuildingToNothing(DirectedPoint startPoint, Building* building) {
-	DirectedPoint result = {};
+V4 NextFromBuildingToNothing(V4 startPoint, Building* building)
+{
+	V4 result = {};
 
-	if (PointEqual(startPoint.position, building->connectPointFar) || PointEqual(startPoint.position, building->connectPointFarShow)) {
+	if (startPoint.position == building->connectPointFar || startPoint.position == building->connectPointFarShow) {
 		result.position = building->connectPointClose;
 		result.direction = PointDirection(building->connectPointFar, building->connectPointClose);
 	} else {
@@ -872,45 +875,35 @@ DirectedPoint NextFromBuildingToNothing(DirectedPoint startPoint, Building* buil
 	return result;
 }
 
-bool EndFromBuildingToNothing(DirectedPoint point, Building* building) {
-	bool result = PointEqual(point.position, building->connectPointClose);
+B32 EndFromBuildingToNothing(V4 point, Building* building)
+{
+	B32 result = (point.position == building->connectPointClose);
 	return result;
 }
 
-DirectedPoint NextFromBuildingToBuilding(DirectedPoint startPoint, Building* building, Building* nextBuilding) {
-	DirectedPoint result = {};
+V4 NextFromBuildingToBuilding(V4 startPoint, Building* building, Building* nextBuilding)
+{
+	V4 result = {};
 
-	// TODO: add direction
-	if (building->connectElem.type == MapElemBuilding && building->connectElem.building == nextBuilding) {
-		if (PointEqual(startPoint.position, building->connectPointClose))
-			result.position = building->connectPointFar;
-		else
-			result.position = NextPointAroundBuilding(building, startPoint.position, building->connectPointClose);
-	} else if (nextBuilding->connectElem.type == MapElemBuilding && nextBuilding->connectElem.building == building) {
-		if (PointEqual(startPoint.position, building->connectPointFar) || PointEqual(startPoint.position, building->connectPointFarShow))
-			result.position = building->connectPointClose;
-		else
-			result.position = NextPointAroundBuilding(building, startPoint.position, nextBuilding->connectPointFar);
-	}
+	// TODO: Update this in a Building project!
 
 	return result;
 }
 
-bool EndFromBuildingToBuilding(DirectedPoint point, Building* building, Building* nextBuilding) {
-	bool result = false;
+B32 EndFromBuildingToBuilding(V4 point, Building* building, Building* nextBuilding)
+{
+	B32 result = false;
 
-	if (building->connectElem.type == MapElemBuilding && building->connectElem.building == nextBuilding)
-		result = PointEqual(point.position, building->connectPointFar);
-	else if (nextBuilding->connectElem.type == MapElemBuilding && nextBuilding->connectElem.building == building)
-		result = PointEqual(point.position, nextBuilding->connectPointFar);
+	// TODO: Update this in a Building project!
 
 	return result;
 }
 
-DirectedPoint NextFromBuildingToRoad(DirectedPoint startPoint, Building* building, Road* road) {
-	DirectedPoint result = {};
+V4 NextFromBuildingToRoad(V4 startPoint, Building* building, Road* road)
+{
+	V4 result = {};
 
-	if (PointEqual(startPoint.position, building->connectPointClose)) {
+	if (startPoint.position == building->connectPointClose) {
 		result.position = building->connectPointFarShow;
 		result.direction = PointDirection(building->connectPointClose, building->connectPointFarShow);
 	} else {
@@ -921,15 +914,17 @@ DirectedPoint NextFromBuildingToRoad(DirectedPoint startPoint, Building* buildin
 	return result;
 }
 
-bool EndFromBuildingToRoad(DirectedPoint point, Building* building, Road* road) {
-	bool result = PointEqual(point.position, building->connectPointFarShow);
+B32 EndFromBuildingToRoad(V4 point, Building* building, Road* road)
+{
+	B32 result = (point.position == building->connectPointFarShow);
 	return result;
 }
 
-DirectedPoint NextFromBuildingToJunction(DirectedPoint startPoint, Building* building, Junction* junction) {
-	DirectedPoint result = {};
+V4 NextFromBuildingToJunction(V4 startPoint, Building* building, Junction* junction)
+{
+	V4 result = {};
 
-	if (PointEqual(startPoint.position, building->connectPointClose)) {
+	if (startPoint.position == building->connectPointClose) {
 		result.position = building->connectPointFarShow;
 		result.direction = PointDirection(building->connectPointClose, building->connectPointFarShow);
 	} else {
@@ -940,54 +935,58 @@ DirectedPoint NextFromBuildingToJunction(DirectedPoint startPoint, Building* bui
 	return result;
 }
 
-bool EndFromBuildingToJunction(DirectedPoint point, Building* building, Junction* junction) {
-	bool result = PointEqual(point.position, building->connectPointFarShow);
+B32 EndFromBuildingToJunction(V4 point, Building* building, Junction* junction)
+{
+	B32 result = (point.position == building->connectPointFarShow);
 	return result;
 }
 
 // TODO: Update this when buildings are added back!
-DirectedPoint NextFromRoadToBuilding(DirectedPoint startPoint, Road* road, Building* building) {
-	DirectedPoint result = {};
+V4 NextFromRoadToBuilding(V4 startPoint, Road* road, Building* building)
+{
+	V4 result = {};
 	return result;
 }
 
 // TODO: Update this when buildings are added back!
-bool EndFromRoadToBuilding(DirectedPoint point, Road* road, Building* building) {
-	bool result = true;
+B32 EndFromRoadToBuilding(V4 point, Road* road, Building* building)
+{
+	B32 result = true;
 	return result;
 }
 
-DirectedPoint NextFromRoadToJunction(DirectedPoint startPoint, Road* road, Junction* junction) {
-	DirectedPoint result = GetRoadLeavePoint(junction, road);
+V4 NextFromRoadToJunction(V4 startPoint, Road* road, Junction* junction)
+{
+	V4 result = GetRoadLeavePoint(junction, road);
 	return result;
 }
 
-bool EndFromRoadToJunction(DirectedPoint point, Road* road, Junction* junction) {
-	bool result = false;
-
-	DirectedPoint endPoint = {};
+B32 EndFromRoadToJunction(V4 point, Road* road, Junction* junction)
+{
+	V4 endPoint = {};
 	endPoint = GetRoadLeavePoint(junction, road);
 
-	result = PointEqual(point.position, endPoint.position);
-
+	B32 result = (point.position == endPoint.position);
 	return result;
 }
 
-DirectedPoint NextFromJunctionToNothing(DirectedPoint startPoint, Junction* junction) {
-	DirectedPoint result = {};
-
+V4 NextFromJunctionToNothing(V4 startPoint, Junction* junction)
+{
+	V4 result = {};
 	result.position = junction->position;
 
 	return result;
 }
 
-bool EndFromJunctionToNothing(DirectedPoint point, Junction* junction) {
-	bool result = PointEqual(point.position, junction->position);
+B32 EndFromJunctionToNothing(V4 point, Junction* junction)
+{
+	B32 result = (point.position == junction->position);
 	return result;
 }
 
-DirectedPoint NextFromJunctionToBuilding(DirectedPoint startPoint, Junction* junction, Building* building) {
-	DirectedPoint result = {};
+V4 NextFromJunctionToBuilding(V4 startPoint, Junction* junction, Building* building)
+{
+	V4 result = {};
 
 	result.position = building->connectPointFarShow;
 	result.direction = PointDirection(building->connectPointFarShow, building->connectPointClose);
@@ -995,48 +994,50 @@ DirectedPoint NextFromJunctionToBuilding(DirectedPoint startPoint, Junction* jun
 	return result;
 }
 
-bool EndFromJunctionToBuilding(DirectedPoint point, Junction* junction, Building* building) {
-	bool result = PointEqual(point.position, building->connectPointFarShow);
-	return result;
-}
-
-DirectedPoint NextFromJunctionToRoad(DirectedPoint startPoint, Junction* junction, Road* road) {
-	DirectedPoint result = GetRoadEnterPoint(junction, road);
-	return result;
-}
-
-bool EndFromJunctionToRoad(DirectedPoint point, Junction* junction, Road* road) {
-	DirectedPoint endPoint = GetRoadEnterPoint(junction, road);
-	bool result = PointEqual(point.position, endPoint.position);
-	return result;
-}
-
-static DirectedPoint NextFromRoadSidewalkToJunctionSidewalk(DirectedPoint startPoint, Road* road, Junction* junction, int junctionCornerIndex)
+B32 EndFromJunctionToBuilding(V4 point, Junction* junction, Building* building)
 {
-	DirectedPoint result = {};
-	Point corner = GetJunctionCorner(junction, junctionCornerIndex);
+	B32 result = (point.position == building->connectPointFarShow);
+	return result;
+}
+
+V4 NextFromJunctionToRoad(V4 startPoint, Junction* junction, Road* road)
+{
+	V4 result = GetRoadEnterPoint(junction, road);
+	return result;
+}
+
+B32 EndFromJunctionToRoad(V4 point, Junction* junction, Road* road)
+{
+	V4 endPoint = GetRoadEnterPoint(junction, road);
+	B32 result = (point.position == endPoint.position);
+	return result;
+}
+
+static V4 NextFromRoadSidewalkToJunctionSidewalk(V4 startPoint, Road* road, Junction* junction, I32 junctionCornerIndex)
+{
+	V4 result = {};
+	V2 corner = GetJunctionCorner(junction, junctionCornerIndex);
 	result.position = corner;
 	return result;
 }
 
-static bool EndFromRoadSidewalkToJunctionSidewalk(DirectedPoint point, Road* road, Junction* junction, int junctionCornerIndex) 
+static B32 EndFromRoadSidewalkToJunctionSidewalk(V4 point, Road* road, Junction* junction, I32 junctionCornerIndex) 
 {
-	bool result = false;
-	Point corner = GetJunctionCorner(junction, junctionCornerIndex);
-	result = PointEqual(point.position, corner);
+	V2 corner = GetJunctionCorner(junction, junctionCornerIndex);
+	B32 result = (point.position == corner);
 	return result;
 }
 
-static DirectedPoint NextFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Road* road, Road* nextRoad, int sidewalkIndex)
+static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad, I32 sidewalkIndex)
 {
 	Assert(road == nextRoad);
 	Assert(sidewalkIndex == LeftRoadSidewalkIndex || sidewalkIndex == RightRoadSidewalkIndex);
-	DirectedPoint result = {};
-	Point roadCoord = ToRoadCoord(road, point.position);
-	bool isAtCrossing = false;
+	V4 result = {};
+	V2 roadCoord = ToRoadCoord(road, point.position);
+	B32 isAtCrossing = false;
 	if (Abs(roadCoord.x - road->crossingDistance) <= SidewalkWidth * 0.5f) {
-		float along = roadCoord.x;
-		float side = 0.0f;
+		F32 along = roadCoord.x;
+		F32 side = 0.0f;
 		if (sidewalkIndex == LeftRoadSidewalkIndex)
 			side = -(LaneWidth + SidewalkWidth * 0.5f);
 		else if (sidewalkIndex == RightRoadSidewalkIndex)
@@ -1045,8 +1046,8 @@ static DirectedPoint NextFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Roa
 			InvalidCodePath;
 		result.position = FromRoadCoord1(road, along, side);
 	} else {
-		float along = road->crossingDistance;
-		float side = 0.0f;
+		F32 along = road->crossingDistance;
+		F32 side = 0.0f;
 		if (sidewalkIndex == LeftRoadSidewalkIndex)
 			side = +(LaneWidth + SidewalkWidth * 0.5f);
 		else if (sidewalkIndex == RightRoadSidewalkIndex)
@@ -1058,22 +1059,23 @@ static DirectedPoint NextFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Roa
 	return result;
 }
 
-static DirectedPoint NextFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Road* road, Road* nextRoad) {
-	DirectedPoint result = {};
+static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad)
+{
+	V4 result = {};
 
-	Point pointRoadCoord = ToRoadCoord(road, point.position);
-	Point nextRoadCoord = ToRoadCoord(road, nextRoad->endPoint1);
+	V2 pointRoadCoord = ToRoadCoord(road, point.position);
+	V2 nextRoadCoord = ToRoadCoord(road, nextRoad->endPoint1);
 
-	int pointLaneIndex = 1;
+	I32 pointLaneIndex = 1;
 	if (pointRoadCoord.y < 0.0f)
 		pointLaneIndex = -1;
 
-	int nextRoadLaneIndex = 1;
+	I32 nextRoadLaneIndex = 1;
 	if (nextRoadCoord.y < 0.0f)
 		nextRoadLaneIndex = -1;
 
 	if (pointLaneIndex == nextRoadLaneIndex) {
-		float roadLength = RoadLength(road);
+		F32 roadLength = RoadLength(road);
 		if (nextRoadCoord.x < roadLength * 0.5f)
 			pointRoadCoord.x = SidewalkWidth * 0.5f;
 		else
@@ -1090,13 +1092,13 @@ static DirectedPoint NextFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Roa
 	return result;
 }
 
-static bool EndFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Road* road, Road* nextRoad, int sidewalkIndex)
+static B32 EndFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad, I32 sidewalkIndex)
 {
-	bool result = false;
+	B32 result = false;
 	Assert(road == nextRoad);
 	Assert(sidewalkIndex == LeftRoadSidewalkIndex || sidewalkIndex == RightRoadSidewalkIndex);
-	Point roadCoord = ToRoadCoord(road, point.position);
-	float crossingDistance = road->crossingDistance;
+	V2 roadCoord = ToRoadCoord(road, point.position);
+	F32 crossingDistance = road->crossingDistance;
 	if (Abs(roadCoord.x - crossingDistance) <= CrossingWidth * 0.5f) {
 		if (sidewalkIndex == LeftRoadSidewalkIndex && roadCoord.y < 0.0f)
 			result = true;
@@ -1106,36 +1108,38 @@ static bool EndFromRoadSidewalkToRoadSidewalk(DirectedPoint point, Road* road, R
 	return result;
 }
 
-static inline DirectedPoint NextFromJunctionSidewalkToNothing(DirectedPoint startPoint, Junction* junction) {
-	DirectedPoint result = startPoint;
-	return result;
-}
-
-static inline bool EndFromJunctionSidewalkToNothing(DirectedPoint point, Junction* junction) {
-	bool result = true;
-	return result;
-}
-
-static DirectedPoint NextFromJunctionSidewalkToJunctionSidewalk(DirectedPoint startPoint, Junction* junction, Junction* nextJunction, int cornerIndex)
+static V4 NextFromJunctionSidewalkToNothing(V4 startPoint, Junction* junction)
 {
-	DirectedPoint result = {};
+	V4 result = startPoint;
+	return result;
+}
+
+static B32 EndFromJunctionSidewalkToNothing(V4 point, Junction* junction)
+{
+	B32 result = true;
+	return result;
+}
+
+static V4 NextFromJunctionSidewalkToJunctionSidewalk(V4 startPoint, Junction* junction, Junction* nextJunction, I32 cornerIndex)
+{
+	V4 result = {};
 	Assert(junction == nextJunction);
 	result.position = GetJunctionCorner(junction, cornerIndex);
 	return result;
 }
 
-static bool EndFromJunctionSidewalkToJunctionSidewalk(DirectedPoint point, Junction* junction, Junction* nextJunction, int cornerIndex)
+static B32 EndFromJunctionSidewalkToJunctionSidewalk(V4 point, Junction* junction, Junction* nextJunction, I32 cornerIndex)
 {
-	bool result = false;
 	Assert(junction == nextJunction);
-	Point corner = GetJunctionCorner(junction, cornerIndex);
-	result = PointEqual(point.position, corner);
+	V2 corner = GetJunctionCorner(junction, cornerIndex);
+	B32 result = (point.position == corner);
 	return result;
 }
 
 // TODO: make this work with indexes instead of floating-point comparison
-DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint) {
-	DirectedPoint result = {};
+V4 NextNodePoint(PathNode* node, V4 startPoint)
+{
+	V4 result = {};
 
 	MapElem elem = node->elem;
 	PathNode* next = node->next;
@@ -1194,8 +1198,9 @@ DirectedPoint NextNodePoint(PathNode* node, DirectedPoint startPoint) {
 	return result;
 }
 
-bool IsNodeEndPoint(PathNode* node, DirectedPoint point) {
-	bool result = false;
+B32 IsNodeEndPoint(PathNode* node, V4 point)
+{
+	B32 result = false;
 
 	MapElem elem = node->elem;
 	PathNode* next = node->next;
@@ -1252,19 +1257,20 @@ bool IsNodeEndPoint(PathNode* node, DirectedPoint point) {
 	return result;
 }
 
-void DrawPath(Renderer renderer, PathNode* firstNode, Color color, float lineWidth) {
+void DrawPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
+{
 	PathNode* node = firstNode;
 
 	if (node) {
-		DirectedPoint point = StartNodePoint(node);
+		V4 point = StartNodePoint(node);
 
 		while (node) {
 			if (IsNodeEndPoint(node, point)) {
 				node = node->next;
 			} else {
-				DirectedPoint nextPoint = NextNodePoint(node, point);
+				V4 nextPoint = NextNodePoint(node, point);
 
-				DrawLine(renderer, point.position, nextPoint.position, color, lineWidth);
+				DrawLine(canvas, point.position, nextPoint.position, color, lineWidth);
 
 				point = nextPoint;
 			}
@@ -1272,33 +1278,35 @@ void DrawPath(Renderer renderer, PathNode* firstNode, Color color, float lineWid
 	}
 }
 
-void DrawBezierPathFromPoint(Renderer renderer, PathNode* firstNode, DirectedPoint startPoint, Color color, float lineWidth) {
+void DrawBezierPathFromPoint(Canvas canvas, PathNode* firstNode, V4 startPoint, V4 color, F32 lineWidth)
+{
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
 
 	if (node) {
-		DirectedPoint point = startPoint;
+		V4 point = startPoint;
 
 		while (node) {
 			if (IsNodeEndPoint(node, point)) {
 				node = node->next;
 			} else {
-				DirectedPoint nextPoint = NextNodePoint(node, point);
+				V4 nextPoint = NextNodePoint(node, point);
 				Assert(nextPoint.position.x != 0.0f || nextPoint.position.y != 0.0f);
 				bezier4 = TurnBezier4(point, nextPoint);
-				DrawBezier4(renderer, bezier4, color, lineWidth, 5);
+				DrawBezier4(canvas, bezier4, color, lineWidth, 5);
 				point = nextPoint;
 			}
 		}
 	}
 }
 
-void DrawBezierPath(Renderer renderer, PathNode* firstNode, Color color, float lineWidth) {
+void DrawBezierPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
+{
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
 
 	if (node) {
-		DirectedPoint startPoint = StartNodePoint(node);
-		DrawBezierPathFromPoint(renderer, firstNode, startPoint, color, lineWidth);
+		V4 startPoint = StartNodePoint(node);
+		DrawBezierPathFromPoint(canvas, firstNode, startPoint, color, lineWidth);
 	}
 }

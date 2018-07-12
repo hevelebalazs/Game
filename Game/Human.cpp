@@ -1,61 +1,56 @@
 #include "Human.hpp"
+#include "Type.hpp"
 
-extern float humanRadius = 0.25f;
-extern Color humanColor = Color{1.0f, 0.0f, 0.0f};
-extern int maxHealthPoints = 3;
-
-static float healthPointPadding = 0.1f;
-static Color fullHealthColor = {1.0f, 0.0f, 0.0f};
-static Color emptyHealthColor = {0.0f, 0.0f, 0.0f};
-
-void MoveHuman(Human* human, DirectedPoint point) {
+void MoveHuman(Human* human, V4 point)
+{
 	human->position = point.position;
 }
 
-static inline void DrawHealthPoints(Renderer renderer, Human* human) {
-	int healthPoints = maxHealthPoints;
+static void DrawHealthPoints(Canvas canvas, Human* human)
+{
+	I32 healthPoints = MaxHealthPoints;
 
-	float healthPointRadius = (2.0f * humanRadius + healthPointPadding) / ((float)maxHealthPoints);
-	healthPointRadius -= healthPointPadding;
+	F32 healthPointRadius = (2.0f * HumanRadius + HealthPointPadding) / ((F32)MaxHealthPoints);
+	healthPointRadius -= HealthPointPadding;
 
-	float top    = human->position.y + humanRadius + healthPointPadding;
-	float bottom = top + healthPointRadius;
-	float left   = human->position.x - humanRadius;
-	for (int i = 0; i < maxHealthPoints; ++i) {
-		float right = left + healthPointRadius;
+	F32 top    = human->position.y + HumanRadius + HealthPointPadding;
+	F32 bottom = top + healthPointRadius;
+	F32 left   = human->position.x - HumanRadius;
+	for (I32 i = 0; i < MaxHealthPoints; ++i) {
+		F32 right = left + healthPointRadius;
 
-		Color color = {};
+		V4 color = {};
 		if (i < human->healthPoints)
-			color = fullHealthColor;
+			color = FullHealthColor;
 		else
-			color = emptyHealthColor;
+			color = EmptyHealthColor;
 
-		DrawRect(renderer, top, left, bottom, right, color);
+		DrawRect(canvas, left, right, top, bottom, color);
 
-		left = right + healthPointPadding;
+		left = right + HealthPointPadding;
 	}
 }
 
-// TODO: pass pointers to structs wherever possible and makes sense
-void DrawHuman(Renderer renderer, Human human) {
-	float radius = humanRadius;
-	Point position = human.position;
+void DrawHuman(Canvas canvas, Human human)
+{
+	F32 radius = HumanRadius;
+	V2 position = human.position;
 
-	Color color = {};
+	V4 color = {};
 	if (human.healthPoints == 0)
-		color = Color{0.0f, 0.0f, 0.0f};
+		color = MakeColor(0.0f, 0.0f, 0.0f);
 	else if (human.isPolice)
-		color = Color{0.0f, 0.0f, 1.0f};
+		color = MakeColor(0.0f, 0.0f, 1.0f);
 	else
-		color = Color{1.0f, 1.0f, 1.0f};
+		color = MakeColor(1.0f, 1.0f, 1.0f);
 
 	DrawRect(
-		renderer,
-		position.y - radius, position.x - radius,
-		position.y + radius, position.x + radius,
+		canvas,
+		position.x - radius, position.x + radius,
+		position.y - radius, position.y + radius,
 		color
 	);
 
-	if (human.healthPoints < maxHealthPoints)
-		DrawHealthPoints(renderer, &human);
+	if (human.healthPoints < MaxHealthPoints)
+		DrawHealthPoints(canvas, &human);
 }

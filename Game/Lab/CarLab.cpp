@@ -6,26 +6,27 @@
 #include "../Geometry.hpp"
 #include "../Math.hpp"
 #include "../Memory.hpp"
+#include "../Type.hpp"
 
 #define CarLabTmpMemArenaSize (1 * MegaByte)
 
 struct CarLabState {
-	bool running;
+	B32 running;
 	Bitmap windowBitmap;
 	Bitmap carBitmap;
 	MemArena tmpArena;
 
-	float zoomValue;
-	float rotationAngle;
-	float rotationAngleAdd;
+	F32 zoomValue;
+	F32 rotationAngle;
+	F32 rotationAngleAdd;
 };
 CarLabState gCarLabState;
 
 static void CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
 {
 	Bitmap* bitmap = &carLabState->windowBitmap;
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
+	I32 width = rect.right - rect.left;
+	I32 height = rect.bottom - rect.top;
 
 	StretchDIBits(context,
 				  0, 0, bitmap->width, bitmap->height,
@@ -37,7 +38,7 @@ static void CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
 	);
 }
 
-static void CarLabResize(CarLabState* carLabState, int width, int height)
+static void CarLabResize(CarLabState* carLabState, I32 width, I32 height)
 {
 	Bitmap* windowBitmap = &carLabState->windowBitmap;
 	ResizeBitmap(windowBitmap, width, height);
@@ -52,8 +53,8 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 		case WM_SIZE: {
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
-			int width = clientRect.right - clientRect.left;
-			int height = clientRect.bottom - clientRect.top;
+			I32 width = clientRect.right - clientRect.left;
+			I32 height = clientRect.bottom - clientRect.top;
 			CarLabResize(carLabState, width, height);
 			break;
 		}
@@ -134,7 +135,7 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 	return result;
 }
 
-static void CarLabInit(CarLabState* carLabState, int windowWidth, int windowHeight)
+static void CarLabInit(CarLabState* carLabState, I32 windowWidth, I32 windowHeight)
 {
 	InitRandom();
 	carLabState->running = true;
@@ -153,15 +154,15 @@ static void CarLabUpdate(CarLabState* carLabState)
 {
 	Bitmap* windowBitmap = &carLabState->windowBitmap;
 	Bitmap* carBitmap = &carLabState->carBitmap;
-	Color backgroundColor = GetColor(0.0f, 0.0f, 0.8f);
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.8f);
 	FillBitmapWithColor(windowBitmap, backgroundColor);
 
-	int halfWindowWidth  = windowBitmap->width / 2;
-	int halfWindowHeight = windowBitmap->height / 2;
+	I32 halfWindowWidth  = windowBitmap->width / 2;
+	I32 halfWindowHeight = windowBitmap->height / 2;
 	carLabState->rotationAngle += carLabState->rotationAngleAdd;
-	float rotationAngle = carLabState->rotationAngle;
-	float width = carBitmap->width * carLabState->zoomValue;
-	float height = carBitmap->height * carLabState->zoomValue;
+	F32 rotationAngle = carLabState->rotationAngle;
+	F32 width = carBitmap->width * carLabState->zoomValue;
+	F32 height = carBitmap->height * carLabState->zoomValue;
 	CopyScaledRotatedBitmap(carBitmap, windowBitmap, halfWindowHeight, halfWindowWidth, width, height, rotationAngle);
 }
 
@@ -194,8 +195,8 @@ void CarLab(HINSTANCE instance)
 
 	RECT rect = {};
 	GetClientRect(window, &rect);
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
+	I32 width = rect.right - rect.left;
+	I32 height = rect.bottom - rect.top;
 	CarLabInit(carLabState, width, height);
 	
 	MSG message = {};

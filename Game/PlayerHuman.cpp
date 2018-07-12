@@ -1,22 +1,23 @@
+#include "Draw.hpp"
 #include "Game.hpp"
 #include "Geometry.hpp"
 #include "Human.hpp"
 #include "Math.hpp"
 #include "PlayerHuman.hpp"
-#include "Point.hpp"
-#include "Renderer.hpp"
+#include "Type.hpp"
 
-float aimDistance = 50.0f;
-float bulletTotalSeconds = 0.2f;
-float shootCooldown = 0.2f;
-float bulletSpeed = (aimDistance / bulletTotalSeconds);
+F32 aimDistance = 50.0f;
+F32 bulletTotalSeconds = 0.2f;
+F32 shootCooldown = 0.2f;
+F32 bulletSpeed = (aimDistance / bulletTotalSeconds);
 
 // TODO: this doesn't belong here, move it somewhere else
 // TODO: add an aimPosition parameter?
-void ShootBullet(PlayerHuman* playerHuman, Point targetPoint) {
+void ShootBullet(PlayerHuman* playerHuman, V2 targetPoint)
+{
 	Human* human = &playerHuman->human;
-	Point aimStartPoint = playerHuman->human.position;
-	Point aimEndPoint = targetPoint;
+	V2 aimStartPoint = playerHuman->human.position;
+	V2 aimEndPoint = targetPoint;
 	Line aimLine = Line{aimStartPoint, aimEndPoint};
 
 	playerHuman->shootCooldown = shootCooldown;
@@ -28,30 +29,30 @@ void ShootBullet(PlayerHuman* playerHuman, Point targetPoint) {
 	bullet->position.direction = PointDirection(human->position, targetPoint);
 }
 
-static void MoveHuman(Human* human, Point moveVector) {
+static void MoveHuman(Human* human, V2 moveVector)
+{
 	Map* map = human->map;
 
-	float distanceToGo = VectorLength(moveVector);
+	F32 distanceToGo = VectorLength(moveVector);
 
 	// TODO: should there be a limit on the iteration number?
 	while (distanceToGo > 0.0f) {
-		bool go = true;
-		bool isTouchingLine = false;
+		B32 go = true;
+		B32 isTouchingLine = false;
 		BuildingCrossInfo crossInfo = {};
 		crossInfo.type = CrossNone;
 
-		Point pointToGo = PointSum(human->position, moveVector);
+		V2 pointToGo = (human->position + moveVector);
 
 		if (human->inBuilding) {
-			bool isInBuilding = IsPointInExtBuilding(human->position, *human->inBuilding, humanRadius);
+			B32 isInBuilding = IsPointInExtBuilding(human->position, *human->inBuilding, HumanRadius);
 
 			if (isInBuilding)
-				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, humanRadius, human->position, pointToGo);
+				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, HumanRadius, human->position, pointToGo);
 			else
 				human->inBuilding = 0;
-		}
-		else {
-			crossInfo = ClosestExtBuildingCrossInfo(*human->map, humanRadius, human->position, pointToGo);
+		} else {
+			crossInfo = GetClosestExtBuildingCrossInfo(human->map, HumanRadius, human->position, pointToGo);
 
 			if (crossInfo.type == CrossEntrance)
 				human->inBuilding = crossInfo.building;
@@ -60,14 +61,13 @@ static void MoveHuman(Human* human, Point moveVector) {
 		if (crossInfo.type == CrossWall) {
 			Building* crossedBuilding = crossInfo.building;
 
-			Point crossPoint = crossInfo.crossPoint;
+			V2 crossPoint = crossInfo.crossPoint;
 
 			// TODO: create a proper collision system
-			float distanceTaken = Distance(human->position, crossPoint);
+			F32 distanceTaken = Distance(human->position, crossPoint);
 
-			Point moveNormal = PointProd(1.0f / VectorLength(moveVector), moveVector);
-
-			Point wallDirection = PointDiff(crossInfo.corner1, crossInfo.corner2);
+			V2 moveNormal = (1.0f / VectorLength(moveVector)) * moveVector;
+			V2 wallDirection = (crossInfo.corner1 - crossInfo.corner2);
 			moveVector = ParallelVector(moveVector, wallDirection);
 
 			distanceToGo = VectorLength(moveVector);
@@ -83,13 +83,14 @@ static void MoveHuman(Human* human, Point moveVector) {
 }
 
 // TODO: the gameState is needed for updating the bullet
-void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds, GameState* gameState) {
+void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds, GameState* gameState)
+{
 	Human* human = &playerHuman->human;
 
-	playerHuman->moveDirection = Point {0.0f, 0.0f};
+	playerHuman->moveDirection = MakePoint(0.0f, 0.0f);
 
-	bool moveX = false;
-	bool moveY = false;
+	B32 moveX = false;
+	B32 moveY = false;
 
 	if (playerHuman->moveLeft) {
 		playerHuman->moveDirection.x = -1.0f;
@@ -112,9 +113,9 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds, GameState* gameS
 	}
 
 	if (moveX && moveY) 
-		playerHuman->moveDirection = PointProd(1.0f / Sqrt(2.0f), playerHuman->moveDirection);
+		playerHuman->moveDirection = (1.0f / Sqrt(2.0f)) * playerHuman->moveDirection;
 
-	Point moveVector = PointProd(human->moveSpeed * seconds, playerHuman->moveDirection);
+	V2 moveVector = (human->moveSpeed * seconds) * playerHuman->moveDirection;
 
 	MoveHuman(human, moveVector);
 
@@ -129,29 +130,25 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds, GameState* gameS
 	//       and move it to another file?
 	Bullet* bullet = &playerHuman->bullet;
 	if (bullet->secondsRemaining > 0.0f) {
-		float secondsToGo = 0.0f;
+		F32 secondsToGo = 0.0f;
 
 		if (bullet->secondsRemaining > seconds) {
 			secondsToGo = seconds;
 			bullet->secondsRemaining -= seconds;
-		}
-		else {
+		} else {
 			secondsToGo = bullet->secondsRemaining;
 			bullet->secondsRemaining = 0.0f;
 		}
 
-		Point oldPosition = bullet->position.position;
-		Point newPosition = PointSum(
-			bullet->position.position,
-			PointProd(secondsToGo * bulletSpeed, bullet->position.direction)
-		);
+		V2 oldPosition = bullet->position.position;
+		V2 newPosition = oldPosition + ((secondsToGo * bulletSpeed) * bullet->position.direction);
 
 		bullet->position.position = newPosition;
 
 		// TODO: is it necessary to build this struct?
 		Line bulletLine = Line{oldPosition, newPosition};
 
-		for (int i = 0; i < gameState->autoHumanCount; ++i) {
+		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			Human* human = &autoHuman->human;
 
@@ -164,23 +161,21 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, float seconds, GameState* gameS
 	}
 }
 
-void DrawPlayerHuman(Renderer renderer, PlayerHuman* playerHuman) {
+void DrawPlayerHuman(Canvas canvas, PlayerHuman* playerHuman)
+{
 	Human* human = &playerHuman->human;
 
 	Bullet* bullet = &playerHuman->bullet;
 	if (bullet->secondsRemaining > 0.0f) {
-		float bulletTailLength = 2.0f;
+		F32 bulletTailLength = 2.0f;
 
-		Point point1 = bullet->position.position;
-		Point point2 = PointDiff(
-			point1,
-			PointProd(bulletTailLength, bullet->position.direction)
-		);
+		V2 point1 = bullet->position.position;
+		V2 point2 = point1 - (bulletTailLength * bullet->position.direction);
 
 		// TODO: make this a global value
-		Color bulletColor = Color{1.0f, 1.0f, 0.0f};
-		Bresenham(renderer, point1, point2, bulletColor);
+		V4 bulletColor = MakeColor(1.0f, 1.0f, 0.0f);
+		Bresenham(canvas, point1, point2, bulletColor);
 	}
 
-	DrawHuman(renderer, playerHuman->human);
+	DrawHuman(canvas, playerHuman->human);
 }

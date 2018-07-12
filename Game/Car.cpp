@@ -1,113 +1,111 @@
 #include "Car.hpp"
 #include "Geometry.hpp"
 #include "Math.hpp"
-
-extern float MinCarSpeed = 5.0f;
-extern float MaxCarSpeed = 10.0f;
+#include "Type.hpp"
 
 #define CarBitmapWidth 140
 #define CarBitmapHeight 300
 
-static inline Quad GetCarCorners(Car* car)
+static Quad GetCarCorners(Car* car)
 {
 	Quad result = {};
 
-	Point addWidth = PointProd((car->width * 0.5f), RotationVector(car->angle + PI * 0.5f));
+	V2 addWidth = ((car->width * 0.5f) * RotationVector(car->angle + PI * 0.5f));
 
-	Point side1 = PointSum(car->position, addWidth);
-	Point side2 = PointDiff(car->position, addWidth);
-
-	Point addLength = PointProd((car->length * 0.5f), RotationVector(car->angle));
-
-	result.points[0] = PointSum(side1, addLength);
-	result.points[1] = PointDiff(side1, addLength);
-	result.points[2] = PointDiff(side2, addLength); 
-	result.points[3] = PointSum(side2, addLength);
+	V2 side1 = (car->position + addWidth);
+	V2 side2 = (car->position - addWidth);
+	
+	V2 addLength = ((car->length * 0.5f) * RotationVector(car->angle));
+	
+	result.points[0] = (side1 + addLength);
+	result.points[1] = (side1 - addLength);
+	result.points[2] = (side2 - addLength);
+	result.points[3] = (side2 + addLength);
 	return result;
 }
 
 Quad GetCarStopArea(Car* car)
 {
-	Point toFrontUnitVector = RotationVector(car->angle);
-	Point toRightUnitVector = RotationVector(car->angle + PI * 0.5f);
+	V2 toFrontUnitVector = RotationVector(car->angle);
+	V2 toRightUnitVector = RotationVector(car->angle + PI * 0.5f);
 
-	Point addWidth = PointProd(car->width * 0.5f, toRightUnitVector);
+	V2 addWidth = (car->width * 0.5f) * toRightUnitVector;
 
-	Point side1 = PointSum(car->position, addWidth);
-	Point side2 = PointDiff(car->position, addWidth);
+	V2 side1 = (car->position + addWidth);
+	V2 side2 = (car->position - addWidth);
 
-	float stopDistance = 5.0f;
+	F32 stopDistance = 5.0f;
 
-	Point addClose = PointProd(car->length * 0.5f, toFrontUnitVector);
-	Point addFar = PointProd(car->length * 0.5f + stopDistance, toFrontUnitVector);
+	V2 addClose = (car->length * 0.5f) * toFrontUnitVector;
+	V2 addFar = (car->length * 0.5f + stopDistance) * toFrontUnitVector;
 
 	Quad result = {};
-	result.points[0] = PointSum(side1, addClose);
-	result.points[1] = PointSum(side2, addClose);
-	result.points[2] = PointSum(side2, addFar); 
-	result.points[3] = PointSum(side1, addFar);
+	result.points[0] = (side1 + addClose);
+	result.points[1] = (side2 + addClose);
+	result.points[2] = (side2 + addFar);
+	result.points[3] = (side1 + addFar);
 
 	return result;
 }
 
-bool IsCarOnPoint(Car* car, Point point)
+B32 IsCarOnPoint(Car* car, V2 point)
 {
 	Quad carCorners = GetCarCorners(car);
-	bool result = IsPointInQuad(carCorners, point);
+	B32 result = IsPointInQuad(carCorners, point);
 	return result;
 }
 
-void MoveCar(Car* car, DirectedPoint point)
+void MoveCar(Car* car, V4 point)
 {
 	car->position = point.position;
 	car->angle = VectorAngle(point.direction);
 }
 
-void DrawCar(Renderer renderer, Car car)
+void DrawCar(Canvas canvas, Car car)
 {
 	Assert(car.bitmap != 0);
-	DrawScaledRotatedBitmap(renderer, car.bitmap, car.position, car.width, car.length, car.angle);
+	DrawScaledRotatedBitmap(canvas, car.bitmap, car.position, car.width, car.length, car.angle);
 }
 
-static Color GetRandomCarColor()
+static V4 GetRandomCarColor()
 {
-	float colorSum = RandomBetween(1.0f, 1.5f);
-	float red = RandomBetween(0.0f, colorSum);
+	F32 colorSum = RandomBetween(1.0f, 1.5f);
+	F32 red = RandomBetween(0.0f, colorSum);
 	red = Clip(red, 0.0f, 1.0f);
-	float green = RandomBetween(0.0f, colorSum - red);
+	F32 green = RandomBetween(0.0f, colorSum - red);
 	green = Clip(green, 0.0f, 1.0f);
-	float blue = RandomBetween(0.0f, colorSum - red - green);
+	F32 blue = RandomBetween(0.0f, colorSum - red - green);
 	blue = Clip(blue, 0.0f, 1.0f);
-	Color color = GetColor(red, green, blue);
+	V4 color = MakeColor(red, green, blue);
 	return color;
 }
 
-static Color GetRandomWindowColor()
+static V4 GetRandomWindowColor()
 {
-	float red   = RandomBetween(0.0f, 0.05f);
-	float green = RandomBetween(0.0f, 0.05f);
-	float blue  = RandomBetween(0.0f, 0.25f);
-	Color color = GetColor(red, green, blue);
+	F32 red   = RandomBetween(0.0f, 0.05f);
+	F32 green = RandomBetween(0.0f, 0.05f);
+	F32 blue  = RandomBetween(0.0f, 0.25f);
+	V4 color = MakeColor(red, green, blue);
 	return color;
 }
 
-static Color GetShadowColor(Color color)
+static V4 GetShadowColor(V4 color)
 {
-	float shadowRatio = 0.5f;
-	float red   = shadowRatio * color.red;
-	float green = shadowRatio * color.green;
-	float blue  = shadowRatio * color.blue;
-	Color shadowColor = GetColor(red, green, blue);
+	F32 shadowRatio = 0.5f;
+	F32 red   = shadowRatio * color.red;
+	F32 green = shadowRatio * color.green;
+	F32 blue  = shadowRatio * color.blue;
+	V4 shadowColor = MakeColor(red, green, blue);
 	return shadowColor;
 }
 
-static Color GetRandomFrontLampColor()
+static V4 GetRandomFrontLampColor()
 {
-	float redGreenValue = RandomBetween(0.0f, 1.0f);
-	float red   = redGreenValue;
-	float green = redGreenValue;
-	float blue  = RandomBetween(0.8f, 1.0f);
-	Color color = GetColor(red, green, blue);
+	F32 redGreenValue = RandomBetween(0.0f, 1.0f);
+	F32 red   = redGreenValue;
+	F32 green = redGreenValue;
+	F32 blue  = RandomBetween(0.8f, 1.0f);
+	V4 color = MakeColor(red, green, blue);
 	return color;
 }
 
@@ -120,42 +118,42 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 {
 	Assert(carBitmap != 0);
 
-	Color backgroundColor = GetAlphaColor(0.2f, 0.2f, 0.2f, 0.0f);
+	V4 backgroundColor = MakeAlphaColor(0.2f, 0.2f, 0.2f, 0.0f);
 	FillBitmapWithColor(carBitmap, backgroundColor);
 
-	Color carColor = GetRandomCarColor();
-	Color shadowColor = GetShadowColor(carColor);
+	V4 carColor = GetRandomCarColor();
+	V4 shadowColor = GetShadowColor(carColor);
 
-	Color borderColor = GetColor(0.2f, 0.2f, 0.2f);
+	V4 borderColor = MakeColor(0.2f, 0.2f, 0.2f);
 
-	int bitmapLeft   = 0;
-	int bitmapRight  = carBitmap->width - 1;
-	int bitmapTop    = 0;
-	int bitmapBottom = carBitmap->height - 1;
+	I32 bitmapLeft   = 0;
+	I32 bitmapRight  = carBitmap->width - 1;
+	I32 bitmapTop    = 0;
+	I32 bitmapBottom = carBitmap->height - 1;
 
-	int frontHoodLength    = IntRandom(65, 70);
-	int frontHoodWidthDiff = IntRandom(0, 5);
+	I32 frontHoodLength    = IntRandom(65, 70);
+	I32 frontHoodWidthDiff = IntRandom(0, 5);
 
-	int frontHoodTopLeft     = bitmapLeft + 20 + frontHoodWidthDiff;
-	int frontHoodBottomLeft  = bitmapLeft + 20;
-	int frontHoodTopRight    = bitmapRight - 20 - frontHoodWidthDiff;
-	int frontHoodBottomRight = bitmapRight - 20;
-	int frontHoodTop         = bitmapTop + 20;
-	int frontHoodBottom      = frontHoodTop + frontHoodLength;
+	I32 frontHoodTopLeft     = bitmapLeft + 20 + frontHoodWidthDiff;
+	I32 frontHoodBottomLeft  = bitmapLeft + 20;
+	I32 frontHoodTopRight    = bitmapRight - 20 - frontHoodWidthDiff;
+	I32 frontHoodBottomRight = bitmapRight - 20;
+	I32 frontHoodTop         = bitmapTop + 20;
+	I32 frontHoodBottom      = frontHoodTop + frontHoodLength;
 
-	int middlePartLength = IntRandom(135, 150);
+	I32 middlePartLength = IntRandom(135, 150);
 	
-	int backHoodLength    = IntRandom(20, 30);
-	int backHoodWidthDiff = IntRandom(0, 5);
+	I32 backHoodLength    = IntRandom(20, 30);
+	I32 backHoodWidthDiff = IntRandom(0, 5);
 
-	int backHoodTopLeft     = bitmapLeft + 20;
-	int backHoodBottomLeft  = bitmapLeft + 20 + backHoodWidthDiff;
-	int backHoodTopRight    = bitmapRight - 20;
-	int backHoodBottomRight = bitmapRight - 20 - backHoodWidthDiff;
-	int backHoodTop         = frontHoodBottom + middlePartLength;
-	int backHoodBottom      = backHoodTop + backHoodLength;
+	I32 backHoodTopLeft     = bitmapLeft + 20;
+	I32 backHoodBottomLeft  = bitmapLeft + 20 + backHoodWidthDiff;
+	I32 backHoodTopRight    = bitmapRight - 20;
+	I32 backHoodBottomRight = bitmapRight - 20 - backHoodWidthDiff;
+	I32 backHoodTop         = frontHoodBottom + middlePartLength;
+	I32 backHoodBottom      = backHoodTop + backHoodLength;
 
-	int carPoly[] = {
+	I32 carPoly[] = {
 		frontHoodTop, frontHoodTopLeft,
 		frontHoodTop, frontHoodTopRight,
 		frontHoodBottom, frontHoodBottomRight,
@@ -167,22 +165,22 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	};
 
 	DrawBitmapPolyOutline(carBitmap, 8, carPoly, carColor);
-	int carCenterRow = (frontHoodTop + backHoodBottom) / 2;
-	int carCenterCol = (frontHoodBottomLeft + frontHoodBottomRight) / 2;
+	I32 carCenterRow = (frontHoodTop + backHoodBottom) / 2;
+	I32 carCenterCol = (frontHoodBottomLeft + frontHoodBottomRight) / 2;
 	FloodfillBitmap(carBitmap, carCenterRow, carCenterCol, carColor, tmpArena);
 
-	int frontWindowLength    = IntRandom(40, 60);
-	int windowSeparatorWidth = IntRandom(3, 5);
-	int frontWindowWidthDiff = IntRandom(5, 15);
+	I32 frontWindowLength    = IntRandom(40, 60);
+	I32 windowSeparatorWidth = IntRandom(3, 5);
+	I32 frontWindowWidthDiff = IntRandom(5, 15);
 
-	Color windowColor = GetRandomWindowColor();
-	int frontWindowTop         = frontHoodBottom;
-	int frontWindowBottom      = frontWindowTop + frontWindowLength;
-	int frontWindowTopLeft     = frontHoodBottomLeft + windowSeparatorWidth;
-	int frontWindowTopRight    = frontHoodBottomRight - windowSeparatorWidth;
-	int frontWindowBottomLeft  = frontWindowTopLeft + frontWindowWidthDiff;
-	int frontWindowBottomRight = frontWindowTopRight - frontWindowWidthDiff;
-	int frontWindowPoly[] = {
+	V4 windowColor = GetRandomWindowColor();
+	I32 frontWindowTop         = frontHoodBottom;
+	I32 frontWindowBottom      = frontWindowTop + frontWindowLength;
+	I32 frontWindowTopLeft     = frontHoodBottomLeft + windowSeparatorWidth;
+	I32 frontWindowTopRight    = frontHoodBottomRight - windowSeparatorWidth;
+	I32 frontWindowBottomLeft  = frontWindowTopLeft + frontWindowWidthDiff;
+	I32 frontWindowBottomRight = frontWindowTopRight - frontWindowWidthDiff;
+	I32 frontWindowPoly[] = {
 		frontWindowTop,    frontWindowTopLeft,
 		frontWindowTop,    frontWindowTopRight,
 		frontWindowBottom, frontWindowBottomRight,
@@ -190,95 +188,95 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	};
 
 	DrawBitmapPolyOutline(carBitmap, 4, frontWindowPoly, borderColor);
-	int frontWindowCenterRow = (frontWindowTop + frontWindowBottom) / 2;
-	int frontWindowCenterCol = (frontWindowTopLeft + frontWindowTopRight) / 2;
+	I32 frontWindowCenterRow = (frontWindowTop + frontWindowBottom) / 2;
+	I32 frontWindowCenterCol = (frontWindowTopLeft + frontWindowTopRight) / 2;
 	FloodfillBitmap(carBitmap, frontWindowCenterRow, frontWindowCenterCol, windowColor, tmpArena);
 
-	int backWindowLength = IntRandom(15, 25);
-	int backWindowWidthDiff = IntRandom(5, 15);
+	I32 backWindowLength = IntRandom(15, 25);
+	I32 backWindowWidthDiff = IntRandom(5, 15);
 
-	int backWindowBottom      = backHoodTop;
-	int backWindowTop         = backWindowBottom - backWindowLength;
-	int backWindowBottomLeft  = backHoodTopLeft + windowSeparatorWidth;
-	int backWindowBottomRight = backHoodTopRight - windowSeparatorWidth;
-	int backWindowTopLeft     = frontWindowBottomLeft;
-	int backWindowTopRight    = frontWindowBottomRight;
-	int backWindowPoly[] = {
+	I32 backWindowBottom      = backHoodTop;
+	I32 backWindowTop         = backWindowBottom - backWindowLength;
+	I32 backWindowBottomLeft  = backHoodTopLeft + windowSeparatorWidth;
+	I32 backWindowBottomRight = backHoodTopRight - windowSeparatorWidth;
+	I32 backWindowTopLeft     = frontWindowBottomLeft;
+	I32 backWindowTopRight    = frontWindowBottomRight;
+	I32 backWindowPoly[] = {
 		backWindowTop,    backWindowTopLeft,
 		backWindowTop,    backWindowTopRight,
 		backWindowBottom, backWindowBottomRight,
 		backWindowBottom, backWindowBottomLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, backWindowPoly, borderColor);
-	int backWindowCenterRow = (backWindowTop + backWindowBottom) / 2;
-	int backWindowCenterCol = (backWindowTopLeft + backWindowTopRight) / 2;
+	I32 backWindowCenterRow = (backWindowTop + backWindowBottom) / 2;
+	I32 backWindowCenterCol = (backWindowTopLeft + backWindowTopRight) / 2;
 	FloodfillBitmap(carBitmap, backWindowCenterRow, backWindowCenterCol, windowColor, tmpArena);
 
-	int topLeftWindowLeft     = frontWindowTopLeft - windowSeparatorWidth;
-	int topLeftWindowRight    = frontWindowBottomLeft - windowSeparatorWidth;
-	int topLeftWindowLeftTop  = frontWindowTop + windowSeparatorWidth;
-	int topLeftWindowRightTop = frontWindowBottom + windowSeparatorWidth;
-	int topLeftWindowBottom   = topLeftWindowRightTop + 25;
-	int topLeftWindowPoly[] = {
+	I32 topLeftWindowLeft     = frontWindowTopLeft - windowSeparatorWidth;
+	I32 topLeftWindowRight    = frontWindowBottomLeft - windowSeparatorWidth;
+	I32 topLeftWindowLeftTop  = frontWindowTop + windowSeparatorWidth;
+	I32 topLeftWindowRightTop = frontWindowBottom + windowSeparatorWidth;
+	I32 topLeftWindowBottom   = topLeftWindowRightTop + 25;
+	I32 topLeftWindowPoly[] = {
 		topLeftWindowLeftTop,  topLeftWindowLeft,
 		topLeftWindowRightTop, topLeftWindowRight,
 		topLeftWindowBottom,   topLeftWindowRight,
 		topLeftWindowBottom,   topLeftWindowLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, topLeftWindowPoly, borderColor);
-	int topLeftWindowCenterRow = (topLeftWindowLeftTop + topLeftWindowBottom) / 2;
-	int topLeftWindowCenterCol = (topLeftWindowLeft + topLeftWindowRight) / 2;
+	I32 topLeftWindowCenterRow = (topLeftWindowLeftTop + topLeftWindowBottom) / 2;
+	I32 topLeftWindowCenterCol = (topLeftWindowLeft + topLeftWindowRight) / 2;
 	FloodfillBitmap(carBitmap, topLeftWindowCenterRow, topLeftWindowCenterCol, windowColor, tmpArena);
 
-	int bottomLeftWindowLeft        = topLeftWindowLeft;
-	int bottomLeftWindowRight       = topLeftWindowRight;
-	int bottomLeftWindowTop         = topLeftWindowBottom + windowSeparatorWidth;
-	int bottomLeftWindowLeftBottom  = backWindowBottom - windowSeparatorWidth;
-	int bottomLeftWindowRightBottom = backWindowTop - windowSeparatorWidth;
-	int bottomLeftWindowPoly[] = {
+	I32 bottomLeftWindowLeft        = topLeftWindowLeft;
+	I32 bottomLeftWindowRight       = topLeftWindowRight;
+	I32 bottomLeftWindowTop         = topLeftWindowBottom + windowSeparatorWidth;
+	I32 bottomLeftWindowLeftBottom  = backWindowBottom - windowSeparatorWidth;
+	I32 bottomLeftWindowRightBottom = backWindowTop - windowSeparatorWidth;
+	I32 bottomLeftWindowPoly[] = {
 		bottomLeftWindowTop,         bottomLeftWindowLeft,
 		bottomLeftWindowTop,         bottomLeftWindowRight,
 		bottomLeftWindowRightBottom, bottomLeftWindowRight,
 		bottomLeftWindowLeftBottom,  bottomLeftWindowLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, bottomLeftWindowPoly, borderColor);
-	int bottomLeftWindowCenterRow = (bottomLeftWindowTop + bottomLeftWindowLeftBottom) / 2;
-	int bottomLeftWindowCenterCol = (bottomLeftWindowLeft + bottomLeftWindowRight) / 2;
+	I32 bottomLeftWindowCenterRow = (bottomLeftWindowTop + bottomLeftWindowLeftBottom) / 2;
+	I32 bottomLeftWindowCenterCol = (bottomLeftWindowLeft + bottomLeftWindowRight) / 2;
 	FloodfillBitmap(carBitmap, bottomLeftWindowCenterRow, bottomLeftWindowCenterCol, windowColor, tmpArena);
 
-	int topRightWindowLeft = frontWindowBottomRight + windowSeparatorWidth;
-	int topRightWindowRight = frontWindowTopRight + windowSeparatorWidth;
-	int topRightWindowLeftTop = frontWindowBottom + windowSeparatorWidth;
-	int topRightWindowRightTop = frontWindowTop + windowSeparatorWidth;
-	int topRightWindowBottom = topRightWindowLeftTop + 25;
-	int topRightWindowPoly[] = {
+	I32 topRightWindowLeft = frontWindowBottomRight + windowSeparatorWidth;
+	I32 topRightWindowRight = frontWindowTopRight + windowSeparatorWidth;
+	I32 topRightWindowLeftTop = frontWindowBottom + windowSeparatorWidth;
+	I32 topRightWindowRightTop = frontWindowTop + windowSeparatorWidth;
+	I32 topRightWindowBottom = topRightWindowLeftTop + 25;
+	I32 topRightWindowPoly[] = {
 		topRightWindowLeftTop,  topRightWindowLeft,
 		topRightWindowRightTop, topRightWindowRight,
 		topRightWindowBottom,   topRightWindowRight,
 		topRightWindowBottom,   topRightWindowLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, topRightWindowPoly, borderColor);
-	int topRightWindowCenterRow = (topRightWindowRightTop + topRightWindowBottom) / 2;
-	int topRightWindowCenterCol = (topRightWindowLeft + topRightWindowRight) / 2;
+	I32 topRightWindowCenterRow = (topRightWindowRightTop + topRightWindowBottom) / 2;
+	I32 topRightWindowCenterCol = (topRightWindowLeft + topRightWindowRight) / 2;
 	FloodfillBitmap(carBitmap, topRightWindowCenterRow, topRightWindowCenterCol, windowColor, tmpArena);
 
-	int bottomRightWindowLeft        = topRightWindowLeft;
-	int bottomRightWindowRight       = topRightWindowRight;
-	int bottomRightWindowTop         = topRightWindowBottom + windowSeparatorWidth;
-	int bottomRightWindowLeftBottom  = backWindowTop - windowSeparatorWidth;
-	int bottomRightWindowRightBottom = backWindowBottom - windowSeparatorWidth;
-	int bottomRightWindowPoly[] = {
+	I32 bottomRightWindowLeft        = topRightWindowLeft;
+	I32 bottomRightWindowRight       = topRightWindowRight;
+	I32 bottomRightWindowTop         = topRightWindowBottom + windowSeparatorWidth;
+	I32 bottomRightWindowLeftBottom  = backWindowTop - windowSeparatorWidth;
+	I32 bottomRightWindowRightBottom = backWindowBottom - windowSeparatorWidth;
+	I32 bottomRightWindowPoly[] = {
 		bottomRightWindowTop,         bottomRightWindowLeft,
 		bottomRightWindowTop,         bottomRightWindowRight,
 		bottomRightWindowRightBottom, bottomRightWindowRight,
 		bottomRightWindowLeftBottom,  bottomRightWindowLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, bottomRightWindowPoly, borderColor);
-	int bottomRightWindowCenterRow = (bottomRightWindowTop + bottomRightWindowRightBottom) / 2;
-	int bottomRightWindowCenterCol = (bottomRightWindowLeft + bottomRightWindowRight) / 2;
+	I32 bottomRightWindowCenterRow = (bottomRightWindowTop + bottomRightWindowRightBottom) / 2;
+	I32 bottomRightWindowCenterCol = (bottomRightWindowLeft + bottomRightWindowRight) / 2;
 	FloodfillBitmap(carBitmap, bottomRightWindowCenterRow, bottomRightWindowCenterCol, windowColor, tmpArena);
 
-	int leftShadowPoly[] = {
+	I32 leftShadowPoly[] = {
 		frontHoodTop,      frontHoodTopLeft,
 		frontHoodTop,      frontHoodTopLeft + 5,
 		frontWindowTop,    frontWindowTopLeft,
@@ -293,7 +291,7 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	DrawBitmapPolyOutline(carBitmap, 10, leftShadowPoly, shadowColor);
 	FloodfillBitmap(carBitmap, frontHoodTop + 1, frontHoodTopLeft + 1, shadowColor, tmpArena);
 
-	int rightShadowPoly[] = {
+	I32 rightShadowPoly[] = {
 		frontHoodTop, frontHoodTopRight - 5,
 		frontHoodTop, frontHoodTopRight,
 		frontHoodBottom, frontHoodBottomRight,
@@ -308,142 +306,142 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	DrawBitmapPolyOutline(carBitmap, 10, rightShadowPoly, shadowColor);
 	FloodfillBitmap(carBitmap, frontHoodTop + 1, frontHoodTopRight - 1, shadowColor, tmpArena);
 
-	int frontShadowTopLeft     = frontHoodTopLeft + 10;
-	int frontShadowBottomLeft  = frontHoodTopLeft;
-	int frontShadowTopRight    = frontHoodTopRight - 10;
-	int frontShadowBottomRight = frontHoodTopRight;
-	int frontShadowTop         = frontHoodTop - 3;
-	int frontShadowBottom      = frontHoodTop;
-	int frontShadowPoly[] = {
+	I32 frontShadowTopLeft     = frontHoodTopLeft + 10;
+	I32 frontShadowBottomLeft  = frontHoodTopLeft;
+	I32 frontShadowTopRight    = frontHoodTopRight - 10;
+	I32 frontShadowBottomRight = frontHoodTopRight;
+	I32 frontShadowTop         = frontHoodTop - 3;
+	I32 frontShadowBottom      = frontHoodTop;
+	I32 frontShadowPoly[] = {
 		frontShadowTop,    frontShadowTopLeft,
 		frontShadowTop,    frontShadowTopRight,
 		frontShadowBottom, frontShadowBottomRight,
 		frontShadowBottom, frontShadowBottomLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, frontShadowPoly, shadowColor);
-	int frontShadowCenterRow = (frontShadowTop + frontShadowBottom) / 2;
-	int frontShadowCenterCol = (frontShadowTopLeft + frontShadowTopRight) / 2;
+	I32 frontShadowCenterRow = (frontShadowTop + frontShadowBottom) / 2;
+	I32 frontShadowCenterCol = (frontShadowTopLeft + frontShadowTopRight) / 2;
 	FloodfillBitmap(carBitmap, frontShadowCenterRow, frontShadowCenterCol, shadowColor, tmpArena);
 
-	int backShadowTopLeft     = backHoodBottomLeft;
-	int backShadowBottomLeft  = backHoodBottomLeft + 10;
-	int backShadowTopRight    = backHoodBottomRight;
-	int backShadowBottomRight = backHoodBottomRight - 10;
-	int backShadowTop         = backHoodBottom;
-	int backShadowBottom      = backHoodBottom + 3;
-	int backShadowPoly[] = {
+	I32 backShadowTopLeft     = backHoodBottomLeft;
+	I32 backShadowBottomLeft  = backHoodBottomLeft + 10;
+	I32 backShadowTopRight    = backHoodBottomRight;
+	I32 backShadowBottomRight = backHoodBottomRight - 10;
+	I32 backShadowTop         = backHoodBottom;
+	I32 backShadowBottom      = backHoodBottom + 3;
+	I32 backShadowPoly[] = {
 		backShadowTop,    backShadowTopLeft,
 		backShadowTop,    backShadowTopRight,
 		backShadowBottom, backShadowBottomRight,
 		backShadowBottom, backShadowBottomLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, backShadowPoly, shadowColor);
-	int backShadowCenterRow = (backShadowTop + backShadowBottom) / 2;
-	int backShadowCenterCol = (backShadowTopLeft + backShadowTopRight) / 2;
+	I32 backShadowCenterRow = (backShadowTop + backShadowBottom) / 2;
+	I32 backShadowCenterCol = (backShadowTopLeft + backShadowTopRight) / 2;
 	FloodfillBitmap(carBitmap, backShadowCenterRow, backShadowCenterCol, shadowColor, tmpArena);
 
-	int mirrorWidth = IntRandom(8, 12);
-	int mirrorThickness = IntRandom(2, 4);
-	int mirrorRowDiff = IntRandom(3, 6);
+	I32 mirrorWidth = IntRandom(8, 12);
+	I32 mirrorThickness = IntRandom(2, 4);
+	I32 mirrorRowDiff = IntRandom(3, 6);
 
-	int leftMirrorRight       = frontHoodBottomLeft;
-	int leftMirrorLeft        = leftMirrorRight - mirrorWidth;
-	int leftMirrorRightTop    = frontHoodBottom + 2;
-	int leftMirrorLeftTop     = leftMirrorRightTop + mirrorThickness;
-	int leftMirrorRightBottom = leftMirrorRightTop + mirrorRowDiff;
-	int leftMirrorLeftBottom  = leftMirrorLeftTop + mirrorRowDiff;
-	int leftMirrorPoly[] = {
+	I32 leftMirrorRight       = frontHoodBottomLeft;
+	I32 leftMirrorLeft        = leftMirrorRight - mirrorWidth;
+	I32 leftMirrorRightTop    = frontHoodBottom + 2;
+	I32 leftMirrorLeftTop     = leftMirrorRightTop + mirrorThickness;
+	I32 leftMirrorRightBottom = leftMirrorRightTop + mirrorRowDiff;
+	I32 leftMirrorLeftBottom  = leftMirrorLeftTop + mirrorRowDiff;
+	I32 leftMirrorPoly[] = {
 		leftMirrorLeftTop,     leftMirrorLeft,
 		leftMirrorRightTop,    leftMirrorRight,
 		leftMirrorRightBottom, leftMirrorRight,
 		leftMirrorLeftBottom,  leftMirrorLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, leftMirrorPoly, shadowColor);
-	int leftMirrorCenterRow = (leftMirrorLeftTop + leftMirrorLeftBottom) / 2;
-	int leftMirrorCenterCol = leftMirrorLeft + 2;
+	I32 leftMirrorCenterRow = (leftMirrorLeftTop + leftMirrorLeftBottom) / 2;
+	I32 leftMirrorCenterCol = leftMirrorLeft + 2;
 	FloodfillBitmap(carBitmap, leftMirrorCenterRow, leftMirrorCenterCol, shadowColor, tmpArena);
 
-	int rightMirrorLeft        = frontHoodBottomRight;
-	int rightMirrorRight       = rightMirrorLeft + mirrorWidth;
-	int rightMirrorLeftTop     = frontHoodBottom + 2;
-	int rightMirrorRightTop    = rightMirrorLeftTop + mirrorThickness;
-	int rightMirrorLeftBottom  = rightMirrorLeftTop + mirrorRowDiff;
-	int rightMirrorRightBottom = rightMirrorRightTop + mirrorRowDiff;
-	int rightMirrorPoly[] = {
+	I32 rightMirrorLeft        = frontHoodBottomRight;
+	I32 rightMirrorRight       = rightMirrorLeft + mirrorWidth;
+	I32 rightMirrorLeftTop     = frontHoodBottom + 2;
+	I32 rightMirrorRightTop    = rightMirrorLeftTop + mirrorThickness;
+	I32 rightMirrorLeftBottom  = rightMirrorLeftTop + mirrorRowDiff;
+	I32 rightMirrorRightBottom = rightMirrorRightTop + mirrorRowDiff;
+	I32 rightMirrorPoly[] = {
 		rightMirrorLeftTop,     rightMirrorLeft,
 		rightMirrorRightTop,    rightMirrorRight,
 		rightMirrorRightBottom, rightMirrorRight,
 		rightMirrorLeftBottom,  rightMirrorLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, rightMirrorPoly, shadowColor);
-	int rightMirrorCenterRow = (rightMirrorRightTop + rightMirrorRightBottom) / 2;
-	int rightMirrorCenterCol = rightMirrorRight - 2;
+	I32 rightMirrorCenterRow = (rightMirrorRightTop + rightMirrorRightBottom) / 2;
+	I32 rightMirrorCenterCol = rightMirrorRight - 2;
 	FloodfillBitmap(carBitmap, rightMirrorCenterRow, rightMirrorCenterCol, shadowColor, tmpArena);
 
-	Color frontLampColor = GetRandomFrontLampColor();
-	int frontLampWidth  = IntRandom(15, 20);
-	int frontLampHeight = IntRandom(2, 3);
-	int frontLampSideDistance = IntRandom(7, 10);
+	V4 frontLampColor = GetRandomFrontLampColor();
+	I32 frontLampWidth  = IntRandom(15, 20);
+	I32 frontLampHeight = IntRandom(2, 3);
+	I32 frontLampSideDistance = IntRandom(7, 10);
 
-	int frontLeftLampLeft   = frontHoodTopLeft + frontLampSideDistance;
-	int frontLeftLampRight  = frontLeftLampLeft + frontLampWidth;
-	int frontLeftLampTop    = frontHoodTop;
-	int frontLeftLampBottom = frontLeftLampTop + frontLampHeight;
-	int frontLeftLampPoly[] = {
+	I32 frontLeftLampLeft   = frontHoodTopLeft + frontLampSideDistance;
+	I32 frontLeftLampRight  = frontLeftLampLeft + frontLampWidth;
+	I32 frontLeftLampTop    = frontHoodTop;
+	I32 frontLeftLampBottom = frontLeftLampTop + frontLampHeight;
+	I32 frontLeftLampPoly[] = {
 		frontLeftLampTop,    frontLeftLampLeft,
 		frontLeftLampTop,    frontLeftLampRight,
 		frontLeftLampBottom, frontLeftLampRight,
 		frontLeftLampBottom, frontLeftLampLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, frontLeftLampPoly, frontLampColor);
-	int frontLeftLampCenterRow = (frontLeftLampTop + frontLeftLampBottom) / 2;
-	int frontLeftLampCenterCol = (frontLeftLampLeft + frontLeftLampRight) / 2;
+	I32 frontLeftLampCenterRow = (frontLeftLampTop + frontLeftLampBottom) / 2;
+	I32 frontLeftLampCenterCol = (frontLeftLampLeft + frontLeftLampRight) / 2;
 	FloodfillBitmap(carBitmap, frontLeftLampCenterRow, frontLeftLampCenterCol, frontLampColor, tmpArena);
 
-	int frontRightLampRight = frontHoodTopRight - frontLampSideDistance;
-	int frontRightLampLeft = frontRightLampRight - frontLampWidth;
-	int frontRightLampTop = frontHoodTop;
-	int frontRightLampBottom = frontRightLampTop + frontLampHeight;
-	int frontRightLampPoly[] = {
+	I32 frontRightLampRight = frontHoodTopRight - frontLampSideDistance;
+	I32 frontRightLampLeft = frontRightLampRight - frontLampWidth;
+	I32 frontRightLampTop = frontHoodTop;
+	I32 frontRightLampBottom = frontRightLampTop + frontLampHeight;
+	I32 frontRightLampPoly[] = {
 		frontRightLampTop,    frontRightLampLeft,
 		frontRightLampTop,    frontRightLampRight,
 		frontRightLampBottom, frontRightLampRight,
 		frontRightLampBottom, frontRightLampLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, frontRightLampPoly, frontLampColor);
-	int frontRightLampCenterRow = (frontRightLampTop + frontRightLampBottom) / 2;
-	int frontRightLampCenterCol = (frontRightLampLeft + frontRightLampRight) / 2;
+	I32 frontRightLampCenterRow = (frontRightLampTop + frontRightLampBottom) / 2;
+	I32 frontRightLampCenterCol = (frontRightLampLeft + frontRightLampRight) / 2;
 	FloodfillBitmap(carBitmap, frontRightLampCenterRow, frontRightLampCenterCol, frontLampColor, tmpArena);
 
-	Color backLampColor = GetColor(1.0f, 0.0f, 0.0f);
-	int backLeftLampLeft   = backHoodBottomLeft + 10;
-	int backLeftLampRight  = backLeftLampLeft + 7;
-	int backLeftLampTop    = backHoodBottom;
-	int backLeftLampBottom = backLeftLampTop + 2;
-	int backLeftLampPoly[] = {
+	V4 backLampColor = MakeColor(1.0f, 0.0f, 0.0f);
+	I32 backLeftLampLeft   = backHoodBottomLeft + 10;
+	I32 backLeftLampRight  = backLeftLampLeft + 7;
+	I32 backLeftLampTop    = backHoodBottom;
+	I32 backLeftLampBottom = backLeftLampTop + 2;
+	I32 backLeftLampPoly[] = {
 		backLeftLampTop,    backLeftLampLeft,
 		backLeftLampTop,    backLeftLampRight,
 		backLeftLampBottom, backLeftLampRight,
 		backLeftLampBottom, backLeftLampLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, backLeftLampPoly, backLampColor);
-	int backLeftLampCenterRow = (backLeftLampTop + backLeftLampBottom) / 2;
-	int backLeftLampCenterCol = (backLeftLampLeft + backLeftLampRight) / 2;
+	I32 backLeftLampCenterRow = (backLeftLampTop + backLeftLampBottom) / 2;
+	I32 backLeftLampCenterCol = (backLeftLampLeft + backLeftLampRight) / 2;
 	FloodfillBitmap(carBitmap, backLeftLampCenterRow, backLeftLampCenterCol, backLampColor, tmpArena);
 
-	int backRightLampRight = backHoodBottomRight - 10;
-	int backRightLampLeft = backRightLampRight - 7;
-	int backRightLampBottom = backHoodBottom;
-	int backRightLampTop = backRightLampBottom + 2;
-	int backRightLampPoly[] = {
+	I32 backRightLampRight = backHoodBottomRight - 10;
+	I32 backRightLampLeft = backRightLampRight - 7;
+	I32 backRightLampBottom = backHoodBottom;
+	I32 backRightLampTop = backRightLampBottom + 2;
+	I32 backRightLampPoly[] = {
 		backRightLampTop,    backRightLampLeft,
 		backRightLampTop,    backRightLampRight,
 		backRightLampBottom, backRightLampRight,
 		backRightLampBottom, backRightLampLeft
 	};
 	DrawBitmapPolyOutline(carBitmap, 4, backRightLampPoly, backLampColor);
-	int backRightLampCenterRow = (backRightLampTop + backRightLampBottom) / 2;
-	int backRightLampCenterCol = (backRightLampLeft + backRightLampRight) / 2;
+	I32 backRightLampCenterRow = (backRightLampTop + backRightLampBottom) / 2;
+	I32 backRightLampCenterCol = (backRightLampLeft + backRightLampRight) / 2;
 	FloodfillBitmap(carBitmap, backRightLampCenterRow, backRightLampCenterCol, backLampColor, tmpArena);
 }
 
@@ -452,7 +450,7 @@ void InitAutoCarMovement(AutoCar* autoCar)
 	autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
 
 	// TODO: is this distance close enough?
-	float moveDistance = Distance(autoCar->moveStartPoint.position, autoCar->moveEndPoint.position);
+	F32 moveDistance = Distance(autoCar->moveStartPoint.position, autoCar->moveEndPoint.position);
 
 	if (autoCar->car.moveSpeed > 0.0f)
 		autoCar->moveTotalSeconds = (moveDistance / autoCar->car.moveSpeed);
@@ -463,8 +461,8 @@ void InitAutoCarMovement(AutoCar* autoCar)
 
 void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
-	MapElem targetElem = JunctionElem(autoCar->onJunction);
-	MapElem nextElem = JunctionElem(junction);
+	MapElem targetElem = GetJunctionElem(autoCar->onJunction);
+	MapElem nextElem = GetJunctionElem(junction);
 
 	autoCar->moveNode = ConnectElems(autoCar->car.map, targetElem, nextElem, tmpArena, pathPool);
 
@@ -478,7 +476,7 @@ void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena
 	}
 }
 
-void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
 	Car* car = &autoCar->car;
 
@@ -497,7 +495,7 @@ void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* t
 			}
 
 			if (moveNode) {
-				bool stop = false;
+				B32 stop = false;
 
 				if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint)) {
 					PathNode* nextNode = moveNode->next;
@@ -511,7 +509,7 @@ void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* t
 							Junction* junction = nextElem.junction;
 							TrafficLight* trafficLight = 0;
 
-							for (int i = 0; i < junction->roadN; ++i) {
+							for (I32 i = 0; i < junction->roadN; ++i) {
 								if (junction->roads[i] == road)
 									trafficLight = &junction->trafficLights[i];
 							}
@@ -524,7 +522,7 @@ void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* t
 
 				if (stop) {
 					// TODO: use distance square here?
-					float distanceLeft = Distance(car->position, autoCar->moveEndPoint.position);
+					F32 distanceLeft = Distance(car->position, autoCar->moveEndPoint.position);
 
 					// TODO: introduce a "stopDistance" variable?
 					if (distanceLeft < car->length * 0.5f)
@@ -546,79 +544,77 @@ void UpdateAutoCar(AutoCar* autoCar, float seconds, MemArena* arena, MemArena* t
 
 						if (!moveNode)
 							continue;
-					}
-					else {
+					} else {
 						autoCar->moveEndPoint = NextNodePoint(moveNode, autoCar->moveStartPoint);
 
 						InitAutoCarMovement(autoCar);
 					}
-				}
-				else {
+				} else {
 					seconds = 0.0f;
 
-					float moveRatio = (autoCar->moveSeconds / autoCar->moveTotalSeconds);
+					F32 moveRatio = (autoCar->moveSeconds / autoCar->moveTotalSeconds);
 
-					DirectedPoint position = Bezier4DirectedPoint(autoCar->moveBezier4, moveRatio);
+					V4 position = Bezier4DirectedPoint(autoCar->moveBezier4, moveRatio);
 					MoveCar(car, position);
 				}
 			}
 		}
 	} else {
-		Junction* targetJunction = RandomJunction(*car->map);
+		Junction* targetJunction = GetRandomJunction(car->map);
 		MoveAutoCarToJunction(autoCar, targetJunction, arena, tmpArena, pathPool);
 	}
 }
 
-void UpdatePlayerCar(PlayerCar* playerCar, float seconds)
+void UpdatePlayerCar(PlayerCar* playerCar, F32 seconds)
 {
 	Car* car = &playerCar->car;
 
-	float speed = VectorLength(playerCar->velocity);
+	F32 speed = VectorLength(playerCar->velocity);
 
-	Point direction = RotationVector(car->angle);
+	V2 direction = RotationVector(car->angle);
 
-	Point frontWheel = PointProd(+car->length * 0.5f, direction);
-	Point rearWheel  = PointProd(-car->length * 0.5f, direction);
+	V2 frontWheel = (+car->length * 0.5f) * direction;
+	V2 rearWheel  = (-car->length * 0.5f) * direction;
 
-	float maxControlSpeed = 4.0f;
-	float controlTurnAngle = PI * 0.6f;
+	F32 maxControlSpeed = 4.0f;
+	F32 controlTurnAngle = PI * 0.6f;
 
-	float turnAngle = controlTurnAngle * playerCar->turnDirection;
+	F32 turnAngle = controlTurnAngle * playerCar->turnDirection;
 	if (speed > maxControlSpeed)
 		turnAngle *= (maxControlSpeed / speed);
 	
-	bool backwards = false;
+	B32 backwards = false;
 	if (DotProduct(direction, playerCar->velocity) < 0.0)
 		backwards = true;
 
-	Point turnDirection = {};
+	V2 turnDirection = {};
 	if (backwards)
 		turnDirection = RotationVector(car->angle - turnAngle);
     else
 		turnDirection = RotationVector(car->angle + turnAngle);
 
-	frontWheel = PointSum(frontWheel, PointProd(seconds * speed, turnDirection));
-	rearWheel  = PointSum(rearWheel, PointProd(seconds * speed, direction));
+	frontWheel = frontWheel + ((seconds * speed) * turnDirection);
+	rearWheel  = rearWheel  + ((seconds * speed) * direction);
 
 	car->angle = atan2f(frontWheel.y - rearWheel.y, frontWheel.x - rearWheel.x);
 
-	float cDrag = 0.4257f;
-	float cRR = 24.8f;
+	F32 cDrag = 0.4257f;
+	F32 cRR = 24.8f;
 
-	Point fTraction = PointProd(playerCar->engineForce, direction);
-	Point fDrag = PointProd(-cDrag * speed, playerCar->velocity);
-	Point fRR = PointProd(-cRR, playerCar->velocity);
+	V2 fTraction = (playerCar->engineForce * direction);
+	V2 fDrag = ((-cDrag * speed) * playerCar->velocity);
+	V2 fRR = ((-cRR) * playerCar->velocity);
 
-	Point force = PointSum(PointSum(fTraction, fDrag), fRR);
+	V2 force = fTraction + fDrag + fRR;
 
-	force = PointProd((1.0f / 50.0f), force);
+	force = (1.0f / 50.0f) * force;
 
-	playerCar->velocity = PointSum(playerCar->velocity, PointProd(seconds, force));
+	playerCar->velocity = playerCar->velocity + (seconds * force);
 
-	Point parallel = PointProd(DotProduct(playerCar->velocity, direction), direction);
-	Point perpendicular = PointDiff(playerCar->velocity, parallel);
+	V2 parallel = DotProduct(playerCar->velocity, direction) * direction;
+	V2 perpendicular = (playerCar->velocity - parallel);
 
-	playerCar->velocity = PointSum(parallel, PointProd(0.5f, perpendicular));
+	playerCar->velocity = parallel + (0.5f * perpendicular);
 
-	car->position = PointSum(car->position, PointProd(seconds, playerCar->velocity));
+	car->position = car->position + (seconds * playerCar->velocity);
 }
