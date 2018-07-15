@@ -167,14 +167,6 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	gameState->canvas.camera = camera;
 	gameState->maskCanvas.camera = camera;
 
-	gameState->missionJunction = GetRandomJunction(&gameState->map);
-	gameState->onMission = false;
-
-	MapElem startElem = GetJunctionElem(startJunction);
-	MapElem endElem = GetJunctionElem(gameState->missionJunction);
-	gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem, 
-										  &gameStorage->tmpArena, &gameState->pathPool);
-
 	map->generateTileWorkList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
 	for (I32 i = 0; i < GenerateMapTileWorkThreadN; ++i)
 		CreateThread(0, 0, GenerateMapTileWorkProc, &map->generateTileWorkList, 0, 0);
@@ -277,120 +269,7 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 			camera->targetUnitInPixels = 50.0f;
 	}
 
-	if (gameState->showFullMap)
-		camera->targetUnitInPixels = 0.1f;
-
 	UpdateCamera(camera, seconds);
-
-	// TODO: create StartMission function?
-	V4 missionHighlightColor = MakeColor(0.0f, 1.0f, 1.0f);
-	V2 playerPosition = {};
-	if (gameState->isPlayerCar)
-		playerPosition = gameState->playerCar.car.position;
-	else
-		playerPosition = gameState->playerHuman.human.position;
-
-	V2 missionStartPoint = {};
-	missionStartPoint = playerPosition;
-
-	MapElem playerElem = {};
-	if (gameState->isPlayerCar)
-		playerElem = GetRoadElemAtPoint(&gameState->map, playerPosition);
-	else
-		playerElem = GetPedestrianElemAtPoint(&gameState->map, playerPosition);
-
-	if ((playerElem.type == MapElemJunction || playerElem.type == MapElemJunctionSidewalk)
-		&& (playerElem.junction == gameState->missionJunction)
-	) {
-		Junction* startJunction = gameState->missionJunction;
-		Junction* endJunction = GetRandomJunction(&gameState->map);
-
-		gameState->missionJunction = endJunction;
-		gameState->onMission = !gameState->onMission;
-
-		FreePath(gameState->missionPath, &gameState->pathPool);
-	
-		if (gameState->isPlayerCar) {
-			MapElem startElem = GetJunctionElem(startJunction);
-			MapElem endElem = GetJunctionElem(endJunction);
-			gameState->missionPath = ConnectElems(&gameState->map, startElem, endElem,
-												  &gameStorage->tmpArena, &gameState->pathPool);
-		} else {
-			MapElem startElem = GetJunctionSidewalkElem(startJunction);
-			MapElem endElem = GetJunctionSidewalkElem(endJunction);
-			I32 startCornerIndex = GetClosestJunctionCornerIndex(startJunction, playerPosition);
-			I32 endCornerIndex = GetRandomJunctionCornerIndex(endJunction);
-			gameState->missionPath = ConnectPedestrianElems(&gameState->map, startElem, startCornerIndex, endElem, endCornerIndex,
-														  &gameStorage->tmpArena, &gameState->pathPool);
-		}
-	}
-
-	B32 recalculatePath = false;
-	I32 missionLaneIndex = gameState->missionLaneIndex;
-
-	if (!AreMapElemsEqual(playerElem, gameState->missionElem))
-		recalculatePath = true;
-
-	if (playerElem.type == MapElemRoad) {
-		missionLaneIndex = LaneIndex(playerElem.road, playerPosition);
-		if (missionLaneIndex != gameState->missionLaneIndex)
-			recalculatePath = true;
-
-		missionStartPoint = ClosestLanePoint(playerElem.road, missionLaneIndex, playerPosition);
-	} else if (playerElem.type == MapElemCrossing) {
-		if (gameState->missionElem.type == MapElemRoadSidewalk && playerElem.road == gameState->missionElem.road)
-			recalculatePath = false;
-	} else if (playerElem.type == MapElemNone) {
-		if (gameState->missionPath)
-			FreePath(gameState->missionPath, &gameState->pathPool);
-
-		gameState->missionPath = 0;
-		recalculatePath = false;
-	}
-
-	if (recalculatePath) {
-		FreePath(gameState->missionPath, &gameState->pathPool);
-
-		if (gameState->isPlayerCar) {
-			if (playerElem.type == MapElemJunction) {
-				MapElem pathEndElem = GetJunctionElem(gameState->missionJunction);
-
-				gameState->missionPath = ConnectElems(&gameState->map, playerElem, pathEndElem, 
-													  &gameStorage->tmpArena, &gameState->pathPool);
-			} else if (playerElem.type == MapElemRoad) {
-				Junction* startJunction = 0;
-				if (missionLaneIndex > 0)
-					startJunction = playerElem.road->junction2;
-				else if (missionLaneIndex < 0)
-					startJunction = playerElem.road->junction1;
-
-				MapElem startJunctionElem = GetJunctionElem(startJunction);
-				MapElem pathEndElem = GetJunctionElem(gameState->missionJunction);
-
-				gameState->missionPath = ConnectElems(&gameState->map, startJunctionElem, pathEndElem,
-													  &gameStorage->tmpArena, &gameState->pathPool);
-
-				gameState->missionPath = PrefixPath(playerElem, gameState->missionPath, &gameState->pathPool);
-			} else {
-				gameState->missionPath = 0;
-			}
-		} else {
-			if (playerElem.type == MapElemRoadSidewalk 
-					 || playerElem.type == MapElemJunctionSidewalk 
-					 || playerElem.type == MapElemCrossing
-			) {
-				MapElem sidewalkElemEnd = GetJunctionSidewalkElem(gameState->missionJunction);
-			} else {
-				gameState->missionPath = 0;
-			}
-		}
-	}
-
-	gameState->missionElem = playerElem;
-	gameState->missionLaneIndex = missionLaneIndex;
-	gameState->missionStartPoint = missionStartPoint;
-
-	gameState->time += seconds;
 }
 
 // TODO: many things are recalculated, merge GameUpdate with GameDraw?
@@ -433,17 +312,6 @@ void GameDraw(GameStorage* gameStorage)
 		DrawVisibleMapTiles(canvas, map, left, right, top, bottom, &gameState->mapTextures);
 		DrawAllTrafficLights(canvas, map);
 
-		V4 missionHighlightColor = MakeColor(0.0f, 1.0f, 1.0f);
-		if (gameState->missionJunction)
-			// HighlightJunction(gameState->canvas, *gameState->missionJunction, missionHighlightColor);
-
-		if (gameState->missionPath) {
-			V4 startPoint = {};
-			startPoint.position = gameState->missionStartPoint;
-
-			// DrawBezierPathFromPoint(gameState->canvas, gameState->missionPath, startPoint, missionHighlightColor, 1.0f);
-		}
-
 		for (I32 i = 0; i < gameState->autoCarCount; ++i) {
 			AutoCar* autoCar = &gameState->autoCars[i];
 			DrawCar(canvas, autoCar->car);
@@ -453,64 +321,12 @@ void GameDraw(GameStorage* gameStorage)
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			DrawAutoHuman(canvas, autoHuman);
 		}
-
-		DrawBuildings(canvas, &gameState->map, &gameStorage->tmpArena, &gameState->assets);
 	}
 
 	if (gameState->isPlayerCar)
 		DrawCar(canvas, gameState->playerCar.car);
 	else
 		DrawPlayerHuman(canvas, &gameState->playerHuman);
-
-	// TODO: put this whole lighting thing in a function
-	/*
-	Canvas maskCanvas = gameState->maskCanvas;
-	Color dark = {0.2f, 0.2f, 0.2f};
-	ClearScreen(maskRenderer, dark);
-	Bitmap maskBitmap = maskRenderer.bitmap;
-
-	if (gameState->isPlayerCar) {
-		Car* car = &gameState->playerCar.car;
-		
-		Point addWidth = PointProd(
-			(car->width * 0.25f), 
-			RotationVector(car->angle + 0.5f * PI)
-		);
-		Point lightCenter1 = PointDiff(car->position, addWidth);
-		Point lightCenter2 = PointSum(car->position, addWidth);
-
-		F32 brightness = 0.8f;
-		F32 maxDistance = 15.0f;
-		F32 minDistance = 4.0f;
-		F32 minAngle = NormalizeAngle(car->angle - 0.1f);
-		F32 maxAngle = NormalizeAngle(car->angle + 0.1f);
-		LightSector(maskRenderer, lightCenter1, minDistance, maxDistance, minAngle, maxAngle, brightness);
-		LightSector(maskRenderer, lightCenter2, minDistance, maxDistance, minAngle, maxAngle, brightness);
-	}
-
-	for (I32 i = 0; i < gameState->map.roadCount; ++i) {
-		Road* road = gameState->map.roads + i;
-		F32 length = RoadLength(road);
-		F32 roadX = 0.0f;
-		while (roadX < length) {
-			F32 roadY = -road->width * 0.5f;
-			Point roadCoord = Point{roadX, roadY};
-			Point position = PointFromRoadCoord(road, roadCoord, 1);
-			LightCircle(maskRenderer, position, 15.0f, 0.8f);
-			roadX += 50.0f;
-		}
-		roadX = 25.0f;
-		while (roadX < length) {
-			F32 roadY = road->width * 0.5f;
-			Point roadCoord = Point{roadX, roadY};
-			Point position = PointFromRoadCoord(road, roadCoord, 1);
-			LightCircle(maskRenderer, position, 15.0f, 0.8f);
-			roadX += 50.0f;
-		}
-	}
-
-	ApplyBitmapMask(canvas.bitmap, maskRenderer.bitmap);
-	*/
 
 	for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
 		AutoHuman* autoHuman = gameState->autoHumans + i;

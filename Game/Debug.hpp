@@ -16,6 +16,5 @@
     #define Verify(call) (call)
 	#define InvalidCodePath
 #endif
-	
 
 I32 Log(const I8* format, ...);

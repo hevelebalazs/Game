@@ -11,7 +11,7 @@ Bezier4 TurnBezier4(V4 startPoint, V4 endPoint)
 
 	result.points[0] = startPoint.position;
 	result.points[1] = startPoint.position + (turnRatio * startPoint.direction);
-	result.points[2] = startPoint.position - (turnRatio * startPoint.direction);
+	result.points[2] = endPoint.position - (turnRatio * endPoint.direction);
 	result.points[3] = endPoint.position;
 
 	return result;
@@ -59,7 +59,8 @@ V4 Bezier4DirectedPoint(Bezier4 bezier4, F32 ratio)
 	return result;
 }
 
-void DrawBezier4(Canvas canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount) {
+void DrawBezier4(Canvas canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount)
+{
 	V2 point = bezier4.points[0];
 
 	for (I32 i = 1; i <= segmentCount; ++i) {

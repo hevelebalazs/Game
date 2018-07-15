@@ -10,19 +10,6 @@
 #include "Texture.hpp"
 #include "Type.hpp"
 
-// TODO: rename this and remove from Game
-struct GameAssets {
-	Texture roadTexture;
-	Texture stripeTexture;
-	Texture sidewalkTexture;
-	Texture grassTexture;
-
-	Texture roofTextureUp;
-	Texture roofTextureDown;
-	Texture roofTextureLeft;
-	Texture roofTextureRight;
-};
-
 #define CarBitmapN 20
 
 struct GameState {
@@ -49,18 +36,8 @@ struct GameState {
 
 	B32 isPlayerCar;
 
-	Junction* missionJunction;
-	B32 showFullMap;
-	B32 onMission;
-	PathNode* missionPath;
-	// TODO: create a MapPosition structure that contains a positionIndex and a MapElem (and a position)?
-	MapElem missionElem;
-	I32 missionLaneIndex;
-	V2 missionStartPoint;
-
 	Bitmap carBitmaps[CarBitmapN];
 
-	GameAssets assets;
 	MapTextures mapTextures;
 };
 

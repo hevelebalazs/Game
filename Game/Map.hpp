@@ -17,8 +17,6 @@
 #define MapTileBitmapHeight 1024
 #define GenerateMapTileWorkThreadN 2
 
-struct GameAssets;
-
 struct MapTileIndex {
 	I32 row;
 	I32 col;
@@ -135,8 +133,6 @@ MapElem GetPedestrianElemAtPoint(Map* map, V2 point);
 
 void DrawGroundElems(Canvas canvas, Map* map);
 void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures);
-void DrawBuildings(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets);
-void DrawMap(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets);
 void DrawAllTrafficLights(Canvas, Map* map);
 
 MapElem GetRoadElem(Road* road);

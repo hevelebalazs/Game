@@ -117,10 +117,6 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 					globalGameState->playerCar.turnDirection = 0.0f;
 					break;
 				}
-				case VK_TAB: {
-					globalGameState->showFullMap = false;
-					break;
-				}
 			}
 			break;
 		}
@@ -151,10 +147,6 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 				}
 				case 'F': {
 					TogglePlayerCar(globalGameState);
-					break;
-				}
-				case VK_TAB: {
-					globalGameState->showFullMap = true;
 					break;
 				}
 			}

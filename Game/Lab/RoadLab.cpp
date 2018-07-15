@@ -14,6 +14,7 @@ V4 ValidColor     = MakeColor(0.0f, 0.8f, 0.0f);
 V4 InvalidColor   = MakeColor(0.8f, 0.0f, 0.0f);
 V4 HighlightColor = MakeColor(0.8f, 1.0f, 1.0f);
 V4 PathColor      = MakeColor(0.0f, 0.8f, 0.8f);
+V4 PathColor2     = MakeColor(0.0f, 1.0f, 1.0f);
 
 enum RoadLabMode {
 	RoadPlacingMode,
@@ -182,7 +183,7 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 		if (junctionAtMouse)
 			HighlightJunction(canvas, junctionAtMouse, HighlightColor);
 		if (labState->pathJunction1) {
-			HighlightJunction(canvas, labState->pathJunction1, PathColor);
+			HighlightJunction(canvas, labState->pathJunction1, PathColor2);
 			if (junctionAtMouse) {
 				if (junctionAtMouse == labState->pathJunction1) {
 					labState->firstPathNode = 0;
@@ -204,7 +205,7 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 			}
 
 			if (labState->pathJunction2 && labState->pathJunction2 != labState->pathJunction1) {
-				HighlightJunction(canvas, labState->pathJunction2, PathColor);
+				HighlightJunction(canvas, labState->pathJunction2, PathColor2);
 				if (labState->firstPathNode)
 					DrawBezierPath(canvas, labState->firstPathNode, PathColor, PathLineWidth);
 			}
