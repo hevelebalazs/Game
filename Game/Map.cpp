@@ -247,9 +247,6 @@ void DrawGroundElems(Canvas canvas, Map* map)
 		DrawRoad(canvas, map->roads + i);
 	for (I32 i = 0; i < map->junctionN; ++i)
 		DrawJunction(canvas, map->junctions + i);
-
-	for (I32 i = 0; i < map->junctionN; ++i)
-		DrawTrafficLights(canvas, map->junctions + i);
 }
 
 void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures)
@@ -431,7 +428,8 @@ void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitmap, Map
 	Canvas canvas = {};
 	canvas.bitmap = *bitmap;
 	canvas.camera = &camera;
-	DrawTexturedGroundElems(canvas, map, mapTextures);
+	DrawGroundElems(canvas, map);
+	// DrawTexturedGroundElems(canvas, map, mapTextures);
 }
 
 DWORD WINAPI GenerateMapTileWorkProc(LPVOID parameter)

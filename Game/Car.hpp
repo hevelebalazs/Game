@@ -10,7 +10,8 @@
 #include "Type.hpp"
 
 #define MinCarSpeed	5.0f
-#define MaxCarSpeed	10.0f
+#define MaxCarSpeed	8.0f
+#define MaxPlayerCarSpeed 25.0f
 
 struct Car {
 	V2 position;
@@ -25,14 +26,6 @@ struct Car {
 	Bitmap* bitmap;
 };
 
-Quad GetCarStopArea(Car* car);
-B32 IsCarOnPoint(Car* car, V2 point);
-void MoveCar(Car* car, V4 point);
-void DrawCar(Canvas canvas, Car car);
-
-void AllocateCarBitmap(Bitmap* carBitmap);
-void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena);
-
 struct AutoCar {
 	Car car;
 
@@ -44,12 +37,19 @@ struct AutoCar {
 	V4 moveStartPoint;
 	V4 moveEndPoint;
 	Bezier4 moveBezier4;
-	F32 moveTotalSeconds;
-	F32 moveSeconds;
+	F32 bezierRatio;
 };
 
-void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
-void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool);
+Quad GetCarStopArea(Car* car);
+B32 IsCarOnPoint(Car* car, V2 point);
+void MoveCar(Car* car, V4 point);
+void DrawCar(Canvas canvas, Car car);
+
+void AllocateCarBitmap(Bitmap* carBitmap);
+void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena);
+
+void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpArena, PathPool* pathPool);
+void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool);
 
 struct PlayerCar {
 	Car car;

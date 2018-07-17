@@ -59,6 +59,50 @@ V4 Bezier4DirectedPoint(Bezier4 bezier4, F32 ratio)
 	return result;
 }
 
+#define Bezier4SegmentN 10
+#define Bezier4PointN (Bezier4SegmentN + 1)
+
+F32 MoveOnBezier4(Bezier4 bezier4, F32 startRatio, F32 moveDistance)
+{
+	Assert(IsBetween(startRatio, 0.0f, 1.0f));
+	Assert(moveDistance >= 0.0f);
+	V2 position = Bezier4Point(bezier4, startRatio);
+	F32 ratio = startRatio;
+	I32 nextPointIndex = Floor(ratio * Bezier4SegmentN) + 1;
+	while (nextPointIndex <= Bezier4SegmentN) {
+		F32 nextRatio = F32(nextPointIndex) / Bezier4SegmentN;
+		V2 nextPosition = Bezier4Point(bezier4, nextRatio);
+		F32 distance = Distance(position, nextPosition);
+		if (moveDistance <= distance) {
+			ratio = Lerp(ratio, moveDistance / distance, nextRatio);
+			break;
+		} else {
+			moveDistance -= distance;
+			position = nextPosition;
+			ratio = nextRatio;
+			nextPointIndex++;
+		}
+	}
+
+	Assert(IsBetween(ratio, 0.0f, 1.0f));
+	return ratio;
+}
+
+F32 GetBezier4DistanceFromEnd(Bezier4 bezier4, F32 ratio)
+{
+	F32 result = 0;
+	V2 position = Bezier4Point(bezier4, ratio);
+	I32 nextPointIndex = Floor(ratio * Bezier4PointN) + 1;
+	while (nextPointIndex <= Bezier4PointN) {
+		V2 nextPosition = Bezier4Point(bezier4, F32(nextPointIndex) / Bezier4PointN);
+		F32 distance = Distance(position, nextPosition);
+		result += distance;
+		position = nextPosition;
+		nextPointIndex++;
+	}
+	return result;
+}
+
 void DrawBezier4(Canvas canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount)
 {
 	V2 point = bezier4.points[0];

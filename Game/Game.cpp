@@ -118,9 +118,10 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	playerCar->breakForce     = 1000.0f;
 	playerCar->mass           = 200.0f;
 	
-	car->angle  = 0.0f;
-	car->length = 5.0f;
-	car->width  = 2.3f;
+	car->angle    = 0.0f;
+	car->length   = 5.0f;
+	car->width    = 2.3f;
+	car->maxSpeed = MaxPlayerCarSpeed;
 	I32 carBitmapIndex = IntRandom(0, CarBitmapN - 1);
 	car->bitmap = &gameState->carBitmaps[carBitmapIndex];
 
@@ -211,6 +212,9 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 
 		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
+			if (autoHuman->dead)
+				continue;
+
 			Human* human = &autoHuman->human;
 			if (IsPointInQuad(stopArea, human->position))
 				car->moveSpeed = 0.0f;
@@ -225,7 +229,7 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 				car->moveSpeed = 0.0f;
 		}
 
-		UpdateAutoCar(autoCar, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
+		UpdateAutoCar(autoCar, seconds, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
 	for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
@@ -268,6 +272,11 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		else
 			camera->targetUnitInPixels = 50.0f;
 	}
+
+	/*
+	AutoCar* autoCar = &gameState->autoCars[0];
+	camera->center = autoCar->car.position;
+	*/
 
 	UpdateCamera(camera, seconds);
 }

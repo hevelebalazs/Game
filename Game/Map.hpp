@@ -8,7 +8,7 @@
 #include "Memory.hpp"
 #include "Type.hpp"
 
-#define GrassColor	MakeColor(0.0f, 0.8f, 0.0f)
+#define GrassColor	MakeColor(0.0f, 0.5f, 0.0f)
 
 #define MaxCachedMapTileN 64
 #define MaxGenerateMapTileWorkListN MaxCachedMapTileN
