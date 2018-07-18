@@ -114,9 +114,6 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 
 	PlayerCar* playerCar = &gameState->playerCar;
 	Car* car = &playerCar->car;
-	playerCar->maxEngineForce = 1000.0f;
-	playerCar->breakForce     = 1000.0f;
-	playerCar->mass           = 200.0f;
 	
 	car->angle    = 0.0f;
 	car->length   = 5.0f;
@@ -140,7 +137,9 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 		car->maxSpeed = RandomBetween(MinCarSpeed, MaxCarSpeed);
 		I32 carBitmapIndex = IntRandom(0, CarBitmapN - 1);
 		car->bitmap = &gameState->carBitmaps[carBitmapIndex];
+		car->moveSpeed = 0.0f;
 		autoCar->onJunction = GetRandomJunction(map);
+		autoCar->acceleration = 5.0f;
 	}
 
 	for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
@@ -196,9 +195,8 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		AutoCar* autoCar = &gameState->autoCars[i];
 		Car* car = &autoCar->car;
 
-		car->moveSpeed = car->maxSpeed;
+		bool shouldBrake = false;
 
-		// TODO: move this logic to UpdateAutoCar?
 		Quad stopArea = GetCarStopArea(car);
 
 		V2 playerPosition = {};
@@ -208,7 +206,7 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 			playerPosition = gameState->playerHuman.human.position;
 
 		if (IsPointInQuad(stopArea, playerPosition))
-				car->moveSpeed = 0.0f;
+				shouldBrake = true;
 
 		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
@@ -217,7 +215,7 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 
 			Human* human = &autoHuman->human;
 			if (IsPointInQuad(stopArea, human->position))
-				car->moveSpeed = 0.0f;
+				shouldBrake = true;
 		}
 
 		for (I32 i = 0; i < gameState->autoCarCount; ++i) {
@@ -226,9 +224,13 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 				continue;
 			Car* testCar = &testAutoCar->car;
 			if (IsPointInQuad(stopArea, testCar->position))
-				car->moveSpeed = 0.0f;
+				shouldBrake = true;
 		}
 
+		if (shouldBrake)
+			autoCar->acceleration = -25.0f;
+		else
+			autoCar->acceleration = +5.0f;
 		UpdateAutoCar(autoCar, seconds, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
@@ -272,11 +274,6 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		else
 			camera->targetUnitInPixels = 50.0f;
 	}
-
-	/*
-	AutoCar* autoCar = &gameState->autoCars[0];
-	camera->center = autoCar->car.position;
-	*/
 
 	UpdateCamera(camera, seconds);
 }

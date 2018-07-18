@@ -127,12 +127,12 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			switch (keyCode) {
 				case 'W': {
 					globalGameState->playerHuman.moveUp = true;
-					globalGameState->playerCar.engineForce = globalGameState->playerCar.maxEngineForce;
+					globalGameState->playerCar.engineForce = MaxCarEngineForce;
 					break;
 				}
 				case 'S': {
 					globalGameState->playerHuman.moveDown = true;
-					globalGameState->playerCar.engineForce = -globalGameState->playerCar.breakForce;
+					globalGameState->playerCar.engineForce = -MaxCarBrakeForce;
 					break;
 				}
 				case 'A': {

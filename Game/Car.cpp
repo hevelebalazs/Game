@@ -36,7 +36,9 @@ Quad GetCarStopArea(Car* car)
 
 	F32 maxStopDistance = 5.0f;
 	Assert(car->maxSpeed > 0.0f);
-	F32 stopDistance = maxStopDistance * (car->moveSpeed / car->maxSpeed);
+	F32 minStopDistance = car->length * 0.5f;
+
+	F32 stopDistance = minStopDistance + maxStopDistance * (car->moveSpeed / car->maxSpeed);
 
 	V2 addClose = (car->length * 0.5f) * toFrontUnitVector;
 	V2 addFar = (car->length * 0.5f + stopDistance) * toFrontUnitVector;
@@ -67,10 +69,6 @@ void DrawCar(Canvas canvas, Car car)
 {
 	Assert(car.bitmap != 0);
 	DrawScaledRotatedBitmap(canvas, car.bitmap, car.position, car.width, car.length, car.angle);
-
-	Quad stopArea = GetCarStopArea(&car);
-	V4 color = MakeColor(1.0f, 0.0f, 0.0f);
-	DrawQuad(canvas, stopArea, color);
 }
 
 static V4 GetRandomCarColor()
@@ -470,10 +468,49 @@ void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpAr
 	}
 }
 
+bool IsAutoCarBeforeARedLight(AutoCar* autoCar)
+{
+	B32 result = false;
+	PathNode* moveNode = autoCar->moveNode;
+	if (moveNode) {
+		if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint)) {
+			PathNode* nextNode = moveNode->next;
+			if (nextNode) {
+				MapElem moveElem = moveNode->elem;
+				MapElem nextElem = nextNode->elem;
+
+				if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) {
+					Road* road = moveElem.road;
+					Junction* junction = nextElem.junction;
+					TrafficLight* trafficLight = 0;
+					for (I32 i = 0; i < junction->roadN; ++i) {
+						if (junction->roads[i] == road)
+							trafficLight = &junction->trafficLights[i];
+					}
+
+					Assert(trafficLight != 0);
+					if (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow) {
+						F32 distanceLeft = Distance(autoCar->car.position, autoCar->moveEndPoint.position);
+						if (distanceLeft < autoCar->car.length * 1.5f)
+							result = true;
+					}
+				}
+			}
+		}
+	}
+	return result;
+}
+
 void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool)
 {
 	Car* car = &autoCar->car;
+
+	if (IsAutoCarBeforeARedLight(autoCar))
+		autoCar->acceleration = -25.0f;
+
 	if (autoCar->moveTargetJunction) {
+		car->moveSpeed += seconds * autoCar->acceleration;
+		car->moveSpeed = Clip(car->moveSpeed, 0.0f, car->maxSpeed);
 		F32 distanceToGo = seconds * car->moveSpeed;
 		while (distanceToGo > 0.0f) {
 			PathNode* moveNode = autoCar->moveNode;
@@ -481,35 +518,6 @@ void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* 
 				autoCar->onJunction = autoCar->moveTargetJunction;
 				autoCar->moveTargetJunction = 0;
 				break;
-			}
-
-			B32 stop = false;
-			if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint)) {
-				PathNode* nextNode = moveNode->next;
-				if (nextNode) {
-					MapElem moveElem = moveNode->elem;
-					MapElem nextElem = nextNode->elem;
-
-					if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) {
-						Road* road = moveElem.road;
-						Junction* junction = nextElem.junction;
-						TrafficLight* trafficLight = 0;
-						for (I32 i = 0; i < junction->roadN; ++i) {
-							if (junction->roads[i] == road)
-								trafficLight = &junction->trafficLights[i];
-						}
-
-						Assert(trafficLight != 0);
-						if (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow)
-							stop = true;
-					}
-				}
-			}
-
-			if (stop) {
-				F32 distanceLeft = Distance(car->position, autoCar->moveEndPoint.position);
-				if (distanceLeft < car->length * 0.5f)
-					break;
 			}
 
 			F32 bezierRatio = MoveOnBezier4(autoCar->moveBezier4, autoCar->bezierRatio, distanceToGo);

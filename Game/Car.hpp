@@ -9,9 +9,11 @@
 #include "Path.hpp"
 #include "Type.hpp"
 
-#define MinCarSpeed	5.0f
-#define MaxCarSpeed	8.0f
+#define MinCarSpeed	10.0f
+#define MaxCarSpeed	16.0f
 #define MaxPlayerCarSpeed 25.0f
+#define MaxCarEngineForce 1000.0f
+#define MaxCarBrakeForce 1000.0f
 
 struct Car {
 	V2 position;
@@ -38,6 +40,8 @@ struct AutoCar {
 	V4 moveEndPoint;
 	Bezier4 moveBezier4;
 	F32 bezierRatio;
+
+	F32 acceleration;
 };
 
 Quad GetCarStopArea(Car* car);
@@ -54,10 +58,7 @@ void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* 
 struct PlayerCar {
 	Car car;
 
-	F32 mass;
-
 	F32 engineForce;
-	F32 maxEngineForce;
 	F32 breakForce;
 
 	F32 turnDirection;
