@@ -34,11 +34,11 @@ Quad GetCarStopArea(Car* car)
 	V2 side1 = (car->position + addWidth);
 	V2 side2 = (car->position - addWidth);
 
-	F32 maxStopDistance = 5.0f;
 	Assert(car->maxSpeed > 0.0f);
 	F32 minStopDistance = car->length * 0.5f;
+	F32 maxStopDistance = minStopDistance + 5.0f;
 
-	F32 stopDistance = minStopDistance + maxStopDistance * (car->moveSpeed / car->maxSpeed);
+	F32 stopDistance = Lerp(minStopDistance, car->moveSpeed / car->maxSpeed, maxStopDistance);
 
 	V2 addClose = (car->length * 0.5f) * toFrontUnitVector;
 	V2 addFar = (car->length * 0.5f + stopDistance) * toFrontUnitVector;
