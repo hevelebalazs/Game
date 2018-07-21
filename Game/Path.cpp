@@ -1136,7 +1136,7 @@ static B32 EndFromJunctionSidewalkToJunctionSidewalk(V4 point, Junction* junctio
 	return result;
 }
 
-// TODO: make this work with indexes instead of floating-point comparison
+// TODO: make this work with indices instead of floating-point comparison
 V4 NextNodePoint(PathNode* node, V4 startPoint)
 {
 	V4 result = {};
@@ -1147,52 +1147,92 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 	if (next)
 		nextElem = next->elem;
 
-	if (elem.type == MapElemBuilding) {
-		Building* building = elem.building;
-		if (nextElem.type == MapElemNone)
-			result = NextFromBuildingToNothing(startPoint, building);
-		else if (nextElem.type == MapElemBuilding)
-			result = NextFromBuildingToBuilding(startPoint, building, nextElem.building);
-		else if (nextElem.type == MapElemRoad)
-			result = NextFromBuildingToRoad(startPoint, building, nextElem.road);
-		else if (nextElem.type == MapElemJunction)
-			result = NextFromBuildingToJunction(startPoint, building, nextElem.junction);
-		else
-			InvalidCodePath;
-	} else if (elem.type == MapElemRoad) {
-		Road* road = elem.road;
-		if (nextElem.type == MapElemBuilding)
-			result = NextFromRoadToBuilding(startPoint, road, nextElem.building);
-		else if (nextElem.type == MapElemJunction)
-			result = NextFromRoadToJunction(startPoint, road, nextElem.junction);
-		else
-			InvalidCodePath;
-	} else if (elem.type == MapElemJunction) {
-		Junction* junction = elem.junction;
-		if (nextElem.type == MapElemNone)
-			result = NextFromJunctionToNothing(startPoint, junction);
-		else if (nextElem.type == MapElemBuilding)
-			result = NextFromJunctionToBuilding(startPoint, junction, nextElem.building);
-		else if (nextElem.type == MapElemRoad)
-			result = NextFromJunctionToRoad(startPoint, junction, nextElem.road);
-		else
-			InvalidCodePath;
-	} else if (elem.type == MapElemRoadSidewalk) {
-		Road* road = elem.road;
-		if (nextElem.type == MapElemJunctionSidewalk)
-			result = NextFromRoadSidewalkToJunctionSidewalk(startPoint, road, nextElem.junction, next->subElemIndex);
-		else if (nextElem.type == MapElemRoadSidewalk)
-			result = NextFromRoadSidewalkToRoadSidewalk(startPoint, road, nextElem.road, next->subElemIndex);
-		else
-			InvalidCodePath;
-	} else if (elem.type == MapElemJunctionSidewalk) {
-		Junction* junction = elem.junction;
-		if (nextElem.type == MapElemRoadSidewalk)
-			result = startPoint;
-		else if (nextElem.type == MapElemJunctionSidewalk)
-			result = NextFromJunctionSidewalkToJunctionSidewalk(startPoint, junction, nextElem.junction, next->subElemIndex);
-	} else {
-		InvalidCodePath;
+	switch(elem.type) {
+		case MapElemBuilding: {
+			Building* building = elem.building;
+			switch (nextElem.type) {
+				case MapElemNone:
+					result = NextFromBuildingToNothing(startPoint, building);
+					break;
+				case MapElemBuilding:
+					result = NextFromBuildingToBuilding(startPoint, building, nextElem.building);
+					break;
+				case MapElemRoad:
+					result = NextFromBuildingToRoad(startPoint, building, nextElem.road);
+					break;
+				case MapElemJunction:
+					result = NextFromBuildingToJunction(startPoint, building, nextElem.junction);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemRoad: {
+			Road* road = elem.road;
+			switch (nextElem.type) {
+				case MapElemBuilding:
+					result = NextFromRoadToBuilding(startPoint, road, nextElem.building);
+					break;
+				case MapElemJunction:
+					result = NextFromRoadToJunction(startPoint, road, nextElem.junction);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemJunction: {
+			Junction* junction = elem.junction;
+			switch (nextElem.type) {
+				case MapElemNone:
+					result = NextFromJunctionToNothing(startPoint, junction);
+					break;
+				case MapElemBuilding:
+					result = NextFromJunctionToBuilding(startPoint, junction, nextElem.building);
+					break;
+				case MapElemRoad:
+					result = NextFromJunctionToRoad(startPoint, junction, nextElem.road);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemRoadSidewalk: {
+			Road* road = elem.road;
+			switch(nextElem.type) {
+				case MapElemJunctionSidewalk:
+					result = NextFromRoadSidewalkToJunctionSidewalk(startPoint, road, nextElem.junction, next->subElemIndex);
+					break;
+				case MapElemRoadSidewalk:
+					result = NextFromRoadSidewalkToRoadSidewalk(startPoint, road, nextElem.road, next->subElemIndex);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemJunctionSidewalk: {
+			Junction* junction = elem.junction;
+			switch(nextElem.type) {
+				case MapElemNone:
+					result = NextFromJunctionSidewalkToNothing(startPoint, junction);
+					break;
+				case MapElemRoadSidewalk:
+					result = startPoint;
+					break;
+				case MapElemJunctionSidewalk: 
+					result = NextFromJunctionSidewalkToJunctionSidewalk(startPoint, junction, nextElem.junction, next->subElemIndex);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		default: {
+			DebugBreak();
+		}
 	}
 
 	return result;
@@ -1208,50 +1248,93 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 	if (next)
 		nextElem = next->elem;
 
-	if (elem.type == MapElemBuilding) {
-		Building* building = elem.building;
-		if (nextElem.type == MapElemNone)
-			result = EndFromBuildingToNothing(point, building);
-		else if (nextElem.type == MapElemBuilding)
-			result = EndFromBuildingToBuilding(point, building, nextElem.building);
-		else if (nextElem.type == MapElemRoad)
-			result = EndFromBuildingToRoad(point, building, nextElem.road);
-		else if (nextElem.type == MapElemJunction)
-			result = EndFromBuildingToJunction(point, building, nextElem.junction);
-	} else if (elem.type == MapElemRoad) {
-		Road* road = elem.road;
-		if (nextElem.type == MapElemNone) 
-			InvalidCodePath;
-		else if (nextElem.type == MapElemBuilding)
-			result = EndFromRoadToBuilding(point, road, nextElem.building);
-		else if (nextElem.type == MapElemJunction)
-			result = EndFromRoadToJunction(point, road, nextElem.junction);
-	} else if (elem.type == MapElemJunction) {
-		Junction* junction = elem.junction;
-		if (nextElem.type == MapElemNone)
-			result = EndFromJunctionToNothing(point, junction);
-		else if (nextElem.type == MapElemBuilding)
-			result = EndFromJunctionToBuilding(point, junction, nextElem.building);
-		else if (nextElem.type == MapElemRoad)
-			result = EndFromJunctionToRoad(point, junction, nextElem.road);
-	} else if (elem.type == MapElemRoadSidewalk) {
-		Road* road = elem.road;
-		if (nextElem.type == MapElemJunctionSidewalk)
-			result = EndFromRoadSidewalkToJunctionSidewalk(point, road, nextElem.junction, next->subElemIndex);
-		else if (nextElem.type == MapElemRoadSidewalk)
-			result = EndFromRoadSidewalkToRoadSidewalk(point, road, nextElem.road, next->subElemIndex);
-		else
-			InvalidCodePath;
-	} else if (elem.type == MapElemJunctionSidewalk) {
-		Junction* junction = elem.junction;
-		if (nextElem.type == MapElemNone)
-			result = true;
-		else if (nextElem.type == MapElemRoadSidewalk)
-			result = true;
-		else if (nextElem.type == MapElemJunctionSidewalk)
-			result = EndFromJunctionSidewalkToJunctionSidewalk(point, junction, nextElem.junction, next->subElemIndex);
-		else
-			InvalidCodePath;
+	switch (elem.type) {
+		case MapElemBuilding: {
+			Building* building = elem.building;
+			switch (nextElem.type) {
+				case MapElemNone:
+					result = EndFromBuildingToNothing(point, building);
+					break;
+				case MapElemBuilding:
+					result = EndFromBuildingToBuilding(point, building, nextElem.building);
+					break;
+				case MapElemRoad:
+					result = EndFromBuildingToRoad(point, building, nextElem.road);
+					break;
+				case MapElemJunction:
+					result = EndFromBuildingToJunction(point, building, nextElem.junction);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemRoad: {
+			Road* road = elem.road;
+			switch (nextElem.type) {
+				case MapElemNone:
+					DebugBreak();
+					break;
+				case MapElemBuilding:
+					result = EndFromRoadToBuilding(point, road, nextElem.building);
+					break;
+				case MapElemJunction:
+					result = EndFromRoadToJunction(point, road, nextElem.junction);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemJunction: {
+			Junction* junction = elem.junction;
+			switch (nextElem.type) {
+				case MapElemNone:
+					result = EndFromJunctionToNothing(point, junction);
+					break;
+				case MapElemBuilding:
+					result = EndFromJunctionToBuilding(point, junction, nextElem.building);
+					break;
+				case MapElemRoad:
+					result = EndFromJunctionToRoad(point, junction, nextElem.road);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemRoadSidewalk: {
+			Road* road = elem.road;
+			switch (nextElem.type) {
+				case MapElemJunctionSidewalk:
+					result = EndFromRoadSidewalkToJunctionSidewalk(point, road, nextElem.junction, next->subElemIndex);
+					break;
+				case MapElemRoadSidewalk:
+					result = EndFromRoadSidewalkToRoadSidewalk(point, road, nextElem.road, next->subElemIndex);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		case MapElemJunctionSidewalk: {
+			Junction* junction = elem.junction;
+			switch (nextElem.type) {
+				case MapElemNone:
+				case MapElemRoadSidewalk:
+					result = true;
+					break;
+				case MapElemJunctionSidewalk:
+					result = EndFromJunctionSidewalkToJunctionSidewalk(point, junction, nextElem.junction, next->subElemIndex);
+					break;
+				default:
+					DebugBreak();
+			}
+			break;
+		}
+		default: {
+			DebugBreak();
+		}
 	}
 
 	return result;

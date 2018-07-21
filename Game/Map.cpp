@@ -247,9 +247,6 @@ void DrawGroundElems(Canvas canvas, Map* map)
 		DrawRoad(canvas, map->roads + i);
 	for (I32 i = 0; i < map->junctionN; ++i)
 		DrawJunction(canvas, map->junctions + i);
-
-	for (I32 i = 0; i < map->junctionN; ++i)
-		DrawTrafficLights(canvas, map->junctions + i);
 }
 
 void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures)
@@ -265,120 +262,6 @@ void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures)
 		DrawTexturedRoad(canvas, &map->roads[i], textures->roadTexture, textures->stripeTexture);
 	for (I32 i = 0; i < map->junctionN; ++i)
 		DrawTexturedJunction(canvas, &map->junctions[i], textures->roadTexture, textures->stripeTexture);
-}
-
-// TODO: there are two instances of mergesort in the code
-//       pull those two together somehow?
-struct BuildingHelper {
-	I32 buildingCount;
-	Building* buildings;
-	Building* tmpBuildings;
-	MemArena* arena;
-};
-
-static B32 AreBuildingsInOrder(V2 center, Building building1, Building building2)
-{
-	V2 point1 = GetBuildingCenter(&building1);
-	V2 point2 = GetBuildingCenter(&building2);
-
-	F32 dist1 = CityDistance(center, point1);
-	F32 dist2 = CityDistance(center, point2);
-
-	if (dist1 > dist2)
-		return true;
-	else
-		return false;
-}
-
-static void MergeBuildingArrays(BuildingHelper* helper, V2 center, I32 leftStart, I32 leftEnd, I32 rightStart, I32 rightEnd)
-{
-	I32 left = leftStart;
-	I32 right = rightStart;
-
-	for (I32 i = leftStart; i <= rightEnd; ++i) {
-		B32 chooseLeft = false;
-		B32 chooseRight = false;
-
-		if (left > leftEnd)
-			chooseRight = true;
-		else if (right > rightEnd)
-			chooseLeft = true;
-		else if (AreBuildingsInOrder(center, helper->buildings[left], helper->buildings[right]))
-			chooseLeft = true;
-		else
-			chooseRight = true;
-
-		if (chooseLeft) {
-			helper->tmpBuildings[i] = helper->buildings[left];
-			left++;
-		}
-
-		if (chooseRight) {
-			helper->tmpBuildings[i] = helper->buildings[right];
-			right++;
-		}
-	}
-
-	// TODO: use some version of memcpy here?
-	for (I32 i = leftStart; i <= rightEnd; ++i)
-		helper->buildings[i] = helper->tmpBuildings[i];
-}
-
-static void SortBuildings(BuildingHelper* helper, V2 center)
-{
-	I32 length = 1;
-	while (length <= helper->buildingCount) {
-		I32 leftStart = 0;
-		while (leftStart < helper->buildingCount) {
-			I32 leftEnd = leftStart + (length - 1);
-
-			I32 rightStart = leftEnd + 1;
-			if (rightStart >= helper->buildingCount)
-				break;
-
-			I32 rightEnd = rightStart + (length - 1);
-			if (rightEnd >= helper->buildingCount)
-				rightEnd = helper->buildingCount - 1;
-
-			MergeBuildingArrays(helper, center, leftStart, leftEnd, rightStart, rightEnd);
-
-			leftStart = rightEnd + 1;
-		}
-
-		length *= 2;
-	}
-}
-
-// TODO: move the sorting logic to draw.cpp
-void DrawBuildings(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets)
-{
-	for (I32 i = 0; i < map->buildingN; ++i)
-		DrawBuilding(canvas, map->buildings[i], assets);
-
-	/*
-	// NOTE: 3d buildings
-	BuildingHelper helper = {};
-	helper.buildingCount = map->buildingCount;
-	helper.buildings = ArenaPushArray(arena, Building, helper.buildingCount);
-	// TODO: use memcpy for this?
-	for (I32 i = 0; i < helper.buildingCount; ++i)
-		helper.buildings[i] = map->buildings[i];
-
-	helper.tmpBuildings = ArenaPushArray(arena, Building, helper.buildingCount);
-
-	SortBuildings(&helper, canvas.camera->center);
-	
-	for (I32 i = 0; i < helper.buildingCount; ++i)
-		DrawBuilding(canvas, helper.buildings[i]);
-
-	ArenaPopTo(arena, helper.buildings);
-	*/
-}
-
-void DrawMap(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets)
-{
-	DrawGroundElems(canvas, map);
-	DrawBuildings(canvas, map, arena, assets);
 }
 
 void DrawAllTrafficLights(Canvas canvas, Map* map)
@@ -545,7 +428,8 @@ void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitmap, Map
 	Canvas canvas = {};
 	canvas.bitmap = *bitmap;
 	canvas.camera = &camera;
-	DrawTexturedGroundElems(canvas, map, mapTextures);
+	DrawGroundElems(canvas, map);
+	// DrawTexturedGroundElems(canvas, map, mapTextures);
 }
 
 DWORD WINAPI GenerateMapTileWorkProc(LPVOID parameter)

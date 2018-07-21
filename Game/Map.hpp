@@ -8,7 +8,7 @@
 #include "Memory.hpp"
 #include "Type.hpp"
 
-#define GrassColor	MakeColor(0.0f, 0.8f, 0.0f)
+#define GrassColor	MakeColor(0.0f, 0.5f, 0.0f)
 
 #define MaxCachedMapTileN 64
 #define MaxGenerateMapTileWorkListN MaxCachedMapTileN
@@ -16,8 +16,6 @@
 #define MapTileBitmapWidth 1024
 #define MapTileBitmapHeight 1024
 #define GenerateMapTileWorkThreadN 2
-
-struct GameAssets;
 
 struct MapTileIndex {
 	I32 row;
@@ -135,8 +133,6 @@ MapElem GetPedestrianElemAtPoint(Map* map, V2 point);
 
 void DrawGroundElems(Canvas canvas, Map* map);
 void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures);
-void DrawBuildings(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets);
-void DrawMap(Canvas canvas, Map* map, MemArena* arena, GameAssets* assets);
 void DrawAllTrafficLights(Canvas, Map* map);
 
 MapElem GetRoadElem(Road* road);

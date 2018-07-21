@@ -14,4 +14,7 @@ Bezier4 TurnBezier4(V4 startPoint, V4 endPoint);
 V2 Bezier4Point(Bezier4 bezier4, F32 ratio);
 V4 Bezier4DirectedPoint(Bezier4 bezier4, F32 ratio);
 
+F32 MoveOnBezier4(Bezier4 bezier4, F32 startRatio, F32 moveDistance);
+F32 GetBezier4DistanceFromEnd(Bezier4 bezier4, F32 ratio);
+
 void DrawBezier4(Canvas canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount);

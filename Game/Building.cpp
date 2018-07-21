@@ -717,48 +717,6 @@ void HighlightBuilding(Canvas canvas, Building building, V4 color)
 	);
 }
 
-void DrawBuilding(Canvas canvas, Building building, GameAssets* assets)
-{
-	/*
-	DrawBuilding3D(canvas, building);
-	return;
-	*/
-
-	V4 sideColor = MakeColor(0.0f, 0.0f, 0.0f);
-
-	// WorldTextureRect(draw, building.left, building.right, building.top, building.bottom, assets->roofTexture);
-	F32 width  = (building.right - building.left);
-	F32 height = (building.bottom - building.top);
-
-	if (height > width) {
-		F32 middle = ((building.right + building.left) * 0.5f);
-
-		WorldTextureRect(canvas, building.left, middle, building.top, building.bottom, assets->roofTextureLeft);
-		WorldTextureRect(canvas, middle, building.right, building.top, building.bottom, assets->roofTextureRight);
-
-		V2 topMiddle    = MakePoint(middle, building.top);
-		V2 bottomMiddle = MakePoint(middle, building.bottom);
-		Bresenham(canvas, topMiddle, bottomMiddle, sideColor);
-	} else {
-		F32 middle = ((building.bottom + building.top) * 0.5f);
-		WorldTextureRect(canvas, building.left, building.right, building.top, middle, assets->roofTextureUp);
-		WorldTextureRect(canvas, building.left, building.right, middle, building.bottom, assets->roofTextureDown);
-
-		V2 leftMiddle  = MakePoint(building.left, middle);
-		V2 rightMiddle = MakePoint(building.right, middle);
-		Bresenham(canvas, leftMiddle, rightMiddle, sideColor);
-	}
-
-	V2 topLeft     = MakePoint(building.left, building.top);
-	V2 topRight    = MakePoint(building.right, building.top);
-	V2 bottomLeft  = MakePoint(building.left, building.bottom);
-	V2 bottomRight = MakePoint(building.right, building.bottom);
-	Bresenham(canvas, topLeft, topRight, sideColor);
-	Bresenham(canvas, topRight, bottomRight, sideColor);
-	Bresenham(canvas, bottomRight, bottomLeft, sideColor);
-	Bresenham(canvas, bottomLeft, topLeft, sideColor);
-}
-
 void DrawBuildingInside(Canvas canvas, Building building)
 {
 	V4 color = {};

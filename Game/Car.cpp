@@ -34,7 +34,11 @@ Quad GetCarStopArea(Car* car)
 	V2 side1 = (car->position + addWidth);
 	V2 side2 = (car->position - addWidth);
 
-	F32 stopDistance = 5.0f;
+	Assert(car->maxSpeed > 0.0f);
+	F32 minStopDistance = car->length * 0.5f;
+	F32 maxStopDistance = minStopDistance + 5.0f;
+
+	F32 stopDistance = Lerp(minStopDistance, car->moveSpeed / car->maxSpeed, maxStopDistance);
 
 	V2 addClose = (car->length * 0.5f) * toFrontUnitVector;
 	V2 addFar = (car->length * 0.5f + stopDistance) * toFrontUnitVector;
@@ -445,21 +449,7 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	FloodfillBitmap(carBitmap, backRightLampCenterRow, backRightLampCenterCol, backLampColor, tmpArena);
 }
 
-void InitAutoCarMovement(AutoCar* autoCar)
-{
-	autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
-
-	// TODO: is this distance close enough?
-	F32 moveDistance = Distance(autoCar->moveStartPoint.position, autoCar->moveEndPoint.position);
-
-	if (autoCar->car.moveSpeed > 0.0f)
-		autoCar->moveTotalSeconds = (moveDistance / autoCar->car.moveSpeed);
-	else
-		autoCar->moveTotalSeconds = 0.0f;
-	autoCar->moveSeconds = 0.0f;
-}
-
-void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpArena, PathPool* pathPool)
 {
 	MapElem targetElem = GetJunctionElem(autoCar->onJunction);
 	MapElem nextElem = GetJunctionElem(junction);
@@ -469,100 +459,98 @@ void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* arena
 	if (autoCar->moveNode) {
 		autoCar->moveStartPoint = StartNodePoint(autoCar->moveNode);
 		autoCar->moveEndPoint = NextNodePoint(autoCar->moveNode, autoCar->moveStartPoint);
-
-		InitAutoCarMovement(autoCar);
-
+		autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
+		autoCar->bezierRatio = 0.0f;
 		autoCar->moveTargetJunction = junction;
+
+		V4 point = Bezier4DirectedPoint(autoCar->moveBezier4, autoCar->bezierRatio);
+		MoveCar(&autoCar->car, point);
 	}
 }
 
-void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+bool IsAutoCarBeforeARedLight(AutoCar* autoCar)
+{
+	B32 result = false;
+	PathNode* moveNode = autoCar->moveNode;
+	if (moveNode) {
+		if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint)) {
+			PathNode* nextNode = moveNode->next;
+			if (nextNode) {
+				MapElem moveElem = moveNode->elem;
+				MapElem nextElem = nextNode->elem;
+
+				if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) {
+					Road* road = moveElem.road;
+					Junction* junction = nextElem.junction;
+					TrafficLight* trafficLight = 0;
+					for (I32 i = 0; i < junction->roadN; ++i) {
+						if (junction->roads[i] == road)
+							trafficLight = &junction->trafficLights[i];
+					}
+
+					Assert(trafficLight != 0);
+					if (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow) {
+						F32 distanceLeft = Distance(autoCar->car.position, autoCar->moveEndPoint.position);
+						if (distanceLeft < autoCar->car.length * 1.5f)
+							result = true;
+					}
+				}
+			}
+		}
+	}
+	return result;
+}
+
+void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool)
 {
 	Car* car = &autoCar->car;
 
-	if (car->moveSpeed == 0.0f)
-		return;
+	if (IsAutoCarBeforeARedLight(autoCar))
+		autoCar->acceleration = -25.0f;
 
 	if (autoCar->moveTargetJunction) {
-		// TODO: should there be a limit on the iteration number?
-		while (seconds > 0.0f) {
+		car->moveSpeed += seconds * autoCar->acceleration;
+		car->moveSpeed = Clip(car->moveSpeed, 0.0f, car->maxSpeed);
+		F32 distanceToGo = seconds * car->moveSpeed;
+		while (distanceToGo > 0.0f) {
 			PathNode* moveNode = autoCar->moveNode;
-
 			if (!moveNode) {
 				autoCar->onJunction = autoCar->moveTargetJunction;
 				autoCar->moveTargetJunction = 0;
 				break;
 			}
 
-			if (moveNode) {
-				B32 stop = false;
+			F32 bezierRatio = MoveOnBezier4(autoCar->moveBezier4, autoCar->bezierRatio, distanceToGo);
+			if (bezierRatio == 1.0f) {
+				autoCar->moveStartPoint = autoCar->moveEndPoint;
+				F32 distance = GetBezier4DistanceFromEnd(autoCar->moveBezier4, autoCar->bezierRatio);
+				distanceToGo -= distance;
+				if (IsNodeEndPoint(moveNode, autoCar->moveStartPoint)) {
+					moveNode = moveNode->next;
+					FreePathNode(autoCar->moveNode, pathPool);
+					autoCar->moveNode = moveNode;
 
-				if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint)) {
-					PathNode* nextNode = moveNode->next;
-
-					if (nextNode) {
-						MapElem moveElem = moveNode->elem;
-						MapElem nextElem = nextNode->elem;
-
-						if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) {
-							Road* road = moveElem.road;
-							Junction* junction = nextElem.junction;
-							TrafficLight* trafficLight = 0;
-
-							for (I32 i = 0; i < junction->roadN; ++i) {
-								if (junction->roads[i] == road)
-									trafficLight = &junction->trafficLights[i];
-							}
-
-							if (trafficLight && (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow))
-								stop = true;
-						}
-					}
+					if (!moveNode)
+						continue;
 				}
-
-				if (stop) {
-					// TODO: use distance square here?
-					F32 distanceLeft = Distance(car->position, autoCar->moveEndPoint.position);
-
-					// TODO: introduce a "stopDistance" variable?
-					if (distanceLeft < car->length * 0.5f)
-						break;
-				}
-
-				autoCar->moveSeconds += seconds;
-
-				if (autoCar->moveSeconds >= autoCar->moveTotalSeconds) {
-					autoCar->moveStartPoint = autoCar->moveEndPoint;
-
-					seconds = autoCar->moveSeconds - autoCar->moveTotalSeconds;
-
-					if (IsNodeEndPoint(moveNode, autoCar->moveStartPoint)) {
-						moveNode = moveNode->next;
-
-						FreePathNode(autoCar->moveNode, pathPool);
-						autoCar->moveNode = moveNode;
-
-						if (!moveNode)
-							continue;
-					} else {
-						autoCar->moveEndPoint = NextNodePoint(moveNode, autoCar->moveStartPoint);
-
-						InitAutoCarMovement(autoCar);
-					}
-				} else {
-					seconds = 0.0f;
-
-					F32 moveRatio = (autoCar->moveSeconds / autoCar->moveTotalSeconds);
-
-					V4 position = Bezier4DirectedPoint(autoCar->moveBezier4, moveRatio);
-					MoveCar(car, position);
-				}
+				
+				autoCar->bezierRatio = 0.0f;
+				autoCar->moveEndPoint = NextNodePoint(moveNode, autoCar->moveStartPoint);
+				autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
+			} else {
+				distanceToGo = 0.0f;
+				autoCar->bezierRatio = bezierRatio;
 			}
 		}
 	} else {
 		Junction* targetJunction = GetRandomJunction(car->map);
-		MoveAutoCarToJunction(autoCar, targetJunction, arena, tmpArena, pathPool);
+		MoveAutoCarToJunction(autoCar, targetJunction, tmpArena, pathPool);
 	}
+
+	V4 point = Bezier4DirectedPoint(autoCar->moveBezier4, autoCar->bezierRatio);
+	MoveCar(car, point);
+
+	Assert(IsBetween(autoCar->bezierRatio, 0.0f, 1.0f));
 }
 
 void UpdatePlayerCar(PlayerCar* playerCar, F32 seconds)
@@ -615,6 +603,7 @@ void UpdatePlayerCar(PlayerCar* playerCar, F32 seconds)
 	V2 perpendicular = (playerCar->velocity - parallel);
 
 	playerCar->velocity = parallel + (0.5f * perpendicular);
+	car->moveSpeed = VectorLength(playerCar->velocity);
 
 	car->position = car->position + (seconds * playerCar->velocity);
 }

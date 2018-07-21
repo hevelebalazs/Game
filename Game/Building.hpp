@@ -16,8 +16,6 @@
 #define MinRoomSide			5.0f
 #define MaxRoomSide			20.0f
 
-struct GameAssets;
-
 enum CrossType {
 	CrossNone,
 	CrossWall,
@@ -79,7 +77,6 @@ V2 ClosestBuildingCrossPoint(Building uilding, V2 closePoint, V2 farPoint);
 B32 IsPointOnBuildingConnector(V2 point, Building building);
 
 void HighlightBuilding(Canvas canvas, Building building, V4 color);
-void DrawBuilding(Canvas canvas, Building building, GameAssets* assets);
 void DrawBuildingInside(Canvas canvas, Building building);
 
 void DrawVisibleAreaInBuilding(Canvas canvas, Building building, V2 center, MemArena* tmpArena);
