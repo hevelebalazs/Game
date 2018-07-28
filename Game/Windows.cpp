@@ -14,6 +14,7 @@
 
 #include "Lab/CarLab.hpp"
 #include "Lab/MapLab.hpp"
+#include "Lab/PhysicsLab.hpp"
 #include "Lab/RoadLab.hpp"
 #include "Lab/ThreadLab.hpp"
 
@@ -284,6 +285,6 @@ void RunGame(HINSTANCE instance)
 
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	RunGame(instance);
+	PhysicsLab(instance);
 	return 0;
 }
