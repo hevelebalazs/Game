@@ -109,75 +109,68 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 	LRESULT result = 0;
 
 	switch (message) {
-	case WM_SIZE:
-	{
-		RECT clientRect = {};
-		GetClientRect(window, &clientRect);
-		I32 width = clientRect.right - clientRect.left;
-		I32 height = clientRect.bottom - clientRect.top;
-		PhysicsLabResize(labState, width, height);
-		break;
-	}
-	case WM_PAINT:
-	{
-		PAINTSTRUCT paint = {};
-		HDC context = BeginPaint(window, &paint);
-
-		RECT clientRect = {};
-		GetClientRect(window, &clientRect);
-
-		PhysicsLabBlit(labState->canvas, context, clientRect);
-
-		EndPaint(window, &paint);
-		break;
-	}
-	case WM_SETCURSOR:
-	{
-		HCURSOR cursor = LoadCursor(0, IDC_ARROW);
-		SetCursor(cursor);
-		break;
-	}
-	case WM_LBUTTONDOWN: 
-	{
-		if (labState->pushCornerIndex != 0) {
-			V2 mouse = GetMousePosition(&labState->camera, window);
-			V2 corner = GetCorner(labState, labState->pushCornerIndex);
-			V2 force = (mouse - corner);
-			PushCar(labState, corner, force);
-			labState->pushCornerIndex = 0;
+		case WM_SIZE: {
+			RECT clientRect = {};
+			GetClientRect(window, &clientRect);
+			I32 width = clientRect.right - clientRect.left;
+			I32 height = clientRect.bottom - clientRect.top;
+			PhysicsLabResize(labState, width, height);
+			break;
 		}
-		break;
-	}
-	case WM_KEYDOWN: 
-	{
-		WPARAM keyCode = wparam;
-		switch (keyCode) {
-			case '1':
-				labState->pushCornerIndex = 1;
-				break;
-			case '2':
-				labState->pushCornerIndex = 2;
-				break;
-			case '3':
-				labState->pushCornerIndex = 3;
-				break;
-			case '4':
-				labState->pushCornerIndex = 4;
-				break;
+		case WM_PAINT: {
+			PAINTSTRUCT paint = {};
+			HDC context = BeginPaint(window, &paint);
+
+			RECT clientRect = {};
+			GetClientRect(window, &clientRect);
+
+			PhysicsLabBlit(labState->canvas, context, clientRect);
+
+			EndPaint(window, &paint);
+			break;
 		}
-		break;
-	}
-	case WM_DESTROY:
-	case WM_CLOSE:
-	{
-		labState->running = false;
-		break;
-	}
-	default:
-	{
-		result = DefWindowProc(window, message, wparam, lparam);
-		break;
-	}
+		case WM_SETCURSOR: {
+			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
+			SetCursor(cursor);
+			break;
+		}
+		case WM_LBUTTONDOWN: {
+			if (labState->pushCornerIndex != 0) {
+				V2 mouse = GetMousePosition(&labState->camera, window);
+				V2 corner = GetCorner(labState, labState->pushCornerIndex);
+				V2 force = (mouse - corner);
+				PushCar(labState, corner, force);
+				labState->pushCornerIndex = 0;
+			}
+			break;
+		}
+		case WM_KEYDOWN: {
+			WPARAM keyCode = wparam;
+			switch (keyCode) {
+				case '1':
+					labState->pushCornerIndex = 1;
+					break;
+				case '2':
+					labState->pushCornerIndex = 2;
+					break;
+				case '3':
+					labState->pushCornerIndex = 3;
+					break;
+				case '4':
+					labState->pushCornerIndex = 4;
+					break;
+			}
+			break;
+		}
+		case WM_DESTROY:
+		case WM_CLOSE: {
+			labState->running = false;
+			break;
+		}
+		default: {
+			result = DefWindowProc(window, message, wparam, lparam);
+			break;
+		}
 	}
 	return result;
 }
@@ -309,4 +302,3 @@ void PhysicsLab(HINSTANCE instance)
 }
 
 // TODO: Pull out common lab functions!
-// TODO: New line between case: and { everywhere!

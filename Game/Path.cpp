@@ -1148,7 +1148,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 		nextElem = next->elem;
 
 	switch(elem.type) {
-		case MapElemBuilding: {
+		case MapElemBuilding:
+		{
 			Building* building = elem.building;
 			switch (nextElem.type) {
 				case MapElemNone:
@@ -1168,7 +1169,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 			}
 			break;
 		}
-		case MapElemRoad: {
+		case MapElemRoad:
+		{
 			Road* road = elem.road;
 			switch (nextElem.type) {
 				case MapElemBuilding:
@@ -1182,7 +1184,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 			}
 			break;
 		}
-		case MapElemJunction: {
+		case MapElemJunction:
+		{
 			Junction* junction = elem.junction;
 			switch (nextElem.type) {
 				case MapElemNone:
@@ -1199,7 +1202,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 			}
 			break;
 		}
-		case MapElemRoadSidewalk: {
+		case MapElemRoadSidewalk:
+		{
 			Road* road = elem.road;
 			switch(nextElem.type) {
 				case MapElemJunctionSidewalk:
@@ -1213,7 +1217,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 			}
 			break;
 		}
-		case MapElemJunctionSidewalk: {
+		case MapElemJunctionSidewalk:
+		{
 			Junction* junction = elem.junction;
 			switch(nextElem.type) {
 				case MapElemNone:
@@ -1230,7 +1235,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 			}
 			break;
 		}
-		default: {
+		default:
+		{
 			DebugBreak();
 		}
 	}
@@ -1334,6 +1340,7 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 		}
 		default: {
 			DebugBreak();
+			break;
 		}
 	}
 
