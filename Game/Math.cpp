@@ -118,6 +118,12 @@ F32 Invert(F32 value)
 	return inverseValue;
 }
 
+F32 Square(F32 x)
+{
+	F32 result = x * x;
+	return result;
+}
+
 void InitRandom()
 {
 	srand((U32)time(0));
