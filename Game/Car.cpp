@@ -6,7 +6,7 @@
 #define CarBitmapWidth 140
 #define CarBitmapHeight 300
 
-static Quad GetCarCorners(Car* car)
+Quad GetCarCorners(Car* car)
 {
 	Quad result = {};
 
@@ -553,57 +553,226 @@ void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* 
 	Assert(IsBetween(autoCar->bezierRatio, 0.0f, 1.0f));
 }
 
-void UpdatePlayerCar(PlayerCar* playerCar, F32 seconds)
+V2 GetCarCorner(Car* car, I32 cornerIndex)
 {
-	Car* car = &playerCar->car;
+	Assert(IsIntBetween(cornerIndex, 0, 3));
 
-	F32 speed = VectorLength(playerCar->velocity);
+	F32 halfWidth = car->width * 0.5f;
+	F32 halfLength = car->length * 0.5f;
 
-	V2 direction = RotationVector(car->angle);
+	F32 angle = car->angle;
+	V2 rotationUpDown = RotationVector(angle);
+	V2 rotationLeftRight = RotationVector(angle + PI * 0.5f);
+	V2 center = car->position;
+	V2 frontCenter = center + (halfLength * rotationUpDown);
+	V2 backCenter = center - (halfLength * rotationUpDown);
 
-	V2 frontWheel = (+car->length * 0.5f) * direction;
-	V2 rearWheel  = (-car->length * 0.5f) * direction;
+	V2 result = {};
+	switch (cornerIndex) {
+		case 0:
+			result = frontCenter - (halfWidth * rotationLeftRight);
+			break;
+		case 1:
+			result = frontCenter + (halfWidth * rotationLeftRight);
+			break;
+		case 2:
+			result = backCenter  + (halfWidth * rotationLeftRight);
+			break;
+		case 3:
+			result = backCenter  - (halfWidth * rotationLeftRight);
+			break;
+		default:
+			DebugBreak();
+			break;
+	}
+	return result;
+}
+
+void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
+{
+	V2 direction = RotationVector(car->car.angle);
+	V2 tractionForce = ((car->engineForce) * CarMass * direction);
+
+	F32 dragConstant = 0.05f;
+	F32 speed = VectorLength(car->velocity);
+	V2 drag = ((-dragConstant * speed) * CarMass * car->velocity);
+
+	F32 sideResistanceConstant = 1.0f;
+	F32 sideAngle = car->car.angle + PI * 0.5f;
+	V2 sideVector = RotationVector(sideAngle);
+	V2 sideResistance = (-sideResistanceConstant) * CarMass * DotProduct(car->velocity, sideVector) * sideVector;
+
+	V2 oldPosition = car->car.position;
+	car->acceleration = Invert(CarMass) *  (tractionForce + drag + sideResistance);
+	car->velocity = car->velocity + (seconds * car->acceleration);
+	car->car.position = car->car.position + (seconds * car->velocity);
+
+	F32 angularResistanceConstant = 0.5f;
+	F32 angularResistance = ((-angularResistanceConstant) * car->inertia * car->angularVelocity);
 
 	F32 maxControlSpeed = 4.0f;
-	F32 controlTurnAngle = PI * 0.6f;
+	F32 controlTurn = 4.0f;
 
-	F32 turnAngle = controlTurnAngle * playerCar->turnDirection;
+	F32 turn = (car->inertia * car->turnInput) * controlTurn;
 	if (speed > maxControlSpeed)
-		turnAngle *= (maxControlSpeed / speed);
-	
-	B32 backwards = false;
-	if (DotProduct(direction, playerCar->velocity) < 0.0)
-		backwards = true;
+		turn *= (maxControlSpeed / speed);
 
-	V2 turnDirection = {};
-	if (backwards)
-		turnDirection = RotationVector(car->angle - turnAngle);
-    else
-		turnDirection = RotationVector(car->angle + turnAngle);
+	car->angularAcceleration = Invert(car->inertia) * (turn + angularResistance);
 
-	frontWheel = frontWheel + ((seconds * speed) * turnDirection);
-	rearWheel  = rearWheel  + ((seconds * speed) * direction);
+	F32 oldAngle = car->car.angle;
+	car->angularVelocity = car->angularVelocity + (seconds * car->angularAcceleration);
+	car->car.angle = car->car.angle + (seconds * car->angularVelocity);
+}
 
-	car->angle = atan2f(frontWheel.y - rearWheel.y, frontWheel.x - rearWheel.x);
+CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2)
+{
+	CollisionInfo hit = {};
+	hit.count = hit1.count + hit2.count;
+	if (hit2.count > 0) {
+		hit.point = hit2.point;
+		hit.normalVector = hit2.normalVector;
+	} else {
+		hit.point = hit1.point;
+		hit.normalVector = hit1.normalVector;
+	}
+	return hit;
+}
 
-	F32 cDrag = 0.4257f;
-	F32 cRR = 24.8f;
+CollisionInfo GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 point1, V2 point2)
+{
+	CollisionInfo hit = {};
 
-	V2 fTraction = (playerCar->engineForce * direction);
-	V2 fDrag = ((-cDrag * speed) * playerCar->velocity);
-	V2 fRR = ((-cRR) * playerCar->velocity);
+	for (I32 i = 0; i < 4; ++i) {
+		V2 oldCorner = GetCarCorner(oldCar, i);
+		V2 newCorner = GetCarCorner(newCar, i);
+		CollisionInfo hitCorner = {};
+		if (DoLinesCross(point1, point2, oldCorner, newCorner)) {
+			V2 wallAngle = PointDirection(point1, point2);
+			hitCorner.normalVector = TurnVectorToRight(wallAngle);
+			hitCorner.point = oldCorner;
+			hitCorner.count++;
+		}
+		hit = hit + hitCorner;
+	}
 
-	V2 force = fTraction + fDrag + fRR;
+	return hit;
+}
 
-	force = (1.0f / 50.0f) * force;
+V2 GetCarRelativeCoordinates(Car* car, V2 point)
+{
+	V2 result = {};
+	V2 pointVector = (point - car->position);
 
-	playerCar->velocity = playerCar->velocity + (seconds * force);
+	V2 frontDirection = RotationVector(car->angle);
+	result.x = DotProduct(pointVector, frontDirection);
 
-	V2 parallel = DotProduct(playerCar->velocity, direction) * direction;
-	V2 perpendicular = (playerCar->velocity - parallel);
+	V2 sideDirection = TurnVectorToRight(frontDirection);
+	result.y = DotProduct(pointVector, sideDirection);
+	return result;
+}
 
-	playerCar->velocity = parallel + (0.5f * perpendicular);
-	car->moveSpeed = VectorLength(playerCar->velocity);
+CollisionInfo GetCarPointCollisionInfo(Car* oldCar, Car* newCar, V2 point)
+{
+	CollisionInfo hit = {};
 
-	car->position = car->position + (seconds * playerCar->velocity);
+	F32 halfLength = oldCar->length * 0.5f;
+	F32 halfWidth  = oldCar->width * 0.5f;
+	V2 topLeft     = MakePoint(-halfLength, -halfWidth);
+	V2 topRight    = MakePoint(-halfLength, +halfWidth); 
+	V2 bottomLeft  = MakePoint(+halfLength, -halfWidth);
+	V2 bottomRight = MakePoint(+halfLength, +halfWidth);
+
+	V2 oldRelativePoint = GetCarRelativeCoordinates(oldCar, point);
+	V2 newRelativePoint = GetCarRelativeCoordinates(newCar, point);
+
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, topRight)) {
+		hit.count++;
+		hit.point = point;
+		hit.normalVector = RotationVector(oldCar->angle);
+	}
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, bottomLeft, bottomRight)) {
+		hit.count++;
+		hit.point = point;
+		hit.normalVector = RotationVector(oldCar->angle);
+	}
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, bottomLeft)) {
+		hit.count++;
+		hit.point = point;
+		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
+	}
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, topRight, bottomRight)) {
+		hit.count++;
+		hit.point = point;
+		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
+	}
+
+	return hit;
+}
+
+CollisionInfo GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* points, I32 pointN)
+{
+	CollisionInfo hit = {};
+
+	for (I32 i = 0; i < pointN; ++i) {
+		I32 j = i + 1;
+		if (j == pointN)
+			j = 0;
+
+		CollisionInfo hitLine = GetCarLineCollisionInfo(oldCar, newCar, points[i], points[j]);
+		hit = hit + hitLine;
+
+		CollisionInfo hitPoint = GetCarPointCollisionInfo(oldCar, newCar, points[i]);
+		hit = hit + hitPoint;
+	}
+
+	return hit;
+}
+
+V2 GetCarPointVelocity(PlayerCar* car, V2 point)
+{
+	V2 velocity = car->velocity;
+	V2 pointVector = (point - car->car.position);
+	V2 turnVelocity = car->angularVelocity * TurnVectorToRight(pointVector);
+	velocity = velocity + turnVelocity;
+	return velocity;
+}
+
+void UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, CollisionInfo hit)
+{
+	if (hit.count > 1) {
+		car->velocity = MakeVector(0.0f, 0.0f);
+		car->car.position = oldCar->car.position;
+
+		car->angularVelocity = 0.0f;
+		car->car.angle = oldCar->car.angle;
+	}
+
+	if (hit.count == 1) {
+		V2 hitPointVelocity = GetCarPointVelocity(car, hit.point);
+		V2 carCenter = car->car.position;
+
+		F32 reflectionRatio = 0.5f;
+		V2 turnForce = TurnVectorToRight(hit.point - carCenter);
+
+		F32 up = -(1.0f + reflectionRatio) * DotProduct(hitPointVelocity, hit.normalVector);
+		F32 down = DotProduct(hit.normalVector, hit.normalVector) * Invert(CarMass) +
+			Square(DotProduct(turnForce, hit.normalVector)) * Invert(car->inertia);
+		F32 forceRatio = up / down;
+
+		car->velocity = car->velocity + (forceRatio / CarMass) * hit.normalVector;
+		car->angularVelocity = car->angularVelocity + 
+									DotProduct(turnForce, forceRatio * hit.normalVector) / car->inertia;
+
+		car->car.position = oldCar->car.position + seconds * car->velocity;
+		car->car.angle = oldCar->car.angle + seconds * car->angularVelocity;
+	}
+
+	/*
+	TODO: Check why this happens!
+	for (int i = 0; i < 4; ++i) {
+		V2 oldCorner = oldP[i];
+		V2 newCorner = GetCorner(labState, i);
+		Assert(!DoLinesCross(wall1, wall2, oldCorner, newCorner));
+	}
+	*/
 }

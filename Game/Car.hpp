@@ -15,6 +15,9 @@
 #define MaxCarEngineForce 1000.0f
 #define MaxCarBrakeForce 1000.0f
 
+#define CarCornerMass 250000
+#define CarMass (4 * CarCornerMass)
+
 struct Car {
 	V2 position;
 	F32 angle;
@@ -44,6 +47,7 @@ struct AutoCar {
 	F32 acceleration;
 };
 
+Quad GetCarCorners(Car* car);
 Quad GetCarStopArea(Car* car);
 B32 IsCarOnPoint(Car* car, V2 point);
 void MoveCar(Car* car, V4 point);
@@ -58,12 +62,31 @@ void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* 
 struct PlayerCar {
 	Car car;
 
+	V2 velocity;
+	V2 acceleration;
+
+	F32 angularVelocity;
+	F32 angularAcceleration;
+	F32 inertia;
+
 	F32 engineForce;
 	F32 breakForce;
-
-	F32 turnDirection;
-
-	V2 velocity;
+	F32 turnInput;
 };
 
-void UpdatePlayerCar(PlayerCar* playerCar, F32 seconds);
+V2 GetCarCorner(Car* car, I32 cornerIndex);
+void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds);
+
+struct CollisionInfo {
+	I32 count;
+	V2 point;
+	V2 normalVector;
+};
+
+CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2);
+CollisionInfo GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 point1, V2 point2);
+V2 GetCarRelativeCoordinates(Car* car, V2 point);
+CollisionInfo GetCarPointCollisionInfo(Car* oldCar, Car* newCar, V2 point);
+CollisionInfo GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* points, I32 pointN);
+V2 GetCarPointVelocity(PlayerCar* car, V2 point);
+void UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, CollisionInfo hit);

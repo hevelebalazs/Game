@@ -1,28 +1,10 @@
 #include "PhysicsLab.hpp"
 
 #include "../Bitmap.hpp"
+#include "../Car.hpp"
 #include "../Debug.hpp"
 #include "../Draw.hpp"
-
-#define CarCornerMass 250000
-#define CarMass (4 * CarCornerMass)
-
-#define CarWidth  6.0f
-#define CarLength 10.0f
-
-struct CarState {
-	V2 position;
-	V2 velocity;
-	V2 acceleration;
-
-	F32 angle;
-	F32 angularVelocity;
-	F32 angularAcceleration;
-	F32 inertia;
-
-	F32 engineForce;
-	F32 turnInput;
-};
+#include "../Geometry.hpp"
 
 struct PhysicsLabState {
 	Camera camera;
@@ -32,29 +14,9 @@ struct PhysicsLabState {
 	V2 walls[4];
 	I32 wallN;
 
-	CarState car;
+	PlayerCar car;
 };
 PhysicsLabState gPhysicsLabState;
-
-struct CollisionInfo {
-	I32 count;
-	V2 point;
-	V2 normalVector;
-};
-
-CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2)
-{
-	CollisionInfo hit = {};
-	hit.count = hit1.count + hit2.count;
-	if (hit2.count > 0) {
-		hit.point = hit2.point;
-		hit.normalVector = hit2.normalVector;
-	} else {
-		hit.point = hit1.point;
-		hit.normalVector = hit1.normalVector;
-	}
-	return hit;
-}
 
 static V2 GetMousePosition(Camera* camera, HWND window)
 {
@@ -98,67 +60,10 @@ static void PhysicsLabBlit(Canvas canvas, HDC context, RECT rect)
 	);
 }
 
-static V2 GetCorner(CarState* car, I32 cornerIndex)
-{
-	Assert(IsIntBetween(cornerIndex, 0, 3));
-
-	F32 halfWidth = CarWidth * 0.5f;
-	F32 halfLength = CarLength * 0.5f;
-
-	F32 angle = car->angle;
-	V2 rotationUpDown = RotationVector(angle);
-	V2 rotationLeftRight = RotationVector(angle + PI * 0.5f);
-	V2 center = car->position;
-	V2 frontCenter = center + (halfLength * rotationUpDown);
-	V2 backCenter = center - (halfLength * rotationUpDown);
-
-	V2 result = {};
-	switch (cornerIndex) {
-		case 0:
-			result = frontCenter - (halfWidth * rotationLeftRight);
-			break;
-		case 1:
-			result = frontCenter + (halfWidth * rotationLeftRight);
-			break;
-		case 2:
-			result = backCenter  + (halfWidth * rotationLeftRight);
-			break;
-		case 3:
-			result = backCenter  - (halfWidth * rotationLeftRight);
-			break;
-		default:
-			DebugBreak();
-			break;
-	}
-	return result;
-}
-
-static V2 GetCarPointVelocity(CarState* car, V2 point)
-{
-	V2 velocity = car->velocity;
-	V2 pointVector = (point - car->position);
-	V2 turnVelocity = car->angularVelocity * TurnVectorToRight(pointVector);
-	velocity = velocity + turnVelocity;
-	return velocity;
-}
-
-static V2 GetCarRelativeCoordinates(CarState* car, V2 point)
-{
-	V2 result = {};
-	V2 pointVector = (point - car->position);
-
-	V2 frontDirection = RotationVector(car->angle);
-	result.x = DotProduct(pointVector, frontDirection);
-
-	V2 sideDirection = TurnVectorToRight(frontDirection);
-	result.y = DotProduct(pointVector, sideDirection);
-	return result;
-}
-
 static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	PhysicsLabState* labState = &gPhysicsLabState;
-	CarState* car = &labState->car;
+	PlayerCar* car = &labState->car;
 	LRESULT result = 0;
 
 	switch (message) {
@@ -191,16 +96,16 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 			WPARAM keyCode = wparam;
 			switch (keyCode) {
 				case 'W':
-					car->engineForce = 1.0f;
+					car->engineForce = 5.0f;
 					break;
 				case 'S':
-					car->engineForce = -1.0f;
+					car->engineForce = -5.0f;
 					break;
 				case 'A':
-					car->turnInput = -0.1f;
+					car->turnInput = -0.5f;
 					break;
 				case 'D':
-					car->turnInput = +0.1f;
+					car->turnInput = +0.5f;
 					break;
 			}
 			break;
@@ -242,13 +147,15 @@ static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windo
 	labState->walls[2] = MakePoint(30.0f,  -25.0f);
 	labState->walls[3] = MakePoint(110.0f, -50.0f);
 
-	CarState* car = &labState->car;
-	car->angle = PI * 0.5f;
+	PlayerCar* car = &labState->car;
+	car->car.angle = PI * 0.5f;
+	car->car.width = 2.3f;
+	car->car.length = 5.0f;
 
 	car->inertia = 0.0f;
 	for (int i = 0; i < 4; ++i) {
-		V2 corner = GetCorner(car, i);
-		V2 radius = corner - car->position;
+		V2 corner = GetCarCorner(&car->car, i);
+		V2 radius = corner - car->car.position;
 		F32 radiusLength = VectorLength(radius);
 		car->inertia += CarCornerMass * (radiusLength * radiusLength);
 	}
@@ -256,116 +163,9 @@ static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windo
 	PhysicsLabResize(labState, windowWidth, windowHeight);
 }
 
-static CollisionInfo GetCarLineCollisionInfo(CarState* oldCar, CarState* newCar, V2 point1, V2 point2)
-{
-	CollisionInfo hit = {};
-
-	for (I32 i = 0; i < 4; ++i) {
-		V2 oldCorner = GetCorner(oldCar, i);
-		V2 newCorner = GetCorner(newCar, i);
-		CollisionInfo hitCorner = {};
-		if (DoLinesCross(point1, point2, oldCorner, newCorner)) {
-			V2 wallAngle = PointDirection(point1, point2);
-			hitCorner.normalVector = TurnVectorToRight(wallAngle);
-			hitCorner.point = oldCorner;
-			hitCorner.count++;
-		}
-		hit = hit + hitCorner;
-	}
-
-	return hit;
-}
-
-static CollisionInfo GetCarPointCollisionInfo(CarState* oldCar, CarState* newCar, V2 point)
-{
-	CollisionInfo hit = {};
-
-	F32 halfLength = CarLength * 0.5f;
-	F32 halfWidth  = CarWidth * 0.5f;
-	V2 topLeft     = MakePoint(-halfLength, -halfWidth);
-	V2 topRight    = MakePoint(-halfLength, +halfWidth); 
-	V2 bottomLeft  = MakePoint(+halfLength, -halfWidth);
-	V2 bottomRight = MakePoint(+halfLength, +halfWidth);
-
-	V2 oldRelativePoint = GetCarRelativeCoordinates(oldCar, point);
-	V2 newRelativePoint = GetCarRelativeCoordinates(newCar, point);
-
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, topRight)) {
-		hit.count++;
-		hit.point = point;
-		hit.normalVector = RotationVector(oldCar->angle);
-	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, bottomLeft, bottomRight)) {
-		hit.count++;
-		hit.point = point;
-		hit.normalVector = RotationVector(oldCar->angle);
-	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, bottomLeft)) {
-		hit.count++;
-		hit.point = point;
-		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
-	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topRight, bottomRight)) {
-		hit.count++;
-		hit.point = point;
-		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
-	}
-
-	return hit;
-}
-
-static CollisionInfo GetCarPolyCollisionInfo(CarState* oldCar, CarState* newCar, V2* points, I32 pointN)
-{
-	CollisionInfo hit = {};
-
-	for (I32 i = 0; i < pointN; ++i) {
-		I32 j = i + 1;
-		if (j == pointN)
-			j = 0;
-
-		CollisionInfo hitLine = GetCarLineCollisionInfo(oldCar, newCar, points[i], points[j]);
-		hit = hit + hitLine;
-
-		CollisionInfo hitPoint = GetCarPointCollisionInfo(oldCar, newCar, points[i]);
-		hit = hit + hitPoint;
-	}
-
-	return hit;
-}
-
 static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 {
-	float seconds = 0.05f;
-
-	CarState* car = &labState->car;
-
-	CarState oldCar = *car;
-
-	V2 direction = RotationVector(car->angle);
-	V2 tractionForce = ((car->engineForce) * CarMass * direction);
-
-	F32 dragConstant = 0.05f;
-	F32 speed = VectorLength(car->velocity);
-	V2 drag = ((-dragConstant * speed) * CarMass * car->velocity);
-
-	F32 sideResistanceConstant = 1.0f;
-	F32 sideAngle = car->angle + PI * 0.5f;
-	V2 sideVector = RotationVector(sideAngle);
-	V2 sideResistance = (-sideResistanceConstant) * CarMass * DotProduct(car->velocity, sideVector) * sideVector;
-
-	V2 oldPosition = car->position;
-	car->acceleration = Invert(CarMass) *  (tractionForce + drag + sideResistance);
-	car->velocity = car->velocity + (seconds * car->acceleration);
-	car->position = car->position + (seconds * car->velocity);
-
-	F32 angularResistanceConstant = 0.5f;
-	F32 angularResistance = ((-angularResistanceConstant) * car->inertia * car->angularVelocity);
-	F32 turn = car->inertia * car->turnInput;
-	car->angularAcceleration = Invert(car->inertia) * (turn + angularResistance);
-
-	F32 oldAngle = car->angle;
-	car->angularVelocity = car->angularVelocity + (seconds * car->angularAcceleration);
-	car->angle = car->angle + (seconds * car->angularVelocity);
+	PlayerCar* car = &labState->car;
 
 	Canvas canvas = labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -375,7 +175,7 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 	F32 gridDistance = 10.0f;
 
 	Camera* camera = &labState->camera;
-	camera->center = car->position;
+	camera->center = car->car.position;
 	F32 left   = CameraLeftSide(camera);
 	F32 right  = CameraRightSide(camera);
 	F32 top    = CameraTopSide(camera);
@@ -399,62 +199,33 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 		Bresenham(canvas, point1, point2, gridColor);
 	}
 
+	// float seconds = 0.05f;
+	float seconds = 1.0f / 60.0f;
+
+	PlayerCar oldCar = *car;
+
 	V4 carColor = MakeColor(0.5f, 0.0f, 0.0f);
-	V2 oldCorner0 = GetCorner(&oldCar, 0);
-	V2 oldCorner1 = GetCorner(&oldCar, 1);
-	V2 oldCorner2 = GetCorner(&oldCar, 2);
-	V2 oldCorner3 = GetCorner(&oldCar, 3);
+	V2 oldCorner0 = GetCarCorner(&oldCar.car, 0);
+	V2 oldCorner1 = GetCarCorner(&oldCar.car, 1);
+	V2 oldCorner2 = GetCarCorner(&oldCar.car, 2);
+	V2 oldCorner3 = GetCarCorner(&oldCar.car, 3);
 	DrawQuadPoints(canvas, oldCorner0, oldCorner1, oldCorner2, oldCorner3, carColor);
 
-	CarState* newCar = &labState->car;
-	CollisionInfo hit = GetCarPolyCollisionInfo(&oldCar, newCar, labState->walls, labState->wallN);
-
-	if (hit.count > 1) {
-		car->velocity = MakeVector(0.0f, 0.0f);
-		car->position = oldPosition;
-
-		car->angularVelocity = 0.0f;
-		car->angle = oldAngle;
-	}
-
-	if (hit.count == 1) {
-		V2 hitPointVelocity = GetCarPointVelocity(car, hit.point);
-		V2 carCenter = car->position;
-
-		F32 reflectionRatio = 0.5f;
-		V2 turnForce = TurnVectorToRight(hit.point - carCenter);
-
-		F32 up = -(1.0f + reflectionRatio) * DotProduct(hitPointVelocity, hit.normalVector);
-		F32 down = DotProduct(hit.normalVector, hit.normalVector) * Invert(CarMass) +
-			Square(DotProduct(turnForce, hit.normalVector)) * Invert(car->inertia);
-		F32 forceRatio = up / down;
-
-		car->velocity = car->velocity + (forceRatio / CarMass) * hit.normalVector;
-		car->angularVelocity = car->angularVelocity + 
-									DotProduct(turnForce, forceRatio * hit.normalVector) / car->inertia;
-
-		car->position = oldPosition + seconds * car->velocity;
-		car->angle = oldAngle + seconds * car->angularVelocity;
-	}
-
+	UpdatePlayerCarWithoutCollision(car, seconds);
 	/*
-	TODO: Check why this happens!
-	for (int i = 0; i < 4; ++i) {
-		V2 oldCorner = oldP[i];
-		V2 newCorner = GetCorner(labState, i);
-		Assert(!DoLinesCross(wall1, wall2, oldCorner, newCorner));
-	}
-	*/
+	CollisionInfo hit = {};
+	hit = GetCarPolyCollisionInfo(&oldCar.car, &car->car, labState->walls, labState->wallN);
+	UpdatePlayerCarCollision(car, &oldCar, seconds, hit);
 
-	hit = GetCarPolyCollisionInfo(&oldCar, car, labState->walls, labState->wallN);
+	hit = GetCarPolyCollisionInfo(&oldCar.car, &car->car, labState->walls, labState->wallN);
 	if (hit.count > 0) {
 		car->velocity = MakeVector(0.0f, 0.0f);
-		car->position = oldPosition;
+		car->car.position = oldCar.car.position;
 
 		car->angularVelocity = 0.0f;
-		car->angle = oldAngle;
+		car->car.angle = oldCar.car.angle;
 	}
-
+	*/
 	V4 wallColor = MakeColor(1.0f, 1.0f, 1.0f);
 	F32 wallWidth = 0.2f;
 	DrawPolyOutline(canvas, labState->walls, labState->wallN, wallColor);
@@ -512,6 +283,6 @@ void PhysicsLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Car crosses lines when going straight into it!
-// TODO: Integrate physics to Car struct!
+// TODO: Add wheels?
+// TODO: Update car controls!
 // TODO: Pull out common lab functions!

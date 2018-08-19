@@ -105,11 +105,11 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 					break;
 				case 'A':
 					globalGameState->playerHuman.moveLeft = false;
-					globalGameState->playerCar.turnDirection = 0.0f;
+					globalGameState->playerCar.turnInput = 0.0f;
 					break;
 				case 'D':
 					globalGameState->playerHuman.moveRight = false;
-					globalGameState->playerCar.turnDirection = 0.0f;
+					globalGameState->playerCar.turnInput = 0.0f;
 					break;
 			}
 			break;
@@ -120,19 +120,19 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			switch (keyCode) {
 				case 'W':
 					globalGameState->playerHuman.moveUp = true;
-					globalGameState->playerCar.engineForce = MaxCarEngineForce;
+					globalGameState->playerCar.engineForce = +20.0f;
 					break;
 				case 'S':
 					globalGameState->playerHuman.moveDown = true;
-					globalGameState->playerCar.engineForce = -MaxCarBrakeForce;
+					globalGameState->playerCar.engineForce = -20.0f;
 					break;
 				case 'A':
 					globalGameState->playerHuman.moveLeft = true;
-					globalGameState->playerCar.turnDirection = -1.0f;
+					globalGameState->playerCar.turnInput = -1.0f;
 					break;
 				case 'D':
 					globalGameState->playerHuman.moveRight = true;
-					globalGameState->playerCar.turnDirection = 1.0f;
+					globalGameState->playerCar.turnInput = +1.0f;
 					break;
 				case 'F':
 					TogglePlayerCar(globalGameState);
@@ -265,9 +265,9 @@ void RunGame(HINSTANCE instance)
 	}
 }
 
-
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
+	// RunGame(instance);
 	PhysicsLab(instance);
 	return 0;
 }
