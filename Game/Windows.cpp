@@ -16,6 +16,7 @@
 #include "Lab/MapLab.hpp"
 #include "Lab/RoadLab.hpp"
 #include "Lab/ThreadLab.hpp"
+#include "Lab/WorldLab.hpp"
 
 static B32 running;
 
@@ -284,6 +285,7 @@ void RunGame(HINSTANCE instance)
 
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	RunGame(instance);
+	//RunGame(instance);
+	WorldLab(instance);
 	return 0;
 }

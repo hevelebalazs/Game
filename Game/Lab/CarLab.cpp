@@ -174,7 +174,7 @@ void CarLab(HINSTANCE instance)
 	winClass.hInstance = instance;
 	winClass.lpszClassName = "CarLabWindowClass";
 
-	Assert(RegisterClass(&winClass));
+	Verify(RegisterClass(&winClass));
 	HWND window = CreateWindowEx(
 		0,
 		winClass.lpszClassName,
