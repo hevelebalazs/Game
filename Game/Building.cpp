@@ -722,25 +722,21 @@ void DrawBuildingInside(Canvas canvas, Building building)
 	V4 color = {};
 
 	switch (building.type) {
-		case BuildingBlack: {
+		case BuildingBlack:
 			color = MakeColor(0.75f, 0.75f, 0.75f);
 			break;
-		}
 
-		case BuildingRed: {
+		case BuildingRed:
 			color = MakeColor(0.75f, 0.0f, 0.0f);
 			break;
-		}
 
-		case BuildingGreen: {
+		case BuildingGreen:
 			color = MakeColor(0.0f, 0.75f, 0.0f);
 			break;
-		}
 
-		case BuildingBlue: {
+		case BuildingBlue:
 			color = MakeColor(0.0f, 0.0f, 0.75f);
 			break;
-		}
 	}
 
 	V4 wallColor = color;

@@ -85,6 +85,8 @@ inline F32 Sqrt(F32 x)
 	return sqrtf(x);
 }
 
+F32 Square(F32 x);
+
 inline F32 Abs(F32 x)
 {
 	if (x > 0.0f)

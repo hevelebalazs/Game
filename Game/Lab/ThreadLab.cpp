@@ -134,7 +134,6 @@ static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wpar
 			ThreadLabResize(labState, width, height);
 			break;
 		}
-
 		case WM_PAINT: {
 			PAINTSTRUCT paint = {};
 			HDC context = BeginPaint(window, &paint);
@@ -147,19 +146,16 @@ static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wpar
 			EndPaint(window, &paint);
 			break;
 		}
-
 		case WM_SETCURSOR: {
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 			SetCursor(cursor);
 			break;
 		}
-
 		case WM_DESTROY:
 		case WM_CLOSE: {
 			labState->running = false;
 			break;
 		}
-
 		default: {
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;

@@ -27,6 +27,7 @@ struct Quad {
 };
 
 V2 MakePoint(F32 x, F32 y);
+V2 MakeVector(F32 x, F32 y);
 Quad MakeQuad(V2 point1, V2 point2, V2 point3, V2 point4);
 
 F32 DistanceSquare(V2 point1, V2 point2);

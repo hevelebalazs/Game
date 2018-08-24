@@ -58,7 +58,6 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 			CarLabResize(carLabState, width, height);
 			break;
 		}
-
 		case WM_PAINT: {
 			PAINTSTRUCT paint = {};
 			HDC context = BeginPaint(window, &paint);
@@ -71,67 +70,54 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 			EndPaint(window, &paint);
 			break;
 		}
-
 		case WM_KEYDOWN: {
 			WPARAM keyCode = wparam;
-
 			switch (keyCode) {
-				case 'A': {
+				case 'A':
 					carLabState->rotationAngleAdd = -0.1f;
 					break;
-				}
-				case 'D': {
+				case 'D':
 					carLabState->rotationAngleAdd = 0.1f;
 					break;
-				}
 			}
-
 			break;
 		}
-
 		case WM_KEYUP: {
 			WPARAM keyCode = wparam;
 				
 			switch (keyCode) {
-				case 'G': {
+				case 'G':
 					GenerateCarBitmap(&carLabState->carBitmap, &carLabState->tmpArena);
 					break;
-				}
-				case 'W': {
+				case 'W':
 					carLabState->zoomValue *= 1.1f;
 					break;
-				}
-				case 'S': {
+				case 'S':
 					carLabState->zoomValue *= (1.0f / 1.1f);
 					break;
-				}
-				case 'A': {
+				case 'A':
 					carLabState->rotationAngleAdd = 0.0f;
 					break;
-				}
-				case 'D': {
+				case 'D':
 					carLabState->rotationAngleAdd = 0.0f;
 					break;
-				}
 			}
 			break;
 		}
-
 		case WM_DESTROY: {
 			carLabState->running = false;
 			break;
 		}
-
 		case WM_CLOSE: {
 			carLabState->running = false;
 			break;
 		}
-	
 		default: {
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
 	}
+
 	return result;
 }
 
