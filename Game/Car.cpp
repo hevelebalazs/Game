@@ -590,11 +590,44 @@ V2 GetCarCorner(Car* car, I32 cornerIndex)
 
 void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 {
+	F32 speed = VectorLength(car->velocity);
+	V2 carDirection = RotationVector(car->car.angle);
+
+	F32 maxControlSpeed = 10.0f;
+	F32 maxControlTurn = 1.0f;
+	F32 turnRatio = 0.6f;
+	if (speed > maxControlSpeed)
+		turnRatio = maxControlSpeed / speed;
+
+	F32 frontWheelTarget = turnRatio * car->frontWheelAngleTarget * maxControlTurn;
+	if (car->frontWheelAngle < car->frontWheelAngleTarget) {
+		car->frontWheelAngle += seconds * maxControlTurn;
+		car->frontWheelAngle = Min2(car->frontWheelAngle, frontWheelTarget);
+	} else {
+		car->frontWheelAngle -= seconds * maxControlTurn;
+		car->frontWheelAngle = Max2(car->frontWheelAngle, frontWheelTarget);
+	}
+
+	V2 frontPositionStart = car->car.position + (0.5f * car->car.length * carDirection);
+	F32 frontAngle = car->car.angle + car->frontWheelAngle;
+	V2 frontDirection = RotationVector(frontAngle);
+	V2 frontPositionEnd = frontPositionStart + seconds * speed * frontDirection;
+
+	V2 backPositionStart = car->car.position - (0.5f * car->car.length * carDirection);
+	F32 backAngle = car->car.angle;
+	V2 backDirection = RotationVector(backAngle);
+	V2 backPositionEnd = backPositionStart + seconds * speed * backDirection;
+
+	// car->car.angle = LineAngle(backPositionEnd, frontPositionEnd);
+	F32 turnRadius = 1.0f;
+	F32 turnPeriphery = 2.0f * PI * turnRadius;
+	F32 distance = seconds * speed;
+	car->car.angle += (distance / turnPeriphery) * car->frontWheelAngle;
+
 	V2 direction = RotationVector(car->car.angle);
 	V2 tractionForce = ((car->engineForce) * CarMass * direction);
 
 	F32 dragConstant = 0.05f;
-	F32 speed = VectorLength(car->velocity);
 	V2 drag = ((-dragConstant * speed) * CarMass * car->velocity);
 
 	F32 sideResistanceConstant = 1.0f;
@@ -610,14 +643,7 @@ void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 	F32 angularResistanceConstant = 0.5f;
 	F32 angularResistance = ((-angularResistanceConstant) * car->inertia * car->angularVelocity);
 
-	F32 maxControlSpeed = 4.0f;
-	F32 controlTurn = 4.0f;
-
-	F32 turn = (car->inertia * car->turnInput) * controlTurn;
-	if (speed > maxControlSpeed)
-		turn *= (maxControlSpeed / speed);
-
-	car->angularAcceleration = Invert(car->inertia) * (turn + angularResistance);
+	car->angularAcceleration = Invert(car->inertia) * angularResistance;
 
 	F32 oldAngle = car->car.angle;
 	car->angularVelocity = car->angularVelocity + (seconds * car->angularAcceleration);

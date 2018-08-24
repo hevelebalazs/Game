@@ -71,7 +71,9 @@ struct PlayerCar {
 
 	F32 engineForce;
 	F32 breakForce;
-	F32 turnInput;
+
+	F32 frontWheelAngle;
+	F32 frontWheelAngleTarget;
 };
 
 V2 GetCarCorner(Car* car, I32 cornerIndex);

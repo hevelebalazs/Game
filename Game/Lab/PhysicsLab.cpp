@@ -6,6 +6,10 @@
 #include "../Draw.hpp"
 #include "../Geometry.hpp"
 
+// TODO: Move these to car.hpp!
+#define WheelWidth  0.4f
+#define WheelLength 0.8f
+
 struct PhysicsLabState {
 	Camera camera;
 	Canvas canvas;
@@ -41,7 +45,7 @@ static void PhysicsLabResize(PhysicsLabState* labState, I32 width, I32 height)
 	Canvas* canvas = &labState->canvas;
 	ResizeBitmap(&canvas->bitmap, width, height);
 	canvas->camera = camera;
-	camera->unitInPixels = 10.0f;
+	camera->unitInPixels = 20.0f;
 }
 
 static void PhysicsLabBlit(Canvas canvas, HDC context, RECT rect)
@@ -96,16 +100,16 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 			WPARAM keyCode = wparam;
 			switch (keyCode) {
 				case 'W':
-					car->engineForce = 5.0f;
+					car->engineForce = 3.0f;
 					break;
 				case 'S':
-					car->engineForce = -5.0f;
+					car->engineForce = -3.0f;
 					break;
 				case 'A':
-					car->turnInput = -0.5f;
+					car->frontWheelAngleTarget = -1.0f;
 					break;
 				case 'D':
-					car->turnInput = +0.5f;
+					car->frontWheelAngleTarget = +1.0f;
 					break;
 			}
 			break;
@@ -119,7 +123,7 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 					break;
 				case 'A':
 				case 'D':
-					car->turnInput = 0.0f;
+					car->frontWheelAngleTarget = 0.0f;
 					break;
 			}
 			break;
@@ -149,7 +153,7 @@ static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windo
 
 	PlayerCar* car = &labState->car;
 	car->car.angle = PI * 0.5f;
-	car->car.width = 2.3f;
+	car->car.width = 3.0f;
 	car->car.length = 5.0f;
 
 	car->inertia = 0.0f;
@@ -161,6 +165,23 @@ static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windo
 	}
 
 	PhysicsLabResize(labState, windowWidth, windowHeight);
+}
+
+static void DrawWheel(Canvas canvas, V2 center, F32 angle)
+{
+	V2 frontDirection = RotationVector(angle);
+	V2 sideDirection = TurnVectorToRight(frontDirection);
+
+	V2 wheelFront = center + (0.5f * WheelLength) * frontDirection;
+	V2 wheelBack = center - (0.5f * WheelLength) * frontDirection;
+	Quad wheelQuad = {
+		wheelFront - (0.5f * WheelWidth * sideDirection),
+		wheelFront + (0.5f * WheelWidth * sideDirection),
+		wheelBack  + (0.5f * WheelWidth * sideDirection),
+		wheelBack  - (0.5f * WheelWidth * sideDirection)
+	};
+	V4 wheelColor = MakeColor(0.5f, 0.5f, 0.5f);
+	DrawQuad(canvas, wheelQuad, wheelColor);
 }
 
 static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
@@ -209,10 +230,31 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 	V2 oldCorner1 = GetCarCorner(&oldCar.car, 1);
 	V2 oldCorner2 = GetCarCorner(&oldCar.car, 2);
 	V2 oldCorner3 = GetCarCorner(&oldCar.car, 3);
-	DrawQuadPoints(canvas, oldCorner0, oldCorner1, oldCorner2, oldCorner3, carColor);
+	
+	// DrawQuadPoints(canvas, oldCorner0, oldCorner1, oldCorner2, oldCorner3, carColor);
+	Bresenham(canvas, oldCorner0, oldCorner1, carColor);
+	Bresenham(canvas, oldCorner1, oldCorner2, carColor);
+	Bresenham(canvas, oldCorner2, oldCorner3, carColor);
+	Bresenham(canvas, oldCorner3, oldCorner0, carColor);
+
+	F32 backWheelAngle = car->car.angle;
+	F32 frontWheelAngle = car->car.angle + car->frontWheelAngle;
+
+	V2 frontDirection = RotationVector(car->car.angle);
+	V2 sideDirection = TurnVectorToRight(frontDirection);
+
+	F32 wheelFrontPosition = (car->car.length * 0.5f) - (WheelLength * 1.0f);
+	F32 wheelSidePosition = (car->car.width * 0.5f) - (WheelWidth * 0.5f);
+
+	V2 frontVector = wheelFrontPosition * frontDirection;
+	V2 sideVector = wheelSidePosition * sideDirection;
+
+	DrawWheel(canvas, car->car.position + frontVector + sideVector, frontWheelAngle);
+	DrawWheel(canvas, car->car.position + frontVector - sideVector, frontWheelAngle);
+	DrawWheel(canvas, car->car.position - frontVector + sideVector, backWheelAngle);
+	DrawWheel(canvas, car->car.position - frontVector - sideVector, backWheelAngle);
 
 	UpdatePlayerCarWithoutCollision(car, seconds);
-	/*
 	CollisionInfo hit = {};
 	hit = GetCarPolyCollisionInfo(&oldCar.car, &car->car, labState->walls, labState->wallN);
 	UpdatePlayerCarCollision(car, &oldCar, seconds, hit);
@@ -225,7 +267,6 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 		car->angularVelocity = 0.0f;
 		car->car.angle = oldCar.car.angle;
 	}
-	*/
 	V4 wallColor = MakeColor(1.0f, 1.0f, 1.0f);
 	F32 wallWidth = 0.2f;
 	DrawPolyOutline(canvas, labState->walls, labState->wallN, wallColor);

@@ -187,6 +187,29 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	GenerateMapTextures(&gameState->mapTextures, &gameStorage->tmpArena);
 }
 
+CollisionInfo GetCarCollisionInfoWithRoadSides(Car* oldCar, Car* newCar, GameState* gameState)
+{
+	CollisionInfo hit = {};
+
+	for (int i = 0; i < gameState->map.roadN; ++i) {
+		Road* road = &gameState->map.roads[i];
+		Junction* junction1 = road->junction1;
+		Junction* junction2 = road->junction2;
+		V2 left1  = GetRoadLeftSidewalkJunctionCorner(junction1, road);
+		V2 right1 = GetRoadRightSidewalkJunctionCorner(junction1, road);
+		V2 left2  = GetRoadLeftSidewalkJunctionCorner(junction2, road);
+		V2 right2 = GetRoadRightSidewalkJunctionCorner(junction2, road);
+
+		CollisionInfo hitLeft = GetCarLineCollisionInfo(oldCar, newCar, left1, left2);
+		CollisionInfo hitRight = GetCarLineCollisionInfo(oldCar, newCar, right1, right2);
+
+		hit = hit + hitLeft;
+		hit = hit + hitRight;
+	}
+
+	return hit;
+}
+
 CollisionInfo GetCarCollisionInfoWithAutoCars(Car* oldCar, Car* newCar, GameState* gameState)
 {
 	CollisionInfo hit = {};
@@ -267,7 +290,7 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		PlayerCar oldCar = gameState->playerCar;
 		UpdatePlayerCarWithoutCollision(&gameState->playerCar, seconds);
 
-		CollisionInfo hit = GetCarCollisionInfoWithAutoCars(&oldCar.car, &gameState->playerCar.car, gameState);
+		CollisionInfo hit = GetCarCollisionInfoWithRoadSides(&oldCar.car, &gameState->playerCar.car, gameState);
 		UpdatePlayerCarCollision(&gameState->playerCar, &oldCar, seconds, hit);
 
 		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
