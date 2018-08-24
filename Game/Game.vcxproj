@@ -131,6 +131,7 @@
     <ClCompile Include="Human.cpp" />
     <ClCompile Include="Lab\CarLab.cpp" />
     <ClCompile Include="Lab\MapLab.cpp" />
+    <ClCompile Include="Lab\PhysicsLab.cpp" />
     <ClCompile Include="Lab\RoadLab.cpp" />
     <ClCompile Include="Lab\ThreadLab.cpp" />
     <ClCompile Include="Map.cpp" />
@@ -155,6 +156,7 @@
     <ClInclude Include="Human.hpp" />
     <ClInclude Include="Lab\CarLab.hpp" />
     <ClInclude Include="Lab\MapLab.hpp" />
+    <ClInclude Include="Lab\PhysicsLab.hpp" />
     <ClInclude Include="Lab\RoadLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
     <ClInclude Include="Light.hpp" />

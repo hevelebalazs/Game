@@ -78,7 +78,6 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			MapLabResize(labState, width, height);
 			break;
 		}
-
 		case WM_PAINT: {
 			PAINTSTRUCT paint = {};
 			HDC context = BeginPaint(window, &paint);
@@ -91,55 +90,45 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			EndPaint(window, &paint);
 			break;
 		}
-
 		case WM_SETCURSOR: {
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 			SetCursor(cursor);
 			break;
 		}
-
 		case WM_KEYDOWN: {
 			F32 speed = 0.3f;
 
 			WPARAM keyCode = wparam;
 			switch(keyCode) {
-				case 'W': {
+				case 'W':
 					labState->playerVelocity.y = -speed;
 					break;
-				}
-				case 'S': {
+				case 'S':
 					labState->playerVelocity.y = speed;
 					break;
-				}
-				case 'A': {
+				case 'A':
 					labState->playerVelocity.x = -speed;
 					break;
-				}
-				case 'D': {
+				case 'D':
 					labState->playerVelocity.x = speed;
 					break;
-				}
 			}
 			break;
 		}
-
 		case WM_KEYUP: {
 			WPARAM keyCode = wparam;
 			switch(keyCode) {
 				case 'W':
-				case 'S': {
+				case 'S':
 					labState->playerVelocity.y = 0.0f;
 					break;
-				}
 				case 'A':
-				case 'D': {
+				case 'D':
 					labState->playerVelocity.x = 0.0f;
 					break;
-				}
 			}
 			break;
 		}
-
 		case WM_MOUSEWHEEL: {
 			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
 			if (wheelDeltaParam > 0)
@@ -148,13 +137,11 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 				labState->camera.unitInPixels /= 1.10f;
 			break;
 		}
-
 		case WM_DESTROY:
 		case WM_CLOSE: {
 			labState->running = false;
 			break;
 		}
-	
 		default: {
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;

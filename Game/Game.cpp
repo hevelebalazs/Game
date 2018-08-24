@@ -122,6 +122,14 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	I32 carBitmapIndex = IntRandom(0, CarBitmapN - 1);
 	car->bitmap = &gameState->carBitmaps[carBitmapIndex];
 
+	playerCar->inertia = 0.0f;
+	for (int i = 0; i < 4; ++i) {
+		V2 corner = GetCarCorner(&playerCar->car, i);
+		V2 radius = corner - playerCar->car.position;
+		F32 radiusLength = VectorLength(radius);
+		playerCar->inertia += CarCornerMass * (radiusLength * radiusLength);
+	}
+
 	for (I32 i = 0; i < gameState->autoCarCount; ++i) {
 		// TODO: create an InitAutoCar function?
 		Junction* randomJunction = GetRandomJunction(&gameState->map);
@@ -177,6 +185,43 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 		CreateThread(0, 0, DrawMapTileWorkProc, &map->drawTileWorkList, 0, 0);
 
 	GenerateMapTextures(&gameState->mapTextures, &gameStorage->tmpArena);
+}
+
+CollisionInfo GetCarCollisionInfoWithRoadSides(Car* oldCar, Car* newCar, GameState* gameState)
+{
+	CollisionInfo hit = {};
+
+	for (int i = 0; i < gameState->map.roadN; ++i) {
+		Road* road = &gameState->map.roads[i];
+		Junction* junction1 = road->junction1;
+		Junction* junction2 = road->junction2;
+		V2 left1  = GetRoadLeftSidewalkJunctionCorner(junction1, road);
+		V2 right1 = GetRoadRightSidewalkJunctionCorner(junction1, road);
+		V2 left2  = GetRoadLeftSidewalkJunctionCorner(junction2, road);
+		V2 right2 = GetRoadRightSidewalkJunctionCorner(junction2, road);
+
+		CollisionInfo hitLeft = GetCarLineCollisionInfo(oldCar, newCar, left1, left2);
+		CollisionInfo hitRight = GetCarLineCollisionInfo(oldCar, newCar, right1, right2);
+
+		hit = hit + hitLeft;
+		hit = hit + hitRight;
+	}
+
+	return hit;
+}
+
+CollisionInfo GetCarCollisionInfoWithAutoCars(Car* oldCar, Car* newCar, GameState* gameState)
+{
+	CollisionInfo hit = {};
+
+	for (int i = 0; i < gameState->autoCarCount; ++i) {
+		Car* testCar = &gameState->autoCars[i].car;
+		Quad corners = GetCarCorners(testCar);
+		CollisionInfo testHit = GetCarPolyCollisionInfo(oldCar, newCar, corners.points, 4);
+		hit = hit + testHit;
+	}
+
+	return hit;
 }
 
 // TODO: get rid of the mousePosition parameter?
@@ -242,7 +287,11 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 	if (gameState->isPlayerCar) {
 		MapElem onElemBefore = GetRoadElemAtPoint(&gameState->map, gameState->playerCar.car.position);
 
-		UpdatePlayerCar(&gameState->playerCar, seconds);
+		PlayerCar oldCar = gameState->playerCar;
+		UpdatePlayerCarWithoutCollision(&gameState->playerCar, seconds);
+
+		CollisionInfo hit = GetCarCollisionInfoWithRoadSides(&oldCar.car, &gameState->playerCar.car, gameState);
+		UpdatePlayerCarCollision(&gameState->playerCar, &oldCar, seconds, hit);
 
 		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
 			AutoHuman* autoHuman = &gameState->autoHumans[i];

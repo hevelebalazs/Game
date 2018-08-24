@@ -321,7 +321,6 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 			RoadLabResize(labState, width, height);
 			break;
 		}
-
 		case WM_PAINT: {
 			PAINTSTRUCT paint;
 			HDC context = BeginPaint(window, &paint);
@@ -334,31 +333,26 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 			EndPaint(window, &paint);
 			break;
 		}
-
 		case WM_KEYUP: {
 			WPARAM keyCode = wparam;
 
 			switch (keyCode) {
-				case '1': {
+				case '1':
 					labState->labMode = RoadPlacingMode;
 					labState->isPreviewOn = false;
 					break;
-				};
-				case '2': {
+				case '2':
 					labState->labMode = JunctionPlacingMode;
 					break;
-				};
-				case 'P': {
+				case 'P':
 					labState->labMode = RoadPathBuildingMode;
 					ResetPathPool(&labState->pathPool);
 					break;
-				}
-				case 'O': {
+				case 'O':
 					labState->labMode = SidewalkPathBuildingMode;
 					ResetPathPool(&labState->pathPool);
 					break;
-				}
-				case 'G': {
+				case 'G':
 					Map* map = &labState->map;
 					I32 junctionRowN = RoadLabMaxJunctionRowN;
 					I32 junctionColN = RoadLabMaxJunctionColN;
@@ -366,28 +360,23 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 					MemArena* tmpArena = &labState->memArena;
 					GenerateGridMap(map, junctionRowN, junctionColN, roadN, tmpArena);
 					break;
-				}
 			}
 			break;
 		}
-
 		case WM_LBUTTONDOWN: {
 			V2 mouse = GetMousePosition(&labState->camera, window);
 			RoadLabClick(labState, mouse);
 			break;
 		}
-
 		case WM_RBUTTONDOWN: {
 			labState->isCameraMoved = true;
 			labState->cameraMoveDragPoint = GetMousePosition(&labState->camera, window);
 			break;
-		};
-
+		}
 		case WM_RBUTTONUP: {
 			labState->isCameraMoved = false;
 			break;
 		}
-
 		case WM_MOUSEWHEEL: {
 			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
 			if (wheelDeltaParam > 0)
@@ -396,23 +385,19 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 				labState->camera.unitInPixels /= 1.10f;
 			break;
 		}
-
 		case WM_SETCURSOR: {
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 			SetCursor(cursor);
 			break;
 		}
-
 		case WM_DESTROY: {
 			labState->running = false;
 			break;
 		}
-
 		case WM_CLOSE: {
 			labState->running = false;
 			break;
 		}
-
 		default: {
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;

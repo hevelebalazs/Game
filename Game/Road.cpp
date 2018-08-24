@@ -1046,18 +1046,18 @@ static void DrawTrafficLight(Canvas canvas, TrafficLight* trafficLight)
 {
 	V4 drawColor = {};
 	switch (trafficLight->color) {
-		case TrafficLightGreen: {
+		case TrafficLightGreen:
 			drawColor = {0.0f, 1.0f, 0.0f}; 
 			break;
-		}
-		case TrafficLightYellow: {
+		case TrafficLightYellow:
 			drawColor = {1.0f, 1.0f, 0.0f};
 			break;
-		}
-		case TrafficLightRed: {
+		case TrafficLightRed:
 			drawColor = {1.0f, 0.0f, 0.0f};
 			break;
-		}
+		default:
+			DebugBreak();
+			break;
 	}
 
 	V2 position = trafficLight->position;

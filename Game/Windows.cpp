@@ -14,6 +14,7 @@
 
 #include "Lab/CarLab.hpp"
 #include "Lab/MapLab.hpp"
+#include "Lab/PhysicsLab.hpp"
 #include "Lab/RoadLab.hpp"
 #include "Lab/ThreadLab.hpp"
 
@@ -79,7 +80,6 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			WinResize(globalGameState, width, height);
 			break;
 		}
-
 		case WM_PAINT: {
 			PAINTSTRUCT paint;
 			HDC context = BeginPaint(window, &paint);
@@ -92,68 +92,55 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			EndPaint(window, &paint);
 			break;
 		}
-
 		case WM_KEYUP: {
 			WPARAM keyCode = wparam;
-
 			switch (keyCode) {
-				case 'W': {
+				case 'W':
 					globalGameState->playerHuman.moveUp = false;
 					globalGameState->playerCar.engineForce = 0.0f;
 					break;
-				}
-				case 'S': {
+				case 'S':
 					globalGameState->playerHuman.moveDown = false;
 					globalGameState->playerCar.engineForce = 0.0f;
 					break;
-				}
-				case 'A': {
+				case 'A':
 					globalGameState->playerHuman.moveLeft = false;
-					globalGameState->playerCar.turnDirection = 0.0f;
+					globalGameState->playerCar.frontWheelAngleTarget = 0.0f;
 					break;
-				}
-				case 'D': {
+				case 'D':
 					globalGameState->playerHuman.moveRight = false;
-					globalGameState->playerCar.turnDirection = 0.0f;
+					globalGameState->playerCar.frontWheelAngleTarget = 0.0f;
 					break;
-				}
 			}
 			break;
 		}
-
 		case WM_KEYDOWN: {
 			WPARAM keyCode = wparam;
 
 			switch (keyCode) {
-				case 'W': {
+				case 'W':
 					globalGameState->playerHuman.moveUp = true;
-					globalGameState->playerCar.engineForce = MaxCarEngineForce;
+					globalGameState->playerCar.engineForce = +10.0f;
 					break;
-				}
-				case 'S': {
+				case 'S':
 					globalGameState->playerHuman.moveDown = true;
-					globalGameState->playerCar.engineForce = -MaxCarBrakeForce;
+					globalGameState->playerCar.engineForce = -10.0f;
 					break;
-				}
-				case 'A': {
+				case 'A':
 					globalGameState->playerHuman.moveLeft = true;
-					globalGameState->playerCar.turnDirection = -1.0f;
+					globalGameState->playerCar.frontWheelAngleTarget = -1.0f;
 					break;
-				}
-				case 'D': {
+				case 'D':
 					globalGameState->playerHuman.moveRight = true;
-					globalGameState->playerCar.turnDirection = 1.0f;
+					globalGameState->playerCar.frontWheelAngleTarget = +1.0f;
 					break;
-				}
-				case 'F': {
+				case 'F':
 					TogglePlayerCar(globalGameState);
 					break;
-				}
 			}
 
 			break;
 		}
-
 		case WM_LBUTTONDOWN: {
 			if (!globalGameState->isPlayerCar) {
 				V2 mousePosition = WinMousePosition(window);
@@ -161,17 +148,14 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			}
 			break;
 		}
-
 		case WM_DESTROY: {
 			running = false;
 			break;
 		}
-
 		case WM_CLOSE: {
 			running = false;
 			break;
 		}
-
 		default: {
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;
@@ -281,9 +265,9 @@ void RunGame(HINSTANCE instance)
 	}
 }
 
-
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
 	RunGame(instance);
+	// PhysicsLab(instance);
 	return 0;
 }
