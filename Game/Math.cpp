@@ -124,6 +124,18 @@ F32 Square(F32 x)
 	return result;
 }
 
+I32 IntSquare(I32 x)
+{
+	I32 result = x * x;
+	return result;
+}
+
+F32 Fraction(F32 x)
+{
+	F32 fraction = x - (I32)x;
+	return fraction;
+}
+
 void InitRandom()
 {
 	srand((U32)time(0));

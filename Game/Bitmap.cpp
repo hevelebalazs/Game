@@ -373,10 +373,10 @@ void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toLeft, I32 t
 	I32 bottom = ClipInt(toBottom, -1, toBitmap->height - 1);
 
 	
-	F32 fromHeightStart = ((F32)fromBitmap->height - 1.0f) * ((F32)top - toTop) / toHeight;
-	F32 fromHeightAdd   = ((F32)fromBitmap->height - 1.0f) / toHeight;
-	F32 fromWidthStart  = ((F32)fromBitmap->width  - 1.0f) * ((F32)left - toLeft) / toWidth;
-	F32 fromWidthAdd    = ((F32)fromBitmap->width  - 1.0f) / toWidth;
+	F32 fromHeightStart = ((F32)fromBitmap->height /*- 1.0f*/) * ((F32)top - toTop) / toHeight;
+	F32 fromHeightAdd   = ((F32)fromBitmap->height /*- 1.0f*/) / toHeight;
+	F32 fromWidthStart  = ((F32)fromBitmap->width  /*- 1.0f*/) * ((F32)left - toLeft) / toWidth;
+	F32 fromWidthAdd    = ((F32)fromBitmap->width  /*- 1.0f*/) / toWidth;
 
 	F32 fromHeight = fromHeightStart;
 	F32 fromWidth = fromWidthStart;

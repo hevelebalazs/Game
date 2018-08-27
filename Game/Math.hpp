@@ -86,6 +86,7 @@ inline F32 Sqrt(F32 x)
 }
 
 F32 Square(F32 x);
+I32 IntSquare(I32 x);
 
 inline F32 Abs(F32 x)
 {
@@ -99,6 +100,8 @@ inline I32 Floor(F32 x)
 {
 	return (I32)floorf(x);
 }
+
+F32 Fraction(F32 x);
 
 inline F32 Lerp(F32 value1, F32 ratio, F32 value2)
 {
