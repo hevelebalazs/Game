@@ -9,11 +9,10 @@
 #define WorldLabLevelSwitchRatio 0.67f
 #define WorldLabMaxValue (1.0f / (1.0f - WorldLabLevelSwitchRatio))
 
-enum {
-	GridTopLeft		= 1,
-	GridTopRight	= 2,
-	GridBottomLeft  = 3,
-	GridBottomRight = 4
+struct GridBitmap {
+	I32 row;
+	I32 col;
+	Bitmap bitmap;
 };
 
 struct WorldLabState {
@@ -23,13 +22,10 @@ struct WorldLabState {
 	
 	F32 randomTable[WorldLabRandomTableN];
 
-	Bitmap bitmap;
-
-	I32 mouseIndex;
+	GridBitmap bitmaps[9];
+	I32 bitmapN;
 
 	I32 gridLevel;
-	I32 gridRow;
-	I32 gridCol;
 };
 WorldLabState gWorldLabState;
 
@@ -119,8 +115,7 @@ static void GenerateGridBitmap(WorldLabState* labState, I32 gridLevel, I32 row, 
 	F32 bottom = (row + 1) * gridWidth;
 
 	F32 valueRatio = 1.0f;
-	I32 lastLevel = gridLevel + 8;
-	for (I32 level = 3; level <= lastLevel; ++level) {
+	for (I32 level = 2; level <= 8; ++level) {
 		V4 color1 = MakeColor(0.0f, 0.0f, 0.0f);
 		V4 color2 = MakeColor(1.0f, 1.0f, 1.0f);
 
@@ -194,6 +189,18 @@ static void GenerateGridBitmap(WorldLabState* labState, I32 gridLevel, I32 row, 
 	delete[] values;
 }
 
+static void LoadGridBitmap(WorldLabState* labState, I32 row, I32 col)
+{
+	Assert(labState->bitmapN < 9);
+	GridBitmap* gridBitmap = &labState->bitmaps[labState->bitmapN];
+	labState->bitmapN++;
+	gridBitmap->row = row;
+	gridBitmap->col = col;
+
+	Bitmap* bitmap = &gridBitmap->bitmap;
+	GenerateGridBitmap(labState, labState->gridLevel, row, col, bitmap);
+}
+
 static void WorldLabInit(WorldLabState* labState, I32 width, I32 height)
 {
 	InitRandom();
@@ -202,12 +209,18 @@ static void WorldLabInit(WorldLabState* labState, I32 width, I32 height)
 	WorldLabResize(labState, width, height);
 
 	InitRandomTable(labState);
+	labState->bitmapN = 0;
 	labState->gridLevel = 0;
-	labState->gridRow = 0;
-	labState->gridCol = 0;
-	GenerateGridBitmap(labState, labState->gridLevel, labState->gridRow, labState->gridCol, &labState->bitmap);
+	LoadGridBitmap(labState, 0, 0);
 
-	labState->camera.unitInPixels = 1.0f;
+	Canvas* canvas = &labState->canvas;
+	Camera* camera = &labState->camera;
+	camera->unitInPixels = 1.0f;
+	camera->center.x = 0.0f;
+	camera->center.y = 0.0f;
+	camera->screenPixelSize.x = F32(width);
+	camera->screenPixelSize.y = F32(height);
+	canvas->camera = camera;
 }
 
 static void WorldLabBlit(WorldLabState* labState, HDC context, RECT rect)
@@ -269,53 +282,18 @@ static LRESULT CALLBACK WorldLabCallback(HWND window, UINT message, WPARAM wpara
 			break;
 		}
 
-		case WM_RBUTTONDOWN: {
-			if (labState->gridLevel >= 1) {
-				labState->gridLevel--;
-				labState->gridRow = labState->gridRow / 2;
-				labState->gridCol = labState->gridCol / 2;
-				GenerateGridBitmap(labState, labState->gridLevel, labState->gridRow, labState->gridCol, &labState->bitmap);
-			}
+		case WM_KEYUP: {
+			WPARAM keyCode = wparam;
 
-			break;
-		}
-
-		case WM_LBUTTONDOWN: {
-			if (labState->gridLevel < 7) {
-				B32 regenerateBitmap = true;
-				switch (labState->mouseIndex) {
-					case GridTopLeft: {
-						labState->gridLevel++;
-						labState->gridRow = 2 * labState->gridRow;
-						labState->gridCol = 2 * labState->gridCol;
-						break;
-					}
-					case GridTopRight: {
-						labState->gridLevel++;
-						labState->gridRow = 2 * labState->gridRow;
-						labState->gridCol = 2 * labState->gridCol + 1;
-						break;
-					}
-					case GridBottomLeft: {
-						labState->gridLevel++;
-						labState->gridRow = 2 * labState->gridRow + 1;
-						labState->gridCol = 2 * labState->gridCol;
-						break;
-					}
-					case GridBottomRight: {
-						labState->gridLevel++;
-						labState->gridRow = 2 * labState->gridRow + 1;
-						labState->gridCol = 2 * labState->gridCol + 1;
-						break;
-					}
-					default: {
-						regenerateBitmap = false;
-						break;
-					}
+			switch (keyCode) {
+				case 'W': {
+					labState->camera.unitInPixels /= 0.9f;
+					break;
 				}
-
-				if (regenerateBitmap)
-					GenerateGridBitmap(labState, labState->gridLevel, labState->gridRow, labState->gridCol, &labState->bitmap);
+				case 'S': {
+					labState->camera.unitInPixels *= 0.9f;
+					break;
+				}
 			}
 
 			break;
@@ -341,51 +319,91 @@ static void WorldLabUpdate(WorldLabState* labState, V2 mouse)
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, backgroundColor);
 
-	F32 width = F32(bitmap->width);
-	F32 height = F32(bitmap->height);
+	F32 gridSize = 500.0f;
+	F32 gridLeft = -gridSize * 0.5f;
+	F32 gridRight = gridSize * 0.5f;
+	F32 gridTop = -gridSize * 0.5f;
+	F32 gridBottom = gridSize * 0.5f;
 
-	F32 gridTotalSize = Min2(width, height) * 0.8f;
-	F32 gridLeft = (width - gridTotalSize) * 0.5f;
-	F32 gridTop = (height - gridTotalSize) * 0.5f;
-	F32 gridRight = gridLeft + gridTotalSize;
-	F32 gridBottom = gridTop + gridTotalSize;
-
-	F32 gridCenterX = (gridLeft + gridRight) * 0.5f;
-	F32 gridCenterY = (gridTop + gridBottom) * 0.5f;
+	F32 gridCenterX = 0.0f;
+	F32 gridCenterY = 0.0f;
 
 	Canvas* canvas = &labState->canvas;
 	Camera* camera = &labState->camera;
-	camera->center.x = width * 0.5f;
-	camera->center.y = height * 0.5f;
-	camera->screenPixelSize.x = width;
-	camera->screenPixelSize.y = height;
-	camera->targetUnitInPixels = 1.0f;
-	canvas->camera = camera;
 
-	DrawStretchedBitmap(*canvas, &labState->bitmap, gridLeft, gridRight, gridTop, gridBottom);
+	V4 bitmapBorderColor = MakeColor(1.0f, 1.0f, 0.0f);
 
-	labState->mouseIndex = 0;
+	for (I32 i = 0; i < labState->bitmapN; ++i) {
+		GridBitmap* gridBitmap = &labState->bitmaps[i];
+		F32 gridCellSize = (gridSize) / (1 << labState->gridLevel);
 
-	B32 mouseLeft   = IsBetween(mouse.x, gridLeft, gridCenterX);
-	B32 mouseRight  = IsBetween(mouse.x, gridCenterX, gridRight);
-	B32 mouseTop    = IsBetween(mouse.y, gridTop, gridCenterY);
-	B32 mouseBottom = IsBetween(mouse.y, gridCenterY, gridBottom);
+		F32 left = gridLeft + gridCellSize * gridBitmap->col;
+		F32 right = left + gridCellSize;
+		F32 top = gridTop + gridCellSize * gridBitmap->row;
+		F32 bottom = top + gridCellSize;
 
-	V4 mouseGridColor = MakeColor(1.0f, 1.0f, 0.0f);
-	if (mouseLeft && mouseTop) {
-		DrawRectOutline(*canvas, gridLeft, gridCenterX, gridTop, gridCenterY, mouseGridColor);
-		labState->mouseIndex = GridTopLeft;
-	} else if (mouseRight && mouseTop) {
-		DrawRectOutline(*canvas, gridCenterX, gridRight, gridTop, gridCenterY, mouseGridColor);
-		labState->mouseIndex = GridTopRight;
-	} else if (mouseLeft && mouseBottom) {
-		DrawRectOutline(*canvas, gridLeft, gridCenterX, gridCenterY, gridBottom, mouseGridColor);
-		labState->mouseIndex = GridBottomLeft;
-	} else if (mouseRight && mouseBottom) {
-		DrawRectOutline(*canvas, gridCenterX, gridRight, gridCenterY, gridBottom, mouseGridColor);
-		labState->mouseIndex = GridBottomRight;
-	} else {
-		labState->mouseIndex = 0;
+		DrawStretchedBitmap(*canvas, &gridBitmap->bitmap, left, right, top, bottom);
+		DrawRectOutline(*canvas, left, right, top, bottom, bitmapBorderColor);
+	}
+
+	F32 screenPixelSize = 600.0f;
+	F32 halfScreenSize = (screenPixelSize * 0.5f) / camera->unitInPixels;
+
+	F32 centerX = (CameraLeftSide(camera) + CameraRightSide(camera)) * 0.5f;
+	F32 centerY = (CameraTopSide(camera) + CameraBottomSide(camera)) * 0.5f;
+	F32 left = centerX - halfScreenSize;
+	F32 right = centerX +  halfScreenSize;
+	F32 top = centerY - halfScreenSize;
+	F32 bottom = centerY + halfScreenSize;
+
+	V4 screenBorderColor = MakeColor(1.0f, 0.0f, 0.0f);
+	DrawRectOutline(*canvas, left, right, top, bottom, screenBorderColor);
+
+	F32 screenUnitSize = screenPixelSize / camera->unitInPixels;
+	F32 bitmapUnitSize = (gridRight - gridLeft) / (1 << labState->gridLevel);
+
+	B32 reloadBitmaps = false;
+	if (2.0f * bitmapUnitSize < screenUnitSize) {
+		if (labState->gridLevel > 0) {
+			labState->gridLevel--;
+			reloadBitmaps = true;
+		}
+	} else if (bitmapUnitSize > screenUnitSize) {
+		labState->gridLevel++;
+		reloadBitmaps = true;
+	}
+
+	if (reloadBitmaps) {
+		F32 screenLeft   = -screenUnitSize * 0.5f;
+		F32 screenRight  = +screenUnitSize * 0.5f;
+		F32 screenTop    = -screenUnitSize * 0.5f;
+		F32 screenBottom = +screenUnitSize * 0.5f;
+
+		F32 leftRatio   = (screenLeft - gridLeft) / gridSize;
+		F32 rightRatio  = (screenRight - gridLeft) / gridSize;
+		F32 topRatio    = (screenTop - gridTop) / gridSize;
+		F32 bottomRatio = (screenBottom - gridTop) / gridSize;
+
+		I32 gridN = (1 << labState->gridLevel);
+		I32 leftCol   = Floor(leftRatio * gridN);
+		I32 rightCol  = Floor(rightRatio * gridN);
+		I32 topRow    = Floor(topRatio * gridN);
+		I32 bottomRow = Floor(bottomRatio * gridN);
+
+		leftCol   = IntMax2(leftCol, 0);
+		rightCol  = IntMin2(rightCol, gridN - 1);
+		topRow    = IntMax2(topRow, 0);
+		bottomRow = IntMin2(bottomRow, gridN - 1);
+
+		I32 bitmapN = (rightCol - leftCol + 1) * (bottomRow - topRow + 1);
+		Assert(bitmapN <= 9);
+
+		labState->bitmapN = 0;
+		for (I32 row = topRow; row <= bottomRow; ++row) {
+			for (I32 col = leftCol; col <= rightCol; ++col) {
+				LoadGridBitmap(labState, row, col);
+			}
+		}
 	}
 }
 
@@ -442,6 +460,7 @@ void WorldLab(HINSTANCE instance)
 }
 
 // [TODO: Make map zoomable!]
+// TODO: Optimize bitmap generation for speed!
 // TODO: Make water-ground edges look better!
 // TODO: Remove inline functions from project!
 // TODO: Pass canvas by address in project!
