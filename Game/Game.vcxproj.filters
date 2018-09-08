@@ -81,6 +81,9 @@
     <ClCompile Include="Lab\PhysicsLab.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Lab\CombatLab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AutoHuman.hpp">
@@ -159,6 +162,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Lab\PhysicsLab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab\CombatLab.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
