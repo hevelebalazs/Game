@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Debug.hpp"
 #include "Math.hpp"
 #include "Type.hpp"
 
@@ -24,42 +25,263 @@ struct Poly16
 	I32 pointN;
 };
 
-void Poly16Add(Poly16* poly, V2 point);
-
 struct Quad 
 {
 	V2 points[4];
 };
 
-V2 MakePoint(F32 x, F32 y);
-V2 MakeVector(F32 x, F32 y);
-Quad MakeQuad(V2 point1, V2 point2, V2 point3, V2 point4);
+// TODO: create a type that always represents a unit vector?
 
-F32 DistanceSquare(V2 point1, V2 point2);
-F32 CityDistance(V2 point1, V2 point2);
-F32 Distance(V2 point1, V2 point2);
+static void Poly16Add(Poly16* poly, V2 point)
+{
+	Assert(poly->pointN < 16);
+	poly->points[poly->pointN] = point;
+	poly->pointN++;
+}
 
-F32 VectorLength(V2 vector);
-F32 VectorAngle(V2 vector);
+static V2 MakePoint(F32 x, F32 y)
+{
+	V2 point = {};
+	point.x = x;
+	point.y = y;
+	return point;
+}
 
-F32 LineAngle(V2 startPoint, V2 endPoint);
-F32 NormalizeAngle(F32 angle);
-B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle);
+static V2 MakeVector(F32 x, F32 y)
+{
+	V2 result = MakePoint(x, y);
+	return result;
+}
 
-V2 RotationVector(F32 angle);
-V2 PointDirection(V2 startPoint, V2 endPoint);
-B32 TurnsRight(V2 point1, V2 point2, V2 point3);
+static Quad MakeQuad(V2 point1, V2 point2, V2 point3, V2 point4)
+{
+	Quad quad = {};
+	quad.points[0] = point1;
+	quad.points[1] = point2;
+	quad.points[2] = point3;
+	quad.points[3] = point4;
+	return quad;
+}
 
-B32 DoLinesCross(V2 line11, V2 line12, V2 line21, V2 line22);
-V2 LineIntersection(V2 line11, V2 line12, V2 line21, V2 line22);
-V2 LineIntersection(Line line1, Line line2);
+static F32 DistanceSquare(V2 point1, V2 point2)
+{
+	return (point1.x - point2.x) * (point1.x - point2.x) +
+		(point1.y - point2.y) * (point1.y - point2.y);
+}
 
-F32 DotProduct(V2 vector1, V2 vector2);
-V2 NormalVector(V2 vector);
-V2 ParallelVector(V2 vector, V2 base);
+static F32 CityDistance(V2 point1, V2 point2)
+{
+	return fabsf(point1.x - point2.x) + fabsf(point1.y - point2.y);
+}
 
-B32 IsPointInPoly(V2 point, V2* points, I32 pointN);
-B32 IsPointInQuad(Quad quad, V2 point);
+static F32 Distance(V2 point1, V2 point2)
+{
+	F32 dx = (point1.x - point2.x);
+	F32 dy = (point1.y - point2.y);
 
-V2 TurnVectorToRight(V2 vector);
-V2 XYToBase(V2 point, V2 baseUnit);
+	return sqrtf((dx * dx) + (dy * dy));
+}
+
+static F32 VectorLength(V2 vector)
+{
+	return sqrtf((vector.x * vector.x) + (vector.y * vector.y));
+}
+
+static F32 VectorAngle(V2 vector)
+{
+	return atan2f(vector.y, vector.x);
+}
+
+static F32 LineAngle(V2 startPoint, V2 endPoint)
+{
+	V2 diff = (endPoint - startPoint);
+	F32 angle = VectorAngle(diff);
+	return angle;
+}
+
+static F32 NormalizeAngle(F32 angle)
+{
+	while (angle > PI)
+		angle -= 2.0f * PI;
+	while (angle < -PI)
+		angle += 2.0f * PI;
+	return angle;
+}
+
+static B32 TurnsRight(V2 point1, V2 point2, V2 point3)
+{
+	F32 dx1 = point2.x - point1.x;
+	F32 dy1 = point2.y - point1.y;
+	F32 dx2 = point3.x - point2.x;
+	F32 dy2 = point3.y - point2.y;
+
+	F32 det = (dx1 * dy2) - (dx2 * dy1);
+
+	return (det > 0.0f);
+}
+
+static B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
+{
+	B32 result = false;
+	if (minAngle > maxAngle)
+		result = (angle <= maxAngle || angle >= minAngle);
+	else
+		result = (minAngle <= angle && angle <= maxAngle);
+	return result;
+}
+
+static V2 RotationVector(F32 angle)
+{
+	V2 result = MakePoint(cosf(angle), sinf(angle));
+	return result;
+}
+
+static V2 NormalVector(V2 vector)
+{
+	F32 length = VectorLength(vector);
+
+	if (length == 0.0f) 
+		return vector;
+
+	V2 result = (1.0f / length) * vector;
+	return result;
+}
+
+static V2 PointDirection(V2 startPoint, V2 endPoint)
+{
+	V2 vector = {endPoint.x - startPoint.x, endPoint.y - startPoint.y};
+	vector = NormalVector(vector);
+
+	return vector;
+}
+
+static B32 IsPointInQuad(Quad quad, V2 point)
+{
+	V2* points = quad.points;
+	if (point.x < points[0].x && point.x < points[1].x && point.x < points[2].x && point.x < points[3].x)
+		return false;
+	if (point.x > points[0].x && point.x > points[1].x && point.x > points[2].x && point.x > points[3].x)
+		return false;
+
+	if (point.y < points[0].y && point.y < points[1].y && point.y < points[2].y && point.y < points[3].y)
+		return false;
+	if (point.y > points[0].y && point.y > points[1].y && point.y > points[2].y && point.y > points[3].y)
+		return false;
+
+	if (!TurnsRight(points[0], points[1], point))
+		return false;
+	else if (!TurnsRight(points[1], points[2], point))
+		return false;
+	else if (!TurnsRight(points[2], points[3], point))
+		return false;
+	else if (!TurnsRight(points[3], points[0], point))
+		return false;
+	else
+		return true;
+}
+
+static V2 TurnVectorToRight(V2 vector)
+{
+	V2 result = {};
+	result.x = -vector.y;
+	result.y = vector.x;
+	return result;
+}
+
+static V2 XYToBase(V2 point, V2 baseUnit)
+{
+	F32 cosa = baseUnit.x;
+	F32 sina = baseUnit.y;
+
+	V2 result = {};
+	result.x = point.x * cosa + point.y * sina;
+	result.y = -point.x * sina + point.y * cosa;
+
+	return result;
+}
+
+// TODO: can this be merged with LineIntersection?
+static B32 DoLinesCross(V2 line11, V2 line12, V2 line21, V2 line22)
+{
+	B32 right1 = TurnsRight(line11, line21, line22);
+	B32 right2 = TurnsRight(line12, line21, line22);
+	if (right1 == right2) 
+		return false;
+
+	B32 right3 = TurnsRight(line21, line11, line12);
+	B32 right4 = TurnsRight(line22, line11, line12);
+	if (right3 == right4) 
+		return false;
+
+	return true;
+}
+
+static F32 Determinant(F32 a, F32 b, F32 c, F32 d)
+{
+	return (a * d) - (b * c);
+}
+
+static V2 LineIntersection(V2 line11, V2 line12, V2 line21, V2 line22)
+{
+	F32 det1  = Determinant(line11.x, line11.y, line12.x, line12.y);
+	F32 detX1 = Determinant(line11.x,     1.0f, line12.x,     1.0f);
+	F32 detY1 = Determinant(line11.y,     1.0f, line12.y,     1.0f);
+
+	F32 det2  = Determinant(line21.x, line21.y, line22.x, line22.y);
+	F32 detX2 = Determinant(line21.x,     1.0f, line22.x,     1.0f);
+	F32 detY2 = Determinant(line21.y,     1.0f, line22.y,     1.0f);
+
+	F32 detXUp = Determinant(det1, detX1, det2, detX2);
+	F32 detYUp = Determinant(det1, detY1, det2, detY2);
+
+	detX1 = Determinant(line11.x, 1.0f, line12.x, 1.0f);
+	detY1 = Determinant(line11.y, 1.0f, line12.y, 1.0f);
+	detX2 = Determinant(line21.x, 1.0f, line22.x, 1.0f);
+	detY2 = Determinant(line21.y, 1.0f, line22.y, 1.0f);
+
+	F32 detDown = Determinant(detX1, detY1, detX2, detY2);
+
+	Assert(detDown != 0.0f);
+
+	V2 result = (1.0f / detDown) * MakePoint(detXUp, detYUp);
+	return result;
+}
+
+static V2 LineIntersection(Line line1, Line line2)
+{
+	V2 intersection = LineIntersection(line1.p1, line1.p2, line2.p1, line2.p2);
+	return intersection;
+}
+
+static B32 IsPointInPoly(V2 point, V2* points, I32 pointN)
+{
+	B32 isInside = false;
+	if (pointN >= 3) 
+	{
+		isInside = true;
+		I32 prev = pointN - 1;
+		for (I32 i = 0; i < pointN; ++i) 
+		{
+			if (!TurnsRight(points[prev], points[i], point)) 
+			{
+				isInside = false;
+				break;
+			}
+			prev = i;
+		}
+	}
+	return isInside;
+}
+
+static F32 DotProduct(V2 vector1, V2 vector2)
+{
+	return ((vector1.x * vector2.x) + (vector1.y * vector2.y));
+}
+
+// TODO: create a version of this where base is unit length?
+static V2 ParallelVector(V2 vector, V2 base)
+{
+	V2 unitBase = NormalVector(base);
+	V2 result = DotProduct(vector, unitBase) * unitBase;
+	return result;
+}
