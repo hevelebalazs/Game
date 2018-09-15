@@ -71,8 +71,10 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 {
 	LRESULT result = 0;
 
-	switch (message) {
-		case WM_SIZE: {
+	switch (message) 
+	{
+		case WM_SIZE: 
+		{
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
 			I32 width = clientRect.right - clientRect.left;
@@ -80,7 +82,8 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			WinResize(globalGameState, width, height);
 			break;
 		}
-		case WM_PAINT: {
+		case WM_PAINT: 
+		{
 			PAINTSTRUCT paint;
 			HDC context = BeginPaint(window, &paint);
 
@@ -92,9 +95,11 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			EndPaint(window, &paint);
 			break;
 		}
-		case WM_KEYUP: {
+		case WM_KEYUP: 
+		{
 			WPARAM keyCode = wparam;
-			switch (keyCode) {
+			switch (keyCode) 
+			{
 				case 'W':
 					globalGameState->playerHuman.moveUp = false;
 					globalGameState->playerCar.engineForce = 0.0f;
@@ -114,10 +119,12 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			}
 			break;
 		}
-		case WM_KEYDOWN: {
+		case WM_KEYDOWN: 
+		{
 			WPARAM keyCode = wparam;
 
-			switch (keyCode) {
+			switch (keyCode) 
+			{
 				case 'W':
 					globalGameState->playerHuman.moveUp = true;
 					globalGameState->playerCar.engineForce = +10.0f;
@@ -141,22 +148,27 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 
 			break;
 		}
-		case WM_LBUTTONDOWN: {
-			if (!globalGameState->isPlayerCar) {
+		case WM_LBUTTONDOWN: 
+		{
+			if (!globalGameState->isPlayerCar) 
+			{
 				V2 mousePosition = WinMousePosition(window);
 				ShootBullet(&globalGameState->playerHuman, mousePosition);
 			}
 			break;
 		}
-		case WM_DESTROY: {
+		case WM_DESTROY: 
+		{
 			running = false;
 			break;
 		}
-		case WM_CLOSE: {
+		case WM_CLOSE: 
+		{
 			running = false;
 			break;
 		}
-		default: {
+		default: 
+		{
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
@@ -174,7 +186,8 @@ void RunGame(HINSTANCE instance)
 	windowClass.hInstance = instance;
 	windowClass.lpszClassName = "GameWindowClass";
 
-	if (!RegisterClass(&windowClass)) {
+	if (!RegisterClass(&windowClass)) 
+	{
 		OutputDebugStringA("Failed to register window class!\n");
 		return;
 	}
@@ -194,7 +207,8 @@ void RunGame(HINSTANCE instance)
 		0
 	);
 
-	if (!window) {
+	if (!window) 
+	{
 		OutputDebugStringA("Failed to create window!\n");
 		return;
 	}
@@ -224,8 +238,10 @@ void RunGame(HINSTANCE instance)
 	F32 elapsedS = globalTargetFrameS;
 
 	running = true;
-	while (running) {
-		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+	while (running) 
+	{
+		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) 
+		{
 			if (message.message == WM_QUIT)
 				running = false;
 
@@ -253,11 +269,14 @@ void RunGame(HINSTANCE instance)
 		I64 elapsedUS = nowCounter.QuadPart - lastCounter.QuadPart;
 		F32 elapsedMS = ((F32)elapsedUS * 1000.0f) / (F32)counterFrequency.QuadPart;
 
-		if (elapsedMS < globalTargetFrameMS) {
+		if (elapsedMS < globalTargetFrameMS) 
+		{
 			DWORD sleepMS = (DWORD)(globalTargetFrameMS - elapsedMS);
 			Sleep(sleepMS);
 			elapsedS = globalTargetFrameS;
-		} else {
+		} 
+		else 
+		{
 			elapsedS = elapsedMS * 0.001f;
 		}
 

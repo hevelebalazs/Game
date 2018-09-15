@@ -3,26 +3,31 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
-union Line {
-	struct {
+union Line 
+{
+	struct
+	{
 		V2 p1;
 		V2 p2;
 	};
 
-	struct {
+	struct 
+	{
 		F32 x1, y1;
 		F32 x2, y2;
 	};
 };
 
-struct Poly16 {
+struct Poly16 
+{
 	V2 points[16];
 	I32 pointN;
 };
 
 void Poly16Add(Poly16* poly, V2 point);
 
-struct Quad {
+struct Quad 
+{
 	V2 points[4];
 };
 

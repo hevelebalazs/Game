@@ -36,7 +36,8 @@ static void MoveHuman(Human* human, V2 moveVector)
 	F32 distanceToGo = VectorLength(moveVector);
 
 	// TODO: should there be a limit on the iteration number?
-	while (distanceToGo > 0.0f) {
+	while (distanceToGo > 0.0f) 
+	{
 		B32 go = true;
 		B32 isTouchingLine = false;
 		BuildingCrossInfo crossInfo = {};
@@ -44,21 +45,25 @@ static void MoveHuman(Human* human, V2 moveVector)
 
 		V2 pointToGo = (human->position + moveVector);
 
-		if (human->inBuilding) {
+		if (human->inBuilding) 
+		{
 			B32 isInBuilding = IsPointInExtBuilding(human->position, *human->inBuilding, HumanRadius);
 
 			if (isInBuilding)
 				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, HumanRadius, human->position, pointToGo);
 			else
 				human->inBuilding = 0;
-		} else {
+		} 
+		else 
+		{
 			crossInfo = GetClosestExtBuildingCrossInfo(human->map, HumanRadius, human->position, pointToGo);
 
 			if (crossInfo.type == CrossEntrance)
 				human->inBuilding = crossInfo.building;
 		}
 
-		if (crossInfo.type == CrossWall) {
+		if (crossInfo.type == CrossWall) 
+		{
 			Building* crossedBuilding = crossInfo.building;
 
 			V2 crossPoint = crossInfo.crossPoint;
@@ -75,7 +80,8 @@ static void MoveHuman(Human* human, V2 moveVector)
 			go = false;
 		}
 
-		if (go) {
+		if (go) 
+		{
 			human->position = pointToGo;
 			distanceToGo = 0.0f;
 		}
@@ -92,22 +98,26 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds, GameState* gameSta
 	B32 moveX = false;
 	B32 moveY = false;
 
-	if (playerHuman->moveLeft) {
+	if (playerHuman->moveLeft) 
+	{
 		playerHuman->moveDirection.x = -1.0f;
 		moveX = true;
 	}
 
-	if (playerHuman->moveRight) {
+	if (playerHuman->moveRight) 
+	{
 		playerHuman->moveDirection.x = 1.0f;
 		moveX = true;
 	}
 
-	if (playerHuman->moveUp) {
+	if (playerHuman->moveUp) 
+	{
 		playerHuman->moveDirection.y = -1.0f;
 		moveY = true;
 	}
 
-	if (playerHuman->moveDown) {
+	if (playerHuman->moveDown) 
+	{
 		playerHuman->moveDirection.y = 1.0f;
 		moveY = true;
 	}
@@ -120,7 +130,8 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds, GameState* gameSta
 	MoveHuman(human, moveVector);
 
 	// TODO: merge update and draw everywhere
-	if (playerHuman->shootCooldown >= 0.0f) {
+	if (playerHuman->shootCooldown >= 0.0f) 
+	{
 		playerHuman->shootCooldown -= seconds;
 		if (playerHuman->shootCooldown <= 0.0f)
 			playerHuman->shootCooldown = 0.0f;
@@ -129,13 +140,17 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds, GameState* gameSta
 	// TODO: create an UpdateBullet function
 	//       and move it to another file?
 	Bullet* bullet = &playerHuman->bullet;
-	if (bullet->secondsRemaining > 0.0f) {
+	if (bullet->secondsRemaining > 0.0f) 
+	{
 		F32 secondsToGo = 0.0f;
 
-		if (bullet->secondsRemaining > seconds) {
+		if (bullet->secondsRemaining > seconds) 
+		{
 			secondsToGo = seconds;
 			bullet->secondsRemaining -= seconds;
-		} else {
+		} 
+		else 
+		{
 			secondsToGo = bullet->secondsRemaining;
 			bullet->secondsRemaining = 0.0f;
 		}
@@ -148,11 +163,13 @@ void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds, GameState* gameSta
 		// TODO: is it necessary to build this struct?
 		Line bulletLine = Line{oldPosition, newPosition};
 
-		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
+		for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+		{
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			Human* human = &autoHuman->human;
 
-			if (!autoHuman->dead && IsHumanCrossedByLine(human, bulletLine)) {
+			if (!autoHuman->dead && IsHumanCrossedByLine(human, bulletLine)) 
+			{
 				DamageAutoHuman(autoHuman, &gameState->pathPool);
 				bullet->secondsRemaining = 0.0f;
 				break;
@@ -166,7 +183,8 @@ void DrawPlayerHuman(Canvas canvas, PlayerHuman* playerHuman)
 	Human* human = &playerHuman->human;
 
 	Bullet* bullet = &playerHuman->bullet;
-	if (bullet->secondsRemaining > 0.0f) {
+	if (bullet->secondsRemaining > 0.0f) 
+	{
 		F32 bulletTailLength = 2.0f;
 
 		V2 point1 = bullet->position.position;

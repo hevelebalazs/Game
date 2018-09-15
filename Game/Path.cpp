@@ -4,7 +4,8 @@
 #include "Path.hpp"
 #include "Type.hpp"
 
-struct Path {
+struct Path 
+{
 	I32 nodeCount;
 	PathNode* nodes;
 	MemArena* arena;
@@ -74,7 +75,8 @@ static void PushBuilding(Path* path, Building* building)
 
 static void InvertSegment(Path* path, I32 startIndex, I32 endIndex)
 {
-	while (startIndex < endIndex) {
+	while (startIndex < endIndex) 
+	{
 		PathNode tmpNode = path->nodes[startIndex];
 		path->nodes[startIndex] = path->nodes[endIndex];
 		path->nodes[endIndex] = tmpNode;
@@ -84,7 +86,8 @@ static void InvertSegment(Path* path, I32 startIndex, I32 endIndex)
 	}
 }
 
-struct PathHelper {
+struct PathHelper 
+{
 	PathNode* nodes;
 	I32 nodeCount;
 
@@ -111,7 +114,8 @@ static void AddRoadToHelper(Map* map, Road* road, I32 sourceIndex, PathHelper* p
 {
 	I32 roadIndex = (I32)(road - map->roads);
 
-	if (pathHelper->isRoadHelper[roadIndex] == 0) {
+	if (pathHelper->isRoadHelper[roadIndex] == 0) 
+	{
 		pathHelper->isRoadHelper[roadIndex] = 1;
 
 		pathHelper->nodes[pathHelper->nodeCount] = RoadNode(road);
@@ -124,7 +128,8 @@ static void AddJunctionToHelper(Map* map, Junction* junction, I32 sourceIndex, P
 {
 	I32 junctionIndex = (I32)(junction - map->junctions);
 
-	if (pathHelper->isJunctionHelper[junctionIndex] == 0) {
+	if (pathHelper->isJunctionHelper[junctionIndex] == 0) 
+	{
 		pathHelper->isJunctionHelper[junctionIndex] = 1;
 
 		pathHelper->nodes[pathHelper->nodeCount] = JunctionNode(junction);
@@ -141,7 +146,8 @@ static void ClearPathHelper(PathHelper* helper)
 static void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper)
 {
 	ClearPathHelper(helper);
-	if (elemStart.address == elemEnd.address) {
+	if (elemStart.address == elemEnd.address) 
+	{
 		helper->nodes[helper->nodeCount].elem = elemStart;
 		helper->nodes[helper->nodeCount].next = 0;
 		helper->sourceIndex[helper->nodeCount] = -1;
@@ -168,31 +174,39 @@ static void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd,
 		junctionEnd = elemEnd.junction;
 
 	B32 foundElemEnd = false;
-	for (I32 i = 0; i < helper->nodeCount; ++i) {
+	for (I32 i = 0; i < helper->nodeCount; ++i) 
+	{
 		PathNode node = helper->nodes[i];
 		MapElem elem = node.elem;
 
-		if (elem.type == MapElemRoad) {
+		if (elem.type == MapElemRoad) 
+		{
 			Road* road = elem.road;
 
 			AddJunctionToHelper(map, road->junction1, i, helper);
-			if (junctionEnd && road->junction1 == junctionEnd) {
+			if (junctionEnd && road->junction1 == junctionEnd) 
+			{
 				foundElemEnd = true;
 				break;
 			}
 
 			AddJunctionToHelper(map, road->junction2, i, helper);
-			if (junctionEnd && road->junction2 == junctionEnd) {
+			if (junctionEnd && road->junction2 == junctionEnd) 
+			{
 				foundElemEnd = true;
 				break;
 			}
-		} else if (elem.type == MapElemJunction) {
+		} 
+		else if (elem.type == MapElemJunction) 
+		{
 			Junction* junction = elem.junction;
 			B32 roadEndFound = false;
-			for (I32 j = 0; j < junction->roadN; ++j) {
+			for (I32 j = 0; j < junction->roadN; ++j) 
+			{
 				Road* road = junction->roads[j];
 				AddRoadToHelper(map, road, i, helper);
-				if (roadEnd && road == roadEnd) {
+				if (roadEnd && road == roadEnd) 
+				{
 					foundElemEnd = true;
 					roadEndFound = true;
 					break;
@@ -213,7 +227,8 @@ static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapEle
 
 	I32 startIndex = path->nodeCount;
 	I32 nodeIndex = helper->nodeCount - 1;
-	while (nodeIndex > -1) {
+	while (nodeIndex > -1) 
+	{
 		PathNode node = helper->nodes[nodeIndex];
 		PushNode(path, node);
 		nodeIndex = helper->sourceIndex[nodeIndex];
@@ -269,14 +284,16 @@ static void PushJunctionSidewalk(Path* path, Junction* junction, I32 cornerIndex
 
 static void PushCrossRoad(Path* path, Road* road, V2 startPoint, Junction* junction, I32 quarterIndex)
 {
-	if (road) {
+	if (road) 
+	{
 		I32 endLaneIndex = -LaneIndex(road, startPoint);
 		PushJunctionSidewalk(path, junction, quarterIndex);
 		PushRoadSidewalk(path, road, endLaneIndex);
 	}
 }
 
-struct PathAroundJunction {
+struct PathAroundJunction 
+{
 	Junction* junction;
 	I32 startCornerIndex;
 	I32 endCornerIndex;
@@ -294,24 +311,32 @@ static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, 
 	I32 cornerIndex = startCornerIndex;
 	I32 leftTargetCornerIndex = 0;
 	I32 rightTargetCornerIndex = 0;
-	if (nextElem.type == MapElemNone) {
+	if (nextElem.type == MapElemNone) 
+	{
 		Assert(IsValidJunctionCornerIndex(junction, endSubElemIndex));
 		leftTargetCornerIndex = endSubElemIndex;
 		rightTargetCornerIndex = endSubElemIndex;
-	} else if (nextElem.type == MapElemRoadSidewalk) {
+	} 
+	else if (nextElem.type == MapElemRoadSidewalk) 
+	{
 		Road* road = nextElem.road;
 		leftTargetCornerIndex = GetRoadOutLeftJunctionCornerIndex(junction, road);
 		rightTargetCornerIndex = GetRoadOutRightJunctionCornerIndex(junction, road);
-	} else {
+	} 
+	else 
+	{
 		InvalidCodePath;
 	}
 
 	I32 clockwiseDistance = GetClockwiseJunctionCornerIndexDistance(junction, cornerIndex, leftTargetCornerIndex);
 	I32 counterClockwiseDistance = GetCounterClockwiseJunctionCornerIndexDistance(junction, cornerIndex, rightTargetCornerIndex);
-	if (clockwiseDistance < counterClockwiseDistance) {
+	if (clockwiseDistance < counterClockwiseDistance) 
+	{
 		result.goClockwise = true;
 		result.endCornerIndex = leftTargetCornerIndex;
-	} else {
+	}
+	else 
+	{
 		result.goClockwise = false;
 		result.endCornerIndex = rightTargetCornerIndex;
 	}
@@ -343,12 +368,17 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 	I32 cornerIndex = startCornerIndex;
 	PushJunctionSidewalk(path, junction, cornerIndex);
 
-	if (junction->roadN == 1) {
+	if (junction->roadN == 1) 
+	{
 		if (cornerIndex != endCornerIndex)
 			PushJunctionSidewalk(path, junction, endCornerIndex);
-	} else if (junction->roadN >= 2) {
-		if (pathAroundJunction.goClockwise) {
-			while (cornerIndex != endCornerIndex) {
+	} 
+	else if (junction->roadN >= 2) 
+	{
+		if (pathAroundJunction.goClockwise) 
+		{
+			while (cornerIndex != endCornerIndex) 
+			{
 				I32 nextCornerIndex = GetNextJunctionCornerIndex(junction, cornerIndex);
 				Road* roadToCross = junction->roads[cornerIndex];
 				I32 startSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, cornerIndex);
@@ -358,8 +388,11 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 				PushJunctionSidewalk(path, junction, nextCornerIndex);
 				cornerIndex = nextCornerIndex;
 			}
-		} else {
-			while (cornerIndex != endCornerIndex) {
+		} 
+		else 
+		{
+			while (cornerIndex != endCornerIndex) 
+			{
 				I32 previousCornerIndex = GetPreviousJunctionCornerIndex(junction, cornerIndex);
 				Road* roadToCross = junction->roads[previousCornerIndex];
 				I32 startSidewalkIndex = GetRoadJunctionCornerSidewalkIndex(junction, roadToCross, cornerIndex);
@@ -370,7 +403,9 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 				cornerIndex = previousCornerIndex;
 			}
 		}
-	} else {
+	} 
+	else 
+	{
 		InvalidCodePath;
 	}
 }
@@ -387,34 +422,40 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I3
 
 	I32 subIndex = startSubIndex;
 	I32 nodeIndex = helper->nodeCount - 1;
-	while (nodeIndex > -1) {
+	while (nodeIndex > -1) 
+	{
 		PathNode roadNode = helper->nodes[nodeIndex];
 		MapElem elem = RoadElemToSidewalkElem(roadNode.elem);
 
 		I32 nextIndex = helper->sourceIndex[nodeIndex];
 		PathNode nextRoadNode = {};
 		MapElem nextElem = {};
-		if (nextIndex > -1) {
+		if (nextIndex > -1) 
+		{
 			nextRoadNode = helper->nodes[nextIndex];
 			nextElem = RoadElemToSidewalkElem(nextRoadNode.elem);
 		}
 
 		MapElem nextNextElem = {};
-		if (nextIndex > -1) {
+		if (nextIndex > -1) 
+		{
 			I32 nextNextIndex = helper->sourceIndex[nextIndex];
-			if (nextNextIndex > -1) {
+			if (nextNextIndex > -1) 
+			{
 				PathNode nextNextRoadNode = helper->nodes[nextNextIndex];
 				nextNextElem = RoadElemToSidewalkElem(nextNextRoadNode.elem);
 			}
 		}
 
-		if (elem.type == MapElemJunctionSidewalk) {
+		if (elem.type == MapElemJunctionSidewalk) 
+		{
 			Junction* junction = elem.junction;
 			I32 cornerIndex = subIndex;
 			PathAroundJunction pathAroundJunction = GetPathAroundJunction(elem, nextElem, cornerIndex, endSubIndex);
 			PushPathAroundJunction(path, pathAroundJunction);
 
-			if (nextElem.type == MapElemRoadSidewalk) {
+			if (nextElem.type == MapElemRoadSidewalk) 
+			{
 				Road* road = nextElem.road;
 				I32 leftRoadCornerIndex = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
 				I32 rightRoadCornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
@@ -426,9 +467,12 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I3
 				else
 					InvalidCodePath;
 			}
-		} else if (elem.type == MapElemRoadSidewalk) {
+		} 
+		else if (elem.type == MapElemRoadSidewalk) 
+		{
 			Road* road = elem.road;
-			if (nextElem.type == MapElemJunctionSidewalk) {
+			if (nextElem.type == MapElemJunctionSidewalk) 
+			{
 				Junction* junction = nextElem.junction;
 
 				I32 sidewalkIndexWithoutCrossing = subIndex;
@@ -449,18 +493,25 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I3
 				I32 distanceWithoutCrossing = GetPathAroundJunctionIndexDistance(pathWithoutCrossing);
 				I32 distanceWithCrossing    = GetPathAroundJunctionIndexDistance(pathWithCrossing);
 				
-				if (distanceWithCrossing < distanceWithoutCrossing) {
+				if (distanceWithCrossing < distanceWithoutCrossing) 
+				{
 					PushRoadSidewalk(path, road, sidewalkIndexWithoutCrossing);
 					PushRoadSidewalk(path, road, sidewalkIndexWithCrossing);
 					subIndex = cornerIndexWithCrossing;
-				} else {
+				} 
+				else 
+				{
 					PushRoadSidewalk(path, road, sidewalkIndexWithoutCrossing);
 					subIndex = cornerIndexWithoutCrossing;
 				}
-			} else {
+			} 
+			else 
+			{
 				InvalidCodePath;
 			}
-		} else {
+		} 
+		else 
+		{
 			InvalidCodePath;
 		}
 
@@ -496,13 +547,18 @@ static PathNode* GetFreePathNode(PathPool* pathPool)
 {
 	PathNode* result = 0;
 
-	if (pathPool->firstFreeNode) {
+	if (pathPool->firstFreeNode) 
+	{
 		result = pathPool->firstFreeNode;
 		pathPool->firstFreeNode = pathPool->firstFreeNode->next;
-	} else if (pathPool->nodeCount < pathPool->maxNodeCount) {
+	} 
+	else if (pathPool->nodeCount < pathPool->maxNodeCount) 
+	{
 		result = &pathPool->nodes[pathPool->nodeCount];
 		pathPool->nodeCount++;
-	} else {
+	} 
+	else 
+	{
 		InvalidCodePath;
 	}
 
@@ -514,7 +570,8 @@ static PathNode* PushPathToPool(Path path, PathPool* pathPool)
 	PathNode* result = 0;
 	PathNode* previous = 0;
 
-	for (I32 i = 0; i < path.nodeCount; ++i) {
+	for (I32 i = 0; i < path.nodeCount; ++i) 
+	{
 		PathNode* pathNode = GetFreePathNode(pathPool);
 
 		*pathNode = path.nodes[i];
@@ -575,7 +632,8 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 
 	B32 finished = false;
 
-	if (elemStart.address == elemEnd.address) {
+	if (elemStart.address == elemEnd.address) 
+	{
 		PushElem(&path, elemStart);
 		finished = true;
 	}
@@ -591,12 +649,18 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 		//       there is no need to go out to the road
 		Building* commonAncestor = CommonAncestor(buildingStart, buildingEnd);
 
-		if (commonAncestor) {
-			if (commonAncestor == buildingEnd) {
+		if (commonAncestor) 
+		{
+			if (commonAncestor == buildingEnd) 
+			{
 				PushDownTheTree(&path, buildingStart, buildingEnd);
-			} else if (commonAncestor == buildingStart) {
+			} 
+			else if (commonAncestor == buildingStart) 
+			{
 				PushUpTheTree(&path, buildingStart, buildingEnd);
-			} else {
+			} 
+			else 
+			{
 				PushDownTheTree(&path, buildingStart, commonAncestor);
 				// NOTE: making sure commonAncestor does not get into the path twice
 				path.nodeCount--;
@@ -607,7 +671,8 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 		}
 	}
 	
-	if (!finished) {
+	if (!finished) 
+	{
 		for (I32 i = 0; i < map->roadN; ++i)
 			helper.isRoadHelper[i] = 0;
 
@@ -615,7 +680,8 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 			helper.isJunctionHelper[i] = 0;
 
 		MapElem roadElemStart = {};
-		if (elemStart.type == MapElemBuilding) {
+		if (elemStart.type == MapElemBuilding) 
+		{
 			Building* startBuilding = elemStart.building;
 
 			PushFromBuildingToRoadElem(&path, startBuilding);
@@ -623,38 +689,47 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 
 			if (roadElemStart.type == MapElemRoad) 
 				startConnectRoad = roadElemStart.road;
-		} else {
+		} 
+		else 
+		{
 			roadElemStart = elemStart;
 		}
 
 		MapElem roadElemEnd = {};
-		if (elemEnd.type == MapElemBuilding) {
+		if (elemEnd.type == MapElemBuilding) 
+		{
 			Building* endBuilding = elemEnd.building;
 
 			roadElemEnd = GetConnectRoadElem(endBuilding);
 
 			if (roadElemEnd.type == MapElemRoad) 
 				endConnectRoad = roadElemEnd.road;
-		} else {
+		} 
+		else 
+		{
 			roadElemEnd = elemEnd;
 		}
 
-		if (startConnectRoad && endConnectRoad && startConnectRoad == endConnectRoad) {
+		if (startConnectRoad && endConnectRoad && startConnectRoad == endConnectRoad) 
+		{
 			I32 startLaneIndex = LaneIndex(startConnectRoad, elemStart.building->connectPointFarShow);
 			I32 endLaneIndex = LaneIndex(endConnectRoad, elemEnd.building->connectPointFarShow);
 
-			if (startLaneIndex == endLaneIndex) {
+			if (startLaneIndex == endLaneIndex) 
+			{
 				F32 startDistance = DistanceOnLane(startConnectRoad, startLaneIndex, elemStart.building->connectPointFarShow);
 				F32 endDistance = DistanceOnLane(endConnectRoad, endLaneIndex, elemEnd.building->connectPointFarShow);
 
-				if (startDistance < endDistance) {
+				if (startDistance < endDistance) 
+				{
 					startConnectRoad = 0;
 					endConnectRoad = 0;
 				}
 			}
 		}
 
-		if (startConnectRoad) {
+		if (startConnectRoad) 
+		{
 			Building* startBuilding = elemStart.building;
 
 			I32 laneIndex = LaneIndex(startConnectRoad, startBuilding->connectPointFarShow);
@@ -665,14 +740,16 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 			else if (laneIndex == -1)
 				startJunction = startConnectRoad->junction1;
 
-			if (startJunction) {
+			if (startJunction) 
+			{
 				startConnectRoad = startConnectRoad;
 				roadElemStart.type = MapElemJunction;
 				roadElemStart.junction = startJunction;
 			}
 		}
 
-		if (endConnectRoad) {
+		if (endConnectRoad) 
+		{
 			Building* endBuilding = elemEnd.building;
 
 			I32 laneIndex = LaneIndex(endConnectRoad, endBuilding->connectPointFarShow);
@@ -683,7 +760,8 @@ PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* t
 			else if (laneIndex == -1)
 				endJunction = endConnectRoad->junction2;
 
-			if (endJunction) {
+			if (endJunction) 
+			{
 				endConnectRoad = endConnectRoad;
 				roadElemEnd.type = MapElemJunction;
 				roadElemEnd.junction = endJunction;
@@ -747,7 +825,8 @@ PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, I32 startSubIndex,
 
 void FreePathNode(PathNode* node, PathPool* pathPool)
 {
-	if (node) {
+	if (node) 
+	{
 		node->next = pathPool->firstFreeNode;
 		pathPool->firstFreeNode = node;
 	}
@@ -755,7 +834,8 @@ void FreePathNode(PathNode* node, PathPool* pathPool)
 
 void FreePath(PathNode* firstNode, PathPool* pathPool)
 {
-	if (firstNode) {
+	if (firstNode) 
+	{
 		PathNode* lastNode = firstNode;
 
 		while (lastNode && lastNode->next)
@@ -769,27 +849,35 @@ void FreePath(PathNode* firstNode, PathPool* pathPool)
 // TODO: move this to Draw.cpp?
 static void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 width)
 {
-	if (point1.x == point2.x) {
+	if (point1.x == point2.x) 
+	{
 		point1.x -= width * 0.5f;
 		point2.x += width * 0.5f;
 
-		if (point1.y < point2.y) {
+		if (point1.y < point2.y) 
+		{
 			point1.y -= width * 0.5f;
 			point2.y += width * 0.5f;
-		} else {
+		} 
+		else 
+		{
 			point1.y += width * 0.5f;
 			point2.y -= width * 0.5f;
 		}
 	}
 	
-	if (point1.y == point2.y) {
+	if (point1.y == point2.y) 
+	{
 		point1.y -= width * 0.5f;
 		point2.y += width * 0.5f;
 
-		if (point1.x < point2.x) {
+		if (point1.x < point2.x) 
+		{
 			point1.x -= width * 0.5f;
 			point2.x += width * 0.5f;
-		} else {
+		} 
+		else 
+		{
 			point1.x += width * 0.5f;
 			point2.x -= width * 0.5f;
 		}
@@ -806,27 +894,36 @@ static void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 widt
 V2 NextPointAroundBuilding(Building* building, V2 startPoint, V2 targetPoint)
 {
 	V2 result = {};
-	if (startPoint.x == building->left && startPoint.y < building->bottom) {
+	if (startPoint.x == building->left && startPoint.y < building->bottom) 
+	{
 		if (targetPoint.x == building->left && targetPoint.y > startPoint.y)
 			result = targetPoint;
 		else
 			result = MakePoint(building->left, building->bottom);
-	} else if (startPoint.y == building->bottom && startPoint.x < building->right) {
+	} 
+	else if (startPoint.y == building->bottom && startPoint.x < building->right) 
+	{
 		if (targetPoint.y == building->bottom && targetPoint.x > startPoint.x)
 			result = targetPoint;
 		else
 			result = MakePoint(building->right, building->bottom);
-	} else if (startPoint.x == building->right && startPoint.y > building->top) {
+	} 
+	else if (startPoint.x == building->right && startPoint.y > building->top) 
+	{
 		if (targetPoint.x == building->right && targetPoint.y < startPoint.y)
 			result = targetPoint;
 		else
 			result = MakePoint(building->right, building->top);
-	} else if (startPoint.y == building->top && startPoint.x > building->left) {
+	} 
+	else if (startPoint.y == building->top && startPoint.x > building->left) 
+	{
 		if (targetPoint.y == building->top && targetPoint.x < startPoint.x)
 			result = targetPoint;
 		else
 			result = MakePoint(building->left, building->top);
-	} else {
+	} 
+	else 
+	{
 		result = targetPoint;
 	}
 
@@ -839,18 +936,25 @@ V4 StartNodePoint(PathNode* node)
 	V2 direction = {};
 
 	MapElem elem = node->elem;
-	if (elem.type == MapElemBuilding) {
+	if (elem.type == MapElemBuilding) 
+	{
 		Building* building = elem.building;
 
 		position = building->connectPointClose;
 		direction = PointDirection(building->connectPointClose, building->connectPointFar);
-	} else if (elem.type == MapElemJunction) {
+	} 
+	else if (elem.type == MapElemJunction) 
+	{
 		position = elem.junction->position;
-	} else if (elem.type == MapElemJunctionSidewalk) {
+	} 
+	else if (elem.type == MapElemJunctionSidewalk) 
+	{
 		Junction* junction = elem.junction;
 		I32 cornerIndex = node->subElemIndex;
 		position = GetJunctionCorner(junction, cornerIndex);
-	} else {
+	} 
+	else 
+	{
 		InvalidCodePath;
 	}
 
@@ -864,10 +968,13 @@ V4 NextFromBuildingToNothing(V4 startPoint, Building* building)
 {
 	V4 result = {};
 
-	if (startPoint.position == building->connectPointFar || startPoint.position == building->connectPointFarShow) {
+	if (startPoint.position == building->connectPointFar || startPoint.position == building->connectPointFarShow) 
+	{
 		result.position = building->connectPointClose;
 		result.direction = PointDirection(building->connectPointFar, building->connectPointClose);
-	} else {
+	}
+	else 
+	{
 		// TODO: add direction
 		result.position = NextPointAroundBuilding(building, startPoint.position, building->connectPointClose);
 	}
@@ -903,10 +1010,13 @@ V4 NextFromBuildingToRoad(V4 startPoint, Building* building, Road* road)
 {
 	V4 result = {};
 
-	if (startPoint.position == building->connectPointClose) {
+	if (startPoint.position == building->connectPointClose) 
+	{
 		result.position = building->connectPointFarShow;
 		result.direction = PointDirection(building->connectPointClose, building->connectPointFarShow);
-	} else {
+	} 
+	else 
+	{
 		// TODO: add direction
 		result.position = NextPointAroundBuilding(building, startPoint.position, building->connectPointClose);
 	}
@@ -924,10 +1034,13 @@ V4 NextFromBuildingToJunction(V4 startPoint, Building* building, Junction* junct
 {
 	V4 result = {};
 
-	if (startPoint.position == building->connectPointClose) {
+	if (startPoint.position == building->connectPointClose) 
+	{
 		result.position = building->connectPointFarShow;
 		result.direction = PointDirection(building->connectPointClose, building->connectPointFarShow);
-	} else {
+	} 
+	else 
+	{
 		// TODO: add direction
 		result.position = NextPointAroundBuilding(building, startPoint.position, building->connectPointClose);
 	}
@@ -1035,7 +1148,8 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 	V4 result = {};
 	V2 roadCoord = ToRoadCoord(road, point.position);
 	B32 isAtCrossing = false;
-	if (Abs(roadCoord.x - road->crossingDistance) <= SidewalkWidth * 0.5f) {
+	if (Abs(roadCoord.x - road->crossingDistance) <= SidewalkWidth * 0.5f) 
+	{
 		F32 along = roadCoord.x;
 		F32 side = 0.0f;
 		if (sidewalkIndex == LeftRoadSidewalkIndex)
@@ -1045,7 +1159,9 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 		else
 			InvalidCodePath;
 		result.position = FromRoadCoord1(road, along, side);
-	} else {
+	} 
+	else 
+	{
 		F32 along = road->crossingDistance;
 		F32 side = 0.0f;
 		if (sidewalkIndex == LeftRoadSidewalkIndex)
@@ -1074,13 +1190,16 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 	if (nextRoadCoord.y < 0.0f)
 		nextRoadLaneIndex = -1;
 
-	if (pointLaneIndex == nextRoadLaneIndex) {
+	if (pointLaneIndex == nextRoadLaneIndex) 
+	{
 		F32 roadLength = RoadLength(road);
 		if (nextRoadCoord.x < roadLength * 0.5f)
 			pointRoadCoord.x = SidewalkWidth * 0.5f;
 		else
 			pointRoadCoord.x = roadLength - SidewalkWidth * 0.5f;
-	} else {
+	} 
+	else 
+	{
 		if ((pointRoadCoord.x >= road->crossingDistance - CrossingWidth * 0.5f) 
 			&& (pointRoadCoord.x <= road->crossingDistance + CrossingWidth * 0.5f))
 			pointRoadCoord.y = nextRoadLaneIndex * (LaneWidth + SidewalkWidth * 0.5f); 
@@ -1099,7 +1218,8 @@ static B32 EndFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 	Assert(sidewalkIndex == LeftRoadSidewalkIndex || sidewalkIndex == RightRoadSidewalkIndex);
 	V2 roadCoord = ToRoadCoord(road, point.position);
 	F32 crossingDistance = road->crossingDistance;
-	if (Abs(roadCoord.x - crossingDistance) <= CrossingWidth * 0.5f) {
+	if (Abs(roadCoord.x - crossingDistance) <= CrossingWidth * 0.5f) 
+	{
 		if (sidewalkIndex == LeftRoadSidewalkIndex && roadCoord.y < 0.0f)
 			result = true;
 		else if (sidewalkIndex == RightRoadSidewalkIndex && roadCoord.y > 0.0f)
@@ -1147,11 +1267,13 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 	if (next)
 		nextElem = next->elem;
 
-	switch(elem.type) {
+	switch(elem.type) 
+	{
 		case MapElemBuilding:
 		{
 			Building* building = elem.building;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemNone:
 					result = NextFromBuildingToNothing(startPoint, building);
 					break;
@@ -1172,7 +1294,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 		case MapElemRoad:
 		{
 			Road* road = elem.road;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemBuilding:
 					result = NextFromRoadToBuilding(startPoint, road, nextElem.building);
 					break;
@@ -1187,7 +1310,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 		case MapElemJunction:
 		{
 			Junction* junction = elem.junction;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemNone:
 					result = NextFromJunctionToNothing(startPoint, junction);
 					break;
@@ -1205,7 +1329,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 		case MapElemRoadSidewalk:
 		{
 			Road* road = elem.road;
-			switch(nextElem.type) {
+			switch(nextElem.type) 
+			{
 				case MapElemJunctionSidewalk:
 					result = NextFromRoadSidewalkToJunctionSidewalk(startPoint, road, nextElem.junction, next->subElemIndex);
 					break;
@@ -1220,7 +1345,8 @@ V4 NextNodePoint(PathNode* node, V4 startPoint)
 		case MapElemJunctionSidewalk:
 		{
 			Junction* junction = elem.junction;
-			switch(nextElem.type) {
+			switch(nextElem.type) 
+			{
 				case MapElemNone:
 					result = NextFromJunctionSidewalkToNothing(startPoint, junction);
 					break;
@@ -1254,10 +1380,13 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 	if (next)
 		nextElem = next->elem;
 
-	switch (elem.type) {
-		case MapElemBuilding: {
+	switch (elem.type) 
+	{
+		case MapElemBuilding: 
+		{
 			Building* building = elem.building;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemNone:
 					result = EndFromBuildingToNothing(point, building);
 					break;
@@ -1275,9 +1404,11 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 			}
 			break;
 		}
-		case MapElemRoad: {
+		case MapElemRoad: 
+		{
 			Road* road = elem.road;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemNone:
 					DebugBreak();
 					break;
@@ -1292,9 +1423,11 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 			}
 			break;
 		}
-		case MapElemJunction: {
+		case MapElemJunction: 
+		{
 			Junction* junction = elem.junction;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemNone:
 					result = EndFromJunctionToNothing(point, junction);
 					break;
@@ -1309,9 +1442,11 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 			}
 			break;
 		}
-		case MapElemRoadSidewalk: {
+		case MapElemRoadSidewalk: 
+		{
 			Road* road = elem.road;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemJunctionSidewalk:
 					result = EndFromRoadSidewalkToJunctionSidewalk(point, road, nextElem.junction, next->subElemIndex);
 					break;
@@ -1323,9 +1458,11 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 			}
 			break;
 		}
-		case MapElemJunctionSidewalk: {
+		case MapElemJunctionSidewalk: 
+		{
 			Junction* junction = elem.junction;
-			switch (nextElem.type) {
+			switch (nextElem.type) 
+			{
 				case MapElemNone:
 				case MapElemRoadSidewalk:
 					result = true;
@@ -1338,7 +1475,8 @@ B32 IsNodeEndPoint(PathNode* node, V4 point)
 			}
 			break;
 		}
-		default: {
+		default: 
+		{
 			DebugBreak();
 			break;
 		}
@@ -1351,13 +1489,18 @@ void DrawPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
 {
 	PathNode* node = firstNode;
 
-	if (node) {
+	if (node) 
+	{
 		V4 point = StartNodePoint(node);
 
-		while (node) {
-			if (IsNodeEndPoint(node, point)) {
+		while (node) 
+		{
+			if (IsNodeEndPoint(node, point)) 
+			{
 				node = node->next;
-			} else {
+			} 
+			else 
+			{
 				V4 nextPoint = NextNodePoint(node, point);
 
 				DrawLine(canvas, point.position, nextPoint.position, color, lineWidth);
@@ -1373,13 +1516,18 @@ void DrawBezierPathFromPoint(Canvas canvas, PathNode* firstNode, V4 startPoint, 
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
 
-	if (node) {
+	if (node) 
+	{
 		V4 point = startPoint;
 
-		while (node) {
-			if (IsNodeEndPoint(node, point)) {
+		while (node) 
+		{
+			if (IsNodeEndPoint(node, point)) 
+			{
 				node = node->next;
-			} else {
+			} 
+			else 
+			{
 				V4 nextPoint = NextNodePoint(node, point);
 				Assert(nextPoint.position.x != 0.0f || nextPoint.position.y != 0.0f);
 				bezier4 = TurnBezier4(point, nextPoint);
@@ -1395,7 +1543,8 @@ void DrawBezierPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
 
-	if (node) {
+	if (node) 
+	{
 		V4 startPoint = StartNodePoint(node);
 		DrawBezierPathFromPoint(canvas, firstNode, startPoint, color, lineWidth);
 	}

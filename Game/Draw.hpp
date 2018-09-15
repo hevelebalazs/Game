@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Bitmap.hpp"
-#include "Draw.hpp"
 #include "Debug.hpp"
 #include "Geometry.hpp"
 #include "Math.hpp"
@@ -9,7 +8,8 @@
 #include "Texture.hpp"
 #include "Type.hpp"
 
-struct Camera {
+struct Camera 
+{
 	V2 center;
 	V2 screenPixelSize;
 
@@ -17,7 +17,8 @@ struct Camera {
 	F32 targetUnitInPixels;
 };
 
-struct Canvas {
+struct Canvas 
+{
 	Bitmap bitmap;
 	Camera* camera;
 };

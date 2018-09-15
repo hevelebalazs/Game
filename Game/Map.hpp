@@ -17,17 +17,20 @@
 #define MapTileBitmapHeight 1024
 #define GenerateMapTileWorkThreadN 2
 
-struct MapTileIndex {
+struct MapTileIndex 
+{
 	I32 row;
 	I32 col;
 };
 
-struct CachedMapTile {
+struct CachedMapTile 
+{
 	MapTileIndex index;
 	Bitmap bitmap;
 };
 
-struct MapTextures {
+struct MapTextures 
+{
 	Texture grassTexture;
 	Texture roadTexture;
 	Texture sidewalkTexture;
@@ -36,14 +39,16 @@ struct MapTextures {
 
 struct Map;
 
-struct GenerateMapTileWork {
+struct GenerateMapTileWork 
+{
 	Map* map;
 	MapTileIndex tileIndex;
 	Bitmap* bitmap;
 	MapTextures* mapTextures;
 };
 
-struct GenerateMapTileWorkList {
+struct GenerateMapTileWorkList 
+{
 	GenerateMapTileWork works[MaxGenerateMapTileWorkListN];
 	volatile I32 workDoneN;
 	volatile I32 workPushedN;
@@ -53,14 +58,16 @@ struct GenerateMapTileWorkList {
 #define MaxDrawMapTileWorkListN MaxCachedMapTileN
 #define DrawMapTileWorkThreadN 10
 
-struct DrawMapTileWork {
+struct DrawMapTileWork 
+{
 	Canvas canvas;
 	Map* map;
 	MapTileIndex tileIndex;
 	MapTextures* textures;
 };
 
-struct DrawMapTileWorkList {
+struct DrawMapTileWorkList 
+{
 	DrawMapTileWork works[MaxDrawMapTileWorkListN];
 	volatile I32 workN;
 	volatile I32 firstWorkToDo;
@@ -68,7 +75,8 @@ struct DrawMapTileWorkList {
 	HANDLE semaphoreDone;
 };
 
-struct Map {
+struct Map 
+{
 	Junction* junctions;
 	I32 junctionN;
 
@@ -93,7 +101,8 @@ struct Map {
 	DrawMapTileWorkList drawTileWorkList;
 };
 
-enum MapElemType {
+enum MapElemType 
+{
 	MapElemNone,
 	MapElemRoad,
 	MapElemRoadSidewalk,
@@ -104,10 +113,12 @@ enum MapElemType {
 	MapElemBuildingConnector
 };
 
-struct MapElem {
+struct MapElem 
+{
 	MapElemType type;
 
-	union {
+	union 
+	{
 		Building* building;
 		Junction* junction;
 		Road* road;

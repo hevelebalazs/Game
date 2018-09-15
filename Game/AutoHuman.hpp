@@ -7,7 +7,8 @@
 #include "Path.hpp"
 #include "Type.hpp"
 
-struct AutoHuman {
+struct AutoHuman
+{
 	Human human;
 
 	Junction* onJunction;
@@ -29,11 +30,14 @@ void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemAren
 void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool);
 void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool);
 
-inline void DrawAutoHuman(Canvas canvas, AutoHuman* autoHuman) {
-	if (autoHuman->dead) {
+inline void DrawAutoHuman(Canvas canvas, AutoHuman* autoHuman) 
+{
+	if (autoHuman->dead) 
+	{
 		// TODO: this messes up other things that use random
 		SeedRandom((I32)autoHuman->human.position.x + (I32)autoHuman->human.position.y);
-		for (I32 i = 0; i < 5; ++i) {
+		for (I32 i = 0; i < 5; ++i) 
+		{
 			F32 x = autoHuman->human.position.x + RandomBetween(-2.0f, 2.0f);
 			F32 y = autoHuman->human.position.y + RandomBetween(-2.0f, 2.0f);
 
@@ -48,7 +52,9 @@ inline void DrawAutoHuman(Canvas canvas, AutoHuman* autoHuman) {
 			DrawRect(canvas, left, right, top, bottom, bloodColor);
 		}
 		InitRandom();
-	} else {
+	} 
+	else 
+	{
 		DrawHuman(canvas, autoHuman->human);
 	}
 }

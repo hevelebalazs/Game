@@ -7,7 +7,8 @@
 #include "Road.hpp"
 #include "Type.hpp"
 
-struct PathNode {
+struct PathNode 
+{
 	// TODO: create a MapSubElem struct?
 	MapElem elem;
 	I32 subElemIndex;
@@ -15,7 +16,8 @@ struct PathNode {
 	PathNode* next;
 };
 
-struct PathPool {
+struct PathPool 
+{
 	PathNode* nodes;
 	I32 nodeCount;
 	I32 maxNodeCount;

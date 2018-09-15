@@ -10,7 +10,8 @@
 #define WheelWidth  0.4f
 #define WheelLength 0.8f
 
-struct PhysicsLabState {
+struct PhysicsLabState 
+{
 	Camera camera;
 	Canvas canvas;
 	B32 running;
@@ -70,8 +71,10 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 	PlayerCar* car = &labState->car;
 	LRESULT result = 0;
 
-	switch (message) {
-		case WM_SIZE: {
+	switch (message) 
+	{
+		case WM_SIZE: 
+		{
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 			I32 width = clientRect.right - clientRect.left;
@@ -79,7 +82,8 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 			PhysicsLabResize(labState, width, height);
 			break;
 		}
-		case WM_PAINT: {
+		case WM_PAINT: 
+		{
 			PAINTSTRUCT paint = {};
 			HDC context = BeginPaint(window, &paint);
 
@@ -91,14 +95,17 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 			EndPaint(window, &paint);
 			break;
 		}
-		case WM_SETCURSOR: {
+		case WM_SETCURSOR: 
+		{
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 			SetCursor(cursor);
 			break;
 		}
-		case WM_KEYDOWN: {
+		case WM_KEYDOWN: 
+		{
 			WPARAM keyCode = wparam;
-			switch (keyCode) {
+			switch (keyCode) 
+			{
 				case 'W':
 					car->engineForce = 3.0f;
 					break;
@@ -114,9 +121,11 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 			}
 			break;
 		}
-		case WM_KEYUP: {
+		case WM_KEYUP: 
+		{
 			WPARAM keyCode = wparam;
-			switch (keyCode) {
+			switch (keyCode) 
+			{
 				case 'W':
 				case 'S':
 					car->engineForce = 0.0f;
@@ -129,11 +138,13 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 			break;
 		}
 		case WM_DESTROY:
-		case WM_CLOSE: {
+		case WM_CLOSE: 
+		{
 			labState->running = false;
 			break;
 		}
-		default: {
+		default: 
+		{
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
@@ -157,7 +168,8 @@ static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windo
 	car->car.length = 5.0f;
 
 	car->inertia = 0.0f;
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; ++i) 
+	{
 		V2 corner = GetCarCorner(&car->car, i);
 		V2 radius = corner - car->car.position;
 		F32 radiusLength = VectorLength(radius);
@@ -174,7 +186,8 @@ static void DrawWheel(Canvas canvas, V2 center, F32 angle)
 
 	V2 wheelFront = center + (0.5f * WheelLength) * frontDirection;
 	V2 wheelBack = center - (0.5f * WheelLength) * frontDirection;
-	Quad wheelQuad = {
+	Quad wheelQuad = 
+	{
 		wheelFront - (0.5f * WheelWidth * sideDirection),
 		wheelFront + (0.5f * WheelWidth * sideDirection),
 		wheelBack  + (0.5f * WheelWidth * sideDirection),
@@ -204,7 +217,8 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 
 	I32 firstCol = Floor(left / gridDistance);
 	I32 lastCol  = Floor(right / gridDistance);
-	for (int col = firstCol; col <= lastCol; ++col) {
+	for (int col = firstCol; col <= lastCol; ++col) 
+	{
 		F32 x = (col * gridDistance);
 		V2 point1 = MakePoint(x, top);
 		V2 point2 = MakePoint(x, bottom);
@@ -213,7 +227,8 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 
 	I32 firstRow = Floor(top / gridDistance);
 	I32 lastRow  = Floor(bottom / gridDistance);
-	for (int row = firstRow; row <= lastRow; ++row) {
+	for (int row = firstRow; row <= lastRow; ++row) 
+	{
 		F32 y = (row * gridDistance);
 		V2 point1 = MakePoint(left, y);
 		V2 point2 = MakePoint(right, y);
@@ -260,7 +275,8 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 	UpdatePlayerCarCollision(car, &oldCar, seconds, hit);
 
 	hit = GetCarPolyCollisionInfo(&oldCar.car, &car->car, labState->walls, labState->wallN);
-	if (hit.count > 0) {
+	if (hit.count > 0) 
+	{
 		car->velocity = MakeVector(0.0f, 0.0f);
 		car->car.position = oldCar.car.position;
 
@@ -306,8 +322,10 @@ void PhysicsLab(HINSTANCE instance)
 	PhysicsLabInit(labState, width, height);
 
 	MSG message = {};
-	while (labState->running) {
-		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+	while (labState->running) 
+	{
+		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) 
+		{
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 		}

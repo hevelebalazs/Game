@@ -16,14 +16,16 @@
 #define MinRoomSide			5.0f
 #define MaxRoomSide			20.0f
 
-enum CrossType {
+enum CrossType 
+{
 	CrossNone,
 	CrossWall,
 	CrossEntrance
 };
 
 struct Building;
-struct BuildingCrossInfo {
+struct BuildingCrossInfo 
+{
 	Building* building;
 	V2 crossPoint;
 	V2 corner1;
@@ -31,12 +33,14 @@ struct BuildingCrossInfo {
 	CrossType type;
 };
 
-struct BuildingInside {
+struct BuildingInside 
+{
 	I32 wallCount;
 	Line* walls;
 };
 
-struct Building {
+struct Building 
+{
 	// TODO: remove this
 	BuildingType type;
 

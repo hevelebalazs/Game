@@ -43,7 +43,8 @@ struct WallHelper
 
 static void AddHelperWall(WallHelper* helper, Line wall)
 {
-	if (helper->wallCount < helper->maxWallCount) {
+	if (helper->wallCount < helper->maxWallCount) 
+	{
 		helper->walls[helper->wallCount] = wall;
 		helper->hasDoor[helper->wallCount] = false;
 		helper->wallCount++;
@@ -52,7 +53,8 @@ static void AddHelperWall(WallHelper* helper, Line wall)
 
 static void AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door)
 {
-	if (helper->wallCount < helper->maxWallCount) {
+	if (helper->wallCount < helper->maxWallCount)
+	{
 		helper->walls[helper->wallCount] = wall;
 		helper->hasDoor[helper->wallCount] = true;
 		helper->doors[helper->wallCount] = door;
@@ -81,20 +83,23 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 		I32 doorCount = 0;
 		Line doors[2] = {};
 
-		if (wallHelper->hasDoor[leftWallIndex]) {
+		if (wallHelper->hasDoor[leftWallIndex]) 
+		{
 			doors[doorCount] = wallHelper->doors[leftWallIndex];
 			doors[doorCount].y1 -= WallWidth * 0.5f;
 			doors[doorCount].y2 += WallWidth * 0.5f;
 			doorCount++;
 		}
-		if (wallHelper->hasDoor[rightWallIndex]) {
+		if (wallHelper->hasDoor[rightWallIndex]) 
+		{
 			doors[doorCount] = wallHelper->doors[rightWallIndex];
 			doors[doorCount].y1 -= WallWidth * 0.5f;
 			doors[doorCount].y2 += WallWidth * 0.5f;
 			doorCount++;
 		}
 
-		if (doorCount == 2 && (doors[0].y1 < doors[1].y2 && doors[1].y1 < doors[0].y2)) {
+		if (doorCount == 2 && (doors[0].y1 < doors[1].y2 && doors[1].y1 < doors[0].y2)) 
+		{
 			Line door = {};
 			door.y1 = Min2(doors[0].y1, doors[1].y1);
 			door.y2 = Max2(doors[0].y2, doors[1].y2);
@@ -103,7 +108,8 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			doors[0] = door;
 		}
 
-		if (doorCount > 0 && (doors[0].y1 < cutY && cutY < doors[0].y2)) {
+		if (doorCount > 0 && (doors[0].y1 < cutY && cutY < doors[0].y2)) 
+		{
 			F32 topY = doors[0].y1;
 			F32 topDist1 = topY - top;
 			F32 topDist2 = bottom - topY;
@@ -112,18 +118,24 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			F32 bottomDist1 = bottomY - top;
 			F32 bottomDist2 = bottom - bottomY;
 
-			if (topDist1 >= minRoomSide && topDist2 >= minRoomSide) {
+			if (topDist1 >= minRoomSide && topDist2 >= minRoomSide) 
+			{
 				cutY = topY;
 				canCutHorizontally = true;
-			} else if (bottomDist1 >= minRoomSide && bottomDist2 >= minRoomSide) {
+			} 
+			else if (bottomDist1 >= minRoomSide && bottomDist2 >= minRoomSide) 
+			{
 				cutY = bottomY;
 				canCutHorizontally = true;
-			} else {
+			} 
+			else
+			{
 				canCutHorizontally = false;
 			}
 		}
 
-		if (doorCount > 1 && (doors[1].y1 < cutY && cutY < doors[1].y2)) {
+		if (doorCount > 1 && (doors[1].y1 < cutY && cutY < doors[1].y2)) 
+		{
 			F32 topY = doors[1].y1;
 			F32 topDist1 = topY - top;
 			F32 topDist2 = bottom - topY;
@@ -132,13 +144,18 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			F32 bottomDist1 = bottomY - top;
 			F32 bottomDist2 = bottom - bottomY;
 
-			if (topDist1 >= minRoomSide && topDist2 >= minRoomSide) {
+			if (topDist1 >= minRoomSide && topDist2 >= minRoomSide) 
+			{
 				cutY = topY;
 				canCutHorizontally = true;
-			} else if (bottomDist1 >= minRoomSide && bottomDist2 >= minRoomSide) {
+			} 
+			else if (bottomDist1 >= minRoomSide && bottomDist2 >= minRoomSide) 
+			{
 				cutY = bottomY;
 				canCutHorizontally = true;
-			} else {
+			} 
+			else 
+			{
 				canCutHorizontally = false;
 			}
 		}
@@ -150,20 +167,23 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 		I32 doorCount = 0;
 		Line doors[2] = {};
 
-		if (wallHelper->hasDoor[topWallIndex]) {
+		if (wallHelper->hasDoor[topWallIndex]) 
+		{
 			doors[doorCount] = wallHelper->doors[topWallIndex];
 			doors[doorCount].x1 -= WallWidth * 0.5f;
 			doors[doorCount].x2 += WallWidth * 0.5f;
 			doorCount++;
 		}
-		if (wallHelper->hasDoor[bottomWallIndex]) {
+		if (wallHelper->hasDoor[bottomWallIndex]) 
+		{
 			doors[doorCount] = wallHelper->doors[bottomWallIndex];
 			doors[doorCount].x1 -= WallWidth * 0.5f;
 			doors[doorCount].x2 += WallWidth * 0.5f;
 			doorCount++;
 		}
 
-		if (doorCount == 2 && (doors[0].x1 < doors[1].x2 && doors[1].x1 < doors[0].x2)) {
+		if (doorCount == 2 && (doors[0].x1 < doors[1].x2 && doors[1].x1 < doors[0].x2)) 
+		{
 			Line door = {};
 			door.x1 = Min2(doors[0].x1, doors[1].x1);
 			door.x2 = Max2(doors[0].x2, doors[1].x2);
@@ -172,7 +192,8 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			doors[0] = door;
 		}
 
-		if (doorCount > 0 && (doors[0].x1 < cutX && cutX < doors[0].x2)) {
+		if (doorCount > 0 && (doors[0].x1 < cutX && cutX < doors[0].x2)) 
+		{
 			F32 leftX = doors[0].x1;
 			F32 leftDist1 = leftX - left;
 			F32 leftDist2 = right - leftX;
@@ -181,18 +202,24 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			F32 rightDist1 = rightX - left;
 			F32 rightDist2 = right - rightX;
 
-			if (leftDist1 >= minRoomSide && leftDist2 >= minRoomSide) {
+			if (leftDist1 >= minRoomSide && leftDist2 >= minRoomSide) 
+			{
 				cutX = leftX;
 				canCutVertically = true;
-			} else if (rightDist1 >= minRoomSide && rightDist2 >= minRoomSide) {
+			} 
+			else if (rightDist1 >= minRoomSide && rightDist2 >= minRoomSide) 
+			{
 				cutX = rightX;
 				canCutVertically = true;
-			} else {
+			} 
+			else 
+			{
 				canCutVertically = false;
 			}
 		}
 
-		if (doorCount > 1 && (doors[1].x1 < cutX && cutX < doors[1].x2)) {
+		if (doorCount > 1 && (doors[1].x1 < cutX && cutX < doors[1].x2)) 
+		{
 			F32 leftX = doors[1].x1;
 			F32 leftDist1 = leftX - left;
 			F32 leftDist2 = right - leftX;
@@ -201,13 +228,18 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 			F32 rightDist1 = rightX - left;
 			F32 rightDist2 = right - rightX;
 
-			if (leftDist1 >= minRoomSide && leftDist2 >= minRoomSide) {
+			if (leftDist1 >= minRoomSide && leftDist2 >= minRoomSide) 
+			{
 				cutX = leftX;
 				canCutVertically = true;
-			} else if (rightDist1 >= minRoomSide && rightDist2 >= minRoomSide) {
+			} 
+			else if (rightDist1 >= minRoomSide && rightDist2 >= minRoomSide) 
+			{
 				cutX = rightX;
 				canCutVertically = true;
-			} else {
+			} 
+			else 
+			{
 				canCutVertically = false;
 			}
 		}
@@ -216,22 +248,28 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 	B32 cutHorizontally = false;
 	B32 cutVertically = false;
 
-	if (canCutHorizontally && canCutVertically) {
+	if (canCutHorizontally && canCutVertically) 
+	{
 		F32 random = RandomBetween(0.0f, 1.0f);
 
 		if (random < 0.5f) 
 			cutHorizontally = true;
 		else 
 			cutVertically = true;
-	} else if (canCutHorizontally) {
+	} 
+	else if (canCutHorizontally) 
+	{
 		cutHorizontally = true;
-	} else if (canCutVertically) {
+	} 
+	else if (canCutVertically) 
+	{
 		cutVertically = true;
 	}
 
 	BuildingInside* inside = building->inside;
 	
-	if (cutVertically) {
+	if (cutVertically) 
+	{
 		I32 wallIndex = wallHelper->wallCount;
 
 		Line wall = VerticalWall(top, bottom, cutX);
@@ -252,7 +290,8 @@ static void GenerateWalls(Building* building, WallHelper* wallHelper,
 		GenerateWalls(building, wallHelper,     wallIndex, rightWallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
 		GenerateWalls(building, wallHelper, leftWallIndex,      wallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
 	}
-	else if (cutHorizontally) {
+	else if (cutHorizontally) 
+	{
 		I32 wallIndex = wallHelper->wallCount;
 
 		Line wall = HorizontalWall(left, right, cutY);
@@ -324,7 +363,8 @@ void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpAr
 	GenerateWalls(building, &wallHelper, 0, 1, 2, 3, MinRoomSide, MaxRoomSide);
 
 	I32 wallCount = 0;
-	for (I32 i = 0; i < wallHelper.wallCount; ++i) {
+	for (I32 i = 0; i < wallHelper.wallCount; ++i) 
+	{
 		if (wallHelper.hasDoor[i]) 
 			wallCount += 2;
 		else 
@@ -334,13 +374,16 @@ void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpAr
 	inside->wallCount = 0;
 	inside->walls = ArenaPushArray(arena, Line, wallCount);
 
-	for (I32 i = 0; i < wallHelper.wallCount; ++i) {
+	for (I32 i = 0; i < wallHelper.wallCount; ++i) 
+	{
 		Line wall = wallHelper.walls[i];
 
-		if (wallHelper.hasDoor[i]) {
+		if (wallHelper.hasDoor[i]) 
+		{
 			Line door = wallHelper.doors[i];
 
-			if (wall.x1 == wall.x2) {
+			if (wall.x1 == wall.x2) 
+			{
 				Line topWall = VerticalWall(
 					Min2(wall.y1, wall.y2), 
 					Min2(door.y1, door.y2), 
@@ -356,7 +399,9 @@ void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpAr
 				inside->wallCount++;
 				inside->walls[inside->wallCount] = bottomWall;
 				inside->wallCount++;
-			} else if (wall.y1 == wall.y2) {
+			} 
+			else if (wall.y1 == wall.y2) 
+			{
 				Line leftWall = HorizontalWall(
 					Min2(wall.x1, wall.x2),
 					Min2(door.x1, door.x2),
@@ -373,7 +418,9 @@ void GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpAr
 				inside->walls[inside->wallCount] = rightWall;
 				inside->wallCount++;
 			}
-		} else {
+		}
+		else 
+		{
 			inside->walls[inside->wallCount] = wall;
 			inside->wallCount++;
 		}
@@ -469,15 +516,18 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, F32 radius, V2
 	V2 bottomRight = {building->right + radius, building->bottom + radius};
 	V2 points[5] = {topLeft, topRight, bottomRight, bottomLeft, topLeft};
 
-	for (I32 i = 0; i < 4; ++i) {
+	for (I32 i = 0; i < 4; ++i) 
+	{
 		V2 corner1 = points[i];
 		V2 corner2 = points[i + 1];
 
-		if (DoLinesCross(corner1, corner2, closePoint, farPoint)) {
+		if (DoLinesCross(corner1, corner2, closePoint, farPoint)) 
+		{
 			V2 intersection = LineIntersection(corner1, corner2, closePoint, farPoint);
 			F32 distanceSquare = DistanceSquare(closePoint, intersection);
 
-			if (foundAny == false || distanceSquare < minDistanceSquare) {
+			if (foundAny == false || distanceSquare < minDistanceSquare) 
+			{
 				minDistanceSquare = distanceSquare;
 				foundAny = true;
 
@@ -494,37 +544,51 @@ BuildingCrossInfo ExtBuildingClosestCrossInfo(Building* building, F32 radius, V2
 	V2 entrance1 = building->entrancePoint1;
 	V2 entrance2 = building->entrancePoint2;
 
-	if (entrance1.x == building->left && entrance2.x == building->left) {
+	if (entrance1.x == building->left && entrance2.x == building->left) 
+	{
 		entrance1.x -= radius;
 		entrance2.x -= radius;
-	} else if (entrance1.x == building->right && entrance2.x == building->right) {
+	} 
+	else if (entrance1.x == building->right && entrance2.x == building->right) 
+	{
 		entrance1.x += radius;
 		entrance2.x += radius;
-	} else if (entrance1.y == building->top && entrance2.y == building->top) {
+	} 
+	else if (entrance1.y == building->top && entrance2.y == building->top) 
+	{
 		entrance1.y -= radius;
 		entrance2.y -= radius;
-	} else if (entrance2.y == building->bottom && entrance2.y == building->bottom) {
+	} 
+	else if (entrance2.y == building->bottom && entrance2.y == building->bottom) 
+	{
 		entrance1.y += radius;
 		entrance2.y += radius;
 	}
 
-	if (entrance1.x < entrance2.x) {
+	if (entrance1.x < entrance2.x) 
+	{
 		entrance1.x += radius;
 		entrance2.x -= radius;
-	} else if (entrance1.x > entrance2.x) {
+	} 
+	else if (entrance1.x > entrance2.x) 
+	{
 		entrance1.x -= radius;
 		entrance2.x += radius;
 	}
 
-	if (entrance1.y < entrance2.y) {
+	if (entrance1.y < entrance2.y) 
+	{
 		entrance1.y += radius;
 		entrance2.y -= radius;
-	} else if (entrance1.y > entrance2.y) {
+	} 
+	else if (entrance1.y > entrance2.y) 
+	{
 		entrance1.y -= radius;
 		entrance2.y += radius;
 	}
 
-	if (DoLinesCross(entrance1, entrance2, closePoint, farPoint)) {
+	if (DoLinesCross(entrance1, entrance2, closePoint, farPoint)) 
+	{
 		V2 intersection = LineIntersection(entrance1, entrance2, closePoint, farPoint);
 		
 		result.building = building;
@@ -546,24 +610,31 @@ BuildingCrossInfo ExtBuildingInsideClosestCrossInfo(Building* building, F32 radi
 	B32 foundAny = false;
 
 	BuildingInside* inside = building->inside;
-	for (I32 i = 0; i < inside->wallCount; ++i) {
+	for (I32 i = 0; i < inside->wallCount; ++i) 
+	{
 		Line wall = inside->walls[i];
 
 		V2 endPoint1 = wall.p1;
 		V2 endPoint2 = wall.p2;
 
-		if (endPoint1.x < endPoint2.x) {
+		if (endPoint1.x < endPoint2.x) 
+		{
 			endPoint1.x -= radius;
 			endPoint2.x += radius;
-		} else if (endPoint1.x > endPoint2.x) {
+		} 
+		else if (endPoint1.x > endPoint2.x) 
+		{
 			endPoint1.x += radius;
 			endPoint2.x -= radius;
 		}
 
-		if (endPoint1.y < endPoint2.y) {
+		if (endPoint1.y < endPoint2.y) 
+		{
 			endPoint1.y -= radius;
 			endPoint2.y += radius;
-		} else if (endPoint1.y > endPoint2.y) {
+		} 
+		else if (endPoint1.y > endPoint2.y) 
+		{
 			endPoint1.y += radius;
 			endPoint2.y -= radius;
 		}
@@ -583,15 +654,18 @@ BuildingCrossInfo ExtBuildingInsideClosestCrossInfo(Building* building, F32 radi
 
 		V2 points[5] = {point1, point2, point3, point4, point1};
 
-		for (I32 i = 0; i < 4; ++i) {
+		for (I32 i = 0; i < 4; ++i) 
+		{
 			V2 corner1 = points[i];
 			V2 corner2 = points[i + 1];
 
-			if (DoLinesCross(corner1, corner2, closePoint, farPoint)) {
+			if (DoLinesCross(corner1, corner2, closePoint, farPoint)) 
+			{
 				V2 intersection = LineIntersection(corner1, corner2, closePoint, farPoint);
 				F32 distanceSquare = DistanceSquare(closePoint, intersection);
 
-				if (foundAny == false || distanceSquare < minDistanceSquare) {
+				if (foundAny == false || distanceSquare < minDistanceSquare) 
+				{
 					minDistanceSquare = distanceSquare;
 					foundAny = true;
 
@@ -619,52 +693,60 @@ V2 ClosestBuildingCrossPoint(Building building, V2 closePoint, V2 farPoint)
 	V2 bottomLeft = {building.left,  building.bottom};
 	V2 bottomRight = {building.right, building.bottom};
 
-	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) {
+	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) 
+	{
 		V2 intersection = LineIntersection(topLeft, topRight, closePoint, farPoint);
 		intersection.x = closePoint.x;
 		intersection.y = building.top;
 		F32 distanceSquare = DistanceSquare(closePoint, intersection);
 
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
+		if (foundAny == false || distanceSquare < minDistanceSquare) 
+		{
 			minDistanceSquare = distanceSquare;
 			foundAny = true;
 			result = intersection;
 		}
 	}
 
-	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) {
+	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) 
+	{
 		V2 intersection = LineIntersection(topRight, bottomRight, closePoint, farPoint);
 		intersection.x = building.right;
 		intersection.y = closePoint.y;
 		F32 distanceSquare = DistanceSquare(closePoint, intersection);
 
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
+		if (foundAny == false || distanceSquare < minDistanceSquare) 
+		{
 			minDistanceSquare = distanceSquare;
 			foundAny = true;
 			result = intersection;
 		}
 	}
 
-	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) {
+	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) 
+	{
 		V2 intersection = LineIntersection(bottomRight, bottomLeft, closePoint, farPoint);
 		intersection.x = closePoint.x;
 		intersection.y = building.bottom;
 		F32 distanceSquare = DistanceSquare(closePoint, intersection);
 
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
+		if (foundAny == false || distanceSquare < minDistanceSquare) 
+		{
 			minDistanceSquare = distanceSquare;
 			foundAny = true;
 			result = intersection;
 		}
 	}
 
-	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) {
+	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) 
+	{
 		V2 intersection = LineIntersection(bottomLeft, topLeft, closePoint, farPoint);
 		intersection.x = building.left;
 		intersection.y = closePoint.y;
 		F32 distanceSquare = DistanceSquare(closePoint, intersection);
 
-		if (foundAny == false || distanceSquare < minDistanceSquare) {
+		if (foundAny == false || distanceSquare < minDistanceSquare) 
+		{
 			minDistanceSquare = distanceSquare;
 			foundAny = true;
 			result = intersection;
@@ -678,7 +760,8 @@ B32 IsPointOnBuildingConnector(V2 point, Building building)
 {
 	F32 roadWidth = ConnectRoadWidth;
 
-	if (building.roadAround) {
+	if (building.roadAround) 
+	{
 		F32 left   = building.left   - roadWidth;
 		F32 right  = building.right  + roadWidth;
 		F32 top    = building.top    - roadWidth;
@@ -693,11 +776,13 @@ B32 IsPointOnBuildingConnector(V2 point, Building building)
 	F32 top    = Min2(building.connectPointFarShow.y, building.connectPointClose.y);
 	F32 bottom = Max2(building.connectPointFarShow.y, building.connectPointClose.y);
 
-	if (left == right) {
+	if (left == right) 
+	{
 		left  -= roadWidth * 0.5f;
 		right += roadWidth * 0.5f;
 	}
-	if (top == bottom) {
+	if (top == bottom) 
+	{
 		top    -= roadWidth * 0.5f;
 		bottom += roadWidth * 0.5f;
 	}
@@ -721,7 +806,8 @@ void DrawBuildingInside(Canvas canvas, Building building)
 {
 	V4 color = {};
 
-	switch (building.type) {
+	switch (building.type) 
+	{
 		case BuildingBlack:
 			color = MakeColor(0.75f, 0.75f, 0.75f);
 			break;
@@ -753,9 +839,9 @@ void DrawBuildingInside(Canvas canvas, Building building)
 
 	BuildingInside* inside = building.inside;
 
-	for (I32 i = 0; i < inside->wallCount; ++i) {
+	for (I32 i = 0; i < inside->wallCount; ++i) 
+	{
 		Line wall = inside->walls[i];
-
 		DrawGridLine(canvas, wall.p1, wall.p2, wallColor, WallWidth);
 	}
 }
@@ -775,7 +861,8 @@ static B32 IsPointOnGridLine(V2 point, V2 line1, V2 line2)
 
 static B32 IsCornerVisible(BuildingInside* inside, V2 center, V2 corner)
 {
-	for (I32 i = 0; i < inside->wallCount; ++i) {
+	for (I32 i = 0; i < inside->wallCount; ++i) 
+	{
 		Line wall = inside->walls[i];
 
 		if (!IsPointOnGridLine(corner, wall.p1, wall.p2) && DoLinesCross(center, corner, wall.p1,wall.p2)) 
@@ -785,18 +872,21 @@ static B32 IsCornerVisible(BuildingInside* inside, V2 center, V2 corner)
 	return true;
 }
 
-enum CornerType {
+enum CornerType 
+{
 	CornerEdge,
 	CornerEnter,
 	CornerLeave
 };
 
-struct Corner {
+struct Corner 
+{
 	CornerType type;
 	V2 point;
 };
 
-struct CornerHelper {
+struct CornerHelper 
+{
 	I32 cornerCount;
 	Corner* corners;
 	Corner* tmpCorners;
@@ -833,7 +923,8 @@ static void MergeCornerArrays(CornerHelper* helper, V2 center, I32 leftStart, I3
 	I32 left = leftStart;
 	I32 right = rightStart;
 
-	for (I32 i = leftStart; i <= rightEnd; ++i) {
+	for (I32 i = leftStart; i <= rightEnd; ++i) 
+	{
 		B32 chooseLeft = false;
 		B32 chooseRight = false;
 
@@ -846,29 +937,32 @@ static void MergeCornerArrays(CornerHelper* helper, V2 center, I32 leftStart, I3
 		else
 			chooseRight = true;
 
-		if (chooseLeft) {
+		if (chooseLeft) 
+		{
 			helper->tmpCorners[i] = helper->corners[left];
 			left++;
 		}
 
-		if (chooseRight) {
+		if (chooseRight) 
+		{
 			helper->tmpCorners[i] = helper->corners[right];
 			right++;
 		}
 	}
 
 	// TODO: use some version of memcpy here?
-	for (I32 i = leftStart; i <= rightEnd; ++i) {
+	for (I32 i = leftStart; i <= rightEnd; ++i) 
 		helper->corners[i] = helper->tmpCorners[i];
-	}
 }
 
 static void SortCorners(CornerHelper* helper, V2 center)
 {
 	I32 length = 1;
-	while (length <= helper->cornerCount) {
+	while (length <= helper->cornerCount) 
+	{
 		I32 leftStart = 0;
-		while (leftStart < helper->cornerCount) {
+		while (leftStart < helper->cornerCount) 
+		{
 			I32 leftEnd = leftStart + (length - 1);
 
 			I32 rightStart = leftEnd + 1;
@@ -898,7 +992,8 @@ static V2 NextVisiblePointAlongRay(Building building, V2 closePoint, V2 farPoint
 	V2 direction = PointDirection(closePoint, farPoint);
 	V2 farFarPoint = closePoint + (maxDistance * direction);
 
-	for (I32 i = 0; i < inside->wallCount; ++i) {
+	for (I32 i = 0; i < inside->wallCount; ++i) 
+	{
 		Line wall = inside->walls[i];
 
 		if (wall.p1 == farPoint)
@@ -907,11 +1002,13 @@ static V2 NextVisiblePointAlongRay(Building building, V2 closePoint, V2 farPoint
 		if (wall.p2 == farPoint)
 			continue;
 
-		if (DoLinesCross(closePoint, farFarPoint, wall.p1, wall.p2)) {
+		if (DoLinesCross(closePoint, farFarPoint, wall.p1, wall.p2)) 
+		{
 			V2 crossPoint = LineIntersection(closePoint, farFarPoint, wall.p1, wall.p2);
 
 			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
-			if (distanceSquare < minDistanceSquare) {
+			if (distanceSquare < minDistanceSquare) 
+			{
 				minDistanceSquare = distanceSquare;
 				result = crossPoint;
 			}
@@ -923,48 +1020,60 @@ static V2 NextVisiblePointAlongRay(Building building, V2 closePoint, V2 farPoint
 	V2 bottomLeft  = MakePoint(building.left, building.bottom);
 	V2 bottomRight = MakePoint(building.right, building.bottom);
 
-	if (topLeft != farPoint && topRight != farPoint) {
-		if (DoLinesCross(closePoint, farFarPoint, topLeft, topRight)) {
+	if (topLeft != farPoint && topRight != farPoint) 
+	{
+		if (DoLinesCross(closePoint, farFarPoint, topLeft, topRight)) 
+		{
 			V2 crossPoint = LineIntersection(closePoint, farFarPoint, topLeft, topRight);
 
 			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
-			if (distanceSquare < minDistanceSquare) {
+			if (distanceSquare < minDistanceSquare) 
+			{
 				minDistanceSquare = distanceSquare;
 				result = crossPoint;
 			}
 		}
 	}
 
-	if (topRight != farPoint && bottomRight != farPoint) {
-		if (DoLinesCross(closePoint, farFarPoint, topRight, bottomRight)) {
+	if (topRight != farPoint && bottomRight != farPoint) 
+	{
+		if (DoLinesCross(closePoint, farFarPoint, topRight, bottomRight)) 
+		{
 			V2 crossPoint = LineIntersection(closePoint, farFarPoint, topRight, bottomRight);
 
 			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
-			if (distanceSquare < minDistanceSquare) {
+			if (distanceSquare < minDistanceSquare) 
+			{
 				minDistanceSquare = distanceSquare;
 				result = crossPoint;
 			}
 		}
 	}
 
-	if (bottomRight != farPoint && bottomLeft != farPoint) {
-		if (DoLinesCross(closePoint, farFarPoint, bottomRight, bottomLeft)) {
+	if (bottomRight != farPoint && bottomLeft != farPoint) 
+	{
+		if (DoLinesCross(closePoint, farFarPoint, bottomRight, bottomLeft)) 
+		{
 			V2 crossPoint = LineIntersection(closePoint, farFarPoint, bottomRight, bottomLeft);
 
 			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
-			if (distanceSquare < minDistanceSquare) {
+			if (distanceSquare < minDistanceSquare) 
+			{
 				minDistanceSquare = distanceSquare;
 				result = crossPoint;
 			}
 		}
 	}
 
-	if (bottomLeft != farPoint && topLeft != farPoint) {
-		if (DoLinesCross(closePoint, farFarPoint, bottomLeft, topLeft)) {
+	if (bottomLeft != farPoint && topLeft != farPoint) 
+	{
+		if (DoLinesCross(closePoint, farFarPoint, bottomLeft, topLeft)) 
+		{
 			V2 crossPoint = LineIntersection(closePoint, farFarPoint, bottomLeft, topLeft);
 
 			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
-			if (distanceSquare < minDistanceSquare) {
+			if (distanceSquare < minDistanceSquare) 
+			{
 				minDistanceSquare = distanceSquare;
 				result = crossPoint;
 			}
@@ -992,16 +1101,19 @@ void DrawVisibleAreaInBuilding(Canvas canvas, Building building, V2 center, MemA
 	helper.cornerCount = 0;
 	helper.corners = ArenaPushArray(tmpArena, Corner, 0);
 
-	for (I32 i = 0; i < inside->wallCount; ++i) {
+	for (I32 i = 0; i < inside->wallCount; ++i) 
+	{
 		Line wall = inside->walls[i];
 
-		if (IsCornerVisible(inside, center, wall.p1)) {
+		if (IsCornerVisible(inside, center, wall.p1)) 
+		{
 			if (TurnsRight(center, wall.p1, wall.p2))
 				AddCorner(&helper, CornerEnter, wall.p1);
 			else 
 				AddCorner(&helper, CornerLeave, wall.p1);
 		}
-		if (IsCornerVisible(inside, center, wall.p2)) {
+		if (IsCornerVisible(inside, center, wall.p2)) 
+		{
 			if (TurnsRight(center, wall.p2, wall.p1))
 				AddCorner(&helper, CornerEnter, wall.p2);
 			else
@@ -1033,12 +1145,14 @@ void DrawVisibleAreaInBuilding(Canvas canvas, Building building, V2 center, MemA
 	V2* points = ArenaPushArray(tmpArena, V2, 0);
 	I32 pointCount = 0;
 
-	for (I32 i = 0; i < helper.cornerCount; ++i) {
+	for (I32 i = 0; i < helper.cornerCount; ++i) 
+	{
 		Corner corner = helper.corners[i];
 
 		V2 farPoint = NextVisiblePointAlongRay(building, center, corner.point, maxDistance);
 
-		if ((corner.type == CornerEnter) && (farPoint != corner.point)) {
+		if ((corner.type == CornerEnter) && (farPoint != corner.point)) 
+		{
 			ArenaPushVar(tmpArena, farPoint);
 			pointCount++;
 		}
@@ -1046,13 +1160,15 @@ void DrawVisibleAreaInBuilding(Canvas canvas, Building building, V2 center, MemA
 		ArenaPushVar(tmpArena, corner.point);
 		pointCount++;
 
-		if ((corner.type == CornerLeave) && (farPoint != corner.point)) {
+		if ((corner.type == CornerLeave) && (farPoint != corner.point)) 
+		{
 			ArenaPushVar(tmpArena, farPoint);
 			pointCount++;
 		}
 	}
 
-	for (I32 i = 0; i < pointCount; ++i) {
+	for (I32 i = 0; i < pointCount; ++i) 
+	{
 		V2 point = points[i];
 		V2 nextPoint = {};
 
@@ -1073,7 +1189,8 @@ void HighlightBuildingConnector(Canvas canvas, Building building, V4 color)
 {
 	F32 roadWidth = ConnectRoadWidth;
 
-	if (building.roadAround) {
+	if (building.roadAround) 
+	{
 		DrawRect(
 			canvas,
 			building.left - roadWidth, building.right + roadWidth,
@@ -1092,7 +1209,8 @@ void DrawConnectRoad(Canvas canvas, Building building, Texture roadTexture)
 {
 	F32 roadWidth = ConnectRoadWidth;
 
-	if (building.roadAround) {
+	if (building.roadAround) 
+	{
 		WorldTextureRect(
 			canvas,
 			building.left - roadWidth, building.right + roadWidth,

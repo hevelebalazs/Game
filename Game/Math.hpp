@@ -7,18 +7,23 @@
 
 #define PI	3.14159265358979323f
 
-struct V2 {
+struct V2 
+{
 	F32 x;
 	F32 y;
 };
 
-struct V4 {
-	union {
-		struct {
+struct V4 
+{
+	union 
+	{
+		struct 
+		{
 			V2 position;
 			V2 direction;
 		};
-		struct {
+		struct 
+		{
 			F32 red;
 			F32 green;
 			F32 blue;

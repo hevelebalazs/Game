@@ -32,7 +32,8 @@
 struct Road;
 struct Junction;
 
-struct Road {
+struct Road 
+{
 	V2 endPoint1;
 	V2 endPoint2;
 
@@ -42,20 +43,23 @@ struct Road {
 	F32 crossingDistance;
 };
 
-enum TrafficLightColor {
+enum TrafficLightColor 
+{
 	TrafficLightNone,
 	TrafficLightRed,
 	TrafficLightYellow,
 	TrafficLightGreen
 };
 
-struct TrafficLight {
+struct TrafficLight 
+{
 	V2 position;
 	TrafficLightColor color;
 	F32 timeLeft;
 };
 
-struct Junction {
+struct Junction 
+{
 	V2 position;
 
 	I32 roadN;

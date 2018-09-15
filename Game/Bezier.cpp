@@ -69,14 +69,18 @@ F32 MoveOnBezier4(Bezier4 bezier4, F32 startRatio, F32 moveDistance)
 	V2 position = Bezier4Point(bezier4, startRatio);
 	F32 ratio = startRatio;
 	I32 nextPointIndex = Floor(ratio * Bezier4SegmentN) + 1;
-	while (nextPointIndex <= Bezier4SegmentN) {
+	while (nextPointIndex <= Bezier4SegmentN) 
+	{
 		F32 nextRatio = F32(nextPointIndex) / Bezier4SegmentN;
 		V2 nextPosition = Bezier4Point(bezier4, nextRatio);
 		F32 distance = Distance(position, nextPosition);
-		if (moveDistance <= distance) {
+		if (moveDistance <= distance) 
+		{
 			ratio = Lerp(ratio, moveDistance / distance, nextRatio);
 			break;
-		} else {
+		} 
+		else 
+		{
 			moveDistance -= distance;
 			position = nextPosition;
 			ratio = nextRatio;
@@ -93,7 +97,8 @@ F32 GetBezier4DistanceFromEnd(Bezier4 bezier4, F32 ratio)
 	F32 result = 0;
 	V2 position = Bezier4Point(bezier4, ratio);
 	I32 nextPointIndex = Floor(ratio * Bezier4PointN) + 1;
-	while (nextPointIndex <= Bezier4PointN) {
+	while (nextPointIndex <= Bezier4PointN) 
+	{
 		V2 nextPosition = Bezier4Point(bezier4, F32(nextPointIndex) / Bezier4PointN);
 		F32 distance = Distance(position, nextPosition);
 		result += distance;
@@ -107,7 +112,8 @@ void DrawBezier4(Canvas canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 se
 {
 	V2 point = bezier4.points[0];
 
-	for (I32 i = 1; i <= segmentCount; ++i) {
+	for (I32 i = 1; i <= segmentCount; ++i) 
+	{
 		F32 ratio = ((F32)i) / ((F32)segmentCount);
 		V2 nextPoint = Bezier4Point(bezier4, ratio);
 

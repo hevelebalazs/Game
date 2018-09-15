@@ -22,9 +22,11 @@ Junction* GetRandomJunction(Map* map)
 Junction* GetJunctionAtPoint(Map* map, V2 point)
 {
 	Junction* result = 0;
-	for (I32 i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) 
+	{
 		Junction* junction = &map->junctions[i];
-		if (IsPointOnJunction(point, junction)) {
+		if (IsPointOnJunction(point, junction)) 
+		{
 			result = junction;
 			break;
 		}
@@ -38,7 +40,8 @@ MapElem GetClosestRoadElem(Map* map, V2 point)
 
 	Road* closestRoad = 0;
 	F32 minDistanceSquare = 0.0f;
-	for (I32 i = 0; i < map->roadN; ++i) {
+	for (I32 i = 0; i < map->roadN; ++i) 
+	{
 		Road* road = &map->roads[i];
 
 		B32 betweenX =
@@ -48,9 +51,11 @@ MapElem GetClosestRoadElem(Map* map, V2 point)
 			((road->endPoint1.y <= point.y) && (point.y <= road->endPoint2.y)) ||
 			((road->endPoint2.y <= point.y) && (point.y <= road->endPoint1.y));
 
-		if (betweenX || betweenY) {
+		if (betweenX || betweenY) 
+		{
 			F32 distanceSquare = DistanceSquareFromRoad(road, point);
-			if (!closestRoad || distanceSquare < minDistanceSquare) {
+			if (!closestRoad || distanceSquare < minDistanceSquare) 
+			{
 				closestRoad = road;
 				minDistanceSquare = distanceSquare;
 
@@ -60,15 +65,18 @@ MapElem GetClosestRoadElem(Map* map, V2 point)
 	}
 
 	Junction* closestJunction = 0;
-	for (I32 i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) 
+	{
 		Junction* junction = &map->junctions[i];
 
 		B32 betweenX = (Abs(junction->position.x - point.x) <= LaneWidth);
 		B32 betweenY = (Abs(junction->position.y - point.y) <= LaneWidth);
 
-		if (betweenX || betweenY) {
+		if (betweenX || betweenY) 
+		{
 			F32 distanceSquare = DistanceSquare(junction->position, point);
-			if ((!closestRoad && !closestJunction) || distanceSquare < minDistanceSquare) {
+			if ((!closestRoad && !closestJunction) || distanceSquare < minDistanceSquare) 
+			{
 				closestJunction = junction;
 				minDistanceSquare = distanceSquare;
 
@@ -99,14 +107,16 @@ Building* GetClosestBuilding(Map* map, V2 point, BuildingType type)
 	Building* result = 0;
 
 	F32 minDistanceSquare = 0.0f;
-	for (I32 i = 0; i < map->buildingN; ++i) {
+	for (I32 i = 0; i < map->buildingN; ++i) 
+	{
 		Building* building = &map->buildings[i];
 		if (building->type != type) 
 			continue;
 
 		V2 center = GetBuildingCenter(building);
 		F32 distanceSquare = DistanceSquare(point, center);
-		if (!result || distanceSquare < minDistanceSquare) {
+		if (!result || distanceSquare < minDistanceSquare) 
+		{
 			result = building;
 			minDistanceSquare = distanceSquare;
 		}
@@ -120,12 +130,15 @@ BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, F32 radius, V2 closeP
 	BuildingCrossInfo result = {};
 
 	F32 minDistanceSquare = 0.0f;
-	for (I32 i = 0; i < map->buildingN; ++i) {
+	for (I32 i = 0; i < map->buildingN; ++i) 
+	{
 		BuildingCrossInfo crossInfo = ExtBuildingClosestCrossInfo(&map->buildings[i], radius, closePoint, farPoint);
-		if (crossInfo.building) {
+		if (crossInfo.building) 
+		{
 			// TODO: is it a problem that this distanceSquare is calculated twice?
 			F32 distanceSquare = DistanceSquare(closePoint, crossInfo.crossPoint);
-			if (!result.building || distanceSquare < minDistanceSquare) {
+			if (!result.building || distanceSquare < minDistanceSquare) 
+			{
 				minDistanceSquare = distanceSquare;
 				result = crossInfo;
 			}
@@ -140,16 +153,19 @@ Building* GetClosestCrossedBuilding(Map* map, V2 pointClose, V2 pointFar, Buildi
 	Building* result = 0;
 
 	F32 minDistanceSquare = 0.0f;
-	for (I32 i = 0; i < map->buildingN; ++i) {
+	for (I32 i = 0; i < map->buildingN; ++i) 
+	{
 		Building* building = &map->buildings[i];
 		if (building == excludedBuilding) 
 			continue;
 
-		if (IsBuildingCrossed(*building, pointClose, pointFar)) {
+		if (IsBuildingCrossed(*building, pointClose, pointFar)) 
+		{
 			V2 closestCrossPoint = ClosestBuildingCrossPoint(*building, pointClose, pointFar);
 
 			F32 distanceSquare = DistanceSquare(pointClose, closestCrossPoint);
-			if (result == 0 || distanceSquare < minDistanceSquare) {
+			if (result == 0 || distanceSquare < minDistanceSquare) 
+			{
 				result = building;
 				minDistanceSquare = distanceSquare;
 			}
@@ -162,7 +178,8 @@ Building* GetClosestCrossedBuilding(Map* map, V2 pointClose, V2 pointFar, Buildi
 Building* GetBuildingAtPoint(Map* map, V2 point)
 {
 	Building* result = 0;
-	for (I32 i = 0; i < map->buildingN; ++i) {
+	for (I32 i = 0; i < map->buildingN; ++i) 
+	{
 		if (IsPointInBuilding(point, map->buildings[i])) 
 			result = &map->buildings[i];
 	}
@@ -175,29 +192,36 @@ MapElem GetRoadElemAtPoint(Map* map, V2 point)
 	MapElem result = {};
 	result.type = MapElemNone;
 
-	for (I32 i = 0; i < map->roadN; ++i) {
+	for (I32 i = 0; i < map->roadN; ++i) 
+	{
 		Road* road = &map->roads[i];
-		if (IsPointOnRoad(point, road)) {
+		if (IsPointOnRoad(point, road)) 
+		{
 			result = GetRoadElem(road);
 			return result;
 		}
 	}
 
-	for (I32 i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) 
+	{
 		Junction* junction = &map->junctions[i];
-		if (IsPointOnJunction(point, junction)) {
+		if (IsPointOnJunction(point, junction))
+		{
 			result = GetJunctionElem(junction);
 			return result;
 		}
 	}
 
-	for (I32 i = 0; i < map->buildingN; ++i) {
-		if (IsPointInBuilding(point, map->buildings[i])) {
+	for (I32 i = 0; i < map->buildingN; ++i) 
+	{
+		if (IsPointInBuilding(point, map->buildings[i])) 
+		{
 			result = GetBuildingElem(&map->buildings[i]);
 			return result;
 		}
 
-		if (IsPointOnBuildingConnector(point, map->buildings[i])) {
+		if (IsPointOnBuildingConnector(point, map->buildings[i])) 
+		{
 			result = GetBuildingConnectorElem(&map->buildings[i]);
 			return result;
 		}
@@ -210,22 +234,27 @@ MapElem GetPedestrianElemAtPoint(Map* map, V2 point)
 {
 	MapElem result = {};
 
-	for (I32 i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i) 
+	{
 		Junction* junction = &map->junctions[i];
-		if (IsPointOnJunctionSidewalk(point, junction)) {
+		if (IsPointOnJunctionSidewalk(point, junction)) 
+		{
 			result = GetJunctionSidewalkElem(junction);
 			return result;
 		}
 	}
 
-	for (I32 i = 0; i < map->roadN; ++i) {
+	for (I32 i = 0; i < map->roadN; ++i) 
+	{
 		Road* road = &map->roads[i];
-		if (IsPointOnRoadSidewalk(point, road)) {
+		if (IsPointOnRoadSidewalk(point, road)) 
+		{
 			result = GetRoadSidewalkElem(road);
 			return result;
 		}
 
-		if (IsPointOnCrossing(point, road)) {
+		if (IsPointOnCrossing(point, road)) 
+		{
 			result = GetCrossingElem(road);
 			return result;
 		}
@@ -380,9 +409,11 @@ MapTileIndex GetMapTileIndexContainingPoint(Map* map, V2 point)
 B32 IsMapTileCached(Map* map, MapTileIndex tileIndex)
 {
 	B32 isCached = false;
-	for (I32 i = 0; i < map->cachedTileN; ++i) {
+	for (I32 i = 0; i < map->cachedTileN; ++i) 
+	{
 		MapTileIndex cachedTileIndex = map->cachedTiles[i].index;
-		if (cachedTileIndex.row == tileIndex.row && cachedTileIndex.col == tileIndex.col) {
+		if (cachedTileIndex.row == tileIndex.row && cachedTileIndex.col == tileIndex.col) 
+		{
 			isCached = true;
 			break;
 		}
@@ -404,11 +435,13 @@ CachedMapTile* GetFarthestCachedMapTile(Map* map, V2 point)
 	Assert(map->cachedTileN > 0);
 	CachedMapTile* cachedTile = 0;
 	F32 maxDistance = 0.0f;
-	for (I32 i = 0; i < map->cachedTileN; ++i) {
+	for (I32 i = 0; i < map->cachedTileN; ++i) 
+	{
 		MapTileIndex tileIndex = map->cachedTiles[i].index;
 		V2 tileCenter = GetMapTileCenter(map, tileIndex);
 		F32 distance = Distance(tileCenter, point);
-		if (distance >= maxDistance) {
+		if (distance >= maxDistance) 
+		{
 			maxDistance = distance;
 			cachedTile = &map->cachedTiles[i];
 		}
@@ -435,7 +468,8 @@ void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitmap, Map
 DWORD WINAPI GenerateMapTileWorkProc(LPVOID parameter)
 {
 	GenerateMapTileWorkList* workList = (GenerateMapTileWorkList*)parameter;
-	while (1) {
+	while (1) 
+	{
 		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
 		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->workDoneN) - 1;
 		workIndex = (workIndex + MaxGenerateMapTileWorkListN) % MaxGenerateMapTileWorkListN;
@@ -456,11 +490,14 @@ void CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures)
 {
 	Assert(!IsMapTileCached(map, tileIndex));
 	CachedMapTile* cachedTile = 0;
-	if (map->cachedTileN < MaxCachedMapTileN) {
+	if (map->cachedTileN < MaxCachedMapTileN) 
+	{
 		cachedTile = map->cachedTiles + map->cachedTileN;
 		ResizeBitmap(&cachedTile->bitmap, MapTileBitmapWidth, MapTileBitmapHeight);
 		map->cachedTileN++;
-	} else {
+	} 
+	else 
+	{
 		V2 tileCenter = GetMapTileCenter(map, tileIndex);
 		cachedTile = GetFarthestCachedMapTile(map, tileCenter);
 	}
@@ -477,9 +514,11 @@ void CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures)
 Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
 {
 	Bitmap* bitmap = 0;
-	for (I32 i = 0; i < map->cachedTileN; ++i) {
+	for (I32 i = 0; i < map->cachedTileN; ++i) 
+	{
 		CachedMapTile* cachedTile = map->cachedTiles + i;
-		if (cachedTile->index.row == tileIndex.row && cachedTile->index.col == tileIndex.col) {
+		if (cachedTile->index.row == tileIndex.row && cachedTile->index.col == tileIndex.col) 
+		{
 			bitmap = &cachedTile->bitmap;
 			break;
 		}
@@ -506,8 +545,10 @@ void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F32 top, 
 	MapTileIndex topLeftTileIndex     = GetMapTileIndexContainingPoint(map, topLeft);
 	MapTileIndex bottomRightTileIndex = GetMapTileIndexContainingPoint(map, bottomRight);
 
-	for (I32 row = topLeftTileIndex.row; row <= bottomRightTileIndex.row; ++row) {
-		for (I32 col = topLeftTileIndex.col; col <= bottomRightTileIndex.col; ++col) {
+	for (I32 row = topLeftTileIndex.row; row <= bottomRightTileIndex.row; ++row) 
+	{
+		for (I32 col = topLeftTileIndex.col; col <= bottomRightTileIndex.col; ++col) 
+		{
 			MapTileIndex tileIndex = MapTileIndex{row, col};
 
 			if (!IsMapTileIndexValid(map, tileIndex))
@@ -516,7 +557,8 @@ void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F32 top, 
 			if (!IsMapTileCached(map, tileIndex))
 				CacheMapTile(map, tileIndex, textures);
 
-			if (IsMapTileIndexValid(map, tileIndex)) {
+			if (IsMapTileIndexValid(map, tileIndex)) 
+			{
 				DrawMapTileWork work = {};
 				work.canvas = canvas;
 				work.map = map;

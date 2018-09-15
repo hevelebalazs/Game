@@ -136,11 +136,14 @@ V2 LineIntersection(Line line1, Line line2)
 B32 IsPointInPoly(V2 point, V2* points, I32 pointN)
 {
 	B32 isInside = false;
-	if (pointN >= 3) {
+	if (pointN >= 3) 
+	{
 		isInside = true;
 		I32 prev = pointN - 1;
-		for (I32 i = 0; i < pointN; ++i) {
-			if (!TurnsRight(points[prev], points[i], point)) {
+		for (I32 i = 0; i < pointN; ++i) 
+		{
+			if (!TurnsRight(points[prev], points[i], point)) 
+			{
 				isInside = false;
 				break;
 			}

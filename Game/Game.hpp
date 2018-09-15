@@ -12,7 +12,8 @@
 
 #define CarBitmapN 20
 
-struct GameState {
+struct GameState 
+{
 	F32 time;
 
 	Camera camera;
@@ -44,7 +45,8 @@ struct GameState {
 // TODO: remove gameState reference
 // TODO: remove arenas, add only pointers
 // TODO: add a pointer to a PathPool?
-struct GameStorage {
+struct GameStorage 
+{
 	GameState* gameState;
 	MemArena arena;
 	MemArena tmpArena;

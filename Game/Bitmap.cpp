@@ -138,7 +138,8 @@ static void PaintBitmapPixel(Bitmap* bitmap, I32 row, I32 col, U32 colorCode)
 	*pixelAddress = colorCode;
 }
 
-struct BresenhamData {
+struct BresenhamData 
+{
 	I32 row1, col1;
 	I32 row2, col2;
 	I32 rowAbs, colAbs;
@@ -178,11 +179,13 @@ static BresenhamData InitBresenham(I32 row1, I32 col1, I32 row2, I32 col2)
 static void AdvanceBresenham(BresenhamData* data)
 {
 	data->error2 = data->error1;
-	if (data->error2 > -data->colAbs) {
+	if (data->error2 > -data->colAbs) 
+	{
 		data->error1 -= data->rowAbs;
 		data->col1 += data->colAdd;
 	}
-	if (data->error2 < data->rowAbs) {
+	if (data->error2 < data->rowAbs) 
+	{
 		data->error1 += data->colAbs;
 		data->row1 += data->rowAdd;
 	}
@@ -192,7 +195,8 @@ static void DrawBitmapBresenhamLine(Bitmap* bitmap, I32 row1, I32 col1, I32 row2
 {
 	U32 colorCode = GetColorCode(color);
 	BresenhamData data = InitBresenham(row1, col1, row2, col2);
-	while (1) {
+	while (1) 
+	{
 		PaintBitmapPixel(bitmap, data.row1, data.col1, colorCode);
 
 		if (data.row1 == data.row2 && data.col1 == data.col2)
@@ -223,8 +227,10 @@ void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena* tmpAr
 
 	PaintBitmapPixel(bitmap, row, col, paintColorCode);
 
-	for (I32 i = 0; i < positionN; ++i) {
-		if (i == directionSwitchPosition) {
+	for (I32 i = 0; i < positionN; ++i) 
+	{
+		if (i == directionSwitchPosition) 
+		{
 			fillHorizontally = !fillHorizontally;
 			directionSwitchPosition = positionN;
 		}
@@ -234,9 +240,11 @@ void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena* tmpAr
 		U32* pixelStart = GetBitmapPixelAddress(bitmap, row, col);
 		U32* pixel = 0;
 
-		if (fillHorizontally) {
+		if (fillHorizontally) 
+		{
 			pixel = pixelStart;
-			for (I32 left = col - 1; left >= 0; --left) {
+			for (I32 left = col - 1; left >= 0; --left) 
+			{
 				pixel--;
 				if (*pixel != baseColorCode) 
 					break;
@@ -247,7 +255,8 @@ void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena* tmpAr
 			}
 
 			pixel = pixelStart;
-			for (I32 right = col + 1; right < bitmap->width; ++right) {
+			for (I32 right = col + 1; right < bitmap->width; ++right) 
+			{
 				pixel++;
 				if (*pixel != baseColorCode)
 					break;
@@ -256,9 +265,12 @@ void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena* tmpAr
 				ArenaPush(tmpArena, I32, right);
 				positionN++;
 			}
-		} else {
+		} 
+		else 
+		{
 			pixel = pixelStart;
-			for (I32 top = row - 1; top >= 0; --top) {
+			for (I32 top = row - 1; top >= 0; --top) 
+			{
 				pixel -= bitmap->width;
 				if (*pixel != baseColorCode)
 					break;
@@ -269,7 +281,8 @@ void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena* tmpAr
 			}
 
 			pixel = pixelStart;
-			for (I32 bottom = row + 1; bottom < bitmap->height; ++bottom) {
+			for (I32 bottom = row + 1; bottom < bitmap->height; ++bottom) 
+			{
 				pixel += bitmap->width;
 				if (*pixel != baseColorCode)
 					break;
@@ -287,8 +300,10 @@ void FillBitmapWithColor(Bitmap* bitmap, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 	U32* pixel = (U32*)bitmap->memory;
-	for (I32 row = 0; row < bitmap->height; ++row) {
-		for (I32 col = 0; col < bitmap->width; ++col) {
+	for (I32 row = 0; row < bitmap->height; ++row) 
+	{
+		for (I32 col = 0; col < bitmap->width; ++col) 
+		{
 			*pixel = colorCode;
 			pixel++;
 		}
@@ -335,8 +350,10 @@ void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toCenterR
 	I32 top    = IntMax2(topBoundary, 0);
 	I32 bottom = IntMin2(bottomBoundary, toBitmap->height - 1);
 
-	for (I32 toRow = top; toRow <= bottom; ++toRow) {
-		for (I32 toCol = left; toCol <= right; ++toCol) {
+	for (I32 toRow = top; toRow <= bottom; ++toRow) 
+	{
+		for (I32 toCol = left; toCol <= right; ++toCol) 
+		{
 			V2 position = {};
 			position.x = (F32)toCol;
 			position.y = (F32)toRow;
@@ -354,7 +371,8 @@ void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toCenterR
 			V4 fillColor = MakeColor(1.0f, 0.0f, 1.0f);
 			U32 fromColorCode = GetClosestBitmapColorCode(fromBitmap, heightRatio, widthRatio);
 			V4 fromColor = GetColorFromColorCode(fromColorCode);
-			if (fromColor.alpha != 0.0f) {
+			if (fromColor.alpha != 0.0f) 
+			{
 				U32* pixelAddress = GetBitmapPixelAddress(toBitmap, toRow, toCol);
 				*pixelAddress = fromColorCode;
 			}
@@ -381,18 +399,21 @@ void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toLeft, I32 t
 	F32 fromHeight = fromHeightStart;
 	F32 fromWidth = fromWidthStart;
 
-	if (top <= bottom && left <= right) {
+	if (top <= bottom && left <= right) 
+	{
 		U32* fromRowFirstPixelAddress = GetBitmapPixelAddress(fromBitmap, (I32)fromHeight, (I32)fromWidth);
 		U32* toRowFirstPixelAddress = GetBitmapPixelAddress(toBitmap, top, left);
 
 		I32 prevFromRow = (I32)fromHeight;
-		for (I32 toRow = top; toRow <= bottom; ++toRow) {
+		for (I32 toRow = top; toRow <= bottom; ++toRow) 
+		{
 			I32 fromRow = (I32)fromHeight;
 			fromWidth = fromWidthStart;
 			I32 prevFromCol = (I32)fromWidth;
 			U32* fromPixelAddress = fromRowFirstPixelAddress;		
 			U32* toPixelAddress = toRowFirstPixelAddress;
-			for (I32 toCol = left; toCol <= right; ++toCol) {
+			for (I32 toCol = left; toCol <= right; ++toCol) 
+			{
 				I32 fromCol = (I32)fromWidth;
 				fromPixelAddress += (fromCol - prevFromCol);
 				prevFromCol = fromCol;
@@ -414,7 +435,8 @@ void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toLeft, I32 t
 
 void DrawBitmapPolyOutline(Bitmap* bitmap, I32 polyN, I32* polyColRow, V4 color)
 {
-	for (I32 i = 0; i < polyN; ++i) {
+	for (I32 i = 0; i < polyN; ++i) 
+	{
 		I32 next = 0;
 		if (i < polyN - 1)
 			next = i + 1;

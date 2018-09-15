@@ -18,7 +18,8 @@
 #define CarCornerMass 250000
 #define CarMass (4 * CarCornerMass)
 
-struct Car {
+struct Car 
+{
 	V2 position;
 	F32 angle;
 	F32 length;
@@ -31,7 +32,8 @@ struct Car {
 	Bitmap* bitmap;
 };
 
-struct AutoCar {
+struct AutoCar 
+{
 	Car car;
 
 	Junction* onJunction;
@@ -59,7 +61,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena);
 void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpArena, PathPool* pathPool);
 void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool);
 
-struct PlayerCar {
+struct PlayerCar 
+{
 	Car car;
 
 	V2 velocity;
@@ -79,7 +82,8 @@ struct PlayerCar {
 V2 GetCarCorner(Car* car, I32 cornerIndex);
 void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds);
 
-struct CollisionInfo {
+struct CollisionInfo 
+{
 	I32 count;
 	V2 point;
 	V2 normalVector;

@@ -157,7 +157,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 backHoodTop         = frontHoodBottom + middlePartLength;
 	I32 backHoodBottom      = backHoodTop + backHoodLength;
 
-	I32 carPoly[] = {
+	I32 carPoly[] = 
+	{
 		frontHoodTop, frontHoodTopLeft,
 		frontHoodTop, frontHoodTopRight,
 		frontHoodBottom, frontHoodBottomRight,
@@ -184,7 +185,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 frontWindowTopRight    = frontHoodBottomRight - windowSeparatorWidth;
 	I32 frontWindowBottomLeft  = frontWindowTopLeft + frontWindowWidthDiff;
 	I32 frontWindowBottomRight = frontWindowTopRight - frontWindowWidthDiff;
-	I32 frontWindowPoly[] = {
+	I32 frontWindowPoly[] = 
+	{
 		frontWindowTop,    frontWindowTopLeft,
 		frontWindowTop,    frontWindowTopRight,
 		frontWindowBottom, frontWindowBottomRight,
@@ -205,7 +207,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 backWindowBottomRight = backHoodTopRight - windowSeparatorWidth;
 	I32 backWindowTopLeft     = frontWindowBottomLeft;
 	I32 backWindowTopRight    = frontWindowBottomRight;
-	I32 backWindowPoly[] = {
+	I32 backWindowPoly[] = 
+	{
 		backWindowTop,    backWindowTopLeft,
 		backWindowTop,    backWindowTopRight,
 		backWindowBottom, backWindowBottomRight,
@@ -221,7 +224,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 topLeftWindowLeftTop  = frontWindowTop + windowSeparatorWidth;
 	I32 topLeftWindowRightTop = frontWindowBottom + windowSeparatorWidth;
 	I32 topLeftWindowBottom   = topLeftWindowRightTop + 25;
-	I32 topLeftWindowPoly[] = {
+	I32 topLeftWindowPoly[] = 
+	{
 		topLeftWindowLeftTop,  topLeftWindowLeft,
 		topLeftWindowRightTop, topLeftWindowRight,
 		topLeftWindowBottom,   topLeftWindowRight,
@@ -237,7 +241,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 bottomLeftWindowTop         = topLeftWindowBottom + windowSeparatorWidth;
 	I32 bottomLeftWindowLeftBottom  = backWindowBottom - windowSeparatorWidth;
 	I32 bottomLeftWindowRightBottom = backWindowTop - windowSeparatorWidth;
-	I32 bottomLeftWindowPoly[] = {
+	I32 bottomLeftWindowPoly[] = 
+	{
 		bottomLeftWindowTop,         bottomLeftWindowLeft,
 		bottomLeftWindowTop,         bottomLeftWindowRight,
 		bottomLeftWindowRightBottom, bottomLeftWindowRight,
@@ -253,7 +258,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 topRightWindowLeftTop = frontWindowBottom + windowSeparatorWidth;
 	I32 topRightWindowRightTop = frontWindowTop + windowSeparatorWidth;
 	I32 topRightWindowBottom = topRightWindowLeftTop + 25;
-	I32 topRightWindowPoly[] = {
+	I32 topRightWindowPoly[] = 
+	{
 		topRightWindowLeftTop,  topRightWindowLeft,
 		topRightWindowRightTop, topRightWindowRight,
 		topRightWindowBottom,   topRightWindowRight,
@@ -269,7 +275,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 bottomRightWindowTop         = topRightWindowBottom + windowSeparatorWidth;
 	I32 bottomRightWindowLeftBottom  = backWindowTop - windowSeparatorWidth;
 	I32 bottomRightWindowRightBottom = backWindowBottom - windowSeparatorWidth;
-	I32 bottomRightWindowPoly[] = {
+	I32 bottomRightWindowPoly[] = 
+	{
 		bottomRightWindowTop,         bottomRightWindowLeft,
 		bottomRightWindowTop,         bottomRightWindowRight,
 		bottomRightWindowRightBottom, bottomRightWindowRight,
@@ -280,7 +287,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 bottomRightWindowCenterCol = (bottomRightWindowLeft + bottomRightWindowRight) / 2;
 	FloodfillBitmap(carBitmap, bottomRightWindowCenterRow, bottomRightWindowCenterCol, windowColor, tmpArena);
 
-	I32 leftShadowPoly[] = {
+	I32 leftShadowPoly[] = 
+	{
 		frontHoodTop,      frontHoodTopLeft,
 		frontHoodTop,      frontHoodTopLeft + 5,
 		frontWindowTop,    frontWindowTopLeft,
@@ -295,7 +303,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	DrawBitmapPolyOutline(carBitmap, 10, leftShadowPoly, shadowColor);
 	FloodfillBitmap(carBitmap, frontHoodTop + 1, frontHoodTopLeft + 1, shadowColor, tmpArena);
 
-	I32 rightShadowPoly[] = {
+	I32 rightShadowPoly[] = 
+	{
 		frontHoodTop, frontHoodTopRight - 5,
 		frontHoodTop, frontHoodTopRight,
 		frontHoodBottom, frontHoodBottomRight,
@@ -316,7 +325,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 frontShadowBottomRight = frontHoodTopRight;
 	I32 frontShadowTop         = frontHoodTop - 3;
 	I32 frontShadowBottom      = frontHoodTop;
-	I32 frontShadowPoly[] = {
+	I32 frontShadowPoly[] = 
+	{
 		frontShadowTop,    frontShadowTopLeft,
 		frontShadowTop,    frontShadowTopRight,
 		frontShadowBottom, frontShadowBottomRight,
@@ -333,7 +343,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 backShadowBottomRight = backHoodBottomRight - 10;
 	I32 backShadowTop         = backHoodBottom;
 	I32 backShadowBottom      = backHoodBottom + 3;
-	I32 backShadowPoly[] = {
+	I32 backShadowPoly[] = 
+	{
 		backShadowTop,    backShadowTopLeft,
 		backShadowTop,    backShadowTopRight,
 		backShadowBottom, backShadowBottomRight,
@@ -354,7 +365,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 leftMirrorLeftTop     = leftMirrorRightTop + mirrorThickness;
 	I32 leftMirrorRightBottom = leftMirrorRightTop + mirrorRowDiff;
 	I32 leftMirrorLeftBottom  = leftMirrorLeftTop + mirrorRowDiff;
-	I32 leftMirrorPoly[] = {
+	I32 leftMirrorPoly[] = 
+	{
 		leftMirrorLeftTop,     leftMirrorLeft,
 		leftMirrorRightTop,    leftMirrorRight,
 		leftMirrorRightBottom, leftMirrorRight,
@@ -371,7 +383,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 rightMirrorRightTop    = rightMirrorLeftTop + mirrorThickness;
 	I32 rightMirrorLeftBottom  = rightMirrorLeftTop + mirrorRowDiff;
 	I32 rightMirrorRightBottom = rightMirrorRightTop + mirrorRowDiff;
-	I32 rightMirrorPoly[] = {
+	I32 rightMirrorPoly[] = 
+	{
 		rightMirrorLeftTop,     rightMirrorLeft,
 		rightMirrorRightTop,    rightMirrorRight,
 		rightMirrorRightBottom, rightMirrorRight,
@@ -391,7 +404,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 frontLeftLampRight  = frontLeftLampLeft + frontLampWidth;
 	I32 frontLeftLampTop    = frontHoodTop;
 	I32 frontLeftLampBottom = frontLeftLampTop + frontLampHeight;
-	I32 frontLeftLampPoly[] = {
+	I32 frontLeftLampPoly[] = 
+	{
 		frontLeftLampTop,    frontLeftLampLeft,
 		frontLeftLampTop,    frontLeftLampRight,
 		frontLeftLampBottom, frontLeftLampRight,
@@ -406,7 +420,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 frontRightLampLeft = frontRightLampRight - frontLampWidth;
 	I32 frontRightLampTop = frontHoodTop;
 	I32 frontRightLampBottom = frontRightLampTop + frontLampHeight;
-	I32 frontRightLampPoly[] = {
+	I32 frontRightLampPoly[] = 
+	{
 		frontRightLampTop,    frontRightLampLeft,
 		frontRightLampTop,    frontRightLampRight,
 		frontRightLampBottom, frontRightLampRight,
@@ -422,7 +437,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 backLeftLampRight  = backLeftLampLeft + 7;
 	I32 backLeftLampTop    = backHoodBottom;
 	I32 backLeftLampBottom = backLeftLampTop + 2;
-	I32 backLeftLampPoly[] = {
+	I32 backLeftLampPoly[] = 
+	{
 		backLeftLampTop,    backLeftLampLeft,
 		backLeftLampTop,    backLeftLampRight,
 		backLeftLampBottom, backLeftLampRight,
@@ -437,7 +453,8 @@ void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 backRightLampLeft = backRightLampRight - 7;
 	I32 backRightLampBottom = backHoodBottom;
 	I32 backRightLampTop = backRightLampBottom + 2;
-	I32 backRightLampPoly[] = {
+	I32 backRightLampPoly[] = 
+	{
 		backRightLampTop,    backRightLampLeft,
 		backRightLampTop,    backRightLampRight,
 		backRightLampBottom, backRightLampRight,
@@ -456,7 +473,8 @@ void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpAr
 
 	autoCar->moveNode = ConnectElems(autoCar->car.map, targetElem, nextElem, tmpArena, pathPool);
 
-	if (autoCar->moveNode) {
+	if (autoCar->moveNode) 
+	{
 		autoCar->moveStartPoint = StartNodePoint(autoCar->moveNode);
 		autoCar->moveEndPoint = NextNodePoint(autoCar->moveNode, autoCar->moveStartPoint);
 		autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
@@ -472,18 +490,23 @@ bool IsAutoCarBeforeARedLight(AutoCar* autoCar)
 {
 	B32 result = false;
 	PathNode* moveNode = autoCar->moveNode;
-	if (moveNode) {
-		if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint)) {
+	if (moveNode) 
+	{
+		if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint))
+		{
 			PathNode* nextNode = moveNode->next;
-			if (nextNode) {
+			if (nextNode) 
+			{
 				MapElem moveElem = moveNode->elem;
 				MapElem nextElem = nextNode->elem;
 
-				if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) {
+				if (moveElem.type == MapElemRoad && nextElem.type == MapElemJunction) 
+				{
 					Road* road = moveElem.road;
 					Junction* junction = nextElem.junction;
 					TrafficLight* trafficLight = 0;
-					for (I32 i = 0; i < junction->roadN; ++i) {
+					for (I32 i = 0; i < junction->roadN; ++i) 
+					{
 						if (junction->roads[i] == road)
 							trafficLight = &junction->trafficLights[i];
 					}
@@ -508,24 +531,29 @@ void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* 
 	if (IsAutoCarBeforeARedLight(autoCar))
 		autoCar->acceleration = -25.0f;
 
-	if (autoCar->moveTargetJunction) {
+	if (autoCar->moveTargetJunction) 
+	{
 		car->moveSpeed += seconds * autoCar->acceleration;
 		car->moveSpeed = Clip(car->moveSpeed, 0.0f, car->maxSpeed);
 		F32 distanceToGo = seconds * car->moveSpeed;
-		while (distanceToGo > 0.0f) {
+		while (distanceToGo > 0.0f) 
+		{
 			PathNode* moveNode = autoCar->moveNode;
-			if (!moveNode) {
+			if (!moveNode) 
+			{
 				autoCar->onJunction = autoCar->moveTargetJunction;
 				autoCar->moveTargetJunction = 0;
 				break;
 			}
 
 			F32 bezierRatio = MoveOnBezier4(autoCar->moveBezier4, autoCar->bezierRatio, distanceToGo);
-			if (bezierRatio == 1.0f) {
+			if (bezierRatio == 1.0f) 
+			{
 				autoCar->moveStartPoint = autoCar->moveEndPoint;
 				F32 distance = GetBezier4DistanceFromEnd(autoCar->moveBezier4, autoCar->bezierRatio);
 				distanceToGo -= distance;
-				if (IsNodeEndPoint(moveNode, autoCar->moveStartPoint)) {
+				if (IsNodeEndPoint(moveNode, autoCar->moveStartPoint)) 
+				{
 					moveNode = moveNode->next;
 					FreePathNode(autoCar->moveNode, pathPool);
 					autoCar->moveNode = moveNode;
@@ -537,12 +565,16 @@ void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* 
 				autoCar->bezierRatio = 0.0f;
 				autoCar->moveEndPoint = NextNodePoint(moveNode, autoCar->moveStartPoint);
 				autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
-			} else {
+			} 
+			else
+			{
 				distanceToGo = 0.0f;
 				autoCar->bezierRatio = bezierRatio;
 			}
 		}
-	} else {
+	} 
+	else 
+	{
 		Junction* targetJunction = GetRandomJunction(car->map);
 		MoveAutoCarToJunction(autoCar, targetJunction, tmpArena, pathPool);
 	}
@@ -568,7 +600,9 @@ V2 GetCarCorner(Car* car, I32 cornerIndex)
 	V2 backCenter = center - (halfLength * rotationUpDown);
 
 	V2 result = {};
-	switch (cornerIndex) {
+
+	switch (cornerIndex)
+	{
 		case 0:
 			result = frontCenter - (halfWidth * rotationLeftRight);
 			break;
@@ -600,10 +634,13 @@ void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 		turnRatio = maxControlSpeed / speed;
 
 	F32 frontWheelTarget = turnRatio * car->frontWheelAngleTarget * maxControlTurn;
-	if (car->frontWheelAngle < car->frontWheelAngleTarget) {
+	if (car->frontWheelAngle < car->frontWheelAngleTarget) 
+	{
 		car->frontWheelAngle += seconds * maxControlTurn;
 		car->frontWheelAngle = Min2(car->frontWheelAngle, frontWheelTarget);
-	} else {
+	} 
+	else 
+	{
 		car->frontWheelAngle -= seconds * maxControlTurn;
 		car->frontWheelAngle = Max2(car->frontWheelAngle, frontWheelTarget);
 	}
@@ -654,10 +691,13 @@ CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2)
 {
 	CollisionInfo hit = {};
 	hit.count = hit1.count + hit2.count;
-	if (hit2.count > 0) {
+	if (hit2.count > 0) 
+	{
 		hit.point = hit2.point;
 		hit.normalVector = hit2.normalVector;
-	} else {
+	} 
+	else 
+	{
 		hit.point = hit1.point;
 		hit.normalVector = hit1.normalVector;
 	}
@@ -668,11 +708,13 @@ CollisionInfo GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 point1, V2 po
 {
 	CollisionInfo hit = {};
 
-	for (I32 i = 0; i < 4; ++i) {
+	for (I32 i = 0; i < 4; ++i) 
+	{
 		V2 oldCorner = GetCarCorner(oldCar, i);
 		V2 newCorner = GetCarCorner(newCar, i);
 		CollisionInfo hitCorner = {};
-		if (DoLinesCross(point1, point2, oldCorner, newCorner)) {
+		if (DoLinesCross(point1, point2, oldCorner, newCorner)) 
+		{
 			V2 wallAngle = PointDirection(point1, point2);
 			hitCorner.normalVector = TurnVectorToRight(wallAngle);
 			hitCorner.point = oldCorner;
@@ -711,22 +753,26 @@ CollisionInfo GetCarPointCollisionInfo(Car* oldCar, Car* newCar, V2 point)
 	V2 oldRelativePoint = GetCarRelativeCoordinates(oldCar, point);
 	V2 newRelativePoint = GetCarRelativeCoordinates(newCar, point);
 
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, topRight)) {
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, topRight)) 
+	{
 		hit.count++;
 		hit.point = point;
 		hit.normalVector = RotationVector(oldCar->angle);
 	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, bottomLeft, bottomRight)) {
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, bottomLeft, bottomRight)) 
+	{
 		hit.count++;
 		hit.point = point;
 		hit.normalVector = RotationVector(oldCar->angle);
 	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, bottomLeft)) {
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, bottomLeft)) 
+	{
 		hit.count++;
 		hit.point = point;
 		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
 	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topRight, bottomRight)) {
+	if (DoLinesCross(oldRelativePoint, newRelativePoint, topRight, bottomRight)) 
+	{
 		hit.count++;
 		hit.point = point;
 		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
@@ -739,7 +785,8 @@ CollisionInfo GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* points, I32 
 {
 	CollisionInfo hit = {};
 
-	for (I32 i = 0; i < pointN; ++i) {
+	for (I32 i = 0; i < pointN; ++i) 
+	{
 		I32 j = i + 1;
 		if (j == pointN)
 			j = 0;
@@ -765,7 +812,8 @@ V2 GetCarPointVelocity(PlayerCar* car, V2 point)
 
 void UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, CollisionInfo hit)
 {
-	if (hit.count > 1) {
+	if (hit.count > 1) 
+	{
 		car->velocity = MakeVector(0.0f, 0.0f);
 		car->car.position = oldCar->car.position;
 
@@ -773,7 +821,8 @@ void UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, Co
 		car->car.angle = oldCar->car.angle;
 	}
 
-	if (hit.count == 1) {
+	if (hit.count == 1) 
+	{
 		V2 hitPointVelocity = GetCarPointVelocity(car, hit.point);
 		V2 carCenter = car->car.position;
 
@@ -795,7 +844,8 @@ void UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, Co
 
 	/*
 	TODO: Check why this happens!
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; ++i) 
+	{
 		V2 oldCorner = oldP[i];
 		V2 newCorner = GetCorner(labState, i);
 		Assert(!DoLinesCross(wall1, wall2, oldCorner, newCorner));

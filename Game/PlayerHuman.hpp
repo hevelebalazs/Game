@@ -5,14 +5,16 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
-struct Bullet {
+struct Bullet 
+{
 	V4 position;
 
 	// TODO: 0 means not active
 	F32 secondsRemaining;
 };
 
-struct PlayerHuman {
+struct PlayerHuman 
+{
 	Human human;
 
 	B32 moveUp;

@@ -49,8 +49,10 @@ void ApplyBitmapMask(Bitmap bitmap, Bitmap mask)
 	U32* pixel = bitmap.memory;
 	U32* maskPixel = mask.memory;
 
-	for (I32 row = 0; row < bitmap.height; ++row) {
-		for (I32 col = 0; col < bitmap.width; ++col) {
+	for (I32 row = 0; row < bitmap.height; ++row) 
+	{
+		for (I32 col = 0; col < bitmap.width; ++col) 
+		{
 			V4 color1 = GetColorFromColorCode(*pixel);
 			V4 color2 = GetColorFromColorCode(*maskPixel);
 			V4 color = ColorProd(color1, color2);
@@ -63,12 +65,14 @@ void ApplyBitmapMask(Bitmap bitmap, Bitmap mask)
 	}
 }
 
-struct PixelPosition {
+struct PixelPosition
+{
 	I32 row;
 	I32 col;
 };
 
-void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) {
+void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) 
+{
 	U32 colorCode = GetColorCode(color);
 
 	Bitmap bitmap = canvas.bitmap;
@@ -93,8 +97,10 @@ void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) {
 
 	SetPixel(bitmap, positions[0].row, positions[0].col, colorCode);
 
-	for (I32 i = 0; i < positionCount; ++i) {
-		if (i == directionSwitchPosition) {
+	for (I32 i = 0; i < positionCount; ++i) 
+	{
+		if (i == directionSwitchPosition) 
+		{
 			fillHorizontally = (!fillHorizontally);
 			directionSwitchPosition = positionCount + 1;
 		}
@@ -105,9 +111,11 @@ void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) {
 		U32* pixelStart = GetPixelAddress(bitmap, row, col);
 		U32* pixel = 0;
 
-		if (fillHorizontally) {
+		if (fillHorizontally) 
+		{
 			pixel = pixelStart;
-			for (I32 left = col - 1; left >= 0; --left) {
+			for (I32 left = col - 1; left >= 0; --left) 
+			{
 				pixel--;
 
 				if (*pixel == colorCode) break;
@@ -119,7 +127,8 @@ void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) {
 			}
 
 			pixel = pixelStart;
-			for (I32 right = col + 1; right < bitmap.width; ++right) {
+			for (I32 right = col + 1; right < bitmap.width; ++right) 
+			{
 				pixel++;
 
 				if (*pixel == colorCode) break;
@@ -129,9 +138,12 @@ void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) {
 				ArenaPush(tmpArena, I32, right);
 				positionCount++;
 			}
-		} else {
+		}
+		else 
+		{
 			pixel = pixelStart;
-			for (I32 top = row - 1; top >= 0; --top) {
+			for (I32 top = row - 1; top >= 0; --top) 
+			{
 				pixel -= bitmap.width;
 
 				if (*pixel == colorCode) 
@@ -144,7 +156,8 @@ void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) {
 			}
 
 			pixel = pixelStart;
-			for (I32 bottom = row + 1; bottom < bitmap.height; ++bottom) {
+			for (I32 bottom = row + 1; bottom < bitmap.height; ++bottom) 
+			{
 				pixel += bitmap.width;
 			
 				if (*pixel == colorCode) break;
@@ -169,12 +182,15 @@ void SmoothZoom(Camera* camera, F32 pixelPerUnit)
 
 void UpdateCamera(Camera* camera, F32 seconds)
 {
-	if (camera->unitInPixels != camera->targetUnitInPixels) {
+	if (camera->unitInPixels != camera->targetUnitInPixels) 
+	{
 		if (camera->unitInPixels < camera->targetUnitInPixels) {
 			camera->unitInPixels += seconds * PixelPerUnitChangeSpeed;
 			if (camera->unitInPixels > camera->targetUnitInPixels)
 				camera->unitInPixels = camera->targetUnitInPixels;
-		} else {
+		} 
+		else 
+		{
 			camera->unitInPixels -= seconds * PixelPerUnitChangeSpeed;
 			if (camera->unitInPixels < camera->targetUnitInPixels)
 				camera->unitInPixels = camera->targetUnitInPixels;
@@ -260,15 +276,18 @@ void ClearScreen(Canvas canvas, V4 color)
 
 	Bitmap bitmap = canvas.bitmap;
 	U32 *pixel = bitmap.memory;
-	for (I32 row = 0; row < bitmap.height; ++row) {
-		for (I32 col = 0; col < bitmap.width; ++col) {
+	for (I32 row = 0; row < bitmap.height; ++row) 
+	{
+		for (I32 col = 0; col < bitmap.width; ++col) 
+		{
 			*pixel = colorCode;
 			++pixel;
 		}
 	}
 }
 
-struct BresenhamContext {
+struct BresenhamContext 
+{
 	I32 x1, y1;
 	// TODO: is this needed?
 	I32 x2, y2;
@@ -320,11 +339,13 @@ static BresenhamContext BresenhamInitUnit(Canvas canvas, V2 point1, V2 point2)
 static void BresenhamAdvance(BresenhamContext* context)
 {
 	context->error2 = context->error;
-	if (context->error2 > -context->absX) {
+	if (context->error2 > -context->absX) 
+	{
 		context->error -= context->absY;
 		context->x1 += context->addX;
 	}
-	if (context->error2 < context->absY) {
+	if (context->error2 < context->absY) 
+	{
 		context->error += context->absX;
 		context->y1 += context->addY;
 	}
@@ -336,7 +357,8 @@ void Bresenham(Canvas canvas, V2 point1, V2 point2, V4 color)
 	U32 colorCode = GetColorCode(color);
 
 	BresenhamContext context = BresenhamInitUnit(canvas, point1, point2);
-	while (1) {
+	while (1) 
+	{
 		SetPixelCheck(bitmap, context.y1, context.x1, colorCode);
 
 		if (context.x1 == context.x2 && context.y1 == context.y2)
@@ -387,25 +409,29 @@ void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLe
 	F32 cameraTop     = CameraTopSide(camera);
 	F32 cameraBottom  = CameraBottomSide(camera);
 
-	if (topLeft.y < cameraTop) {
+	if (topLeft.y < cameraTop) 
+	{
 		if (bottomLeft.y < cameraTop)
 			return;
 
 		topLeft = LineAtY(topLeft, bottomLeft, cameraTop);
 	}
-	if (topRight.y < cameraTop) {
+	if (topRight.y < cameraTop) 
+	{
 		if (bottomRight.y < cameraTop)
 			return;
 
 		topRight = LineAtY(topRight, bottomRight, cameraTop);
 	}
-	if (bottomLeft.y > cameraBottom) {
+	if (bottomLeft.y > cameraBottom) 
+	{
 		if (topLeft.y > cameraBottom)
 			return;
 
 		bottomLeft = LineAtY(topLeft, bottomLeft, cameraBottom);
 	}
-	if (bottomRight.y > cameraBottom) {
+	if (bottomRight.y > cameraBottom) 
+	{
 		if (topRight.y > cameraBottom)
 			return;
 
@@ -423,7 +449,8 @@ void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLe
 	if (bottom < top)
 		return;
 
-	for (I32 row = top; row <= bottom; ++row) {
+	for (I32 row = top; row <= bottom; ++row) 
+	{
 		while (leftLine.y1 < row)
 			BresenhamAdvance(&leftLine);
 		while (rightLine.y1 < row)
@@ -441,7 +468,8 @@ void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLe
 			right = bitmap.width - 1;
 
 		U32* pixel = GetPixelAddress(bitmap, row, left);
-		for (I32 col = left; col <= right; ++col) {
+		for (I32 col = left; col <= right; ++col) 
+		{
 			*pixel = colorCode;
 			pixel++;
 		}
@@ -455,25 +483,29 @@ void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLeft
 	F32 cameraLeft  = CameraLeftSide(camera);
 	F32 cameraRight = CameraRightSide(camera);
 
-	if (topLeft.x < cameraLeft) {
+	if (topLeft.x < cameraLeft) 
+	{
 		if (topRight.x < cameraLeft)
 			return;
 
 		topLeft = LineAtX(topLeft, topRight, cameraLeft);
 	}
-	if (topRight.x > cameraRight) {
+	if (topRight.x > cameraRight) 
+	{
 		if (topLeft.x > cameraRight)
 			return;
 
 		topRight = LineAtX(topLeft, topRight, cameraRight);
 	}
-	if (bottomLeft.x < cameraLeft) {
+	if (bottomLeft.x < cameraLeft) 
+	{
 		if (bottomRight.x < cameraLeft)
 			return;
 
 		bottomLeft = LineAtX(bottomLeft, bottomRight, cameraLeft);
 	}
-	if (bottomRight.x > cameraRight) {
+	if (bottomRight.x > cameraRight) 
+	{
 		if (bottomLeft.x > cameraRight)
 			return;
 
@@ -491,7 +523,8 @@ void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLeft
 	if (right < left)
 		return;
 
-	for (I32 col = left; col <= right; ++col) {
+	for (I32 col = left; col <= right; ++col) 
+	{
 		while (topLine.x1 < col)
 			BresenhamAdvance(&topLine);
 		while (bottomLine.x1 < col)
@@ -509,7 +542,8 @@ void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLeft
 			bottom = bitmap.height - 1;
 
 		U32* pixel = GetPixelAddress(bitmap, top, col);
-		for (I32 row = top; row <= bottom; ++row) {
+		for (I32 row = top; row <= bottom; ++row) 
+		{
 			*pixel = colorCode;
 			pixel += bitmap.width;
 		}
@@ -523,13 +557,16 @@ void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
 	F32 top    = 0.0f;
 	F32 bottom = 0.0f;
 
-	if (point1.x == point2.x) {
+	if (point1.x == point2.x) 
+	{
 		left  = point1.x - lineWidth * 0.5f;
 		right = point1.x + lineWidth * 0.5f;
 
 		top    = Min2(point1.y, point2.y);
 		bottom = Max2(point1.y, point2.y);
-	} else if (point1.y == point2.y) {
+	} 
+	else if (point1.y == point2.y)
+	{
 		top    = point1.y - lineWidth * 0.5f;
 		bottom = point1.y + lineWidth * 0.5f;
 
@@ -587,12 +624,14 @@ void FillScreenWithWorldTexture(Canvas canvas, Texture texture)
 	F32 y = startY;
 	I32 prevIntY = ((I32)y) & andVal;
 
-	for (I32 row = 0; row < bitmap.height; ++row) {
+	for (I32 row = 0; row < bitmap.height; ++row) 
+	{
 		F32 x = startX;
 		I32 prevIntX = ((I32)x & andVal);
 		U32* texturePixel = textureRow;
 
-		for (I32 col = 0; col < bitmap.width; ++col) {
+		for (I32 col = 0; col < bitmap.width; ++col) 
+		{
 			*pixel = *texturePixel;
 			pixel++;
 
@@ -646,8 +685,10 @@ void DrawRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
 	leftPixel   = IntMax2(leftPixel, 0);
 	rightPixel  = IntMin2(rightPixel, bitmap.width - 1);
 
-	for (I32 row = topPixel; row < bottomPixel; ++row) {
-		for (I32 col = leftPixel; col < rightPixel; ++col) {
+	for (I32 row = topPixel; row < bottomPixel; ++row) 
+	{
+		for (I32 col = leftPixel; col < rightPixel; ++col) 
+		{
 			U32* pixel = bitmap.memory + row * bitmap.width + col;
 			*pixel = colorCode;
 		}
@@ -719,26 +760,30 @@ void WorldTextureRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, T
 	I32 subx = leftsubx;
 	I32 suby = topsuby;
 
-	for (I32 row = topPixel; row < bottomPixel; ++row) {
+	for (I32 row = topPixel; row < bottomPixel; ++row) 
+	{
 		x = leftx;
 		subx = leftsubx;
 
 		U32* pixel = topLeft;
 
-		for (I32 col = leftPixel; col < rightPixel; ++col) {
+		for (I32 col = leftPixel; col < rightPixel; ++col) 
+		{
 			*pixel = TextureColorCodeInt(texture, y, x);
 			//*pixel = TextureColorCode(texture, x, subx, y, suby);
 			pixel++;
 
 			subx += subUnitPerPixel;
-			if (subx > 0xFF) {
+			if (subx > 0xFF) 
+			{
 				x = ((x + (subx >> 8)) & (texture.side - 1));
 				subx = (subx & 0xFF);
 			}
 		}
 
 		suby += subUnitPerPixel;
-		if (suby > 0xFF) {
+		if (suby > 0xFF) 
+		{
 			y = ((y + (suby >> 8)) & (texture.side - 1));
 			suby = (suby & 0xFF);
 		}
@@ -756,10 +801,13 @@ void WorldTextureGridLine(Canvas canvas, V2 point1, V2 point2, F32 width, Textur
 
 	// TODO: this Assert was triggered, check what's happening
 	Assert((left == right) || (top == bottom));
-	if (left == right) {
+	if (left == right) 
+	{
 		left  -= width * 0.5f;
 		right += width * 0.5f;
-	} else if (top == bottom) {
+	} 
+	else if (top == bottom) 
+	{
 		top    -= width * 0.5f;
 		bottom += width * 0.5f;
 	}
@@ -770,7 +818,8 @@ void WorldTextureGridLine(Canvas canvas, V2 point1, V2 point2, F32 width, Textur
 void DrawPolyOutline(Canvas canvas, V2* points, I32 pointN, V4 color)
 {
 	I32 prev = pointN - 1;
-	for (I32 i = 0; i < pointN; ++i) {
+	for (I32 i = 0; i < pointN; ++i) 
+	{
 		Bresenham(canvas, points[prev], points[i], color);
 		prev = i;
 	}
@@ -790,7 +839,8 @@ void DrawPoly(Canvas canvas, V2* points, I32 pointN, V4 color)
 	I32 maxX = 0;
 	I32 maxY = 0;
 
-	for (I32 i = 0; i < pointN; ++i) {
+	for (I32 i = 0; i < pointN; ++i) 
+	{
 		I32 pointX = (I32)points[i].x;
 		I32 pointY = (I32)points[i].y;
 
@@ -806,23 +856,28 @@ void DrawPoly(Canvas canvas, V2* points, I32 pointN, V4 color)
 	maxY = IntMin2(maxY, bitmap.height - 1);
 
 	U32 *pixel = 0;
-	for (I32 row = minY; row < maxY; ++row) {
-		for (I32 col = minX; col < maxX; ++col) {
+	for (I32 row = minY; row < maxY; ++row) 
+	{
+		for (I32 col = minX; col < maxX; ++col) 
+		{
 			V2 testPoint = { (F32)col, (F32)row };
 
 			B32 drawPoint = true;
 
 			I32 prev = pointN - 1;
-			for (I32 i = 0; i < pointN; ++i) {
+			for (I32 i = 0; i < pointN; ++i) 
+			{
 				// TODO: is using cross product faster than these calls?
-				if (!TurnsRight(points[prev], points[i], testPoint)) {
+				if (!TurnsRight(points[prev], points[i], testPoint)) 
+				{
 					drawPoint = false;
 					break;
 				}
 				prev = i;
 			}
 
-			if (drawPoint) {
+			if (drawPoint) 
+			{
 				pixel = (U32*)bitmap.memory + row * bitmap.width + col;
 				*pixel = colorCode;
 			}
@@ -843,7 +898,8 @@ void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture texture
 	I32 maxX = 0;
 	I32 maxY = 0;
 
-	for (I32 i = 0; i < pointN; ++i) {
+	for (I32 i = 0; i < pointN; ++i) 
+	{
 		V2 pointInPixels = UnitToPixel(camera, points[i]);
 		I32 pointX = (I32)pointInPixels.x;
 		I32 pointY = (I32)pointInPixels.y;
@@ -885,13 +941,15 @@ void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture texture
 	I32 prevIntY = ((I32)y) & andVal;
 
 	U32* pixel = 0;
-	for (I32 row = minY; row <= maxY; ++row) {
+	for (I32 row = minY; row <= maxY; ++row) 
+	{
         F32 x = startX;
 		I32 prevIntX = ((I32)x & andVal);
 		U32* texturePixel = textureRow;
 		U32* pixel = pixelRow;
     
-		for (I32 col = minX; col <= maxX; ++col) {
+		for (I32 col = minX; col <= maxX; ++col) 
+		{
             V2 testPoint = {};
             testPoint.x = (F32)col;
             testPoint.y = (F32)row;
@@ -899,10 +957,12 @@ void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture texture
 			B32 drawPoint = true;
 
 			I32 prev = pointN - 1;
-			for (I32 i = 0; i < pointN; ++i) {
+			for (I32 i = 0; i < pointN; ++i) 
+			{
 				V2 prevPoint = UnitToPixel(camera, points[prev]);
 				V2 thisPoint = UnitToPixel(camera, points[i]);
-				if (!TurnsRight(prevPoint, thisPoint, testPoint)) {
+				if (!TurnsRight(prevPoint, thisPoint, testPoint)) 
+				{
 					drawPoint = false;
 					break;
 				}
@@ -945,7 +1005,8 @@ void DrawQuad(Canvas canvas, Quad quad, V4 color)
 	I32 maxX = 0;
 	I32 maxY = 0;
 
-	for (I32 i = 0; i < 4; ++i) {
+	for (I32 i = 0; i < 4; ++i) 
+	{
 		I32 pointX = (I32)points[i].x;
 		I32 pointY = (I32)points[i].y;
 
@@ -961,8 +1022,10 @@ void DrawQuad(Canvas canvas, Quad quad, V4 color)
 	maxY = IntMin2(maxY, bitmap.height - 1);
 
 	U32* pixel = 0;
-	for (I32 row = minY; row < maxY; ++row) {
-		for (I32 col = minX; col < maxX; ++col) {
+	for (I32 row = minY; row < maxY; ++row) 
+	{
+		for (I32 col = minX; col < maxX; ++col) 
+		{
 			V2 testPoint = { (F32)col, (F32)row };
 
 			B32 drawPoint = true;
@@ -977,7 +1040,8 @@ void DrawQuad(Canvas canvas, Quad quad, V4 color)
 			else if (!TurnsRight(points[3], points[0], testPoint))
 				drawPoint = false;
 
-			if (drawPoint) {
+			if (drawPoint) 
+			{
 				pixel = (U32*)bitmap.memory + row * bitmap.width + col;
 				*pixel = colorCode;
 			}
@@ -999,7 +1063,8 @@ void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
 	I32 maxX = 0;
 	I32 maxY = 0;
    
-	for (I32 i = 0; i < 4; ++i) {
+	for (I32 i = 0; i < 4; ++i) 
+	{
 		I32 pointX = (I32)points[i].x;
         I32 pointY = (I32)points[i].y;
 
@@ -1040,13 +1105,15 @@ void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
 	F32 y = startY;
 	I32 prevIntY = ((I32)y) & andVal;
 
-	for (I32 row = minY; row < maxY; ++row) {
+	for (I32 row = minY; row < maxY; ++row) 
+	{
         F32 x = startX;
 		I32 prevIntX = ((I32)x & andVal);
 		U32* texturePixel = textureRow;
 		U32* pixel = pixelRow;
     
-		for (I32 col = minX; col < maxX; ++col) {
+		for (I32 col = minX; col < maxX; ++col) 
+		{
 			V2 testPoint = {};
             testPoint.x = (F32)col;
             testPoint.y = (F32)row;
@@ -1062,9 +1129,8 @@ void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
 			else if (!TurnsRight(points[3], points[0], testPoint))
 				drawPoint = false;
 
-			if (drawPoint) {
+			if (drawPoint)
                 *pixel = *texturePixel;
-			}
             
             pixel++;
             

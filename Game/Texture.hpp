@@ -5,13 +5,15 @@
 #include "Memory.hpp"
 #include "Type.hpp"
 
-struct Texture {
+struct Texture 
+{
 	I32 side; // NOTE: power of two
 	I32 logSide;
 	U32* memory;
 };
 
-inline Texture CopyTexture(Texture* texture) {
+inline Texture CopyTexture(Texture* texture) 
+{
 	Texture result = {};
 	result.side = texture->side;
 	result.logSide = texture->logSide;
@@ -21,8 +23,10 @@ inline Texture CopyTexture(Texture* texture) {
 	U32* resultPixel = result.memory;
 	U32* texturePixel = texture->memory;
 	// TODO: use a memcpy here?
-	for (I32 row = 0; row < result.side; ++row) {
-		for (I32 col = 0; col < result.side; ++col) {
+	for (I32 row = 0; row < result.side; ++row) 
+	{
+		for (I32 col = 0; col < result.side; ++col) 
+		{
 			*resultPixel = *texturePixel;
 			resultPixel++;
 			texturePixel++;
@@ -65,8 +69,10 @@ inline void RotateTextureUpsideDown(Texture* texture)
 	I32 side = texture->side;
 	I32 halfSide = (side / 2);
 
-	for (I32 row = 0; row < halfSide; ++row) {
-		for (I32 col = 0; col < side; ++col) {
+	for (I32 row = 0; row < halfSide; ++row) 
+	{
+		for (I32 col = 0; col < side; ++col) 
+		{
 			U32* top = TextureAddress(texture, row, col);
 			U32* bottom = TextureAddress(texture, side - 1 - row, side - 1 - col);
 			Swap2(top, bottom);
@@ -78,8 +84,10 @@ inline void RotateTextureLeft(Texture* texture)
 {
 	I32 side = texture->side;
 	I32 halfSide = (side / 2);
-	for (I32 row = 0; row < halfSide; ++row) {
-		for (I32 col = 0; col < halfSide; ++col) {
+	for (I32 row = 0; row < halfSide; ++row) 
+	{
+		for (I32 col = 0; col < halfSide; ++col) 
+		{
 			U32* topLeft  = TextureAddress(texture, row, col);
 			U32* topRight = TextureAddress(texture, col, side - 1 - row);
 			U32* bottomRight = TextureAddress(texture, side - 1 - row, side - 1 - col);
@@ -94,8 +102,10 @@ inline void RotateTextureRight(Texture* texture)
 {
 	I32 side = texture->side;
 	I32 halfSide = (side / 2);
-	for (I32 row = 0; row < halfSide; ++row) {
-		for (I32 col = 0; col < halfSide; ++col) {
+	for (I32 row = 0; row < halfSide; ++row) 
+	{
+		for (I32 col = 0; col < halfSide; ++col) 
+		{
 			U32* topLeft  = TextureAddress(texture, row, col);
 			U32* topRight = TextureAddress(texture, col, side - 1 - row);
 			U32* bottomRight = TextureAddress(texture, side - 1 - row, side - 1 - col);
@@ -106,7 +116,8 @@ inline void RotateTextureRight(Texture* texture)
 	}
 }
 
-inline Texture RoofTexture(I32 logSide) {
+inline Texture RoofTexture(I32 logSide) 
+{
 	Texture result = {};
 	result.logSide = logSide;
 	result.side = (1 << logSide);
@@ -118,8 +129,10 @@ inline Texture RoofTexture(I32 logSide) {
 
 	U32* pixel = result.memory;
 
-	for (I32 row = 0; row < result.side; ++row) {
-		for (I32 col = 0; col < result.side; ++col) {
+	for (I32 row = 0; row < result.side; ++row) 
+	{
+		for (I32 col = 0; col < result.side; ++col) 
+		{
 			I32 red = 0;
 			I32 green = 0;
 			I32 blue = 0;
@@ -159,8 +172,10 @@ inline Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 	result.memory = new U32[result.side * result.side];
 
 	U32* pixel = result.memory;
-	for (I32 row = 0; row < result.side; ++row) {
-		for (I32 col = 0; col < result.side; ++col) {
+	for (I32 row = 0; row < result.side; ++row) 
+	{
+		for (I32 col = 0; col < result.side; ++col) 
+		{
 			*pixel = 0;
 			pixel++;
 		}
@@ -169,11 +184,14 @@ inline Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 	F32 multiplier = 0.8f;
 	I32 gridN = 2;
 	F32 opacity = 1.0f - multiplier;
-	while (gridN <= 256) {
+	while (gridN <= 256) 
+	{
 		F32* gridValues = ArenaPushArray(tmpArena, F32, (gridN + 1) * (gridN + 1));
 		F32* gridValue = gridValues;
-		for (I32 row = 0; row <= gridN; ++row) {
-			for (I32 col = 0; col <= gridN; ++col) {
+		for (I32 row = 0; row <= gridN; ++row) 
+		{
+			for (I32 col = 0; col <= gridN; ++col) 
+			{
 				if (row == gridN)
 					*gridValue = *(gridValues + (gridN + 1) * 0 + col);
 				else if (col == gridN)
@@ -188,12 +206,14 @@ inline Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 		I32 gridWidth = (result.side / gridN);
 
 		U32* pixel = result.memory;
-		for (I32 row = 0; row < result.side; ++row) {
+		for (I32 row = 0; row < result.side; ++row) 
+		{
 			I32 y0 = (row / gridWidth);
 			I32 y1 = (y0 + 1);
 			F32 yr = ((F32)(row % gridWidth) / (F32)gridWidth);
 
-			for (I32 col = 0; col < result.side; ++col) {
+			for (I32 col = 0; col < result.side; ++col) 
+			{
 				I32 x0 = (col / gridWidth);
 				I32 x1 = (x0 + 1);
 				F32 xr = ((F32)(col % gridWidth) / (F32)gridWidth);
@@ -223,8 +243,10 @@ inline Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 	}
 
 	pixel = result.memory;
-	for (I32 row = 0; row < result.side; ++row) {
-		for (I32 col = 0; col < result.side; ++col) {
+	for (I32 row = 0; row < result.side; ++row) 
+	{
+		for (I32 col = 0; col < result.side; ++col) 
+		{
 			V4 color = GetColorFromColorCode(*pixel);
 			F32 green = RandomBetween(color.green * 0.9f, color.green * 1.0f);
 			V4 newColor = MakeColor(0.0f, green, 0.0f);
@@ -245,8 +267,10 @@ inline Texture RandomGreyTexture(I32 logSide, I32 minRatio, I32 maxRatio)
 	result.memory = new U32[result.side * result.side];
 
 	U32* pixel = result.memory;
-	for (I32 row = 0; row < result.side; ++row) {
-		for (I32 col = 0; col < result.side; ++col) {
+	for (I32 row = 0; row < result.side; ++row) 
+	{
+		for (I32 col = 0; col < result.side; ++col) 
+		{
 			I32 greyRatio = IntRandom(minRatio, maxRatio);
 
 			*pixel = (greyRatio << 16) | (greyRatio << 8) | (greyRatio << 0); 
@@ -287,10 +311,13 @@ inline U32 TextureColorCode(Texture texture, F32 x, F32 y)
 
 inline U32 ColorCodeLerp(U32 colorCode1, U8 ratio, U32 colorCode2)
 {
-	struct ColorCode {
-		union {
+	struct ColorCode 
+	{
+		union 
+		{
 			U32 u;
-			struct {
+			struct 
+			{
 				U8 r, g, b;
 			};
 		};

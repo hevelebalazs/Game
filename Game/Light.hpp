@@ -21,8 +21,10 @@ inline void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 	I32 left   = IntMax2((I32)topLeftPixel.x, 0);
 	I32 right  = IntMin2((I32)bottomRightPixel.x, bitmap.width - 1);
 
-	for (I32 row = top; row <= bottom; ++row) {
-		for (I32 col = left; col <= right; ++col) {
+	for (I32 row = top; row <= bottom; ++row) 
+	{
+		for (I32 col = left; col <= right; ++col) 
+		{
 			V2 pixelPosition = {};
 			pixelPosition.x = (F32)col;
 			pixelPosition.y = (F32)row;
@@ -31,7 +33,8 @@ inline void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 			F32 angle = LineAngle(center, position);
 
 			F32 ratio = 0.0f;
-			if (minDistance <= distance && distance <= maxDistance) {
+			if (minDistance <= distance && distance <= maxDistance) 
+			{
 				if (IsAngleBetween(minAngle, angle, maxAngle))
 					ratio = 1.0f - (distance / maxDistance);
 			}

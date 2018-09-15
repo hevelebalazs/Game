@@ -14,7 +14,8 @@
 #define	FullHealthColor		MakeColor(1.0f, 0.0f, 0.0f)
 #define EmptyHealthColor	MakeColor(0.0f, 0.0f, 0.0f)
 
-struct Human {
+struct Human 
+{
 	Map* map;
 	Building* inBuilding;
 

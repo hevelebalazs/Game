@@ -16,7 +16,8 @@ static void DrawHealthPoints(Canvas canvas, Human* human)
 	F32 top    = human->position.y + HumanRadius + HealthPointPadding;
 	F32 bottom = top + healthPointRadius;
 	F32 left   = human->position.x - HumanRadius;
-	for (I32 i = 0; i < MaxHealthPoints; ++i) {
+	for (I32 i = 0; i < MaxHealthPoints; ++i) 
+	{
 		F32 right = left + healthPointRadius;
 
 		V4 color = {};

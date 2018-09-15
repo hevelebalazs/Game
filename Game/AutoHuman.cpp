@@ -23,7 +23,8 @@ void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena*
 	autoHuman->moveNode = ConnectPedestrianElems(human->map, targetElem, startCornerIndex, nextElem, endCornerIndex,
 												 tmpArena, pathPool);
 
-	if (autoHuman->moveNode) {
+	if (autoHuman->moveNode)
+	{
 		// autoHuman->moveStartPoint = StartNodePoint(autoHuman->moveNode);
 		autoHuman->moveStartPoint.position = human->position;
 		V4 humanPosition = {};
@@ -43,26 +44,32 @@ void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemAren
 
 	Human* human = &autoHuman->human;
 
-	if (autoHuman->moveTargetJunction) {
+	if (autoHuman->moveTargetJunction)
+	{
 		// TODO: should there be a limit on the interation number?
-		while (seconds > 0.0f) {
+		while (seconds > 0.0f)
+		{
 			PathNode* moveNode = autoHuman->moveNode;
 
-			if (!moveNode) {
+			if (!moveNode)
+			{
 				autoHuman->onJunction = autoHuman->moveTargetJunction;
 				autoHuman->moveTargetJunction = 0;
 				break;
 			}
 
-			if (moveNode) {
+			if (moveNode)
+			{
 				autoHuman->moveSeconds += seconds;
 
-				if (autoHuman->moveSeconds >= autoHuman->moveTotalSeconds) {
+				if (autoHuman->moveSeconds >= autoHuman->moveTotalSeconds)
+				{
 					autoHuman->moveStartPoint = autoHuman->moveEndPoint;
 
 					seconds = (autoHuman->moveSeconds - autoHuman->moveTotalSeconds);
 
-					if (IsNodeEndPoint(moveNode, autoHuman->moveStartPoint)) {
+					if (IsNodeEndPoint(moveNode, autoHuman->moveStartPoint))
+					{
 						moveNode = moveNode->next;
 
 						FreePathNode(autoHuman->moveNode, pathPool);
@@ -70,12 +77,16 @@ void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemAren
 
 						if (!moveNode)
 							continue;
-					} else {
+					}
+					else
+					{
 						autoHuman->moveEndPoint = NextNodePoint(moveNode, autoHuman->moveStartPoint);
 
 						InitAutoHumanMovement(autoHuman);
 					}
-				} else {
+				}
+				else
+				{
 					seconds = 0.0f;
 
 					F32 endRatio = (autoHuman->moveSeconds / autoHuman->moveTotalSeconds);
@@ -89,7 +100,9 @@ void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemAren
 				}
 			}
 		}
-	} else {
+	} 
+	else
+	{
 		Junction* targetJunction = GetRandomJunction(human->map);
 		MoveAutoHumanToJunction(autoHuman, targetJunction, arena, tmpArena, pathPool);
 	}
@@ -98,7 +111,8 @@ void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemAren
 void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 {
 	autoHuman->dead = true;
-	if (autoHuman->moveNode) {
+	if (autoHuman->moveNode)
+	{
 		FreePath(autoHuman->moveNode, pathPool);
 		autoHuman->moveNode = 0;
 	}
@@ -108,7 +122,8 @@ void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 {
 	Human* human = &autoHuman->human;
-	if (human->healthPoints > 0) {
+	if (human->healthPoints > 0)
+	{
 		human->healthPoints--;
 		if (human->healthPoints == 0)
 			KillAutoHuman(autoHuman, pathPool);

@@ -10,7 +10,8 @@
 #define MegaByte (1024 * KiloByte)
 #define GigaByte (1024 * MegaByte)
 
-struct MemArena {
+struct MemArena 
+{
 	I8* baseAddress;
 	U32 usedSize;
 	U32 maxSize;
@@ -36,11 +37,14 @@ inline void ArenaReset(MemArena* arena)
 inline void* ArenaAlloc(MemArena* arena, U32 size)
 {
 	Assert(arena->usedSize + size <= arena->maxSize);
-	if (arena->usedSize + size <= arena->maxSize) {
+	if (arena->usedSize + size <= arena->maxSize) 
+	{
 		I8* result = arena->baseAddress + arena->usedSize;
 		arena->usedSize += size;
 		return result;
-	} else {
+	}
+	else
+	{
 		return 0;
 	}
 }

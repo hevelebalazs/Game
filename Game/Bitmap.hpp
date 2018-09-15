@@ -6,7 +6,8 @@
 #include "Memory.hpp"
 #include "Type.hpp"
 
-struct Bitmap {
+struct Bitmap
+{
 	I32 width;
 	I32 height;
 	U32* memory;

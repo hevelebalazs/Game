@@ -20,11 +20,15 @@ void TogglePlayerCar(GameState* gameState)
 		playerPosition = gameState->playerHuman.human.position;
 
 	MapElem playerOnElem = GetRoadElemAtPoint(&gameState->map, playerPosition);
-	if (playerOnElem.type == MapElemRoad || playerOnElem.type == MapElemJunction) {
-		if (gameState->isPlayerCar) {
+	if (playerOnElem.type == MapElemRoad || playerOnElem.type == MapElemJunction) 
+	{
+		if (gameState->isPlayerCar) 
+		{
 			gameState->isPlayerCar = false;
 			gameState->playerHuman.human.position = playerPosition;
-		} else {
+		} 
+		else 
+		{
 			gameState->isPlayerCar = true;
 			gameState->playerCar.car.position = playerPosition;
 		}
@@ -106,7 +110,8 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	playerHuman->human.moveSpeed = 5.0f;
 	playerHuman->human.healthPoints = MaxHealthPoints;
 
-	for (I32 i = 0; i < CarBitmapN; ++i) {
+	for (I32 i = 0; i < CarBitmapN; ++i) 
+	{
 		Bitmap* carBitmap = &gameState->carBitmaps[i];
 		AllocateCarBitmap(carBitmap);
 		GenerateCarBitmap(carBitmap, tmpArena);
@@ -123,14 +128,16 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 	car->bitmap = &gameState->carBitmaps[carBitmapIndex];
 
 	playerCar->inertia = 0.0f;
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; ++i) 
+	{
 		V2 corner = GetCarCorner(&playerCar->car, i);
 		V2 radius = corner - playerCar->car.position;
 		F32 radiusLength = VectorLength(radius);
 		playerCar->inertia += CarCornerMass * (radiusLength * radiusLength);
 	}
 
-	for (I32 i = 0; i < gameState->autoCarCount; ++i) {
+	for (I32 i = 0; i < gameState->autoCarCount; ++i) 
+	{
 		// TODO: create an InitAutoCar function?
 		Junction* randomJunction = GetRandomJunction(&gameState->map);
 
@@ -150,7 +157,8 @@ void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 		autoCar->acceleration = 5.0f;
 	}
 
-	for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
+	for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+	{
 		// TODO: create an InitAutoHuman function?
 		AutoHuman* autoHuman = gameState->autoHumans + i;
 		Human* human = &autoHuman->human;
@@ -191,7 +199,8 @@ CollisionInfo GetCarCollisionInfoWithRoadSides(Car* oldCar, Car* newCar, GameSta
 {
 	CollisionInfo hit = {};
 
-	for (int i = 0; i < gameState->map.roadN; ++i) {
+	for (int i = 0; i < gameState->map.roadN; ++i) 
+	{
 		Road* road = &gameState->map.roads[i];
 		Junction* junction1 = road->junction1;
 		Junction* junction2 = road->junction2;
@@ -214,7 +223,8 @@ CollisionInfo GetCarCollisionInfoWithAutoCars(Car* oldCar, Car* newCar, GameStat
 {
 	CollisionInfo hit = {};
 
-	for (int i = 0; i < gameState->autoCarCount; ++i) {
+	for (int i = 0; i < gameState->autoCarCount; ++i) 
+	{
 		Car* testCar = &gameState->autoCars[i].car;
 		Quad corners = GetCarCorners(testCar);
 		CollisionInfo testHit = GetCarPolyCollisionInfo(oldCar, newCar, corners.points, 4);
@@ -231,12 +241,14 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 	MemArena* arena = &gameStorage->arena;
 	MemArena* tmpArena = &gameStorage->tmpArena;
 
-	for (I32 i = 0; i < gameState->map.junctionN; ++i) {
+	for (I32 i = 0; i < gameState->map.junctionN; ++i) 
+	{
 		Junction* junction = &gameState->map.junctions[i];
 		UpdateTrafficLights(junction, seconds);
 	}
 
-	for (I32 i = 0; i < gameState->autoCarCount; ++i) {
+	for (I32 i = 0; i < gameState->autoCarCount; ++i) 
+	{
 		AutoCar* autoCar = &gameState->autoCars[i];
 		Car* car = &autoCar->car;
 
@@ -253,7 +265,8 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		if (IsPointInQuad(stopArea, playerPosition))
 				shouldBrake = true;
 
-		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
+		for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+		{
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			if (autoHuman->dead)
 				continue;
@@ -263,7 +276,8 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 				shouldBrake = true;
 		}
 
-		for (I32 i = 0; i < gameState->autoCarCount; ++i) {
+		for (I32 i = 0; i < gameState->autoCarCount; ++i) 
+		{
 			AutoCar* testAutoCar = &gameState->autoCars[i];
 			if (autoCar == testAutoCar)
 				continue;
@@ -279,12 +293,14 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		UpdateAutoCar(autoCar, seconds, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
-	for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
+	for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+	{
 		AutoHuman* autoHuman = &gameState->autoHumans[i];
 		UpdateAutoHuman(autoHuman, seconds, &gameStorage->tmpArena, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
-	if (gameState->isPlayerCar) {
+	if (gameState->isPlayerCar) 
+	{
 		MapElem onElemBefore = GetRoadElemAtPoint(&gameState->map, gameState->playerCar.car.position);
 
 		PlayerCar oldCar = gameState->playerCar;
@@ -293,29 +309,34 @@ void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		CollisionInfo hit = GetCarCollisionInfoWithRoadSides(&oldCar.car, &gameState->playerCar.car, gameState);
 		UpdatePlayerCarCollision(&gameState->playerCar, &oldCar, seconds, hit);
 
-		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
+		for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+		{
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			V2 autoHumanPoint = autoHuman->human.position;
 
-			if (IsCarOnPoint(&gameState->playerCar.car, autoHumanPoint)) {
+			if (IsCarOnPoint(&gameState->playerCar.car, autoHumanPoint)) 
 				KillAutoHuman(autoHuman, &gameState->pathPool);
-			}
 		}
-	} else {
+	} 
+	else 
+	{
 		PlayerHuman* playerHuman = &gameState->playerHuman;
 		UpdatePlayerHuman(playerHuman, seconds, gameState);
 	}
 	
 	Camera* camera = gameState->canvas.camera;
 
-	if (gameState->isPlayerCar) {
+	if (gameState->isPlayerCar) 
+	{
 		camera->center = gameState->playerCar.car.position;
 
 		// TODO: create a speed variable in PlayerCar?
 		F32 speed = VectorLength(gameState->playerCar.velocity);
 
 		camera->targetUnitInPixels = 50.0f - (1.0f * speed);
-	} else {
+	} 
+	else
+	{
 		camera->center = gameState->playerHuman.human.position;
 
 		if (gameState->playerHuman.human.inBuilding)
@@ -343,10 +364,12 @@ void GameDraw(GameStorage* gameStorage)
 		playerPosition = gameState->playerHuman.human.position;
 
 	Building* inBuilding = gameState->playerHuman.human.inBuilding;
-	if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) {
+	if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) 
+	{
 		DrawBuildingInside(canvas, *inBuilding);
 
-		if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) {
+		if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) 
+		{
 			V4 black = MakeColor(0.0f, 0.0f, 0.0f);
 
 			Canvas maskData = gameState->maskCanvas;
@@ -356,7 +379,9 @@ void GameDraw(GameStorage* gameStorage)
 
 			ApplyBitmapMask(canvas.bitmap, maskData.bitmap);
 		}
-	} else {
+	} 
+	else 
+	{
 		Map* map = &gameState->map;
 		Camera* camera = canvas.camera;
 		float visibleRadius = 50.0f;
@@ -367,12 +392,14 @@ void GameDraw(GameStorage* gameStorage)
 		DrawVisibleMapTiles(canvas, map, left, right, top, bottom, &gameState->mapTextures);
 		DrawAllTrafficLights(canvas, map);
 
-		for (I32 i = 0; i < gameState->autoCarCount; ++i) {
+		for (I32 i = 0; i < gameState->autoCarCount; ++i) 
+		{
 			AutoCar* autoCar = &gameState->autoCars[i];
 			DrawCar(canvas, autoCar->car);
 		}
 
-		for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
+		for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+		{
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			DrawAutoHuman(canvas, autoHuman);
 		}
@@ -383,7 +410,8 @@ void GameDraw(GameStorage* gameStorage)
 	else
 		DrawPlayerHuman(canvas, &gameState->playerHuman);
 
-	for (I32 i = 0; i < gameState->autoHumanCount; ++i) {
+	for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+	{
 		AutoHuman* autoHuman = gameState->autoHumans + i;
 		Human* human = &autoHuman->human;
 		if (human->isPolice)

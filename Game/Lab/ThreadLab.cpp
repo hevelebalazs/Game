@@ -4,7 +4,8 @@
 #include "../Draw.hpp"
 #include "../Type.hpp"
 
-struct RowPaintWork {
+struct RowPaintWork 
+{
 	Bitmap* bitmap;
 	I32 row;
 	U32 colorCode;
@@ -12,7 +13,8 @@ struct RowPaintWork {
 
 #define MaxRowPaintWorkListN 1024
 
-struct RowPaintWorkList {
+struct RowPaintWorkList 
+{
 	RowPaintWork works[MaxRowPaintWorkListN];
 	volatile I32 workN;
 	volatile I32 firstWorkToDo;
@@ -20,7 +22,8 @@ struct RowPaintWorkList {
 	HANDLE semaphoreDone;
 };
 
-struct ThreadLabState {
+struct ThreadLabState 
+{
 	Camera camera;
 	Canvas canvas;
 
@@ -61,7 +64,8 @@ static void PaintRow(Bitmap* bitmap, I32 row, U32 colorCode)
 {
 	Assert(row >= 0 && row < bitmap->height);
 	U32* pixel = bitmap->memory + (row * bitmap->width);
-	for (I32 col = 0; col < bitmap->width; ++col) {
+	for (I32 col = 0; col < bitmap->width; ++col) 
+	{
 		*pixel = colorCode;
 		pixel++;
 	}
@@ -70,7 +74,8 @@ static void PaintRow(Bitmap* bitmap, I32 row, U32 colorCode)
 static DWORD WINAPI RowPaintWorkProc(LPVOID parameter)
 {
 	RowPaintWorkList* workList = (RowPaintWorkList*)parameter;
-	while (1) {
+	while (1) 
+	{
 		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
 		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
 		RowPaintWork work = workList->works[workIndex];
@@ -108,7 +113,8 @@ static void ThreadLabUpdate(ThreadLabState* labState)
 	RowPaintWorkList* workList = &labState->workList;
 	workList->workN = 0;
 	workList->firstWorkToDo = 0;
-	for (I32 row = 0; row < bitmap->height; ++row) {
+	for (I32 row = 0; row < bitmap->height; ++row) 
+	{
 		RowPaintWork work = {};
 		work.bitmap = bitmap;
 		work.row = row;
@@ -125,8 +131,10 @@ static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wpar
 	ThreadLabState* labState = &gThreadLabState;
 	LRESULT result = 0;
 	
-	switch (message) {
-		case WM_SIZE: {
+	switch (message) 
+	{
+		case WM_SIZE: 
+		{
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 			I32 width = clientRect.right - clientRect.left;
@@ -134,7 +142,8 @@ static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wpar
 			ThreadLabResize(labState, width, height);
 			break;
 		}
-		case WM_PAINT: {
+		case WM_PAINT: 
+		{
 			PAINTSTRUCT paint = {};
 			HDC context = BeginPaint(window, &paint);
 
@@ -146,17 +155,20 @@ static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wpar
 			EndPaint(window, &paint);
 			break;
 		}
-		case WM_SETCURSOR: {
+		case WM_SETCURSOR: 
+		{
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 			SetCursor(cursor);
 			break;
 		}
 		case WM_DESTROY:
-		case WM_CLOSE: {
+		case WM_CLOSE: 
+		{
 			labState->running = false;
 			break;
 		}
-		default: {
+		default: 
+		{
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
@@ -199,8 +211,10 @@ void ThreadLab(HINSTANCE instance)
 	ThreadLabInit(labState, width, height);
 
 	MSG message = {};
-	while (labState->running) {
-		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+	while (labState->running) 
+	{
+		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) 
+		{
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 		}

@@ -18,7 +18,8 @@
 
 struct MapLabState;
 
-struct MapLabState {
+struct MapLabState 
+{
 	Camera camera;
 	Canvas canvas;
 	B32 running;
@@ -69,8 +70,10 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 	MapLabState* labState = &gMapLabState;
 	LRESULT result = 0;
 
-	switch (message) {
-		case WM_SIZE: {
+	switch (message) 
+	{
+		case WM_SIZE: 
+		{
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 			I32 width = clientRect.right - clientRect.left;
@@ -78,7 +81,8 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			MapLabResize(labState, width, height);
 			break;
 		}
-		case WM_PAINT: {
+		case WM_PAINT: 
+		{
 			PAINTSTRUCT paint = {};
 			HDC context = BeginPaint(window, &paint);
 
@@ -90,16 +94,19 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			EndPaint(window, &paint);
 			break;
 		}
-		case WM_SETCURSOR: {
+		case WM_SETCURSOR: 
+		{
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 			SetCursor(cursor);
 			break;
 		}
-		case WM_KEYDOWN: {
+		case WM_KEYDOWN: 
+		{
 			F32 speed = 0.3f;
 
 			WPARAM keyCode = wparam;
-			switch(keyCode) {
+			switch(keyCode) 
+			{
 				case 'W':
 					labState->playerVelocity.y = -speed;
 					break;
@@ -115,9 +122,11 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			}
 			break;
 		}
-		case WM_KEYUP: {
+		case WM_KEYUP: 
+		{
 			WPARAM keyCode = wparam;
-			switch(keyCode) {
+			switch(keyCode) 
+			{
 				case 'W':
 				case 'S':
 					labState->playerVelocity.y = 0.0f;
@@ -129,7 +138,8 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			}
 			break;
 		}
-		case WM_MOUSEWHEEL: {
+		case WM_MOUSEWHEEL: 
+		{
 			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
 			if (wheelDeltaParam > 0)
 				labState->camera.unitInPixels *= 1.10f;
@@ -138,11 +148,13 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			break;
 		}
 		case WM_DESTROY:
-		case WM_CLOSE: {
+		case WM_CLOSE: 
+		{
 			labState->running = false;
 			break;
 		}
-		default: {
+		default: 
+		{
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
@@ -263,8 +275,10 @@ void MapLab(HINSTANCE instance)
 	MapLabInit(labState, width, height);
 
 	MSG message = {};
-	while (labState->running) {
-		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+	while (labState->running) 
+	{
+		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) 
+		{
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 		}

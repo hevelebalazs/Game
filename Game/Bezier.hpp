@@ -5,7 +5,8 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
-struct Bezier4 {
+struct Bezier4 
+{
 	V2 points[4];
 };
 
