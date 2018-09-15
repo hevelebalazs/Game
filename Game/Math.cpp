@@ -124,6 +124,12 @@ F32 Square(F32 x)
 	return result;
 }
 
+I32 IntSquare(I32 x)
+{
+	I32 result = x * x;
+	return result;
+}
+
 void InitRandom()
 {
 	srand((U32)time(0));

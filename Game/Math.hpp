@@ -86,6 +86,7 @@ inline F32 Sqrt(F32 x)
 }
 
 F32 Square(F32 x);
+I32 IntSquare(I32 x);
 
 inline F32 Abs(F32 x)
 {

@@ -9,6 +9,9 @@ struct CombatLabState {
 
 	V2 playerPosition;
 	V2 playerVelocity;
+
+	F32 health;
+	F32 maxHealth;
 };
 CombatLabState gCombatLabState;
 
@@ -105,6 +108,9 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 					labState->playerVelocity.x = 0.0f;
 					break;
 				}
+				case 'F': {
+					labState->health = Max2(0.0f, labState->health - 20.0f);
+				}
 			}
 			break;
 		}
@@ -125,7 +131,49 @@ static void CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowH
 {
 	labState->running = true;
 
+	labState->maxHealth = 100.0f;
+	labState->health = labState->maxHealth;
+
 	CombatLabResize(labState, windowWidth, windowHeight);
+}
+
+static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
+{
+	U32 colorCode = GetColorCode(color);
+
+	Camera *camera = canvas.camera;
+
+	I32 centerXPixel = UnitXtoPixel(camera, center.x);
+	I32 centerYPixel = UnitYtoPixel(camera, center.y);
+
+	I32 leftPixel =   UnitXtoPixel(camera, center.x - radius);
+	I32 rightPixel =  UnitXtoPixel(camera, center.x + radius);
+	I32 topPixel =    UnitYtoPixel(camera, center.y - radius);
+	I32 bottomPixel = UnitYtoPixel(camera, center.y + radius);
+
+	if (topPixel > bottomPixel)
+		IntSwap(&topPixel, &bottomPixel);
+
+	if (leftPixel > rightPixel)
+		IntSwap(&leftPixel, &rightPixel);
+
+	I32 pixelRadius = I32(radius * camera->unitInPixels);
+	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
+
+	Bitmap bitmap = canvas.bitmap;
+	topPixel    = IntMax2(topPixel, 0);
+	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
+	leftPixel   = IntMax2(leftPixel, 0);
+	rightPixel  = IntMin2(rightPixel, bitmap.width - 1);
+
+	for (I32 row = topPixel; row < bottomPixel; ++row) {
+		for (I32 col = leftPixel; col < rightPixel; ++col) {
+			U32* pixel = bitmap.memory + row * bitmap.width + col;
+			I32 pixelDistanceSquare = IntSquare(row - centerYPixel) + IntSquare(col - centerXPixel);
+			if (pixelDistanceSquare <= pixelRadiusSquare)
+				*pixel = colorCode;
+		}
+	}
 }
 
 static void CombatLabUpdate(CombatLabState* labState)
@@ -165,15 +213,28 @@ static void CombatLabUpdate(CombatLabState* labState)
 		Bresenham(canvas, point1, point2, gridColor);
 	}
 
-	F32 playerSide = 1.0f;
-	V4 playerColor = MakeColor(0.5f, 0.0f, 0.0f);
-	F32 playerX	= labState->playerPosition.x;
-	F32 playerY = labState->playerPosition.y;
-	F32 playerLeft   = playerX - playerSide;
-	F32 playerRight  = playerX + playerSide;
-	F32 playerTop    = playerY - playerSide;
-	F32 playerBottom = playerY + playerSide;
-	DrawRect(canvas, playerLeft, playerRight, playerTop, playerBottom, playerColor);
+	F32 playerRadius = 1.0f;
+	V4 playerColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawCircle(canvas, labState->playerPosition, playerRadius, playerColor);
+
+	V4 healthBarBackgroundColor = MakeColor(0.5f, 0.0f, 0.0f);
+	V4 healthBarColor = MakeColor(1.0f, 0.0f, 0.0f);
+	F32 healthBarWidth = 2.0f * playerRadius;
+	F32 healthBarHeight = 0.1f * healthBarWidth;
+
+	F32 healthBarX = labState->playerPosition.x;
+	F32 healthBarY = labState->playerPosition.y - playerRadius - healthBarHeight - healthBarHeight * 0.5f;
+
+	F32 healthBarLeft   = healthBarX - 0.5f * healthBarWidth;
+	F32 healthBarRight  = healthBarX + 0.5f * healthBarWidth;
+	F32 healthBarTop    = healthBarY - 0.5f * healthBarHeight;
+	F32 healthBarBottom = healthBarY + 0.5f * healthBarHeight;
+	DrawRect(canvas, healthBarLeft, healthBarRight, healthBarTop, healthBarBottom, healthBarBackgroundColor);
+
+	F32 healthRatio = labState->health / labState->maxHealth;
+	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
+	F32 healthBarFilledX = healthBarLeft + healthRatio * (healthBarRight - healthBarLeft);
+	DrawRect(canvas, healthBarLeft, healthBarFilledX, healthBarTop, healthBarBottom, healthBarColor);
 }
 
 void CombatLab(HINSTANCE instance)
@@ -227,5 +288,6 @@ void CombatLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Draw a circle instead of a square?
+// TODO: Draw a health bar!
+// TODO: Circles on the floor that deal damage!
 // TODO: Better physics?
