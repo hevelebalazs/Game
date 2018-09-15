@@ -5,6 +5,76 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
+void IntSwap(I32* i, I32* j)
+{
+	I32 tmp = *i;
+	*i = *j;
+	*j = tmp;
+}
+
+I32 IntAbs(I32 i)
+{
+	if (i > 0)
+		return i;
+	else
+		return -i;
+}
+
+I32 IntRandom(I32 min, I32 max)
+{
+	I32 result = min + (rand() % (max - min + 1));
+	return result;
+}
+
+I32 IntMin2(I32 i1, I32 i2)
+{
+	if (i1 < i2) 
+		return i1;
+	else 
+		return i2;
+}
+
+I32 IntMax2(I32 i1, I32 i2)
+{
+	if (i1 > i2)
+		return i1;
+	else
+		return i2;
+}
+
+F32 Sqrt(F32 x)
+{
+	return sqrtf(x);
+}
+
+F32 Abs(F32 x)
+{
+	if (x > 0.0f)
+		return x;
+	else
+		return -x;
+}
+
+I32 Floor(F32 x)
+{
+	return (I32)floorf(x);
+}
+
+F32 Lerp(F32 value1, F32 ratio, F32 value2)
+{
+	return ((1.0f - ratio) * value1) + ((ratio) * value2);
+}
+
+I32 RandMod(I32 mod)
+{
+	return (rand() % mod);
+}
+
+void SeedRandom(I32 seed)
+{
+	srand((U32)seed);
+}
+
 V2 operator+(V2 point1, V2 point2)
 {
 	V2 result = {};

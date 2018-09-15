@@ -66,6 +66,45 @@ F32 VectorAngle(V2 vector)
 	return atan2f(vector.y, vector.x);
 }
 
+F32 LineAngle(V2 startPoint, V2 endPoint)
+{
+	V2 diff = (endPoint - startPoint);
+	F32 angle = VectorAngle(diff);
+	return angle;
+}
+
+F32 NormalizeAngle(F32 angle)
+{
+	while (angle > PI)
+		angle -= 2.0f * PI;
+	while (angle < -PI)
+		angle += 2.0f * PI;
+	return angle;
+}
+
+B32 TurnsRight(V2 point1, V2 point2, V2 point3)
+{
+	F32 dx1 = point2.x - point1.x;
+	F32 dy1 = point2.y - point1.y;
+	F32 dx2 = point3.x - point2.x;
+	F32 dy2 = point3.y - point2.y;
+
+	F32 det = (dx1 * dy2) - (dx2 * dy1);
+
+	return (det > 0.0f);
+}
+
+B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
+{
+	B32 result = false;
+	if (minAngle > maxAngle)
+		result = (angle <= maxAngle || angle >= minAngle);
+	else
+		result = (minAngle <= angle && angle <= maxAngle);
+	return result;
+}
+
+
 V2 RotationVector(F32 angle)
 {
 	V2 result = MakePoint(cosf(angle), sinf(angle));
@@ -78,6 +117,51 @@ V2 PointDirection(V2 startPoint, V2 endPoint)
 	vector = NormalVector(vector);
 
 	return vector;
+}
+
+B32 IsPointInQuad(Quad quad, V2 point)
+{
+	V2* points = quad.points;
+	if (point.x < points[0].x && point.x < points[1].x && point.x < points[2].x && point.x < points[3].x)
+		return false;
+	if (point.x > points[0].x && point.x > points[1].x && point.x > points[2].x && point.x > points[3].x)
+		return false;
+
+	if (point.y < points[0].y && point.y < points[1].y && point.y < points[2].y && point.y < points[3].y)
+		return false;
+	if (point.y > points[0].y && point.y > points[1].y && point.y > points[2].y && point.y > points[3].y)
+		return false;
+
+	if (!TurnsRight(points[0], points[1], point))
+		return false;
+	else if (!TurnsRight(points[1], points[2], point))
+		return false;
+	else if (!TurnsRight(points[2], points[3], point))
+		return false;
+	else if (!TurnsRight(points[3], points[0], point))
+		return false;
+	else
+		return true;
+}
+
+V2 TurnVectorToRight(V2 vector)
+{
+	V2 result = {};
+	result.x = -vector.y;
+	result.y = vector.x;
+	return result;
+}
+
+V2 XYToBase(V2 point, V2 baseUnit)
+{
+	F32 cosa = baseUnit.x;
+	F32 sina = baseUnit.y;
+
+	V2 result = {};
+	result.x = point.x * cosa + point.y * sina;
+	result.y = -point.x * sina + point.y * cosa;
+
+	return result;
 }
 
 // TODO: can this be merged with LineIntersection?
