@@ -5,7 +5,7 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
-inline void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistance, F32 minAngle, F32 maxAngle, F32 baseBrightness) 
+static void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistance, F32 minAngle, F32 maxAngle, F32 baseBrightness) 
 {
 	V2 radius = MakePoint(maxDistance, maxDistance);
 	V2 topLeft = (center - radius);
@@ -21,8 +21,10 @@ inline void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 	I32 left   = IntMax2((I32)topLeftPixel.x, 0);
 	I32 right  = IntMin2((I32)bottomRightPixel.x, bitmap.width - 1);
 
-	for (I32 row = top; row <= bottom; ++row) {
-		for (I32 col = left; col <= right; ++col) {
+	for (I32 row = top; row <= bottom; ++row) 
+	{
+		for (I32 col = left; col <= right; ++col) 
+		{
 			V2 pixelPosition = {};
 			pixelPosition.x = (F32)col;
 			pixelPosition.y = (F32)row;
@@ -31,7 +33,8 @@ inline void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 			F32 angle = LineAngle(center, position);
 
 			F32 ratio = 0.0f;
-			if (minDistance <= distance && distance <= maxDistance) {
+			if (minDistance <= distance && distance <= maxDistance) 
+			{
 				if (IsAngleBetween(minAngle, angle, maxAngle))
 					ratio = 1.0f - (distance / maxDistance);
 			}
@@ -48,7 +51,7 @@ inline void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 	}
 }
 
-inline void LightCircle(Canvas canvas, V2 center, F32 seeDistance, F32 baseBrightness = 1.0f)
+static void LightCircle(Canvas canvas, V2 center, F32 seeDistance, F32 baseBrightness)
 {
 	LightSector(canvas, center, 0.0f, seeDistance, -PI, PI, baseBrightness);
 }

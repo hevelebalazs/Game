@@ -1,6 +1,7 @@
 #pragma once
 
-enum BuildingType {
+enum BuildingType 
+{
 	BuildingBlack,
 	BuildingRed,
 	BuildingGreen,

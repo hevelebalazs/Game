@@ -120,28 +120,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AutoHuman.cpp" />
-    <ClCompile Include="Bezier.cpp" />
-    <ClCompile Include="Bitmap.cpp" />
-    <ClCompile Include="Building.cpp" />
-    <ClCompile Include="Debug.cpp" />
-    <ClCompile Include="Game.cpp" />
-    <ClCompile Include="Geometry.cpp" />
-    <ClCompile Include="GridMap.cpp" />
-    <ClCompile Include="Human.cpp" />
-    <ClCompile Include="Lab\CarLab.cpp" />
-    <ClCompile Include="Lab\CombatLab.cpp" />
-    <ClCompile Include="Lab\MapLab.cpp" />
-    <ClCompile Include="Lab\PhysicsLab.cpp" />
-    <ClCompile Include="Lab\RoadLab.cpp" />
-    <ClCompile Include="Lab\ThreadLab.cpp" />
-    <ClCompile Include="Map.cpp" />
-    <ClCompile Include="Math.cpp" />
-    <ClCompile Include="Path.cpp" />
-    <ClCompile Include="PlayerHuman.cpp" />
-    <ClCompile Include="Draw.cpp" />
-    <ClCompile Include="Road.cpp" />
-    <ClCompile Include="Car.cpp" />
     <ClCompile Include="Windows.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -157,6 +135,7 @@
     <ClInclude Include="Human.hpp" />
     <ClInclude Include="Lab\CarLab.hpp" />
     <ClInclude Include="Lab\CombatLab.hpp" />
+    <ClInclude Include="Lab\Lab.hpp" />
     <ClInclude Include="Lab\MapLab.hpp" />
     <ClInclude Include="Lab\PhysicsLab.hpp" />
     <ClInclude Include="Lab\RoadLab.hpp" />

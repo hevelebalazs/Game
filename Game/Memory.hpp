@@ -10,13 +10,14 @@
 #define MegaByte (1024 * KiloByte)
 #define GigaByte (1024 * MegaByte)
 
-struct MemArena {
+struct MemArena 
+{
 	I8* baseAddress;
 	U32 usedSize;
 	U32 maxSize;
 };
 
-inline MemArena CreateMemArena(U32 maxSize)
+static MemArena CreateMemArena(U32 maxSize)
 {
 	MemArena result = {};
 	result.baseAddress = new I8[maxSize];
@@ -26,40 +27,42 @@ inline MemArena CreateMemArena(U32 maxSize)
 	return result;
 }
 
-inline void ArenaReset(MemArena* arena)
+static void ArenaReset(MemArena* arena)
 {
 	arena->usedSize = 0;
 }
 
-#include <stdio.h>
-
-inline void* ArenaAlloc(MemArena* arena, U32 size)
+static void* ArenaAlloc(MemArena* arena, U32 size)
 {
 	Assert(arena->usedSize + size <= arena->maxSize);
-	if (arena->usedSize + size <= arena->maxSize) {
+	if (arena->usedSize + size <= arena->maxSize) 
+	{
 		I8* result = arena->baseAddress + arena->usedSize;
 		arena->usedSize += size;
 		return result;
-	} else {
+	}
+	else
+	{
 		return 0;
 	}
 }
 
-inline U32 GetArenaSize(MemArena* arena)
+static U32 GetArenaSize(MemArena* arena)
 {
 	return arena->usedSize;
 }
 
-inline void SetArenaSize(MemArena* arena, U32 size)
+static void SetArenaSize(MemArena* arena, U32 size)
 {
 	arena->usedSize = size;
 }
 
 // TODO: only pop if the address is smaller than the current one?
-inline void ArenaPopTo(MemArena* arena, void* address)
+static void ArenaPopTo(MemArena* arena, void* address)
 {
 	arena->usedSize = (U32)((I8*)address - arena->baseAddress);
 }
+
 
 #define ArenaPushType(arena, type) ((type*)ArenaAlloc((arena), sizeof(type)))
 #define ArenaPushArray(arena, type, size) ((type*)ArenaAlloc((arena), (size) * sizeof(type)))

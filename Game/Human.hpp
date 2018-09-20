@@ -14,7 +14,8 @@
 #define	FullHealthColor		MakeColor(1.0f, 0.0f, 0.0f)
 #define EmptyHealthColor	MakeColor(0.0f, 0.0f, 0.0f)
 
-struct Human {
+struct Human 
+{
 	Map* map;
 	Building* inBuilding;
 
@@ -26,7 +27,7 @@ struct Human {
 	I32 healthPoints;
 };
 
-inline B32 IsHumanCrossedByLine(Human* human, Line line)
+static B32 IsHumanCrossedByLine(Human* human, Line line)
 {
 	F32 left   = (human->position.x - HumanRadius);
 	F32 right  = (human->position.x + HumanRadius);
@@ -59,7 +60,7 @@ inline B32 IsHumanCrossedByLine(Human* human, Line line)
 		return false;
 }
 
-inline void DrawPoliceRadius(Canvas canvas, Human* human, F32 radius)
+static void DrawPoliceRadius(Canvas canvas, Human* human, F32 radius)
 {
 	V4 color = MakeColor(0.0f, 0.0f, 1.0f);
 	V2 position = human->position;
@@ -70,5 +71,57 @@ inline void DrawPoliceRadius(Canvas canvas, Human* human, F32 radius)
 	DrawRectOutline(canvas, top, left, bottom, right, color);
 }
 
-void MoveHuman(Human* human, V4 point);
-void DrawHuman(Canvas canvas, Human human);
+static void MoveHuman(Human* human, V4 point)
+{
+	human->position = point.position;
+}
+
+static void DrawHealthPoints(Canvas canvas, Human* human)
+{
+	I32 healthPoints = MaxHealthPoints;
+
+	F32 healthPointRadius = (2.0f * HumanRadius + HealthPointPadding) / ((F32)MaxHealthPoints);
+	healthPointRadius -= HealthPointPadding;
+
+	F32 top    = human->position.y + HumanRadius + HealthPointPadding;
+	F32 bottom = top + healthPointRadius;
+	F32 left   = human->position.x - HumanRadius;
+	for (I32 i = 0; i < MaxHealthPoints; ++i) 
+	{
+		F32 right = left + healthPointRadius;
+
+		V4 color = {};
+		if (i < human->healthPoints)
+			color = FullHealthColor;
+		else
+			color = EmptyHealthColor;
+
+		DrawRect(canvas, left, right, top, bottom, color);
+
+		left = right + HealthPointPadding;
+	}
+}
+
+static void DrawHuman(Canvas canvas, Human human)
+{
+	F32 radius = HumanRadius;
+	V2 position = human.position;
+
+	V4 color = {};
+	if (human.healthPoints == 0)
+		color = MakeColor(0.0f, 0.0f, 0.0f);
+	else if (human.isPolice)
+		color = MakeColor(0.0f, 0.0f, 1.0f);
+	else
+		color = MakeColor(1.0f, 1.0f, 1.0f);
+
+	DrawRect(
+		canvas,
+		position.x - radius, position.x + radius,
+		position.y - radius, position.y + radius,
+		color
+	);
+
+	if (human.healthPoints < MaxHealthPoints)
+		DrawHealthPoints(canvas, &human);
+}
