@@ -2,7 +2,8 @@
 
 #include <Windows.h>
 
-struct CombatLabState {
+struct CombatLabState
+{
 	Camera camera;
 	Canvas canvas;
 	B32 running;
@@ -12,6 +13,11 @@ struct CombatLabState {
 
 	F32 health;
 	F32 maxHealth;
+
+	V2 circlePosition;
+	F32 circleRadius;
+	F32 circleTotalDuration;
+	F32 circleDurationLeft;
 };
 static CombatLabState gCombatLabState;
 
@@ -42,13 +48,20 @@ static void CombatLabBlit(Canvas canvas, HDC context, RECT rect)
 	);
 }
 
+static void DoDamage(CombatLabState* labState, F32 damage)
+{
+	labState->health = Max2(labState->health - damage, 0.0f);
+}
+
 static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	CombatLabState* labState = &gCombatLabState;
 	LRESULT result = 0;
 
-	switch (message) {
-		case WM_SIZE: {
+	switch (message)
+	{
+		case WM_SIZE:
+		{
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 			I32 width = clientRect.right - clientRect.left;
@@ -56,7 +69,8 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			CombatLabResize(labState, width, height);
 			break;
 		}
-		case WM_PAINT: {
+		case WM_PAINT:
+		{
 			PAINTSTRUCT paint = {};
 			HDC context = BeginPaint(window, &paint);
 
@@ -68,15 +82,19 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			EndPaint(window, &paint);
 			break;
 		}
-		case WM_SETCURSOR: {
+		case WM_SETCURSOR:
+		{
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 			SetCursor(cursor);
 			break;
 		}
-		case WM_KEYDOWN: {
+		case WM_KEYDOWN:
+		{
 			WPARAM keyCode = wparam;
-			switch (keyCode) {
-				case 'W': {
+			switch (keyCode)
+			{
+				case 'W':
+				{
 					labState->playerVelocity.y = -1.0f;
 					break;
 				}
@@ -84,42 +102,52 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 					labState->playerVelocity.y = +1.0f;
 					break;
 				}
-				case 'A': {
+				case 'A':
+				{
 					labState->playerVelocity.x = -1.0f;
 					break;
 				}
-				case 'D': {
+				case 'D':
+				{
 					labState->playerVelocity.x = +1.0f;
 					break;
 				}
 			}
 			break;
 		}
-		case WM_KEYUP: {
+		case WM_KEYUP:
+		{
 			WPARAM keyCode = wparam;
-			switch (keyCode) {
+			switch (keyCode)
+			{
 				case 'W': 
-				case 'S': {
+				case 'S':
+				{
 					labState->playerVelocity.y = 0.0f;
 					break;
 				}
 				case 'A':
-				case 'D':{
+				case 'D':
+				{
 					labState->playerVelocity.x = 0.0f;
 					break;
 				}
-				case 'F': {
-					labState->health = Max2(0.0f, labState->health - 20.0f);
+				case 'F':
+				{
+					DoDamage(labState, 20.0f);
+					break;
 				}
 			}
 			break;
 		}
 		case WM_DESTROY:
-		case WM_CLOSE: {
+		case WM_CLOSE:
+		{
 			labState->running = false;
 			break;
 		}
-		default: {
+		default:
+		{
 			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
@@ -166,8 +194,10 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 	leftPixel   = IntMax2(leftPixel, 0);
 	rightPixel  = IntMin2(rightPixel, bitmap.width - 1);
 
-	for (I32 row = topPixel; row < bottomPixel; ++row) {
-		for (I32 col = leftPixel; col < rightPixel; ++col) {
+	for (I32 row = topPixel; row < bottomPixel; ++row)
+	{
+		for (I32 col = leftPixel; col < rightPixel; ++col)
+		{
 			U32* pixel = bitmap.memory + row * bitmap.width + col;
 			I32 pixelDistanceSquare = IntSquare(row - centerYPixel) + IntSquare(col - centerXPixel);
 			if (pixelDistanceSquare <= pixelRadiusSquare)
@@ -197,7 +227,8 @@ static void CombatLabUpdate(CombatLabState* labState)
 
 	I32 firstCol = Floor(left / gridDistance);
 	I32 lastCol  = Floor(right / gridDistance);
-	for (I32 col = firstCol; col <= lastCol; ++col) {
+	for (I32 col = firstCol; col <= lastCol; ++col)
+	{
 		F32 x = (col * gridDistance);
 		V2 point1 = MakePoint(x, top);
 		V2 point2 = MakePoint(x, bottom);
@@ -206,11 +237,32 @@ static void CombatLabUpdate(CombatLabState* labState)
 
 	I32 firstRow = Floor(top / gridDistance);
 	I32 lastRow  = Floor(bottom /gridDistance);
-	for (I32 row = firstRow; row <= lastRow; ++row) {
+	for (I32 row = firstRow; row <= lastRow; ++row)
+	{
 		F32 y = (row * gridDistance);
 		V2 point1 = MakePoint(left, y);
 		V2 point2 = MakePoint(right, y);
 		Bresenham(canvas, point1, point2, gridColor);
+	}
+
+	labState->circleDurationLeft -= seconds;
+	if (labState->circleDurationLeft > 0.0f) 
+	{
+		F32 durationRatio = labState->circleDurationLeft / labState->circleTotalDuration;
+		V4 circleColor = MakeColor(1.0f, durationRatio, 0.0f);
+		DrawCircle(canvas, labState->circlePosition, labState->circleRadius, circleColor);
+	}
+	else
+	{
+		F32 playerCircleDistance = Distance(labState->playerPosition, labState->circlePosition);
+		if (playerCircleDistance < labState->circleRadius) 
+			DoDamage(labState, 10.0f);
+
+		labState->circlePosition.x = RandomBetween(-10.0f, +10.0f);
+		labState->circlePosition.y = RandomBetween(-10.0f, +10.0f);
+		labState->circleRadius = RandomBetween(3.0f, 4.5f);
+		labState->circleTotalDuration = RandomBetween(20.0f, 30.0f);
+		labState->circleDurationLeft = labState->circleTotalDuration;
 	}
 
 	F32 playerRadius = 1.0f;
@@ -271,8 +323,10 @@ static void CombatLab(HINSTANCE instance)
 	CombatLabInit(labState, width, height);
 
 	MSG message = {};
-	while (labState->running) {
-		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+	while (labState->running) 
+	{
+		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+		{
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 		}
@@ -288,6 +342,7 @@ static void CombatLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Draw a health bar!
+// TODO: Real seconds!
 // TODO: Circles on the floor that deal damage!
+// TODO: Disable controls while dead!
 // TODO: Better physics?
