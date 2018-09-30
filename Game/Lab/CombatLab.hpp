@@ -25,6 +25,7 @@ struct CombatLabState
 	F32 circleRadius;
 	F32 circleTotalDuration;
 	F32 circleDurationLeft;
+	B32 circleEnabled;
 };
 static CombatLabState gCombatLabState;
 
@@ -104,21 +105,21 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			{
 				case 'W':
 				{
-					player->velocity.y = -1.0f;
+					player->velocity.y = -10.0f;
 					break;
 				}
 				case 'S': {
-					player->velocity.y = +1.0f;
+					player->velocity.y = +10.0f;
 					break;
 				}
 				case 'A':
 				{
-					player->velocity.x = -1.0f;
+					player->velocity.x = -10.0f;
 					break;
 				}
 				case 'D':
 				{
-					player->velocity.x = +1.0f;
+					player->velocity.x = +10.0f;
 					break;
 				}
 			}
@@ -147,6 +148,16 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 					break;
 				}
 			}
+			break;
+		}
+		case WM_LBUTTONDOWN:
+		{
+			labState->circleEnabled = true;
+			break;
+		}
+		case WM_LBUTTONUP:
+		{
+			labState->circleEnabled = false;
 			break;
 		}
 		case WM_DESTROY:
@@ -188,6 +199,8 @@ static void CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowH
 		enemy->health = maxHealth;
 	}
 
+	labState->circleTotalDuration = 0.5f;
+
 	CombatLabResize(labState, windowWidth, windowHeight);
 }
 
@@ -200,9 +213,9 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 	I32 centerXPixel = UnitXtoPixel(camera, center.x);
 	I32 centerYPixel = UnitYtoPixel(camera, center.y);
 
-	I32 leftPixel =   UnitXtoPixel(camera, center.x - radius);
-	I32 rightPixel =  UnitXtoPixel(camera, center.x + radius);
-	I32 topPixel =    UnitYtoPixel(camera, center.y - radius);
+	I32 leftPixel   = UnitXtoPixel(camera, center.x - radius);
+	I32 rightPixel  = UnitXtoPixel(camera, center.x + radius);
+	I32 topPixel    = UnitYtoPixel(camera, center.y - radius);
 	I32 bottomPixel = UnitYtoPixel(camera, center.y + radius);
 
 	if (topPixel > bottomPixel)
@@ -284,11 +297,11 @@ static void DamageEnemiesInCircle(CombatLabState* labState, V2 center, F32 radiu
 	}
 }
 
-static void CombatLabUpdate(CombatLabState* labState)
+static void CombatLabUpdate(CombatLabState* labState, F32 seconds)
 {
-	F32 seconds = 0.05f;
 	Entity* player = &labState->player;
-	player->position = player->position + seconds * player->velocity;
+	if (labState->circleDurationLeft == 0.0f)
+		player->position = player->position + seconds * player->velocity;
 
 	Canvas canvas = labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -324,22 +337,31 @@ static void CombatLabUpdate(CombatLabState* labState)
 		Bresenham(canvas, point1, point2, gridColor);
 	}
 
-	labState->circleDurationLeft -= seconds;
-	if (labState->circleDurationLeft > 0.0f) 
+	if (labState->circleDurationLeft > 0.0f)
 	{
-		F32 durationRatio = 1.0f - labState->circleDurationLeft / labState->circleTotalDuration;
-		V4 circleColor = MakeColor(1.0f, 1.0f, 0.0f);
-		F32 fillRadius = labState->player.radius + (durationRatio) * (labState->circleRadius - labState->player.radius);
-		DrawCircleBorder(canvas, labState->player.position, labState->circleRadius, circleColor);
-		DrawCircle(canvas, labState->player.position, fillRadius, circleColor);
+		labState->circleDurationLeft = Max2(0.0f, labState->circleDurationLeft - seconds);
+		if (labState->circleDurationLeft > 0.0f)
+		{
+			F32 durationRatio = 1.0f - labState->circleDurationLeft / labState->circleTotalDuration;
+			V4 circleColor = MakeColor(1.0f, 1.0f, 0.0f);
+			F32 fillRadius = labState->player.radius + (durationRatio) * (labState->circleRadius - labState->player.radius);
+			DrawCircleBorder(canvas, labState->player.position, labState->circleRadius, circleColor);
+			DrawCircle(canvas, labState->player.position, fillRadius, circleColor);
+		}
+		else
+		{
+			DamageEnemiesInCircle(labState, labState->player.position, labState->circleRadius, 10.0f);
+		}
 	}
-	else
+	
+	Assert(labState->circleDurationLeft >= 0.0f);
+	if (labState->circleDurationLeft == 0.0f)
 	{
-		DamageEnemiesInCircle(labState, labState->player.position, labState->circleRadius, 10.0f);
-
-		labState->circleRadius = 3.0f;
-		labState->circleTotalDuration = 10.0f;
-		labState->circleDurationLeft = labState->circleTotalDuration;
+		if (labState->circleEnabled)
+		{
+			labState->circleRadius = 3.0f;
+			labState->circleDurationLeft = labState->circleTotalDuration;
+		}
 	}
 
 	V4 playerColor = MakeColor(1.0f, 1.0f, 1.0f);
@@ -383,6 +405,12 @@ static void CombatLab(HINSTANCE instance)
 	I32 height = rect.bottom - rect.top;
 	CombatLabInit(labState, width, height);
 
+	LARGE_INTEGER counterFrequency;
+	QueryPerformanceFrequency(&counterFrequency);
+
+	LARGE_INTEGER lastCounter;
+	QueryPerformanceCounter(&lastCounter);
+
 	MSG message = {};
 	while (labState->running) 
 	{
@@ -392,7 +420,14 @@ static void CombatLab(HINSTANCE instance)
 			DispatchMessage(&message);
 		}
 
-		CombatLabUpdate(labState);
+		LARGE_INTEGER counter;
+		QueryPerformanceCounter(&counter);
+		I64 microSeconds = counter.QuadPart - lastCounter.QuadPart;
+		F32 milliSeconds = ((F32)microSeconds * 1000.0f) / F32(counterFrequency.QuadPart);
+		F32 seconds = 0.001f * milliSeconds;
+		lastCounter = counter;
+
+		CombatLabUpdate(labState, seconds);
 
 		RECT rect = {};
 		GetClientRect(window, &rect);
@@ -403,10 +438,9 @@ static void CombatLab(HINSTANCE instance)
 	}
 }
 
-// [TODO: Enemy circles that the player can damage!]
-	// [TODO: Move radius to Entity struct!]
-// TODO: Remove damage at start!
-// TODO: Real seconds!
+// TODO: Damage in an arc?
+// TODO: Enemy movement
+// TODO: Enemy abilities
 // TODO: Disable controls while dead!
 // TODO: Better controls (releasing/pressing buttons)!
 // TODO: Better physics?

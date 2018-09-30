@@ -263,7 +263,6 @@ void RunGame(HINSTANCE instance)
 		WinUpdate(globalGameState->canvas, context, rect);
 
 		ReleaseDC(window, context);
-
 		LARGE_INTEGER nowCounter;
 		QueryPerformanceCounter(&nowCounter);
 
@@ -275,7 +274,7 @@ void RunGame(HINSTANCE instance)
 			DWORD sleepMS = (DWORD)(globalTargetFrameMS - elapsedMS);
 			Sleep(sleepMS);
 			elapsedS = globalTargetFrameS;
-		} 
+		}
 		else 
 		{
 			elapsedS = elapsedMS * 0.001f;
