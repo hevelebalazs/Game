@@ -108,6 +108,24 @@ static F32 NormalizeAngle(F32 angle)
 	return angle;
 }
 
+static F32 AngleDifference(F32 leftAngle, F32 rightAngle)
+{
+	Assert(IsBetween(leftAngle,  -PI, +PI));
+	Assert(IsBetween(rightAngle, -PI, +PI));
+
+	F32 result = 0.0f;
+	if (leftAngle < rightAngle)
+	{
+		result = rightAngle - leftAngle;
+	}
+	else
+	{
+		result = (PI - leftAngle) + (rightAngle - (-PI));
+	}
+	Assert(IsBetween(result, 0.0f, TAU));
+	return result;
+}
+
 static B32 TurnsRight(V2 point1, V2 point2, V2 point3)
 {
 	F32 dx1 = point2.x - point1.x;
@@ -122,6 +140,9 @@ static B32 TurnsRight(V2 point1, V2 point2, V2 point3)
 
 static B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
 {
+	Assert(IsBetween(minAngle, -PI, +PI));
+	Assert(IsBetween(angle,    -PI, +PI));
+	Assert(IsBetween(maxAngle, -PI, +PI));
 	B32 result = false;
 	if (minAngle > maxAngle)
 		result = (angle <= maxAngle || angle >= minAngle);

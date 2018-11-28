@@ -228,7 +228,7 @@ void RunGame(HINSTANCE instance)
 
 	WinResize(globalGameState, width, height);
 
-	timeBeginPeriod(1);
+	// timeBeginPeriod(1);
 
 	LARGE_INTEGER counterFrequency;
 	QueryPerformanceFrequency(&counterFrequency);

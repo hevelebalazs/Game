@@ -8,6 +8,7 @@
 #include "Type.hpp"
 
 #define PI	3.14159265358979323f
+#define TAU (2.0f * PI)
 
 struct V2 
 {
