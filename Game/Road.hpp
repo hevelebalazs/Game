@@ -74,11 +74,17 @@ static B32 IsValidJunctionCornerIndex(Junction* junction, I32 cornerIndex)
 	Assert(junction->roadN > 0);
 	B32 result = false;
 	if (junction->roadN == 1)
+	{
 		result = (cornerIndex == 0 || cornerIndex == 1);
+	}
 	else if (junction->roadN >= 2)
+	{
 		result = (cornerIndex >= 0 && cornerIndex < junction->roadN);
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	return result;
 }
 
@@ -92,15 +98,21 @@ static I32 GetClockwiseJunctionCornerIndexDistance(Junction* junction, I32 start
 	if (junction->roadN == 1) 
 	{
 		if (startCornerIndex == endCornerIndex)
+		{
 			distance = 0;
+		}
 		else
+		{
 			distance = 1;
+		}
 	}
 	else if (junction->roadN >= 2) 
 	{
 		distance = endCornerIndex - startCornerIndex;
 		if (distance < 0)
+		{
 			distance += junction->roadN;
+		}
 	} 
 	else 
 	{
@@ -121,15 +133,21 @@ static I32 GetCounterClockwiseJunctionCornerIndexDistance(Junction* junction, I3
 	if (junction->roadN == 1) 
 	{
 		if (startCornerIndex == endCornerIndex)
+		{
 			distance = 0;
+		}
 		else
+		{
 			distance = 1;
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
 		distance = startCornerIndex - endCornerIndex;
 		if (distance < 0)
+		{
 			distance += junction->roadN;
+		}
 	} 
 	else 
 	{
@@ -161,11 +179,17 @@ static I32 GetRoadOutLeftJunctionCornerIndex(Junction* junction, Road* road)
 	Assert(junction->roadN >= 1);
 	I32 leftCornerIndex = 0;
 	if (junction->roadN == 1)
+	{
 		leftCornerIndex = 0;
+	}
 	else if (junction->roadN >= 2)
+	{
 		leftCornerIndex = GetJunctionRoadIndex(junction, road);
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	return leftCornerIndex;
 }
 
@@ -182,19 +206,29 @@ static I32 GetNextJunctionCornerIndex(Junction* junction, I32 cornerIndex)
 	if (junction->roadN == 1) 
 	{
 		if (cornerIndex == 1)
+		{
 			nextIndex = 0;
+		}
 		else if (cornerIndex == 0)
+		{
 			nextIndex = 1;
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
 		Assert(IsValidJunctionRoadIndex(junction, cornerIndex))
 		if (cornerIndex == junction->roadN - 1)
+		{
 			nextIndex = 0;
+		}
 		else
+		{
 			nextIndex = cornerIndex + 1;
+		}
 	}
 	return nextIndex;
 }
@@ -214,21 +248,33 @@ static I32 GetRoadLeftSidewalkJunctionCornerIndex(Junction* junction, Road* road
 	{
 		Assert(junction->roads[0] == road);
 		if (road->junction1 == junction)
+		{
 			cornerIndex = 0;
+		}
 		else if (road->junction2 == junction)
+		{
 			cornerIndex = 1;
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
 		I32 roadIndex = GetJunctionRoadIndex(junction, road);
 		if (road->junction1 == junction)
+		{
 			cornerIndex = roadIndex;
+		}
 		else if (road->junction2 == junction)
+		{
 			cornerIndex = GetNextJunctionCornerIndex(junction, roadIndex);
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	}
 	else 
 	{
@@ -245,21 +291,33 @@ static I32 GetRoadRightSidewalkJunctionCornerIndex(Junction* junction, Road* roa
 	{
 		Assert(junction->roads[0] == road);
 		if (road->junction1 == junction)
+		{
 			cornerIndex = 1;
+		}
 		else if (road->junction2 == junction)
+		{
 			cornerIndex = 0;
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
 		I32 roadIndex = GetJunctionRoadIndex(junction, road);
 		if (road->junction1 == junction)
+		{
 			cornerIndex = GetNextJunctionCornerIndex(junction, roadIndex);
+		}
 		else if (road->junction2 == junction)
+		{
 			cornerIndex = roadIndex;
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	} 
 	else 
 	{
@@ -272,11 +330,17 @@ static I32 GetRoadSidewalkJunctionCornerIndex(Junction* junction, Road* road, I3
 {
 	I32 cornerIndex = 0;
 	if (sidewalkIndex == LeftRoadSidewalkIndex)
+	{
 		cornerIndex = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
+	}
 	else if (sidewalkIndex == RightRoadSidewalkIndex)
+	{
 		cornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	return cornerIndex;
 }
 
@@ -306,11 +370,17 @@ static V2 FromLeaveJunctionRoadCoord(Junction* junction, I32 roadIndex, F32 dist
 	Road* road = junction->roads[roadIndex];
 	V2 result = {};
 	if (road->junction1 == junction)
+	{
 		result = FromRoadCoord1(road, +distanceAlong, +distanceSide);
+	}
 	else if (road->junction2 == junction)
+	{
 		result = FromRoadCoord2(road, -distanceAlong, -distanceSide);
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	return result;
 }
 
@@ -319,9 +389,13 @@ static I32 GetPreviousJunctionRoadIndex(Junction* junction, I32 roadIndex)
 	Assert(junction->roadN >= 2);
 	I32 result = 0;
 	if (roadIndex == 0)
+	{
 		result = junction->roadN - 1;
+	}
 	else
+	{
 		result = roadIndex - 1;
+	}
 	return result;
 }
 
@@ -330,9 +404,13 @@ static I32 GetNextJunctionRoadIndex(Junction* junction, I32 roadIndex)
 	Assert(junction->roadN >= 2);
 	I32 result = 0;
 	if (roadIndex == junction->roadN - 1)
+	{
 		result = 0;
+	}
 	else
+	{
 		result = roadIndex + 1;
+	}
 	return result;
 }
 
@@ -343,11 +421,17 @@ static F32 GetRoadAngleAtJunction(Junction* junction, I32 roadIndex)
 	F32 angle = 0.0f;
 	Road* road = junction->roads[roadIndex];
 	if (road->junction1 == junction)
+	{
 		angle = LineAngle(road->endPoint1, road->endPoint2);
+	}
 	else if (road->junction2 == junction)
+	{
 		angle = LineAngle(road->endPoint2, road->endPoint1);
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	return angle;
 }
 
@@ -360,7 +444,9 @@ static V2 GetRoadIntersectionAtJunction(Junction* junction, I32 leftRoadIndex, I
 	F32 leftAngle = GetRoadAngleAtJunction(junction, leftRoadIndex);
 	F32 rightAngle = GetRoadAngleAtJunction(junction, rightRoadIndex);
 	if (rightAngle < leftAngle)
+	{
 		rightAngle += 2 * PI;
+	}
 
 	F32 intersectionAngle = (leftAngle + rightAngle) * 0.5f;
 	F32 halfAngle = (rightAngle - leftAngle) * 0.5f;
@@ -371,6 +457,7 @@ static V2 GetRoadIntersectionAtJunction(Junction* junction, I32 leftRoadIndex, I
 		InvalidCodePath;
 		sinHalfAngle = 1.0f;
 	}
+
 	F32 intersectionDistance = Abs(side / sinHalfAngle);
 	V2 intersection = {};
 	intersection.x = junction->position.x + intersectionDistance * cosf(intersectionAngle);
@@ -395,11 +482,17 @@ static V2 GetJunctionCorner(Junction* junction, I32 cornerIndex)
 	if (junction->roadN == 1) 
 	{
 		if (cornerIndex == 0)
+		{
 			result = FromLeaveJunctionRoadCoord(junction, 0, -radius, -radius);
+		}
 		else if (cornerIndex == 1)
+		{
 			result = FromLeaveJunctionRoadCoord(junction, 0, -radius, +radius);
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
@@ -431,11 +524,17 @@ static I32 GetRoadJunctionCornerSidewalkIndex(Junction* junction, Road* road, I3
 	I32 leftRoadCornerIndex  = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
 	I32 rightRoadCornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
 	if (cornerIndex == leftRoadCornerIndex)
+	{
 		sidewalkIndex = LeftRoadSidewalkIndex;
+	}
 	else if (cornerIndex == rightRoadCornerIndex)
+	{
 		sidewalkIndex = RightRoadSidewalkIndex;
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	return sidewalkIndex;
 }
 
@@ -446,19 +545,29 @@ static I32 GetPreviousJunctionCornerIndex(Junction* junction, I32 cornerIndex)
 	if (junction->roadN == 1) 
 	{
 		if (cornerIndex == 1)
+		{
 			previousIndex = 0;
+		}
 		else if (cornerIndex == 0)
+		{
 			previousIndex = 1;
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
 		Assert(IsValidJunctionCornerIndex(junction, cornerIndex));
 		if (cornerIndex == 0)
+		{
 			previousIndex = junction->roadN - 1;
+		}
 		else
+		{
 			previousIndex = cornerIndex - 1;
+		}
 	}
 	return previousIndex;
 }
@@ -468,11 +577,17 @@ static I32 GetRandomJunctionCornerIndex(Junction* junction)
 	Assert(junction->roadN > 0);
 	I32 maxIndex = 0;
 	if (junction->roadN == 1)
+	{
 		maxIndex = 1;
+	}
 	else if (junction->roadN >= 2)
+	{
 		maxIndex = junction->roadN - 1;
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	I32 cornerIndex = IntRandom(0, maxIndex);
 	return cornerIndex;
 }
@@ -544,11 +659,17 @@ static V2 ClosestRoadPoint(Road* road, V2 point)
 
 	F32 roadLength = RoadLength(road);
 	if (pointRoadCoord.x < 0.0f)
+	{
 		resultRoadCoord.x = 0.0f;
+	}
 	else if (pointRoadCoord.x < roadLength)
+	{
 		resultRoadCoord.x = pointRoadCoord.x;
+	}
 	else
+	{
 		resultRoadCoord.x = roadLength;
+	}
 
 	resultRoadCoord.y = 0.0f;
 
@@ -568,9 +689,13 @@ static V2 ClosestLanePoint(Road* road, I32 laneIndex, V2 point)
 {
 	V2 pointRoadCoord = ToRoadCoord(road, point);
 	if (laneIndex > 0)
+	{
 		pointRoadCoord.y = +LaneWidth * 0.5f;
+	}
 	else
+	{
 		pointRoadCoord.y = -LaneWidth * 0.5f;
+	}
 	V2 result = FromRoadCoord(road, pointRoadCoord);
 	return result;
 }
@@ -583,7 +708,9 @@ static B32 IsPointOnRoad(V2 point, Road* road)
 	if (IsBetween(roadCoord.x, 0.0f, roadLength)) 
 	{
 		if (IsBetween(roadCoord.y, -LaneWidth, +LaneWidth))
+		{
 			result = true;
+		}
 	}
 	return result;
 }
@@ -623,9 +750,13 @@ static I32 LaneIndex(Road* road, V2 point)
 	B32 turnsRight = TurnsRight(road->endPoint1, road->endPoint2, point);
 
 	if (turnsRight)
+	{
 		result = 1;
+	}
 	else
+	{
 		result = -1;
+	}
 
 	return result;
 }
@@ -635,9 +766,13 @@ static V2 LaneDirection(Road* road, I32 laneIndex)
 	V2 result = {};
 
 	if (laneIndex == 1)
+	{
 		result = PointDirection(road->endPoint1, road->endPoint2);
+	}
 	else if (laneIndex == -1)
+	{
 		result = PointDirection(road->endPoint2, road->endPoint1);
+	}
 	
 	return result;
 }
@@ -741,9 +876,13 @@ static void DrawCrossing(Canvas canvas, Road* road)
 
 		V4 drawColor = {};
 		if (drawStep)
+		{
 			drawColor = RoadStripeColor;
+		}
 		else
+		{
 			drawColor = RoadColor;
+		}
 		
 		V2 point1 = FromRoadCoord1(road, crossingSide1, newStepDistance);
 		V2 point2 = FromRoadCoord1(road, crossingSide1, stepDistance);
@@ -773,9 +912,13 @@ static void DrawTexturedCrossing(Canvas canvas, Road* road, Texture roadTexture,
 
 		Texture drawTexture = {};
 		if (drawStep)
+		{
 			drawTexture = stripeTexture;
+		}
 		else
+		{
 			drawTexture = roadTexture;
+		}
 		
 		V2 point1 = FromRoadCoord1(road, crossingSide1, newStepDistance);
 		V2 point2 = FromRoadCoord1(road, crossingSide1, stepDistance);
@@ -833,9 +976,13 @@ static I32 RoadSidewalkIndex(Road* road, V2 point)
 	I32 result = 0;
 	V2 pointRoadCoord = ToRoadCoord(road, point);
 	if (pointRoadCoord.y < -LaneWidth)
+	{
 		result = -1;
+	}
 	else if (pointRoadCoord.y > LaneWidth)
+	{
 		result = 1;
+	}
 
 	return result;
 }
@@ -881,9 +1028,13 @@ static V2 OtherRoadPoint(Junction* junction, Road* road)
 {
 	V2 point = {};
 	if (road->junction1 == junction)
+	{
 		point = road->endPoint2;
+	}
 	else if (road->junction2 == junction)
+	{
 		point = road->endPoint1;
+	}
 	return point;
 }
 
@@ -959,11 +1110,17 @@ static Line GetLineParallelToIncomingRoad(Junction* junction, Road* road, F32 si
 {
 	Line line = {};
 	if (road->junction2 == junction)
+	{
 		line = GetLineParallelToRoad(road, side);
+	}
 	else if (road->junction1 == junction)
+	{
 		line = GetLineParallelToRoad(road, -side);
+	}
 	else
+	{
 		InvalidCodePath;
+	}
 	return line;
 }
 
@@ -984,9 +1141,13 @@ static I32 GetClosestJunctionCornerIndex(Junction* junction, V2 point)
 	{
 		V2 roadCoord = ToLeaveJunctionRoadCoord(junction, 0, point);
 		if (roadCoord.y < 0.0f)
+		{
 			cornerIndex = 0;
+		}
 		else
+		{
 			cornerIndex = 1;
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
@@ -1025,7 +1186,9 @@ static TrafficLight* TrafficLightOfRoad(Junction* junction, Road* road)
 	for (I32 i = 0; i < junction->roadN; ++i) 
 	{
 		if (junction->roads[i] == road)
+		{
 			trafficLight = &junction->trafficLights[i];
+		}
 	}
 	return trafficLight;
 }
@@ -1105,9 +1268,13 @@ static Poly16 GetJunctionPolyForRoad(Junction* junction, I32 roadIndex, F32 side
 		{
 			V2 extraPoint = {};
 			if (leftSideDistance < rightSideDistance)
+			{
 				extraPoint = FromLeaveJunctionRoadCoord(junction, roadIndex, rightSideDistance, -side);
+			}
 			else
+			{
 				extraPoint = FromLeaveJunctionRoadCoord(junction, roadIndex, leftSideDistance, +side);
+			}
 			Poly16Add(&poly, extraPoint);
 		}
 
@@ -1236,11 +1403,17 @@ static void InitTrafficLights(Junction* junction)
 			F32 stopDistance = junction->stopDistances[i];
 			trafficLight->color = TrafficLightRed;
 			if (road->junction1 == junction)
+			{
 				trafficLight->position = FromRoadCoord1(road, +stopDistance, -0.5f * LaneWidth);
+			}
 			else if (road->junction2 == junction)
+			{
 				trafficLight->position = FromRoadCoord2(road, -stopDistance, +0.5f * LaneWidth);
+			}
 			else
+			{
 				InvalidCodePath;
+			}
 		}
 
 		StartTrafficLight(junction->trafficLights + 0);
@@ -1261,7 +1434,9 @@ static void UpdateTrafficLights(Junction* junction, F32 seconds)
 				{
 					I32 next = i + 1;
 					if (next >= junction->roadN)
+					{
 						next = 0;
+					}
 					TrafficLight* nextTrafficLight = &junction->trafficLights[next];
 					StartTrafficLight(nextTrafficLight);
 				}		
@@ -1275,7 +1450,9 @@ static void DrawTrafficLights(Canvas canvas, Junction* junction)
 	if (junction->roadN >= 3) 
 	{
 		for (I32 i = 0; i < junction->roadN; ++i)
+		{
 			DrawTrafficLight(canvas, junction->trafficLights + i);
+		}
 	}
 }
 
@@ -1285,7 +1462,9 @@ static void CalculateStopDistances(Junction* junction)
 	if (junction->roadN == 1) 
 	{
 		for (I32 i = 0; i < junction->roadN; ++i)
+		{
 			junction->stopDistances[i] = LaneWidth;
+		}
 	} 
 	else if (junction->roadN == 2) 
 	{
@@ -1333,11 +1512,17 @@ static void DrawJunctionStripes(Canvas canvas, Junction* junction)
 			F32 stopDistance = junction->stopDistances[i];
 			V2 roadEnterPoint = {};
 			if (road->junction1 == junction)
+			{
 				roadEnterPoint = FromRoadCoord1(road, +stopDistance, 0.0f);
+			}
 			else if (road->junction2 == junction)
+			{
 				roadEnterPoint = FromRoadCoord2(road, -stopDistance, 0.0f);
+			}
 			else
+			{
 				InvalidCodePath;
+			}
 			DrawLine(canvas, junction->position, roadEnterPoint, RoadStripeColor, RoadStripeWidth);
 		}
 	} 
@@ -1462,11 +1647,17 @@ static void DrawTexturedJunctionStripes(Canvas canvas, Junction* junction, Textu
 			F32 stopDistance = junction->stopDistances[i];
 			V2 roadEnterPoint = {};
 			if (road->junction1 == junction)
+			{
 				roadEnterPoint = FromRoadCoord1(road, +stopDistance, 0.0f);
+			}
 			else if (road->junction2 == junction)
+			{
 				roadEnterPoint = FromRoadCoord2(road, -stopDistance, 0.0f);
+			}
 			else
+			{
 				InvalidCodePath;
+			}
 
 			DrawWorldTextureLine(canvas, junction->position, roadEnterPoint, RoadStripeWidth, stripeTexture);
 		}

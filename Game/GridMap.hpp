@@ -17,8 +17,10 @@ static void GenerateGridMapJunctions(Map* map, I32 junctionRowN, I32 junctionCol
 	F32 junctionY = top;
 
 	map->junctionN = (junctionRowN * junctionColN);
-	for (I32 row = 0; row < junctionRowN; ++row) {
-		for (I32 col = 0; col < junctionColN; ++col) {
+	for (I32 row = 0; row < junctionRowN; ++row)
+	{
+		for (I32 col = 0; col < junctionColN; ++col)
+		{
 			Junction* junction = map->junctions + (row * junctionColN) + col;
 			junction->position.x = junctionX + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
 			junction->position.y = junctionY + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
@@ -54,14 +56,22 @@ static JunctionGridPosition GetNextJunctionGridPosition(JunctionGridPosition sta
 	JunctionGridPosition endPosition = startPosition;
 
 	if (direction == JunctionGridUp)
+	{
 		endPosition.row--;
+	}
 	else if (direction == JunctionGridDown)
+	{
 		endPosition.row++;
+	}
 
 	if (direction == JunctionGridLeft)
+	{
 		endPosition.col--;
+	}
 	else if (direction == JunctionGridRight)
+	{
 		endPosition.col++;
+	}
 
 	return endPosition;
 }
@@ -69,15 +79,22 @@ static JunctionGridPosition GetNextJunctionGridPosition(JunctionGridPosition sta
 static B32 AreJunctionsConnected(Junction* junction1, Junction* junction2)
 {
 	B32 areConnected = false;
-	for (I32 i = 0; i < junction1->roadN; ++i) {
+	for (I32 i = 0; i < junction1->roadN; ++i)
+	{
 		Road* road = junction1->roads[i];
 		if (road->junction1 == junction1 && road->junction2 == junction2)
+		{
 			areConnected = true;
+		}
 		else if (road->junction1 == junction2 && road->junction2 == junction1)
+		{
 			areConnected = true;
+		}
 
 		if (areConnected)
+		{
 			break;
+		}
 	}
 	return areConnected;
 }
@@ -96,25 +113,34 @@ static void GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionColN, I
 	map->roadN = roadN;
 
 	I32 createdRoadN = 0;
-	while (1) {
+	while (1)
+	{
 		I32 positionIndex = IntRandom(0, connectedJunctionN - 1);
 		JunctionGridPosition junctionPosition = connectedJunctionPositions[positionIndex];
 		JunctionGridDirection direction = GetRandomJunctionGridDirection();
-		while (1) {
+		while (1)
+		{
 			Junction* junction = map->junctions + (junctionColN * junctionPosition.row) + junctionPosition.col;
 			JunctionGridPosition nextPosition = GetNextJunctionGridPosition(junctionPosition, direction);
 			Assert(junctionPosition.row != nextPosition.row || junctionPosition.col != nextPosition.col);
 			if (nextPosition.row < 0 || nextPosition.row >= junctionRowN)
+			{
 				break;
+			}
 			if (nextPosition.col < 0 || nextPosition.col >= junctionColN)
+			{
 				break;
+			}
 
 			Junction* nextJunction = map->junctions + (junctionColN * nextPosition.row) + nextPosition.col;
 			if (AreJunctionsConnected(junction, nextJunction))
+			{
 				break;
+			}
 
 			B32 isNextJunctionConnected = (nextJunction->roadN > 0);
-			if (!isNextJunctionConnected) {
+			if (!isNextJunctionConnected)
+			{
 				connectedJunctionPositions[connectedJunctionN] = nextPosition;
 				connectedJunctionN++;
 			}
@@ -122,22 +148,33 @@ static void GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionColN, I
 			ConnectJunctions(junction, nextJunction, map->roads + createdRoadN);
 			createdRoadN++;
 			if (createdRoadN == roadN)
+			{
 				break;
+			}
 
 			junction = nextJunction;
 			junctionPosition = nextPosition;
 
-			if (isNextJunctionConnected) {
+			if (isNextJunctionConnected)
+			{
 				if (IntRandom(0, 2) == 0)
+				{
 					break;
-			} else {
+				}
+			} 
+			else 
+			{
 				if (IntRandom(0, 5) == 0)
+				{
 					break;
+				}
 			}
 		}
 
 		if (createdRoadN == roadN)
+		{
 			break;
+		}
 	}
 
 	ArenaPopTo(tmpArena, connectedJunctionPositions);
@@ -145,23 +182,32 @@ static void GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionColN, I
 
 static void ReindexJunction(Junction* oldJunction, Junction* newJunction)
 {
-	for (I32 i = 0; i < oldJunction->roadN; ++i) {
+	for (I32 i = 0; i < oldJunction->roadN; ++i)
+	{
 		Road* road = oldJunction->roads[i];
 		if (road->junction1 == oldJunction)
+		{
 			road->junction1 = newJunction;
+		}
 		else if (road->junction2 == oldJunction)
+		{
 			road->junction2 = newJunction;
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 	}
 }
 
 static void RemoveEmptyJunctions(Map* map)
 {
 	I32 newJunctionN = 0;
-	for (I32 i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		Junction* junction = map->junctions + i;
-		if (junction->roadN > 0) {
+		if (junction->roadN > 0)
+		{
 			Junction* newJunction = map->junctions + newJunctionN;
 			*newJunction = *junction;
 			ReindexJunction(junction, newJunction);
@@ -174,9 +220,11 @@ static void RemoveEmptyJunctions(Map* map)
 
 static void InitJunctions(Map* map)
 {
-	for (I32 i = 0; i < map->junctionN; ++i) {
+	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		Junction* junction = map->junctions + i;
-		if (junction->roadN > 0) {
+		if (junction->roadN > 0)
+		{
 			CalculateStopDistances(junction);
 			InitTrafficLights(junction);
 		}
@@ -185,7 +233,8 @@ static void InitJunctions(Map* map)
 
 static void GenerateCrossings(Map* map)
 {
-	for (I32 i = 0; i < map->roadN; ++i) {
+	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		Road* road = map->roads + i;
 		GenerateCrossing(road);
 	}

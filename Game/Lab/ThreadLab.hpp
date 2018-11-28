@@ -103,7 +103,9 @@ static void ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 windowH
 	labState->workList.semaphore = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
 	labState->workList.semaphoreDone = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
 	for (I32 i = 0; i < 5; ++i)
+	{
 		CreateThread(0, 0, RowPaintWorkProc, &labState->workList, 0, 0);
+	}
 }
 
 static void ThreadLabUpdate(ThreadLabState* labState)
@@ -127,7 +129,9 @@ static void ThreadLabUpdate(ThreadLabState* labState)
 	}
 
 	for (I32 row = 0; row < bitmap->height; ++row)
+	{
 		WaitForSingleObjectEx(workList->semaphoreDone, INFINITE, FALSE);
+	}
 }
 
 static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)

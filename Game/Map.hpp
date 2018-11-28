@@ -251,7 +251,9 @@ static Building* GetClosestBuilding(Map* map, V2 point, BuildingType type)
 	{
 		Building* building = &map->buildings[i];
 		if (building->type != type) 
+		{
 			continue;
+		}
 
 		V2 center = GetBuildingCenter(building);
 		F32 distanceSquare = DistanceSquare(point, center);
@@ -297,7 +299,9 @@ static Building* GetClosestCrossedBuilding(Map* map, V2 pointClose, V2 pointFar,
 	{
 		Building* building = &map->buildings[i];
 		if (building == excludedBuilding) 
+		{
 			continue;
+		}
 
 		if (IsBuildingCrossed(*building, pointClose, pointFar)) 
 		{
@@ -321,7 +325,9 @@ static Building* GetBuildingAtPoint(Map* map, V2 point)
 	for (I32 i = 0; i < map->buildingN; ++i) 
 	{
 		if (IsPointInBuilding(point, map->buildings[i])) 
+		{
 			result = &map->buildings[i];
+		}
 	}
 
 	return result;
@@ -453,14 +459,22 @@ static void DrawGroundElems(Canvas canvas, Map* map)
 	ClearScreen(canvas, GrassColor);
 
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		DrawRoadSidewalk(canvas, map->roads + i);
+	}
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawJunctionSidewalk(canvas, map->junctions + i);
+	}
 
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		DrawRoad(canvas, map->roads + i);
+	}
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawJunction(canvas, map->junctions + i);
+	}
 }
 
 static void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures)
@@ -468,55 +482,87 @@ static void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textur
 	FillScreenWithWorldTexture(canvas, textures->grassTexture);
 	
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		DrawTexturedRoadSidewalk(canvas, &map->roads[i], textures->sidewalkTexture);
+	}
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawTexturedJunctionSidewalk(canvas, &map->junctions[i], textures->sidewalkTexture);
+	}
 
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		DrawTexturedRoad(canvas, &map->roads[i], textures->roadTexture, textures->stripeTexture);
+	}
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawTexturedJunction(canvas, &map->junctions[i], textures->roadTexture, textures->stripeTexture);
+	}
 }
 
 static void DrawAllTrafficLights(Canvas canvas, Map* map)
 {
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawTrafficLights(canvas, &map->junctions[i]);
+	}
 }
 
 static B32 AreMapElemsEqual(MapElem elem1, MapElem elem2)
 {
 	if (elem1.type != elem2.type) 
+	{
 		return false;
+	}
 	else if (elem1.type == MapElemNone) 
+	{
 		return true;
+	}
 	else
+	{
 		return (elem1.address == elem2.address);
+	}
 }
 
 static void HighlightMapElem(Canvas canvas, MapElem mapElem, V4 color)
 {
 	if (mapElem.type == MapElemBuilding)
+	{
 		HighlightBuilding(canvas, *mapElem.building, color);
+	}
 	else if (mapElem.type == MapElemBuildingConnector)
+	{
 		HighlightBuildingConnector(canvas, *mapElem.building, color);
+	}
 	else if (mapElem.type == MapElemJunction)
+	{
 		HighlightJunction(canvas, mapElem.junction, color);
+	}
 	else if (mapElem.type == MapElemJunctionSidewalk) 
+	{
 		HighlightJunctionSidewalk(canvas, mapElem.junction, color);
+	}
 	else if (mapElem.type == MapElemRoad)
+	{
 		HighlightRoad(canvas, mapElem.road, color);
+	}
 	else if (mapElem.type == MapElemRoadSidewalk)
+	{
 		HighlightRoadSidewalk(canvas, mapElem.road, color);
+	}
 }
 
 static B32 IsMapTileIndexValid(Map* map, MapTileIndex tileIndex)
 {
 	B32 isValid = true;
 	if (tileIndex.row < 0 || tileIndex.row >= map->tileRowN)
+	{
 		isValid = false;
+	}
 	else if (tileIndex.col < 0 || tileIndex.col >= map->tileColN)
+	{
 		isValid = false;
+	}
 	return isValid;
 }
 
@@ -568,8 +614,9 @@ static CachedMapTile* GetFarthestCachedMapTile(Map* map, V2 point)
 			cachedTile = &map->cachedTiles[i];
 		}
 	}
-	return cachedTile;
+
 	Assert(cachedTile != 0);
+	return cachedTile;
 }
 
 static void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitmap, MapTextures* mapTextures)
@@ -645,6 +692,7 @@ static Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
 			break;
 		}
 	}
+
 	Assert(bitmap != 0);
 	return bitmap;
 }
@@ -682,10 +730,14 @@ static void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F3
 			MapTileIndex tileIndex = MapTileIndex{row, col};
 
 			if (!IsMapTileIndexValid(map, tileIndex))
+			{
 				continue;
+			}
 
 			if (!IsMapTileCached(map, tileIndex))
+			{
 				CacheMapTile(map, tileIndex, textures);
+			}
 
 			if (IsMapTileIndexValid(map, tileIndex)) 
 			{
@@ -700,7 +752,9 @@ static void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F3
 	}
 
 	for (I32 i = 0; i < map->drawTileWorkList.workN; ++i)
+	{
 		WaitForSingleObjectEx(map->drawTileWorkList.semaphoreDone, INFINITE, FALSE);
+	}
 	map->drawTileWorkList.workN = 0;
 	map->drawTileWorkList.firstWorkToDo = 0;
 }

@@ -579,14 +579,18 @@ static bool IsAutoCarBeforeARedLight(AutoCar* autoCar)
 					for (I32 i = 0; i < junction->roadN; ++i) 
 					{
 						if (junction->roads[i] == road)
+						{
 							trafficLight = &junction->trafficLights[i];
+						}
 					}
 
 					Assert(trafficLight != 0);
 					if (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow) {
 						F32 distanceLeft = Distance(autoCar->car.position, autoCar->moveEndPoint.position);
 						if (distanceLeft < autoCar->car.length * 1.5f)
+						{
 							result = true;
+						}
 					}
 				}
 			}
@@ -630,7 +634,9 @@ static void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, Pat
 					autoCar->moveNode = moveNode;
 
 					if (!moveNode)
+					{
 						continue;
+					}
 				}
 				
 				autoCar->bezierRatio = 0.0f;
@@ -702,7 +708,9 @@ static void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 	F32 maxControlTurn = 1.0f;
 	F32 turnRatio = 0.6f;
 	if (speed > maxControlSpeed)
+	{
 		turnRatio = maxControlSpeed / speed;
+	}
 
 	F32 frontWheelTarget = turnRatio * car->frontWheelAngleTarget * maxControlTurn;
 	if (car->frontWheelAngle < car->frontWheelAngleTarget) 
@@ -761,6 +769,7 @@ static void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 static CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2)
 {
 	CollisionInfo hit = {};
+
 	hit.count = hit1.count + hit2.count;
 	if (hit2.count > 0) 
 	{
@@ -772,6 +781,7 @@ static CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2)
 		hit.point = hit1.point;
 		hit.normalVector = hit1.normalVector;
 	}
+
 	return hit;
 }
 
@@ -860,7 +870,9 @@ static CollisionInfo GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* point
 	{
 		I32 j = i + 1;
 		if (j == pointN)
+		{
 			j = 0;
+		}
 
 		CollisionInfo hitLine = GetCarLineCollisionInfo(oldCar, newCar, points[i], points[j]);
 		hit = hit + hitLine;

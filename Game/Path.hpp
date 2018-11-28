@@ -178,22 +178,34 @@ static void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd,
 	}
 
 	for (I32 i = 0; i < map->junctionN; ++i) 
+	{
 		helper->isJunctionHelper[i] = 0;
+	}
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		helper->isRoadHelper[i] = 0;
+	}
 
 	if (elemStart.type == MapElemRoad)
+	{
 		AddRoadToHelper(map, elemStart.road, -1, helper);
+	}
 	else if (elemStart.type == MapElemJunction)
+	{
 		AddJunctionToHelper(map, elemStart.junction, -1, helper);
+	}
 
 	Road* roadEnd = 0;
 	if (elemEnd.type == MapElemRoad) 
+	{
 		roadEnd = elemEnd.road;
+	}
 
 	Junction* junctionEnd = 0;
 	if (elemEnd.type == MapElemJunction) 
+	{
 		junctionEnd = elemEnd.junction;
+	}
 
 	B32 foundElemEnd = false;
 	for (I32 i = 0; i < helper->nodeCount; ++i) 
@@ -234,13 +246,18 @@ static void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd,
 					break;
 				}
 			}
+
 			if (roadEndFound)
+			{
 				break;
+			}
 		}
 	}
 
 	if (!foundElemEnd)
+	{
 		ClearPathHelper(helper);
+	}
 }
 
 static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper)
@@ -266,9 +283,13 @@ static MapElem SidewalkElemToRoadElem(MapElem sidewalkElem)
 	MapElem roadElem = sidewalkElem;
 
 	if (sidewalkElem.type == MapElemRoadSidewalk)
+	{
 		roadElem.type = MapElemRoad;
+	}
 	else if (sidewalkElem.type == MapElemJunctionSidewalk)
+	{
 		roadElem.type = MapElemJunction;
+	}
 
 	return roadElem;
 }
@@ -278,9 +299,13 @@ static MapElem RoadElemToSidewalkElem(MapElem roadElem)
 	MapElem sidewalkElem = roadElem;
 
 	if (roadElem.type == MapElemRoad)
+	{
 		sidewalkElem.type = MapElemRoadSidewalk;
+	}
 	else if (roadElem.type == MapElemJunction)
+	{
 		sidewalkElem.type = MapElemJunctionSidewalk;
+	}
 
 	return sidewalkElem;
 }
@@ -373,9 +398,13 @@ static I32 GetPathAroundJunctionIndexDistance(PathAroundJunction pathAroundJunct
 	I32 endCornerIndex = pathAroundJunction.endCornerIndex;
 	I32 indexDistance = 0;
 	if (pathAroundJunction.goClockwise)
+	{
 		indexDistance = GetClockwiseJunctionCornerIndexDistance(junction, startCornerIndex, endCornerIndex);
+	}
 	else
+	{
 		indexDistance = GetCounterClockwiseJunctionCornerIndexDistance(junction, startCornerIndex, endCornerIndex);
+	}
 	return indexDistance;
 }
 
@@ -393,7 +422,9 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 	if (junction->roadN == 1) 
 	{
 		if (cornerIndex != endCornerIndex)
+		{
 			PushJunctionSidewalk(path, junction, endCornerIndex);
+		}
 	} 
 	else if (junction->roadN >= 2) 
 	{
@@ -483,11 +514,17 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I3
 				I32 rightRoadCornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
 				I32 endCornerIndex = pathAroundJunction.endCornerIndex;
 				if (endCornerIndex == leftRoadCornerIndex)
+				{
 					subIndex = LeftRoadSidewalkIndex;
+				}
 				else if (endCornerIndex == rightRoadCornerIndex)
+				{
 					subIndex = RightRoadSidewalkIndex;
+				}
 				else
+				{
 					InvalidCodePath;
+				}
 			}
 		} 
 		else if (elem.type == MapElemRoadSidewalk) 
@@ -500,11 +537,17 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I3
 				I32 sidewalkIndexWithoutCrossing = subIndex;
 				I32 sidewalkIndexWithCrossing = 0;
 				if (sidewalkIndexWithoutCrossing == LeftRoadSidewalkIndex)
+				{
 					sidewalkIndexWithCrossing = RightRoadSidewalkIndex;
+				}
 				else if (sidewalkIndexWithoutCrossing == RightRoadSidewalkIndex)
+				{
 					sidewalkIndexWithCrossing = LeftRoadSidewalkIndex;
+				}
 				else
+				{
 					InvalidCodePath;
+				}
 
 				I32 cornerIndexWithoutCrossing = GetRoadSidewalkJunctionCornerIndex(junction, road, sidewalkIndexWithoutCrossing);
 				I32 cornerIndexWithCrossing    = GetRoadSidewalkJunctionCornerIndex(junction, road, sidewalkIndexWithCrossing);
@@ -600,10 +643,14 @@ static PathNode* PushPathToPool(Path path, PathPool* pathPool)
 		pathNode->next = 0;
 
 		if (previous)
+		{
 			previous->next = pathNode;
+		}
 
 		if (!result)
+		{
 			result = pathNode;
+		}
 
 		previous = pathNode;
 	}
@@ -642,9 +689,13 @@ static PathHelper PathHelperForMap(Map* map, MemArena* arena)
 static PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* tmpArena, PathPool* pathPool)
 {
 	if (elemStart.type == MapElemRoadSidewalk || elemStart.type == MapElemJunctionSidewalk) 
+	{
 		return 0;
+	}
 	if (elemEnd.type == MapElemRoadSidewalk || elemEnd.type == MapElemJunctionSidewalk)
+	{
 		return 0;
+	}
 
 	PathHelper helper = PathHelperForMap(map, tmpArena);
 
@@ -696,10 +747,14 @@ static PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemA
 	if (!finished) 
 	{
 		for (I32 i = 0; i < map->roadN; ++i)
+		{
 			helper.isRoadHelper[i] = 0;
+		}
 
 		for (I32 i = 0; i < map->junctionN; ++i)
+		{
 			helper.isJunctionHelper[i] = 0;
+		}
 
 		MapElem roadElemStart = {};
 		if (elemStart.type == MapElemBuilding) 
@@ -758,9 +813,13 @@ static PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemA
 
 			Junction* startJunction = 0;
 			if (laneIndex == 1)
+			{
 				startJunction = startConnectRoad->junction2;
+			}
 			else if (laneIndex == -1)
+			{
 				startJunction = startConnectRoad->junction1;
+			}
 
 			if (startJunction) 
 			{
@@ -778,9 +837,13 @@ static PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemA
 				
 			Junction* endJunction = 0;
 			if (laneIndex == 1)
+			{
 				endJunction = endConnectRoad->junction1;
+			}
 			else if (laneIndex == -1)
+			{
 				endJunction = endConnectRoad->junction2;
+			}
 
 			if (endJunction) 
 			{
@@ -791,15 +854,21 @@ static PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemA
 		}
 
 		if (startConnectRoad)
+		{
 			PushRoad(&path, startConnectRoad);
+		}
 
 		PushConnectRoadElems(&path, map, roadElemStart, roadElemEnd, &helper);
 
 		if (endConnectRoad)
+		{
 			PushRoad(&path, endConnectRoad);
+		}
 
 		if (elemEnd.type == MapElemBuilding)
+		{
 			PushFromRoadElemToBuilding(&path, elemEnd.building);
+		}
 	}
 
 	PathNode* firstNode = PushPathToPool(path, pathPool);
@@ -821,10 +890,14 @@ static PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, I32 startSu
 	// TODO: create a ResetPathHelper function?
 	//       or move this to where the helper is actually used?
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		helper.isRoadHelper[i] = 0;
+	}
 
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		helper.isJunctionHelper[i] = 0;
+	}
 
 	Path path = {};
 	path.arena = arena;
@@ -832,11 +905,15 @@ static PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, I32 startSu
 
 	MapElem startSidewalkElem = startElem;
 	if (startElem.type == MapElemCrossing)
+	{
 		startSidewalkElem = GetRoadSidewalkElem(startElem.road);
+	}
 
 	MapElem endSidewalkElem = endElem;
 	if (endElem.type == MapElemCrossing)
+	{
 		endSidewalkElem = GetRoadSidewalkElem(endElem.road);
+	}
 
 	PushConnectSidewalkElems(&path, map, startSidewalkElem, startSubIndex, endSidewalkElem, endSubIndex, &helper);
 	PathNode* firstNode = PushPathToPool(path, pathPool);
@@ -861,7 +938,9 @@ static void FreePath(PathNode* firstNode, PathPool* pathPool)
 		PathNode* lastNode = firstNode;
 
 		while (lastNode && lastNode->next)
+		{
 			lastNode = lastNode->next;
+		}
 
 		lastNode->next = pathPool->firstFreeNode;
 		pathPool->firstFreeNode = firstNode;
@@ -874,30 +953,46 @@ static V2 NextPointAroundBuilding(Building* building, V2 startPoint, V2 targetPo
 	if (startPoint.x == building->left && startPoint.y < building->bottom) 
 	{
 		if (targetPoint.x == building->left && targetPoint.y > startPoint.y)
+		{
 			result = targetPoint;
+		}
 		else
+		{
 			result = MakePoint(building->left, building->bottom);
+		}
 	} 
 	else if (startPoint.y == building->bottom && startPoint.x < building->right) 
 	{
 		if (targetPoint.y == building->bottom && targetPoint.x > startPoint.x)
+		{
 			result = targetPoint;
+		}
 		else
+		{
 			result = MakePoint(building->right, building->bottom);
+		}
 	} 
 	else if (startPoint.x == building->right && startPoint.y > building->top) 
 	{
 		if (targetPoint.x == building->right && targetPoint.y < startPoint.y)
+		{
 			result = targetPoint;
+		}
 		else
+		{
 			result = MakePoint(building->right, building->top);
+		}
 	} 
 	else if (startPoint.y == building->top && startPoint.x > building->left) 
 	{
 		if (targetPoint.y == building->top && targetPoint.x < startPoint.x)
+		{
 			result = targetPoint;
+		}
 		else
+		{
 			result = MakePoint(building->left, building->top);
+		}
 	} 
 	else 
 	{
@@ -1130,11 +1225,17 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 		F32 along = roadCoord.x;
 		F32 side = 0.0f;
 		if (sidewalkIndex == LeftRoadSidewalkIndex)
+		{
 			side = -(LaneWidth + SidewalkWidth * 0.5f);
+		}
 		else if (sidewalkIndex == RightRoadSidewalkIndex)
+		{
 			side = +(LaneWidth + SidewalkWidth * 0.5f);
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 		result.position = FromRoadCoord1(road, along, side);
 	} 
 	else 
@@ -1142,11 +1243,17 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 		F32 along = road->crossingDistance;
 		F32 side = 0.0f;
 		if (sidewalkIndex == LeftRoadSidewalkIndex)
+		{
 			side = +(LaneWidth + SidewalkWidth * 0.5f);
+		}
 		else if (sidewalkIndex == RightRoadSidewalkIndex)
+		{
 			side = -(LaneWidth + SidewalkWidth * 0.5f);
+		}
 		else
+		{
 			InvalidCodePath;
+		}
 		result.position = FromRoadCoord1(road, along, side);
 	}
 	return result;
@@ -1161,27 +1268,39 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 
 	I32 pointLaneIndex = 1;
 	if (pointRoadCoord.y < 0.0f)
+	{
 		pointLaneIndex = -1;
+	}
 
 	I32 nextRoadLaneIndex = 1;
 	if (nextRoadCoord.y < 0.0f)
+	{
 		nextRoadLaneIndex = -1;
+	}
 
 	if (pointLaneIndex == nextRoadLaneIndex) 
 	{
 		F32 roadLength = RoadLength(road);
 		if (nextRoadCoord.x < roadLength * 0.5f)
+		{
 			pointRoadCoord.x = SidewalkWidth * 0.5f;
+		}
 		else
+		{
 			pointRoadCoord.x = roadLength - SidewalkWidth * 0.5f;
+		}
 	} 
 	else 
 	{
 		if ((pointRoadCoord.x >= road->crossingDistance - CrossingWidth * 0.5f) 
 			&& (pointRoadCoord.x <= road->crossingDistance + CrossingWidth * 0.5f))
+		{
 			pointRoadCoord.y = nextRoadLaneIndex * (LaneWidth + SidewalkWidth * 0.5f); 
+		}
 		else
+		{
 			pointRoadCoord.x = road->crossingDistance;
+		}
 	}
 
 	result.position = FromRoadCoord(road, pointRoadCoord);
@@ -1198,9 +1317,13 @@ static B32 EndFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 	if (Abs(roadCoord.x - crossingDistance) <= CrossingWidth * 0.5f) 
 	{
 		if (sidewalkIndex == LeftRoadSidewalkIndex && roadCoord.y < 0.0f)
+		{
 			result = true;
+		}
 		else if (sidewalkIndex == RightRoadSidewalkIndex && roadCoord.y > 0.0f)
+		{
 			result = true;
+		}
 	}
 	return result;
 }
@@ -1242,7 +1365,9 @@ static V4 NextNodePoint(PathNode* node, V4 startPoint)
 	PathNode* next = node->next;
 	MapElem nextElem = {};
 	if (next)
+	{
 		nextElem = next->elem;
+	}
 
 	switch(elem.type) 
 	{
@@ -1355,7 +1480,9 @@ static B32 IsNodeEndPoint(PathNode* node, V4 point)
 	PathNode* next = node->next;
 	MapElem nextElem = {};
 	if (next)
+	{
 		nextElem = next->elem;
+	}
 
 	switch (elem.type) 
 	{

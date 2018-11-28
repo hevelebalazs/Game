@@ -102,9 +102,15 @@ static F32 LineAngle(V2 startPoint, V2 endPoint)
 static F32 NormalizeAngle(F32 angle)
 {
 	while (angle > PI)
+	{
 		angle -= 2.0f * PI;
+	}
+
 	while (angle < -PI)
+	{
 		angle += 2.0f * PI;
+	}
+
 	return angle;
 }
 
@@ -145,9 +151,13 @@ static B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
 	Assert(IsBetween(maxAngle, -PI, +PI));
 	B32 result = false;
 	if (minAngle > maxAngle)
+	{
 		result = (angle <= maxAngle || angle >= minAngle);
+	}
 	else
+	{
 		result = (minAngle <= angle && angle <= maxAngle);
+	}
 	return result;
 }
 
@@ -162,7 +172,9 @@ static V2 NormalVector(V2 vector)
 	F32 length = VectorLength(vector);
 
 	if (length == 0.0f) 
+	{
 		return vector;
+	}
 
 	V2 result = (1.0f / length) * vector;
 	return result;
@@ -180,25 +192,43 @@ static B32 IsPointInQuad(Quad quad, V2 point)
 {
 	V2* points = quad.points;
 	if (point.x < points[0].x && point.x < points[1].x && point.x < points[2].x && point.x < points[3].x)
+	{
 		return false;
+	}
 	if (point.x > points[0].x && point.x > points[1].x && point.x > points[2].x && point.x > points[3].x)
+	{
 		return false;
+	}
 
 	if (point.y < points[0].y && point.y < points[1].y && point.y < points[2].y && point.y < points[3].y)
+	{
 		return false;
+	}
 	if (point.y > points[0].y && point.y > points[1].y && point.y > points[2].y && point.y > points[3].y)
+	{
 		return false;
+	}
 
 	if (!TurnsRight(points[0], points[1], point))
+	{
 		return false;
+	}
 	else if (!TurnsRight(points[1], points[2], point))
+	{
 		return false;
+	}
 	else if (!TurnsRight(points[2], points[3], point))
+	{
 		return false;
+	}
 	else if (!TurnsRight(points[3], points[0], point))
+	{
 		return false;
+	}
 	else
+	{
 		return true;
+	}
 }
 
 static V2 TurnVectorToRight(V2 vector)
@@ -227,12 +257,16 @@ static B32 DoLinesCross(V2 line11, V2 line12, V2 line21, V2 line22)
 	B32 right1 = TurnsRight(line11, line21, line22);
 	B32 right2 = TurnsRight(line12, line21, line22);
 	if (right1 == right2) 
+	{
 		return false;
+	}
 
 	B32 right3 = TurnsRight(line21, line11, line12);
 	B32 right4 = TurnsRight(line22, line11, line12);
 	if (right3 == right4) 
+	{
 		return false;
+	}
 
 	return true;
 }

@@ -286,10 +286,14 @@ static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 ma
 	I32 bottomPixel = UnitYtoPixel(camera, center.y + radius);
 
 	if (topPixel > bottomPixel)
+	{
 		IntSwap(&topPixel, &bottomPixel);
+	}
 
 	if (leftPixel > rightPixel)
+	{
 		IntSwap(&leftPixel, &rightPixel);
+	}
 
 	I32 pixelRadius = I32(radius * camera->unitInPixels);
 	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
@@ -312,7 +316,9 @@ static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 ma
 			angle = NormalizeAngle(angle);
 
 			if (pixelDistanceSquare <= pixelRadiusSquare && IsAngleBetween(minAngle, angle, maxAngle))
+			{
 				*pixel = colorCode;
+			}
 		}
 	}
 }
@@ -320,7 +326,9 @@ static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 ma
 static void DrawSliceOutline(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
 {
 	if (minAngle > maxAngle)
+	{
 		minAngle -= TAU;
+	}
 	Assert(minAngle <= maxAngle);
 
 	V2 startPoint = center + radius * RotationVector(minAngle);
@@ -354,10 +362,14 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 	I32 bottomPixel = UnitYtoPixel(camera, center.y + radius);
 
 	if (topPixel > bottomPixel)
+	{
 		IntSwap(&topPixel, &bottomPixel);
+	}
 
 	if (leftPixel > rightPixel)
+	{
 		IntSwap(&leftPixel, &rightPixel);
+	}
 
 	I32 pixelRadius = I32(radius * camera->unitInPixels);
 	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
@@ -375,7 +387,9 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 			U32* pixel = bitmap.memory + row * bitmap.width + col;
 			I32 pixelDistanceSquare = IntSquare(row - centerYPixel) + IntSquare(col - centerXPixel);
 			if (pixelDistanceSquare <= pixelRadiusSquare)
+			{
 				*pixel = colorCode;
+			}
 		}
 	}
 }
@@ -420,9 +434,13 @@ static void DrawEntity(Canvas canvas, Entity* entity, V4 color)
 
 	V4 healthBarBackgroundColor = {};
 	if (entity->health > 0.0f)
+	{
 		healthBarBackgroundColor = MakeColor(0.5f, 0.0f, 0.0f);
+	}
 	else
+	{
 		healthBarBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	}
 
 	V4 healthBarColor = MakeColor(1.0f, 0.0f, 0.0f);
 
@@ -458,7 +476,9 @@ static void DamageEnemiesInSlice(CombatLabState* labState, V2 center, F32 radius
 	{
 		Entity* enemy = &labState->enemies[i];
 		if (IsEntityInSlice(enemy, center, radius, minAngle, maxAngle))
+		{
 			DoDamage(enemy, damage);
+		}
 	}
 }
 
@@ -469,7 +489,9 @@ static void DamageEnemiesInCircle(CombatLabState* labState, V2 center, F32 radiu
 		Entity* enemy = &labState->enemies[i];
 		F32 enemyCircleDistance = Distance(enemy->position, center);
 		if (enemyCircleDistance < radius + enemy->radius)
+		{
 			DoDamage(enemy, damage);
+		}
 	}
 }
 
@@ -505,7 +527,9 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 	}
 
 	if (player->health > 0.0f && playerAbility->durationLeft == 0.0f)
+	{
 		player->position = player->position + seconds * player->velocity;
+	}
 
 	Canvas canvas = labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);

@@ -58,9 +58,13 @@ static void TogglePlayerCar(GameState* gameState)
 	V2 playerPosition = {};
 
 	if (gameState->isPlayerCar) 
+	{
 		playerPosition = gameState->playerCar.car.position;
+	}
 	else 
+	{
 		playerPosition = gameState->playerHuman.human.position;
+	}
 
 	MapElem playerOnElem = GetRoadElemAtPoint(&gameState->map, playerPosition);
 	if (playerOnElem.type == MapElemRoad || playerOnElem.type == MapElemJunction) 
@@ -81,7 +85,9 @@ static void TogglePlayerCar(GameState* gameState)
 static void WinResize(GameState* gameState, I32 width, I32 height)
 {
 	if (!gameState)
+	{
 		return;
+	}
 
 	ResizeCamera(&gameState->camera, width, height);
 
@@ -202,12 +208,16 @@ static void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight
 
 	map->generateTileWorkList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
 	for (I32 i = 0; i < GenerateMapTileWorkThreadN; ++i)
+	{
 		CreateThread(0, 0, GenerateMapTileWorkProc, &map->generateTileWorkList, 0, 0);
+	}
 
 	map->drawTileWorkList.semaphore = CreateSemaphore(0, 0, MaxDrawMapTileWorkListN, 0);
 	map->drawTileWorkList.semaphoreDone = CreateSemaphore(0, 0, MaxDrawMapTileWorkListN, 0);
 	for (I32 i = 0; i < DrawMapTileWorkThreadN; ++i)
+	{
 		CreateThread(0, 0, DrawMapTileWorkProc, &map->drawTileWorkList, 0, 0);
+	}
 
 	GenerateMapTextures(&gameState->mapTextures, &gameStorage->tmpArena);
 }
@@ -275,38 +285,57 @@ static void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 
 		V2 playerPosition = {};
 		if (gameState->isPlayerCar)
+		{
 			playerPosition = gameState->playerCar.car.position;
+		}
 		else
+		{
 			playerPosition = gameState->playerHuman.human.position;
+		}
 
 		if (IsPointInQuad(stopArea, playerPosition))
+		{
 				shouldBrake = true;
+		}
 
 		for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
 		{
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			if (autoHuman->dead)
+			{
 				continue;
+			}
 
 			Human* human = &autoHuman->human;
 			if (IsPointInQuad(stopArea, human->position))
+			{
 				shouldBrake = true;
+			}
 		}
 
 		for (I32 i = 0; i < gameState->autoCarCount; ++i) 
 		{
 			AutoCar* testAutoCar = &gameState->autoCars[i];
 			if (autoCar == testAutoCar)
+			{
 				continue;
+			}
+
 			Car* testCar = &testAutoCar->car;
 			if (IsPointInQuad(stopArea, testCar->position))
+			{
 				shouldBrake = true;
+			}
 		}
 
 		if (shouldBrake)
+		{
 			autoCar->acceleration = -25.0f;
+		}
 		else
+		{
 			autoCar->acceleration = +5.0f;
+		}
 		UpdateAutoCar(autoCar, seconds, &gameStorage->tmpArena, &gameState->pathPool);
 	}
 
@@ -332,7 +361,9 @@ static void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 			V2 autoHumanPoint = autoHuman->human.position;
 
 			if (IsCarOnPoint(&gameState->playerCar.car, autoHumanPoint)) 
+			{
 				KillAutoHuman(autoHuman, &gameState->pathPool);
+			}
 		}
 	} 
 	else 
@@ -357,9 +388,13 @@ static void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 		camera->center = gameState->playerHuman.human.position;
 
 		if (gameState->playerHuman.human.inBuilding)
+		{
 			camera->targetUnitInPixels = 50.0f;
+		}
 		else
+		{
 			camera->targetUnitInPixels = 50.0f;
+		}
 	}
 
 	UpdateCamera(camera, seconds);
@@ -376,9 +411,13 @@ static void GameDraw(GameStorage* gameStorage)
 
 	V2 playerPosition = {};
 	if (gameState->isPlayerCar)
+	{
 		playerPosition = gameState->playerCar.car.position;
+	}
 	else
+	{
 		playerPosition = gameState->playerHuman.human.position;
+	}
 
 	Building* inBuilding = gameState->playerHuman.human.inBuilding;
 	if (inBuilding && IsPointInBuilding(gameState->playerHuman.human.position, *inBuilding)) 
@@ -423,15 +462,21 @@ static void GameDraw(GameStorage* gameStorage)
 	}
 
 	if (gameState->isPlayerCar)
+	{
 		DrawCar(canvas, gameState->playerCar.car);
+	}
 	else
+	{
 		DrawPlayerHuman(canvas, &gameState->playerHuman);
+	}
 
 	for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
 	{
 		AutoHuman* autoHuman = gameState->autoHumans + i;
 		Human* human = &autoHuman->human;
 		if (human->isPolice)
+		{
 			DrawPoliceRadius(canvas, human, 15.0f);
+		}
 	}
 }

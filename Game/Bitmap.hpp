@@ -22,7 +22,9 @@ struct Bitmap
 static void ResizeBitmap(Bitmap* bitmap, I32 width, I32 height)
 {
 	if (bitmap->memory)
+	{
 		delete bitmap->memory;
+	}
 
 	bitmap->width = width;
 	bitmap->height = height;
@@ -175,17 +177,25 @@ static BresenhamData InitBresenham(I32 row1, I32 col1, I32 row2, I32 col2)
 
 	data.colAdd = 1;
 	if (data.col1 > data.col2)
+	{
 		data.colAdd = -1;
+	}
 
 	data.rowAdd = 1;
 	if (data.row1 > data.row2)
+	{
 		data.rowAdd = -1;
+	}
 
 	data.error1 = 0;
 	if (data.colAbs > data.rowAbs)
+	{
 		data.error1 = data.colAbs / 2;
+	}
 	else
+	{
 		data.error1 = -data.rowAbs / 2;
+	}
 
 	data.error2 = 0;
 	return data;
@@ -199,6 +209,7 @@ static void AdvanceBresenham(BresenhamData* data)
 		data->error1 -= data->rowAbs;
 		data->col1 += data->colAdd;
 	}
+
 	if (data->error2 < data->rowAbs) 
 	{
 		data->error1 += data->colAbs;
@@ -215,7 +226,9 @@ static void DrawBitmapBresenhamLine(Bitmap* bitmap, I32 row1, I32 col1, I32 row2
 		PaintBitmapPixel(bitmap, data.row1, data.col1, colorCode);
 
 		if (data.row1 == data.row2 && data.col1 == data.col2)
+		{
 			break;
+		}
 
 		AdvanceBresenham(&data);
 	}
@@ -261,8 +274,10 @@ static void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena
 			for (I32 left = col - 1; left >= 0; --left) 
 			{
 				pixel--;
-				if (*pixel != baseColorCode) 
+				if (*pixel != baseColorCode)
+				{
 					break;
+				}
 				*pixel = paintColorCode;
 				ArenaPush(tmpArena, I32, row);
 				ArenaPush(tmpArena, I32, left);
@@ -274,7 +289,9 @@ static void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena
 			{
 				pixel++;
 				if (*pixel != baseColorCode)
+				{
 					break;
+				}
 				*pixel = paintColorCode;
 				ArenaPush(tmpArena, I32, row);
 				ArenaPush(tmpArena, I32, right);
@@ -288,7 +305,9 @@ static void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena
 			{
 				pixel -= bitmap->width;
 				if (*pixel != baseColorCode)
+				{
 					break;
+				}
 				*pixel = paintColorCode;
 				ArenaPush(tmpArena, I32, top);
 				ArenaPush(tmpArena, I32, col);
@@ -300,7 +319,9 @@ static void FloodfillBitmap(Bitmap* bitmap, I32 row, I32 col, V4 color, MemArena
 			{
 				pixel += bitmap->width;
 				if (*pixel != baseColorCode)
+				{
 					break;
+				}
 				*pixel = paintColorCode;
 				ArenaPush(tmpArena, I32, bottom);
 				ArenaPush(tmpArena, I32, col);
@@ -379,9 +400,14 @@ static void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 to
 			F32 heightRatio = 1.0f - (0.5f + (heightCoordinate));
 			F32 widthRatio  = 1.0f - (0.5f + (widthCoordinate));
 			if (!IsBetween(heightRatio, 0.0f, 1.0f))
+			{
 				continue;
+			}
+
 			if (!IsBetween(widthRatio, 0.0f, 1.0f))
+			{
 				continue;
+			}
 
 			V4 fillColor = MakeColor(1.0f, 0.0f, 1.0f);
 			U32 fromColorCode = GetClosestBitmapColorCode(fromBitmap, heightRatio, widthRatio);
@@ -454,9 +480,13 @@ static void DrawBitmapPolyOutline(Bitmap* bitmap, I32 polyN, I32* polyColRow, V4
 	{
 		I32 next = 0;
 		if (i < polyN - 1)
+		{
 			next = i + 1;
+		}
 		else
+		{
 			next = 0;
+		}
 		I32 row1 = polyColRow[2 * i];
 		I32 col1 = polyColRow[2 * i + 1];
 		I32 row2 = polyColRow[2 * next];

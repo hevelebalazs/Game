@@ -192,11 +192,17 @@ static Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 			for (I32 col = 0; col <= gridN; ++col) 
 			{
 				if (row == gridN)
+				{
 					*gridValue = *(gridValues + (gridN + 1) * 0 + col);
+				}
 				else if (col == gridN)
+				{
 					*gridValue = *(gridValues + (gridN + 1) * row + 0);
+				}
 				else
+				{
 					*gridValue = RandomBetween(0.0f, opacity);
+				}
 
 				gridValue++;
 			}

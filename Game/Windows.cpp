@@ -244,7 +244,9 @@ void RunGame(HINSTANCE instance)
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) 
 		{
 			if (message.message == WM_QUIT)
+			{
 				running = false;
+			}
 
 			TranslateMessage(&message);
 			DispatchMessageA(&message);

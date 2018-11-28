@@ -183,9 +183,9 @@ static void MapLabInit(MapLabState* labState, I32 windowWidth, I32 windowHeight)
 	map->roads = ArenaPushArray(&labState->arena, Road, MaxRoadN);
 	GenerateGridMap(map, MaxJunctionRowN, MaxJunctionColN, MaxRoadN, &labState->tmpArena);
 
-	{
 	map->generateTileWorkList.semaphore = CreateSemaphore(0, 0, MaxGenerateMapTileWorkListN, 0);
 	for (I32 i = 0; i < GenerateMapTileWorkThreadN; ++i)
+	{
 		CreateThread(0, 0, GenerateMapTileWorkProc, &map->generateTileWorkList, 0, 0);
 	}
 

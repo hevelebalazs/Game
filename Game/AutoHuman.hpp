@@ -63,7 +63,9 @@ static void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, Me
 static void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
 	if (autoHuman->dead)
+	{
 		return;
+	}
 
 	Human* human = &autoHuman->human;
 
@@ -99,7 +101,9 @@ static void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, 
 						autoHuman->moveNode = moveNode;
 
 						if (!moveNode)
+						{
 							continue;
+						}
 					}
 					else
 					{
@@ -149,7 +153,9 @@ static void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 	{
 		human->healthPoints--;
 		if (human->healthPoints == 0)
+		{
 			KillAutoHuman(autoHuman, pathPool);
+		}
 	}
 }
 

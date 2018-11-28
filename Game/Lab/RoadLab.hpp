@@ -136,24 +136,37 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 
 	F32 seconds = 0.1f;
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		UpdateTrafficLights(&map->junctions[i], seconds);
+	}
 
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		DrawRoadSidewalk(canvas, &map->roads[i]);
+	}
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawJunctionSidewalk(canvas, &map->junctions[i]);
+	}
 
 	for (I32 i = 0; i < map->roadN; ++i)
+	{
 		DrawRoad(canvas, &map->roads[i]);
+	}
 
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawJunction(canvas, &map->junctions[i]);
+	}
 
 	if (labState->labMode == RoadPlacingMode) 
 	{
 		Junction* junctionAtMouse = GetJunctionAtPoint(map, mouse);
 		if (junctionAtMouse)
+		{
 			HighlightJunction(canvas, junctionAtMouse, HighlightColor);
+		}
+
 		if (labState->isPreviewOn) 
 		{
 			Road* roadPreview = &labState->roadPreview;
@@ -176,15 +189,22 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 		B32 valid = CanJunctionBePlacedAtPoint(map, mouse);
 		junctionPreview->position = mouse;
 		if (valid)
+		{
 			DrawJunctionPlaceholder(canvas, junctionPreview, ValidColor);
+		}
 		else
+		{
 			DrawJunctionPlaceholder(canvas, junctionPreview, InvalidColor);
+		}
 	} 
 	else if (labState->labMode == RoadPathBuildingMode) 
 	{
 		Junction* junctionAtMouse = GetJunctionAtPoint(&labState->map, mouse);
 		if (junctionAtMouse)
+		{
 			HighlightJunction(canvas, junctionAtMouse, HighlightColor);
+		}
+
 		if (labState->pathJunction1) 
 		{
 			HighlightJunction(canvas, labState->pathJunction1, PathColor2);
@@ -220,7 +240,9 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 			{
 				HighlightJunction(canvas, labState->pathJunction2, PathColor2);
 				if (labState->firstPathNode)
+				{
 					DrawBezierPath(canvas, labState->firstPathNode, PathColor, PathLineWidth);
+				}
 			}
 		}
 	} 
@@ -232,6 +254,7 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 			I32 cornerIndex = GetClosestJunctionCornerIndex(junctionAtMouse, mouse);
 			HighlightJunctionCorner(canvas, junctionAtMouse, cornerIndex, HighlightColor);
 		}
+
 		Junction* junction1 = labState->pathJunction1;
 		if (junction1 && junction1->roadN > 0) 
 		{
@@ -269,7 +292,9 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 	}
 
 	for (I32 i = 0; i < map->junctionN; ++i)
+	{
 		DrawTrafficLights(canvas, &map->junctions[i]);
+	}
 }
 
 static void UpdateJunction(Junction* junction)
@@ -277,7 +302,9 @@ static void UpdateJunction(Junction* junction)
 	CalculateStopDistances(junction);
 	InitTrafficLights(junction);
 	for (I32 i = 0; i < junction->roadN; ++i)
+	{
 		GenerateCrossing(junction->roads[i]);
+	}
 }
 
 static void RoadLabClick(RoadLabState* labState, V2 mouse)
@@ -337,7 +364,9 @@ static void RoadLabClick(RoadLabState* labState, V2 mouse)
 		Junction* junction = GetJunctionAtPoint(&labState->map, mouse);
 		labState->pathJunction1 = junction;
 		if (junction && junction->roadN > 0)
+		{
 			labState->pathJunctionCorner1 = GetClosestJunctionCornerIndex(junction, mouse);
+		}
 		labState->pathJunction2 = 0;
 	}
 }

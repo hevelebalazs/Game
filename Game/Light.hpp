@@ -36,7 +36,9 @@ static void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 			if (minDistance <= distance && distance <= maxDistance) 
 			{
 				if (IsAngleBetween(minAngle, angle, maxAngle))
+				{
 					ratio = 1.0f - (distance / maxDistance);
+				}
 			}
 			ratio *= baseBrightness;
 
