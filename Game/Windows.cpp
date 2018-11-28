@@ -13,6 +13,7 @@
 #include "Type.hpp"
 
 #include "Lab/CarLab.hpp"
+#include "Lab/CombatLab.hpp"
 #include "Lab/MapLab.hpp"
 #include "Lab/PhysicsLab.hpp"
 #include "Lab/RoadLab.hpp"
@@ -227,7 +228,7 @@ void RunGame(HINSTANCE instance)
 
 	WinResize(globalGameState, width, height);
 
-	timeBeginPeriod(1);
+	// timeBeginPeriod(1);
 
 	LARGE_INTEGER counterFrequency;
 	QueryPerformanceFrequency(&counterFrequency);
@@ -262,7 +263,6 @@ void RunGame(HINSTANCE instance)
 		WinUpdate(globalGameState->canvas, context, rect);
 
 		ReleaseDC(window, context);
-
 		LARGE_INTEGER nowCounter;
 		QueryPerformanceCounter(&nowCounter);
 
@@ -274,7 +274,7 @@ void RunGame(HINSTANCE instance)
 			DWORD sleepMS = (DWORD)(globalTargetFrameMS - elapsedMS);
 			Sleep(sleepMS);
 			elapsedS = globalTargetFrameS;
-		} 
+		}
 		else 
 		{
 			elapsedS = elapsedMS * 0.001f;
@@ -286,7 +286,7 @@ void RunGame(HINSTANCE instance)
 
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	RunGame(instance);
-	// PhysicsLab(instance);
+	CombatLab(instance);
+	// RunGame(instance);
 	return 0;
 }

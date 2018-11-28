@@ -8,6 +8,7 @@
 #include "Type.hpp"
 
 #define PI	3.14159265358979323f
+#define TAU (2.0f * PI)
 
 struct V2 
 {
@@ -220,6 +221,12 @@ static F32 Invert(F32 value)
 static F32 Square(F32 x)
 {
 	F32 result = x * x;
+	return result;
+}
+
+static I32 IntSquare(I32 x)
+{
+	I32 result = x * x;
 	return result;
 }
 

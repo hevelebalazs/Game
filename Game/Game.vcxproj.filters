@@ -98,6 +98,9 @@
     <ClInclude Include="Lab\PhysicsLab.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Lab\CombatLab.hpp">
+        <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Lab\Lab.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
