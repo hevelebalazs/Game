@@ -6,22 +6,39 @@
 
 #include "../Geometry.hpp"
 
+#define WhiteAbilityRadius 5.0f
+#define WhiteAbilityTotalDuration 0.5f
+#define WhiteAbilityAngleRange (0.25f * PI)
+#define WhiteAbilityDamage 30.0f
+
+#define RedAbilityRadius 5.0f
+#define RedAbilityTotalDuration 1.0f
+#define RedAbilityAngleRange (0.5f * PI)
+#define RedAbilityDamage 30.0f
+
+#define BlueAbilityRadius 3.0f
+#define BlueAbilityTotalDuration 1.0f
+#define BlueAbilityDamage 20.0f
+
 struct Ability
 {
-	F32 radius;
-	F32 totalDuration;
 	F32 durationLeft;
 
-	F32 totalCooldown;
-	F32 cooldownRemaining;
-
+	V2 position;
 	F32 angle;
-	F32 angleRange;
-	F32 damage;
+};
+
+enum EntityType
+{
+	WhiteEntity,
+	RedEntity,
+	BlueEntity
 };
 
 struct Entity
 {
+	EntityType type;
+
 	V2 position;
 	V2 velocity;
 	F32 radius;
@@ -31,14 +48,8 @@ struct Entity
 
 	Ability ability;
 
+	B32 isAttacking;
 	F32 attackFromAngle;
-};
-
-enum CombatLabMode 
-{
-	FixedDirectionMode,
-	ChangingDirectionMode,
-	TargetSelectionMode
 };
 
 #define CombatLabEnemyN 10
@@ -53,8 +64,6 @@ struct CombatLabState
 
 	B32 followMouse;
 	B32 useAbility;
-
-	CombatLabMode mode;
 };
 static CombatLabState gCombatLabState;
 
@@ -103,6 +112,7 @@ static void CombatLabReset(CombatLabState* labState)
 	labState->running = true;
 
 	Entity* player = &labState->player;
+	player->type = WhiteEntity;
 	player->position = MakePoint(0.0f, 0.0f);
 	player->radius = 1.0f;
 
@@ -112,38 +122,22 @@ static void CombatLabReset(CombatLabState* labState)
 	for (I32 i = 0; i < CombatLabEnemyN; ++i) 
 	{
 		Entity* enemy = &labState->enemies[i];
+
+		if (i < CombatLabEnemyN / 2)
+		{
+			enemy->type = RedEntity;
+		}
+		else
+		{
+			enemy->type = BlueEntity;
+		}
+
 		enemy->position.x = player->position.x + RandomBetween(-20.0f, +20.0f);
 		enemy->position.y = player->position.y + RandomBetween(-20.0f, +20.0f);
 		enemy->radius = player->radius;
 
 		enemy->maxHealth = maxHealth;
 		enemy->health = maxHealth;
-	}
-	
-	Ability* ability = &labState->player.ability;
-	ability->totalDuration = 0.5f;
-	ability->radius = 5.0f;
-	ability->angleRange = 0.25f * PI;
-	ability->damage = 30.0f;
-	ability->totalCooldown = 1.0f;
-	ability->cooldownRemaining = 0.0f;
-
-	for (I32 i = 0; i < CombatLabEnemyN; ++i)
-	{
-		Ability* ability = &labState->enemies[i].ability;
-		ability->totalDuration = 1.0f;
-		ability->radius = 5.0f;
-		ability->angleRange = 0.5f * PI;
-		if (labState->mode == TargetSelectionMode)
-		{
-			ability->damage = 5.0f;
-		}
-		else
-		{
-			ability->damage = 30.0f;
-		}
-		ability->totalCooldown = 1.5f;
-		ability->cooldownRemaining = 0.0f;
 	}
 }
 
@@ -227,19 +221,6 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			{
 				case '1':
 				{
-					labState->mode = FixedDirectionMode;
-					CombatLabReset(labState);
-					break;
-				}
-				case '2':
-				{
-					labState->mode = TargetSelectionMode;
-					CombatLabReset(labState);
-					break;
-				}
-				case '3':
-				{
-					labState->mode = ChangingDirectionMode;
 					CombatLabReset(labState);
 					break;
 				}
@@ -264,8 +245,6 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 
 static void CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowHeight)
 {
-	labState->mode = FixedDirectionMode;
-
 	CombatLabReset(labState);
 
 	CombatLabResize(labState, windowWidth, windowHeight);
@@ -411,25 +390,24 @@ static void DrawCircleOutline(Canvas canvas, V2 center, F32 radius, V4 color)
 	}
 }
 
-static void DrawEntityHover(Canvas canvas, Entity* entity, V4 color)
+static void DrawEntity(Canvas canvas, Entity* entity)
 {
-	F32 hoverWidth = 0.1f;
-	DrawCircle(canvas, entity->position, entity->radius + hoverWidth, color);
-}
-
-static void DrawCooldown(Canvas canvas, Entity* entity, V4 color)
-{
-	Ability* ability = &entity->ability;
-	if (ability->cooldownRemaining > 0.0f)
+	V4 color = {};
+	switch (entity->type)
 	{
-		Assert(ability->totalCooldown > 0.0f);
-		F32 radius = entity->radius * (ability->cooldownRemaining / ability->totalCooldown);
-		DrawCircle(canvas, entity->position, radius, color);
+		case WhiteEntity:
+			color = MakeColor(1.0f, 1.0f, 1.0f);
+			break;
+		case RedEntity:
+			color = MakeColor(1.0f, 0.0f, 0.0f);
+			break;
+		case BlueEntity:
+			color = MakeColor(0.0f, 0.0f, 1.0f);
+			break;
+		default:
+			DebugBreak ();
 	}
-}
 
-static void DrawEntity(Canvas canvas, Entity* entity, V4 color)
-{
 	DrawCircle(canvas, entity->position, entity->radius, color);
 
 	V4 healthBarBackgroundColor = {};
@@ -482,31 +460,83 @@ static void DamageEnemiesInSlice(CombatLabState* labState, V2 center, F32 radius
 	}
 }
 
+static B32 IsEntityInCircle(Entity* entity, V2 center, F32 radius)
+{
+	B32 result = false;
+	F32 distanceFromCenter = Distance(entity->position, center);
+	if (distanceFromCenter < radius + entity->radius)
+	{
+		result = true;
+	}
+	return result;
+}
+
 static void DamageEnemiesInCircle(CombatLabState* labState, V2 center, F32 radius, F32 damage)
 {
 	for (I32 i = 0; i < CombatLabEnemyN; ++i) 
 	{
 		Entity* enemy = &labState->enemies[i];
-		F32 enemyCircleDistance = Distance(enemy->position, center);
-		if (enemyCircleDistance < radius + enemy->radius)
+		if (IsEntityInCircle(enemy, center, radius))
 		{
 			DoDamage(enemy, damage);
 		}
 	}
 }
 
-static void DrawEntityAbility(Canvas canvas, Entity* entity, V4 color)
+static void DrawWhiteAbility(Canvas canvas, Entity* entity)
 {
+	Assert(entity->type == WhiteEntity);
+	V4 color = MakeColor(0.8f, 0.8f, 0.8f);
+	F32 radius = entity->radius + WhiteAbilityRadius;
+
 	Ability* ability = &entity->ability;
 	if (ability->durationLeft > 0.0f)
 	{
-		F32 durationRatio = 1.0f - ability->durationLeft / ability->totalDuration;
-		F32 fillRadius = entity->radius + (durationRatio) * (ability->radius - entity->radius);
+		Assert(IsBetween(ability->durationLeft, 0.0f, WhiteAbilityTotalDuration));
+		F32 durationRatio = 1.0f - ability->durationLeft / WhiteAbilityTotalDuration;
+		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
 
-		F32 minAngle = NormalizeAngle(ability->angle - ability->angleRange * 0.5f);
-		F32 maxAngle = NormalizeAngle(ability->angle + ability->angleRange * 0.5f);
-		DrawSliceOutline(canvas, entity->position, ability->radius, minAngle, maxAngle, color);
+		F32 minAngle = NormalizeAngle(ability->angle - WhiteAbilityAngleRange * 0.5f);
+		F32 maxAngle = NormalizeAngle(ability->angle + WhiteAbilityAngleRange * 0.5f);
+		DrawSliceOutline(canvas, entity->position, radius, minAngle, maxAngle, color);
 		DrawSlice(canvas, entity->position, fillRadius, minAngle, maxAngle, color);
+	}
+}
+
+static void DrawRedAbility(Canvas canvas, Entity* entity)
+{
+	Assert(entity->type == RedEntity);
+	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
+	F32 radius = entity->radius + RedAbilityRadius;
+
+	Ability* ability = &entity->ability;
+	if (ability->durationLeft > 0.0f)
+	{
+		Assert(IsBetween(ability->durationLeft, 0.0f, RedAbilityTotalDuration));
+		F32 durationRatio = 1.0f - ability->durationLeft / RedAbilityTotalDuration;
+		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
+
+		F32 minAngle = NormalizeAngle(ability->angle - RedAbilityAngleRange * 0.5f);
+		F32 maxAngle = NormalizeAngle(ability->angle + RedAbilityAngleRange * 0.5f);
+		DrawSliceOutline(canvas, entity->position, radius, minAngle, maxAngle, color);
+		DrawSlice(canvas, entity->position, fillRadius, minAngle, maxAngle, color);
+	}
+}
+
+static void DrawBlueAbility(Canvas canvas, Entity* entity)
+{
+	Assert(entity->type == BlueEntity);
+	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
+	
+	Ability* ability = &entity->ability;
+	if (ability->durationLeft > 0.0f)
+	{
+		Assert(IsBetween(ability->durationLeft, 0.0f, BlueAbilityTotalDuration));
+		F32 durationRatio = 1.0f - ability->durationLeft / BlueAbilityTotalDuration;
+		F32 fillRadius = durationRatio * BlueAbilityRadius;
+
+		DrawCircleOutline(canvas, ability->position, BlueAbilityRadius, color);
+		DrawCircle(canvas, ability->position, fillRadius, color);
 	}
 }
 
@@ -514,8 +544,6 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 {
 	Entity* player = &labState->player;
 	Ability* playerAbility = &player->ability;
-
-	F32 maxAttackDistance = 5.0f;
 
 	player->velocity = MakeVector(0.0f, 0.0f);
 	if (labState->followMouse)
@@ -565,77 +593,46 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		Bresenham(canvas, point1, point2, gridColor);
 	}
 
-	V4 playerAbilityColor = MakeColor(1.0f, 1.0f, 0.0f);
-	DrawEntityAbility(canvas, &labState->player, playerAbilityColor);
+	DrawWhiteAbility(canvas, &labState->player);
 
 	V4 enemyAbilityColor = MakeColor(1.0f, 0.5f, 0.0f);
 	for (I32 i = 0; i < CombatLabEnemyN; ++i)
 	{
-		DrawEntityAbility(canvas, &labState->enemies[i], enemyAbilityColor);
-	}
-
-	if (labState->mode == TargetSelectionMode)
-	{
-		for (I32 i = 0; i < CombatLabEnemyN; ++i)
+		Entity* enemy = &labState->enemies[i];
+		if (enemy->type == RedEntity)
 		{
-			Entity* enemy = &labState->enemies[i];
-			Ability* ability = &enemy->ability;
-			if (enemy->health == 0.0f)
-			{
-				ability->cooldownRemaining = 0.0f;
-			}
-			else
-			{
-				ability->cooldownRemaining = Max2(0.0f, ability->cooldownRemaining - seconds);
-			}
+			DrawRedAbility(canvas, &labState->enemies[i]);
+		}
+		else if (enemy->type == BlueEntity)
+		{
+			DrawBlueAbility(canvas, &labState->enemies[i]);
+		}
+		else
+		{
+			DebugBreak();
 		}
 	}
 
 	if (player->health > 0.0f)
 	{
-		if (labState->mode == FixedDirectionMode || labState->mode == ChangingDirectionMode)
+		if (playerAbility->durationLeft > 0.0f)
 		{
-			if (playerAbility->durationLeft > 0.0f)
-			{
-				if (labState->mode == ChangingDirectionMode)
-				{
-					playerAbility->angle = LineAngle(player->position, mousePosition);
-				}
-
-				playerAbility->durationLeft = Max2(0.0f, playerAbility->durationLeft - seconds);
-				if (playerAbility->durationLeft == 0.0f)
-				{
-					F32 minAngle = NormalizeAngle(playerAbility->angle - playerAbility->angleRange * 0.5f);
-					F32 maxAngle = NormalizeAngle(playerAbility->angle + playerAbility->angleRange * 0.5f);
-					DamageEnemiesInSlice(labState, labState->player.position, playerAbility->radius, minAngle, maxAngle, playerAbility->damage);
-				}
-			}
-	
-			Assert(playerAbility->durationLeft >= 0.0f);
+			playerAbility->durationLeft = Max2(0.0f, playerAbility->durationLeft - seconds);
 			if (playerAbility->durationLeft == 0.0f)
 			{
-				if (labState->useAbility)
-				{
-					playerAbility->angle = LineAngle(labState->player.position, mousePosition);
-					playerAbility->durationLeft = playerAbility->totalDuration;
-				}
+				F32 minAngle = NormalizeAngle(playerAbility->angle - WhiteAbilityAngleRange * 0.5f);
+				F32 maxAngle = NormalizeAngle(playerAbility->angle + WhiteAbilityAngleRange * 0.5f);
+				DamageEnemiesInSlice(labState, labState->player.position, WhiteAbilityRadius, minAngle, maxAngle, WhiteAbilityDamage);
 			}
 		}
-		else if (labState->mode == TargetSelectionMode)
+	
+		Assert(playerAbility->durationLeft >= 0.0f);
+		if (playerAbility->durationLeft == 0.0f)
 		{
-			Assert(playerAbility->cooldownRemaining >= 0.0f);
-			if (playerAbility->cooldownRemaining > 0.0f)
+			if (labState->useAbility)
 			{
-				playerAbility->cooldownRemaining = Max2(0.0f, playerAbility->cooldownRemaining - seconds);
-			}
-			else if (labState->useAbility)
-			{
-				Entity* targetEnemy = GetFirstEnemyAtPosition(labState, mousePosition);
-				if (targetEnemy && Distance(player->position, targetEnemy->position) < maxAttackDistance)
-				{
-					DoDamage(targetEnemy, playerAbility->damage);
-					playerAbility->cooldownRemaining = playerAbility->totalCooldown;
-				}
+				playerAbility->angle = LineAngle(labState->player.position, mousePosition);
+				playerAbility->durationLeft = WhiteAbilityTotalDuration;
 			}
 		}
 	}
@@ -643,8 +640,6 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 	if (player->health > 0.0f)
 	{
 		F32 enemyMoveSpeed = 5.0f;
-		F32 attackDistance = 4.0f;
-		F32 followDistance = 10.0f;
 
 		Entity* attackingEnemies[CombatLabEnemyN];
 		I32 attackingEnemyN = 0;
@@ -652,10 +647,18 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		{
 			Entity* enemy = &labState->enemies[i];
 
+			F32 followDistance = 10.0f;
+
 			if (enemy->health > 0.0f)
 			{
 				F32 distanceFromPlayer = Distance(enemy->position, player->position);
 				if (distanceFromPlayer <= followDistance)
+				{
+					enemy->isAttacking = true;
+				}
+
+
+				if (enemy->isAttacking)
 				{
 					enemy->attackFromAngle = LineAngle(player->position, enemy->position);
 					attackingEnemies[attackingEnemyN] = enemy;
@@ -709,95 +712,85 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 			Entity* enemy = attackingEnemies[i];
 			Assert(enemy->health >= 0.0f);
 
+			F32 attackDistance = 0.0f;
+			if (enemy->type == RedEntity)
+			{
+				attackDistance = 5.0f;
+			}
+			else if (enemy->type == BlueEntity)
+			{
+				attackDistance = 10.0f;
+			}
+			else
+			{
+				DebugBreak();
+			}
+
 			V2 targetPosition = player->position + attackDistance * RotationVector(enemy->attackFromAngle);
 			F32 distanceFromTarget = Distance(enemy->position, targetPosition);
 
 			Ability* ability = &enemy->ability;
-			if (labState->mode == FixedDirectionMode || labState->mode == ChangingDirectionMode)
+			if (ability->durationLeft > 0.0f)
 			{
-				if (ability->durationLeft > 0.0f)
-				{
-					if (labState->mode == ChangingDirectionMode)
-					{
-						ability->angle = LineAngle(enemy->position, player->position);
-					}
-
-					ability->durationLeft = Max2(0.0f, ability->durationLeft - seconds);
-					if (ability->durationLeft == 0.0f)
-					{
-						F32 minAngle = NormalizeAngle(ability->angle - ability->angleRange * 0.5f);
-						F32 maxAngle = NormalizeAngle(ability->angle + ability->angleRange * 0.5f);
-						if (IsEntityInSlice (player, enemy->position, ability->radius, minAngle, maxAngle))
-						{
-							DoDamage(player, ability->damage);
-						}
-					}
-				}
-	
+				ability->durationLeft = Max2(0.0f, ability->durationLeft - seconds);
 				if (ability->durationLeft == 0.0f)
 				{
-					if (distanceFromTarget > 0.1f)
+					if (enemy->type == RedEntity)
 					{
-						V2 moveDirection = PointDirection(enemy->position, targetPosition);
-						enemy->position = enemy->position + seconds * enemyMoveSpeed * moveDirection;
+						F32 minAngle = NormalizeAngle(ability->angle - RedAbilityAngleRange * 0.5f);
+						F32 maxAngle = NormalizeAngle(ability->angle + RedAbilityAngleRange * 0.5f);
+						if (IsEntityInSlice(player, enemy->position, RedAbilityRadius, minAngle, maxAngle))
+						{
+							DoDamage(player, RedAbilityDamage);
+						}
+					}
+					else if (enemy->type == BlueEntity)
+					{
+						if (IsEntityInCircle(player, ability->position, BlueAbilityRadius))
+						{
+							DoDamage(player, BlueAbilityDamage);
+						}
 					}
 					else
 					{
-						ability->angle = LineAngle(enemy->position, player->position);
-						ability->durationLeft = ability->totalDuration;
+						DebugBreak();
 					}
 				}
 			}
-			else if (labState->mode == TargetSelectionMode)
+	
+			if (ability->durationLeft == 0.0f)
 			{
-				Assert(ability->cooldownRemaining >= 0.0f);
 				if (distanceFromTarget > 0.1f)
 				{
 					V2 moveDirection = PointDirection(enemy->position, targetPosition);
 					enemy->position = enemy->position + seconds * enemyMoveSpeed * moveDirection;
 				}
-				else if (ability->cooldownRemaining == 0.0f)
+				else
 				{
-					DoDamage(player, ability->damage);
-					ability->cooldownRemaining = ability->totalCooldown;
+					if (enemy->type == RedEntity)
+					{
+						ability->angle = LineAngle(enemy->position, player->position);
+						ability->durationLeft = RedAbilityTotalDuration;
+					}
+					else if (enemy->type == BlueEntity)
+					{
+						ability->position = player->position;
+						ability->durationLeft = BlueAbilityTotalDuration;
+					}
+					else
+					{
+						DebugBreak();
+					}
 				}
 			}
 		}
 	}
 
-	V4 cooldownColor = MakeColor(0.5f, 0.5f, 0.5f);
-
-	V4 playerColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawEntity(canvas, &labState->player, playerColor);
-	if (labState->mode == TargetSelectionMode)
-	{
-		DrawCooldown(canvas, player, cooldownColor);
-	}
-
-	V4 enemyColor = MakeColor(0.5f, 0.0f, 0.0f);
-	V4 enemyHoverEnabledColor = MakeColor(1.0f, 1.0f, 1.0f);
-	V4 enemyHoverDisabledColor = MakeColor(1.0f, 0.5f, 0.0f);
-
-	if (labState->mode == TargetSelectionMode)
-	{
-		Entity* hoverEnemy = GetFirstEnemyAtPosition(labState, mousePosition);
-		if (hoverEnemy)
-		{
-			F32 distanceFromPlayer = Distance(hoverEnemy->position, player->position);
-			V4 hoverColor = (distanceFromPlayer > maxAttackDistance) ? enemyHoverDisabledColor : enemyHoverEnabledColor;
-			DrawEntityHover(canvas, hoverEnemy, hoverColor);
-		}
-	}
-
+	DrawEntity(canvas, &labState->player);
 	for (I32 i = 0; i < CombatLabEnemyN; i++)
 	{
 		Entity* enemy = &labState->enemies[i];
-		DrawEntity(canvas, enemy, enemyColor);
-
-		if (labState->mode == TargetSelectionMode)
-		{
-			DrawCooldown(canvas, enemy, cooldownColor);
-		}
+		DrawEntity(canvas, enemy);
 	}
 }
 
@@ -868,6 +861,7 @@ static void CombatLab(HINSTANCE instance)
 	}
 }
 
-// [TODO: When multiple enemies are attacking the player, they shouldn't stack upon each other!]
-// TODO: At this point separating player and enemy structures seems like a good idea!
+// TODO: Blue ability should slow the player down!
+// TODO: Green entities and abilities?
+// TODO: Rename Duration to CastTime?
 // TODO: Multiple player abilities!
