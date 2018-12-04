@@ -20,6 +20,17 @@
 #define BlueAbilityTotalDuration 1.0f
 #define BlueAbilityDamage 20.0f
 
+#define MaxLevel 5
+
+static int gExpNeededForNextLevel[] = 
+{
+	0,
+	100,
+	150,
+	250,
+	500
+};
+
 struct Ability
 {
 	F32 durationLeft;
@@ -38,6 +49,7 @@ enum EntityType
 struct Entity
 {
 	EntityType type;
+	I32 level;
 
 	V2 position;
 	V2 velocity;
@@ -64,6 +76,8 @@ struct CombatLabState
 
 	B32 followMouse;
 	B32 useAbility;
+
+	I32 expGainedThisLevel;
 };
 static CombatLabState gCombatLabState;
 
@@ -113,6 +127,8 @@ static void CombatLabReset(CombatLabState* labState)
 
 	Entity* player = &labState->player;
 	player->type = WhiteEntity;
+	player->level = 1;
+
 	player->position = MakePoint(0.0f, 0.0f);
 	player->radius = 1.0f;
 
@@ -132,6 +148,8 @@ static void CombatLabReset(CombatLabState* labState)
 			enemy->type = BlueEntity;
 		}
 
+		enemy->level = 3;
+
 		enemy->position.x = player->position.x + RandomBetween(-20.0f, +20.0f);
 		enemy->position.y = player->position.y + RandomBetween(-20.0f, +20.0f);
 		enemy->radius = player->radius;
@@ -139,6 +157,8 @@ static void CombatLabReset(CombatLabState* labState)
 		enemy->maxHealth = maxHealth;
 		enemy->health = maxHealth;
 	}
+
+	labState->expGainedThisLevel = 0;
 }
 
 static Entity* GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
@@ -438,6 +458,21 @@ static void DrawEntity(Canvas canvas, Entity* entity)
 	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
 	F32 healthBarFilledX = healthBarLeft + healthRatio * (healthBarRight - healthBarLeft);
 	DrawRect(canvas, healthBarLeft, healthBarFilledX, healthBarTop, healthBarBottom, healthBarColor);
+
+	Assert(IsIntBetween(entity->level, 1, MaxLevel));
+	V4 levelBoxColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+	F32 spaceBetweenLevelBoxes = 0.05f;
+	F32 levelBoxBarWidth = healthBarWidth;
+	F32 levelBoxSize = (levelBoxBarWidth - (MaxLevel - 1) * spaceBetweenLevelBoxes) / MaxLevel;
+	F32 levelBoxBottom = healthBarTop - 0.05f;
+	F32 levelBoxTop = levelBoxBottom - levelBoxSize;
+	for (I32 i = 1; i <= entity->level; i++)
+	{
+		F32 spaceBoxLeft = healthBarLeft + (i - 1) * (levelBoxSize + spaceBetweenLevelBoxes);
+		F32 spaceBoxRight = spaceBoxLeft + levelBoxSize;
+		DrawRect(canvas, spaceBoxLeft, spaceBoxRight, levelBoxTop, levelBoxBottom, levelBoxColor);
+	}
 }
 
 static B32 IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, F32 maxAngle)
@@ -448,6 +483,20 @@ static B32 IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, 
 	return result;
 }
 
+static void GainExp(CombatLabState* labState, I32 exp)
+{
+	I32 level = labState->player.level;
+	if (level < MaxLevel)
+	{
+		labState->expGainedThisLevel += exp;
+		if (labState->expGainedThisLevel >= gExpNeededForNextLevel[level])
+		{
+			labState->player.level++;
+			labState->expGainedThisLevel -= gExpNeededForNextLevel[level];
+		}
+	}
+}
+
 static void DamageEnemiesInSlice(CombatLabState* labState, V2 center, F32 radius, F32 minAngle, F32 maxAngle, F32 damage)
 {
 	for (I32 i = 0; i < CombatLabEnemyN; ++i)
@@ -455,7 +504,13 @@ static void DamageEnemiesInSlice(CombatLabState* labState, V2 center, F32 radius
 		Entity* enemy = &labState->enemies[i];
 		if (IsEntityInSlice(enemy, center, radius, minAngle, maxAngle))
 		{
+			B32 enemyWasAlive = (enemy->health > 0);
 			DoDamage(enemy, damage);
+			B32 enemyIsDead = (enemy->health == 0);
+			if (enemyWasAlive && enemyIsDead)
+			{
+				GainExp(labState, 20);
+			}
 		}
 	}
 }
@@ -537,6 +592,28 @@ static void DrawBlueAbility(Canvas canvas, Entity* entity)
 
 		DrawCircleOutline(canvas, ability->position, BlueAbilityRadius, color);
 		DrawCircle(canvas, ability->position, fillRadius, color);
+	}
+}
+
+static void DrawExpBar(Canvas canvas, CombatLabState* labState)
+{
+	I32 level = labState->player.level;
+	if (level < MaxLevel)
+	{
+		Bitmap* bitmap = &canvas.bitmap;
+		I32 left = 0;
+		I32 right = bitmap->width - 1;
+		I32 bottom = bitmap->height - 1;
+		I32 top = bottom - 20;
+		V4 unfilledColor = MakeColor(0.3f, 0.3f, 0.3f);
+		V4 filledColor = MakeColor(0.6f, 0.6f, 0.6f);
+		DrawBitmapRect(bitmap, left, right, top, bottom, unfilledColor);
+
+		I32 expGained = labState->expGainedThisLevel;
+		Assert(IsIntBetween(level, 1, MaxLevel - 1));
+		I32 expNeeded = gExpNeededForNextLevel[level];
+		I32 rightFilled = left + Floor(F32(right - left) * F32(expGained) / F32(expNeeded));
+		DrawBitmapRect(bitmap, left, rightFilled, top, bottom, filledColor);
 	}
 }
 
@@ -792,6 +869,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		Entity* enemy = &labState->enemies[i];
 		DrawEntity(canvas, enemy);
 	}
+
+	DrawExpBar(canvas, labState);
 }
 
 static void CombatLab(HINSTANCE instance)
@@ -861,6 +940,7 @@ static void CombatLab(HINSTANCE instance)
 	}
 }
 
+// TODO: DamageEnemiesInSlice does more than it says, needs rethinking!
 // TODO: Blue ability should slow the player down!
 // TODO: Green entities and abilities?
 // TODO: Rename Duration to CastTime?
