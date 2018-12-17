@@ -209,19 +209,21 @@ static B32 IsPointInQuad(Quad quad, V2 point)
 		return false;
 	}
 
-	if (!TurnsRight(points[0], points[1], point))
+	B32 shouldTurnRight = TurnsRight(points[0], points[1], points[2]);
+
+	if (TurnsRight(point, points[0], points[1]) != shouldTurnRight)
 	{
 		return false;
 	}
-	else if (!TurnsRight(points[1], points[2], point))
+	else if (TurnsRight(point, points[1], points[2]) != shouldTurnRight)
 	{
 		return false;
 	}
-	else if (!TurnsRight(points[2], points[3], point))
+	else if (TurnsRight(point, points[2], points[3]) != shouldTurnRight)
 	{
 		return false;
 	}
-	else if (!TurnsRight(points[3], points[0], point))
+	else if (TurnsRight(point, points[3], points[0]) != shouldTurnRight)
 	{
 		return false;
 	}

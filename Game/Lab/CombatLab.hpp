@@ -6,19 +6,48 @@
 
 #include "../Geometry.hpp"
 
-#define WhiteAbilityRadius 5.0f
-#define WhiteAbilityTotalDuration 0.5f
-#define WhiteAbilityAngleRange (0.25f * PI)
-#define WhiteAbilityDamage 30.0f
+#define CombatLabEnemyN 20
 
-#define RedAbilityRadius 5.0f
-#define RedAbilityTotalDuration 1.0f
-#define RedAbilityAngleRange (0.5f * PI)
-#define RedAbilityDamage 30.0f
+#define WhiteAbility1Radius 5.0f
+#define WhiteAbility1TotalCastTime 0.5f
+#define WhiteAbility1AngleRange (0.25f * PI)
+#define WhiteAbility1Damage 20
 
-#define BlueAbilityRadius 3.0f
-#define BlueAbilityTotalDuration 1.0f
-#define BlueAbilityDamage 20.0f
+#define WhiteAbility2TotalCastTime 0.3f
+#define WhiteAbility2MoveSpeed 30.0f
+#define WhiteAbility2ResourceCost 30
+#define WhiteAbility2Damage 10
+
+#define WhiteAbility3TotalCastTime 0.3f
+#define WhiteAbility3Radius 5.0f
+#define WhiteAbility3ResourceCost 60 
+#define WhiteAbility3Damage 50
+
+#define RedAbility1Radius 5.0f
+#define RedAbility1TotalCastTime 0.8f
+#define RedAbility1AngleRange (0.5f * PI)
+#define RedAbility1Damage 20
+
+#define RedAbility2Radius 5.0f
+#define RedAbility2TotalCastTime 0.5f
+#define RedAbility2AngleRange (0.25f * PI)
+#define RedAbility2Damage 50
+
+#define BlueAbility1Radius 3.0f
+#define BlueAbility1TotalCastTime 1.0f
+#define BlueAbility1Damage 20
+
+#define BlueAbility2Radius 3.0f
+#define BlueAbility2TotalCastTime 1.0f
+#define BlueAbility2Damage 20
+#define BlueAbility2SlowTime 3.0f
+#define BlueAbility2ResourceCost 50
+
+#define BlueAbility3Radius 1.5f
+#define BlueAbility3TotalCastTime 1.0f
+#define BlueAbility3Damage 40
+#define BlueAbility3SlowTime 6.0f
+#define BlueAbility3ResourceCost 100
 
 #define MaxLevel 5
 
@@ -31,9 +60,33 @@ static int gExpNeededForNextLevel[] =
 	500
 };
 
+static int gEnemyHPOnLevel[] =
+{
+	0,
+	100,
+	200,
+	350,
+	550,
+	800
+};
+
+enum AbilityID
+{
+	NoAbilityID,
+	WhiteAbility1ID,
+	WhiteAbility2ID,
+	WhiteAbility3ID,
+	RedAbility1ID,
+	RedAbility2ID,
+	BlueAbility1ID,
+	BlueAbility2ID,
+	BlueAbility3ID
+};
+
 struct Ability
 {
-	F32 durationLeft;
+	I32 id;
+	F32 castTimeLeft;
 
 	V2 position;
 	F32 angle;
@@ -55,16 +108,21 @@ struct Entity
 	V2 velocity;
 	F32 radius;
 
-	F32 health;
-	F32 maxHealth;
+	I32 health;
+	I32 maxHealth;
 
 	Ability ability;
 
 	B32 isAttacking;
 	F32 attackFromAngle;
+
+	B32 hasSpecialResource;
+	I32 maxSpecialResource;
+	I32 specialResource;
+
+	F32 slowTimeLeft;
 };
 
-#define CombatLabEnemyN 10
 struct CombatLabState
 {
 	Camera camera;
@@ -75,9 +133,11 @@ struct CombatLabState
 	Entity enemies[CombatLabEnemyN];
 
 	B32 followMouse;
-	B32 useAbility;
+	I32 useAbilityID;
 
 	I32 expGainedThisLevel;
+
+	F32 secondsFraction;
 };
 static CombatLabState gCombatLabState;
 
@@ -108,20 +168,33 @@ static void CombatLabBlit(Canvas canvas, HDC context, RECT rect)
 	);
 }
 
-static void DoDamage(Entity* entity, F32 damage)
+static void GainSpecialResource(Entity* entity, I32 amount)
 {
-	entity->health = Max2(entity->health - damage, 0.0f);
-	if (entity->health == 0.0f)
+	Assert(entity->hasSpecialResource);
+	Assert(amount >= 0);
+	entity->specialResource = IntMin2(entity->specialResource + amount, entity->maxSpecialResource);
+}
+
+static void DoDamage(Entity* entity, I32 damage)
+{
+	entity->health = IntMax2(entity->health - damage, 0);
+	if (entity->health == 0)
 	{
 		Ability* ability = &entity->ability;
-		ability->durationLeft = 0.0f;
+		ability->castTimeLeft = 0.0f;
 	}
+}
+
+static void InterruptAbility(Entity* entity)
+{
+	Ability* ability = &entity->ability;
+	ability->id = NoAbilityID;
+	ability->castTimeLeft = 0.0f;
 }
 
 static void CombatLabReset(CombatLabState* labState)
 {
 	InitRandom();
-	F32 maxHealth = 100.0f;
 
 	labState->running = true;
 
@@ -132,33 +205,58 @@ static void CombatLabReset(CombatLabState* labState)
 	player->position = MakePoint(0.0f, 0.0f);
 	player->radius = 1.0f;
 
-	player->maxHealth = maxHealth;
-	player->health = maxHealth;
+	player->maxHealth = 100;
+	player->health = player->maxHealth;
+
+	player->hasSpecialResource = true;
+	player->specialResource = 0;
+	player->maxSpecialResource = 100;
+
+	player->slowTimeLeft = 0.0f;
+
+	player->ability.id = WhiteAbility1ID;
 
 	for (I32 i = 0; i < CombatLabEnemyN; ++i) 
 	{
 		Entity* enemy = &labState->enemies[i];
-
 		if (i < CombatLabEnemyN / 2)
 		{
 			enemy->type = RedEntity;
+			enemy->ability.id = RedAbility1ID;
 		}
 		else
 		{
 			enemy->type = BlueEntity;
+			enemy->ability.id = BlueAbility1ID;
 		}
 
-		enemy->level = 3;
-
-		enemy->position.x = player->position.x + RandomBetween(-20.0f, +20.0f);
-		enemy->position.y = player->position.y + RandomBetween(-20.0f, +20.0f);
+		enemy->level = IntRandom(1, 3);
+		enemy->position.x = player->position.x + RandomBetween(-50.0f, +50.0f);
+		enemy->position.y = player->position.y + RandomBetween(-50.0f, +50.0f);
 		enemy->radius = player->radius;
 
-		enemy->maxHealth = maxHealth;
-		enemy->health = maxHealth;
+		enemy->maxHealth = gEnemyHPOnLevel[enemy->level];
+		enemy->health = enemy->maxHealth;
+
+		enemy->hasSpecialResource = false;
+		enemy->isAttacking = false;
+
+		if (enemy->level >= 2)
+		{
+			enemy->hasSpecialResource = true;
+			enemy->maxSpecialResource = 100;
+			enemy->specialResource = 0;
+		}
 	}
 
 	labState->expGainedThisLevel = 0;
+}
+
+static void CombatLabResetAtLevel(CombatLabState* labState, I32 level)
+{
+	Assert(IsIntBetween(level, 1, MaxLevel));
+	CombatLabReset(labState);
+	labState->player.level = level;
 }
 
 static Entity* GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
@@ -174,6 +272,47 @@ static Entity* GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
 		}
 	}
 	return result;
+}
+
+static B32 IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
+{
+	B32 result = false;
+	if (Distance(entity->position, point1) <= entity->radius)
+	{
+		result = true;
+	}
+	else if (Distance(entity->position, point2) <= entity->radius)
+	{
+		result = true;
+	}
+	else
+	{
+		Quad quad = {};
+		V2 lineDirection = PointDirection(point1, point2);
+		V2 crossDirection = TurnVectorToRight(lineDirection);
+		quad.points[0] = point1 + entity->radius * crossDirection;
+		quad.points[1] = point2 + entity->radius * crossDirection;
+		quad.points[2] = point2 - entity->radius * crossDirection;
+		quad.points[3] = point1 - entity->radius * crossDirection;
+		if (IsPointInQuad(quad, entity->position))
+		{
+			result = true;
+		}
+	}
+
+	return result;
+}
+
+static void DamageEnemiesOnLine(CombatLabState* labState, V2 point1, V2 point2, I32 damage)
+{
+	for (I32 i = 0; i < CombatLabEnemyN; ++i)
+	{
+		Entity* enemy = &labState->enemies[i];
+		if (IsEntityOnLine(enemy, point1, point2))
+		{
+			DoDamage(enemy, damage);
+		}
+	}
 }
 
 static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -215,12 +354,12 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 		}
 		case WM_LBUTTONDOWN:
 		{
-			labState->useAbility = true;
+			labState->useAbilityID = WhiteAbility1ID;
 			break;
 		}
 		case WM_LBUTTONUP:
 		{
-			labState->useAbility = false;
+			labState->useAbilityID = NoAbilityID;
 			break;
 		}
 		case WM_RBUTTONDOWN:
@@ -233,6 +372,33 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			labState->followMouse = false;
 			break;
 		}
+		case WM_MOUSEWHEEL: 
+		{
+			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
+			if (wheelDeltaParam > 0)
+				labState->camera.unitInPixels *= 1.10f;
+			else if (wheelDeltaParam < 0)
+				labState->camera.unitInPixels /= 1.10f;
+			break;
+		}
+		case WM_KEYDOWN:
+		{
+			WPARAM keyCode = wparam;
+			switch (keyCode)
+			{
+				case 'Q':
+				{
+					labState->useAbilityID = WhiteAbility2ID;
+					break;
+				}
+				case 'W':
+				{
+					labState->useAbilityID = WhiteAbility3ID;
+					break;
+				}
+			}
+			break;
+		}
 		case WM_KEYUP: 
 		{
 			WPARAM keyCode = wparam;
@@ -241,7 +407,44 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			{
 				case '1':
 				{
-					CombatLabReset(labState);
+					CombatLabResetAtLevel(labState, 1);
+					break;
+				}
+				case '2':
+				{
+					CombatLabResetAtLevel(labState, 2);
+					break;
+				}
+				case '3':
+				{
+					CombatLabResetAtLevel(labState, 3);
+					break;
+				}
+				case '4':
+				{
+					CombatLabResetAtLevel(labState, 4);
+					break;
+				}
+				case '5':
+				{
+					CombatLabResetAtLevel(labState, 5);
+					break;
+				}
+				case 'Q':
+				{
+					labState->useAbilityID = NoAbilityID;
+					break;
+				}
+				case 'W':
+				{
+					labState->useAbilityID = NoAbilityID;
+					break;
+				}
+				case 'B':
+				{
+					Entity* player = &labState->player;
+					Assert(player->hasSpecialResource);
+					player->specialResource = player->maxSpecialResource;
 					break;
 				}
 			}
@@ -454,7 +657,7 @@ static void DrawEntity(Canvas canvas, Entity* entity)
 	F32 healthBarBottom = healthBarY + 0.5f * healthBarHeight;
 	DrawRect(canvas, healthBarLeft, healthBarRight, healthBarTop, healthBarBottom, healthBarBackgroundColor);
 
-	F32 healthRatio = entity->health / entity->maxHealth;
+	F32 healthRatio = F32(entity->health) / F32(entity->maxHealth);
 	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
 	F32 healthBarFilledX = healthBarLeft + healthRatio * (healthBarRight - healthBarLeft);
 	DrawRect(canvas, healthBarLeft, healthBarFilledX, healthBarTop, healthBarBottom, healthBarColor);
@@ -473,13 +676,30 @@ static void DrawEntity(Canvas canvas, Entity* entity)
 		F32 spaceBoxRight = spaceBoxLeft + levelBoxSize;
 		DrawRect(canvas, spaceBoxLeft, spaceBoxRight, levelBoxTop, levelBoxBottom, levelBoxColor);
 	}
+
+	if (entity->hasSpecialResource)
+	{
+		V4 filledColor = MakeColor(1.0f, 1.0f, 0.0f);
+		V4 emptyColor = MakeColor(0.3f, 0.3f, 0.3f);
+		F32 barTop = healthBarBottom + 0.05f;
+		F32 barBottom = barTop - 0.2f;
+		F32 barLeft = healthBarLeft;
+		F32 barRight = healthBarRight;
+		DrawRect(canvas, barLeft, barRight, barTop, barBottom, emptyColor);
+		
+		Assert(entity->maxSpecialResource > 0);
+		Assert(IsIntBetween(entity->specialResource, 0, entity->maxSpecialResource));
+		F32 filledRatio = F32(entity->specialResource) / F32(entity->maxSpecialResource);
+		F32 barFilledX = barLeft + (barRight - barLeft) * filledRatio;
+		DrawRect(canvas, barLeft, barFilledX, barTop, barBottom, filledColor);
+	}
 }
 
 static B32 IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, F32 maxAngle)
 {
 	F32 distance = Distance(entity->position, center);
 	F32 angle = LineAngle(center, entity->position);
-	B32 result = (distance < radius && IsAngleBetween(minAngle, angle, maxAngle));
+	B32 result = (distance < radius + entity->radius && IsAngleBetween(minAngle, angle, maxAngle));
 	return result;
 }
 
@@ -497,24 +717,6 @@ static void GainExp(CombatLabState* labState, I32 exp)
 	}
 }
 
-static void DamageEnemiesInSlice(CombatLabState* labState, V2 center, F32 radius, F32 minAngle, F32 maxAngle, F32 damage)
-{
-	for (I32 i = 0; i < CombatLabEnemyN; ++i)
-	{
-		Entity* enemy = &labState->enemies[i];
-		if (IsEntityInSlice(enemy, center, radius, minAngle, maxAngle))
-		{
-			B32 enemyWasAlive = (enemy->health > 0);
-			DoDamage(enemy, damage);
-			B32 enemyIsDead = (enemy->health == 0);
-			if (enemyWasAlive && enemyIsDead)
-			{
-				GainExp(labState, 20);
-			}
-		}
-	}
-}
-
 static B32 IsEntityInCircle(Entity* entity, V2 center, F32 radius)
 {
 	B32 result = false;
@@ -526,72 +728,176 @@ static B32 IsEntityInCircle(Entity* entity, V2 center, F32 radius)
 	return result;
 }
 
-static void DamageEnemiesInCircle(CombatLabState* labState, V2 center, F32 radius, F32 damage)
+static void DrawWhiteAbility1(Canvas canvas, Entity* entity, Ability* ability)
 {
-	for (I32 i = 0; i < CombatLabEnemyN; ++i) 
-	{
-		Entity* enemy = &labState->enemies[i];
-		if (IsEntityInCircle(enemy, center, radius))
-		{
-			DoDamage(enemy, damage);
-		}
-	}
-}
-
-static void DrawWhiteAbility(Canvas canvas, Entity* entity)
-{
-	Assert(entity->type == WhiteEntity);
+	Assert(ability == &entity->ability)
+	Assert(ability->id == WhiteAbility1ID);
 	V4 color = MakeColor(0.8f, 0.8f, 0.8f);
-	F32 radius = entity->radius + WhiteAbilityRadius;
+	F32 radius = entity->radius + WhiteAbility1Radius;
 
-	Ability* ability = &entity->ability;
-	if (ability->durationLeft > 0.0f)
+	if (ability->castTimeLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->durationLeft, 0.0f, WhiteAbilityTotalDuration));
-		F32 durationRatio = 1.0f - ability->durationLeft / WhiteAbilityTotalDuration;
+		Assert(IsBetween(ability->castTimeLeft, 0.0f, WhiteAbility1TotalCastTime));
+		F32 durationRatio = 1.0f - ability->castTimeLeft / WhiteAbility1TotalCastTime;
 		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
 
-		F32 minAngle = NormalizeAngle(ability->angle - WhiteAbilityAngleRange * 0.5f);
-		F32 maxAngle = NormalizeAngle(ability->angle + WhiteAbilityAngleRange * 0.5f);
+		F32 minAngle = NormalizeAngle(ability->angle - WhiteAbility1AngleRange * 0.5f);
+		F32 maxAngle = NormalizeAngle(ability->angle + WhiteAbility1AngleRange * 0.5f);
 		DrawSliceOutline(canvas, entity->position, radius, minAngle, maxAngle, color);
 		DrawSlice(canvas, entity->position, fillRadius, minAngle, maxAngle, color);
 	}
 }
 
-static void DrawRedAbility(Canvas canvas, Entity* entity)
+static void DrawWhiteAbility3(Canvas canvas, Entity* entity, Ability* ability)
 {
-	Assert(entity->type == RedEntity);
+	Assert(ability == &entity->ability);
+	Assert(ability->id == WhiteAbility3ID);
+	V4 color = MakeColor(0.8f, 0.8f, 0.8f);
+	F32 radius = entity->radius + WhiteAbility3Radius;
+
+	if (ability->castTimeLeft > 0.0f)
+	{
+		Assert(IsBetween(ability->castTimeLeft, 0.0f, WhiteAbility3TotalCastTime));
+		F32 durationRatio = 1.0f - ability->castTimeLeft / WhiteAbility3TotalCastTime;
+		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
+		DrawCircleOutline(canvas, entity->position, radius, color);
+		DrawCircle(canvas, entity->position, fillRadius, color);
+	}
+}
+
+static void DrawRedAbility1(Canvas canvas, Entity* entity, Ability* ability)
+{
+	Assert(ability == &entity->ability);
+	Assert(ability->id == RedAbility1ID);
 	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
-	F32 radius = entity->radius + RedAbilityRadius;
+	F32 radius = entity->radius + RedAbility1Radius;
 
-	Ability* ability = &entity->ability;
-	if (ability->durationLeft > 0.0f)
+	if (ability->castTimeLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->durationLeft, 0.0f, RedAbilityTotalDuration));
-		F32 durationRatio = 1.0f - ability->durationLeft / RedAbilityTotalDuration;
+		Assert(IsBetween(ability->castTimeLeft, 0.0f, RedAbility1TotalCastTime));
+		F32 durationRatio = 1.0f - ability->castTimeLeft / RedAbility1TotalCastTime;
 		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
 
-		F32 minAngle = NormalizeAngle(ability->angle - RedAbilityAngleRange * 0.5f);
-		F32 maxAngle = NormalizeAngle(ability->angle + RedAbilityAngleRange * 0.5f);
+		F32 minAngle = NormalizeAngle(ability->angle - RedAbility1AngleRange * 0.5f);
+		F32 maxAngle = NormalizeAngle(ability->angle + RedAbility1AngleRange * 0.5f);
 		DrawSliceOutline(canvas, entity->position, radius, minAngle, maxAngle, color);
 		DrawSlice(canvas, entity->position, fillRadius, minAngle, maxAngle, color);
 	}
 }
 
-static void DrawBlueAbility(Canvas canvas, Entity* entity)
+static void DrawRedAbility3(Canvas canvas, Entity* entity, Ability* ability)
 {
-	Assert(entity->type == BlueEntity);
-	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
-	
-	Ability* ability = &entity->ability;
-	if (ability->durationLeft > 0.0f)
-	{
-		Assert(IsBetween(ability->durationLeft, 0.0f, BlueAbilityTotalDuration));
-		F32 durationRatio = 1.0f - ability->durationLeft / BlueAbilityTotalDuration;
-		F32 fillRadius = durationRatio * BlueAbilityRadius;
+	Assert(ability == &entity->ability);
+	Assert(ability->id == RedAbility2ID);
 
-		DrawCircleOutline(canvas, ability->position, BlueAbilityRadius, color);
+	Assert(entity->level >= 2);
+	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
+	F32 radius = entity->radius + RedAbility2Radius;
+
+	if (ability->castTimeLeft > 0.0f)
+	{
+		Assert(IsBetween(ability->castTimeLeft, 0.0f, RedAbility2TotalCastTime));
+		F32 durationRatio = 1.0f - ability->castTimeLeft / RedAbility2TotalCastTime;
+		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
+
+		F32 minAngle = NormalizeAngle(ability->angle - RedAbility2AngleRange * 0.5f);
+		F32 maxAngle = NormalizeAngle(ability->angle + RedAbility2AngleRange * 0.5f);
+		DrawSliceOutline(canvas, entity->position, radius, minAngle, maxAngle, color);
+		DrawSlice(canvas, entity->position, fillRadius, minAngle, maxAngle, color);
+	}
+}
+
+static void DrawBlueAbility1(Canvas canvas, Entity* entity, Ability* ability)
+{
+	Assert(ability == &entity->ability)
+	Assert(ability->id == BlueAbility1ID);
+
+	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
+	if (ability->castTimeLeft > 0.0f)
+	{
+		Assert(IsBetween(ability->castTimeLeft, 0.0f, BlueAbility1TotalCastTime));
+		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility1TotalCastTime;
+		F32 fillRadius = durationRatio * BlueAbility1Radius;
+
+		DrawCircleOutline(canvas, ability->position, BlueAbility1Radius, color);
 		DrawCircle(canvas, ability->position, fillRadius, color);
+	}
+}
+
+static void DrawBlueAbility2(Canvas canvas, Entity* entity, Ability* ability)
+{
+	Assert(ability == &entity->ability);
+	Assert(ability->id == BlueAbility2ID);
+
+	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
+	if (ability->castTimeLeft > 0.0f)
+	{
+		Assert(IsBetween(ability->castTimeLeft, 0.0f, BlueAbility2TotalCastTime));
+		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility2TotalCastTime;
+		F32 fillRadius = entity->radius + durationRatio * BlueAbility2Radius;
+		
+		DrawCircleOutline(canvas, entity->position, entity->radius + BlueAbility2Radius, color);
+		DrawCircle(canvas, entity->position, fillRadius, color);
+	}
+}
+
+static void DrawBlueAbility3(Canvas canvas, Entity* entity, Ability* ability)
+{
+	Assert(ability == &entity->ability);
+	Assert(ability->id == BlueAbility3ID);
+
+	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
+	if (ability->castTimeLeft > 0.0f)
+	{
+		Assert(IsBetween(ability->castTimeLeft, 0.0f, BlueAbility3TotalCastTime));
+		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility3TotalCastTime;
+		F32 fillRadius = durationRatio * BlueAbility3Radius;
+		
+		DrawCircleOutline(canvas, ability->position, BlueAbility3Radius, color);
+		DrawCircle(canvas, ability->position, fillRadius, color);
+	}
+}
+
+static void DrawAbility(Canvas canvas, Entity* entity, Ability* ability)
+{
+	Assert(ability == &entity->ability);
+	if (ability->id == WhiteAbility1ID)
+	{
+		DrawWhiteAbility1(canvas, entity, ability);
+	}
+	else if (ability->id == WhiteAbility2ID)
+	{
+	}
+	else if (ability->id == WhiteAbility3ID)
+	{
+		DrawWhiteAbility3(canvas, entity, ability);
+	}
+	else if (ability->id == BlueAbility1ID)
+	{
+		DrawBlueAbility1(canvas, entity, ability);
+	}
+	else if (ability->id == BlueAbility2ID)
+	{
+		DrawBlueAbility2(canvas, entity, ability);
+	}
+	else if (ability->id == BlueAbility3ID)
+	{
+		DrawBlueAbility3(canvas, entity, ability);
+	}
+	else if (ability->id == RedAbility1ID)
+	{
+		DrawRedAbility1(canvas, entity, ability);
+	}
+	else if (ability->id == RedAbility2ID)
+	{
+		DrawRedAbility3(canvas, entity, ability);
+	}
+	else if (ability->id == NoAbilityID)
+	{
+	}
+	else
+	{
+		DebugBreak();
 	}
 }
 
@@ -617,8 +923,22 @@ static void DrawExpBar(Canvas canvas, CombatLabState* labState)
 	}
 }
 
+static F32 GetEntityDistance(Entity* entity1, Entity* entity2)
+{
+	F32 distance = Distance(entity1->position, entity2->position) - entity1->radius - entity2->radius;
+	return distance;
+}
+
 static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seconds)
 {
+	I32 secondsPassed = 0;
+	labState->secondsFraction += seconds;
+	while (labState->secondsFraction > 1.0f)
+	{
+		secondsPassed++;
+		labState->secondsFraction -= 1.0f;
+	}
+
 	Entity* player = &labState->player;
 	Ability* playerAbility = &player->ability;
 
@@ -626,12 +946,19 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 	if (labState->followMouse)
 	{
 		F32 playerMoveSpeed = 10.0f;
+		if (player->slowTimeLeft > 0.0f)
+		{
+			playerMoveSpeed *= 0.5f;
+			player->slowTimeLeft = Max2(0.0f, player->slowTimeLeft - seconds);
+		}
+		Assert(player->slowTimeLeft >= 0.0f);
+
 		V2 targetPosition = mousePosition;
 		V2 moveDirection = PointDirection(player->position, targetPosition);
 		player->velocity = playerMoveSpeed * moveDirection;
 	}
 
-	if (player->health > 0.0f && playerAbility->durationLeft == 0.0f)
+	if (player->health > 0.0f && playerAbility->castTimeLeft == 0.0f)
 	{
 		player->position = player->position + seconds * player->velocity;
 	}
@@ -670,55 +997,142 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		Bresenham(canvas, point1, point2, gridColor);
 	}
 
-	DrawWhiteAbility(canvas, &labState->player);
+	DrawAbility(canvas, player, &player->ability);
 
 	V4 enemyAbilityColor = MakeColor(1.0f, 0.5f, 0.0f);
 	for (I32 i = 0; i < CombatLabEnemyN; ++i)
 	{
 		Entity* enemy = &labState->enemies[i];
-		if (enemy->type == RedEntity)
-		{
-			DrawRedAbility(canvas, &labState->enemies[i]);
-		}
-		else if (enemy->type == BlueEntity)
-		{
-			DrawBlueAbility(canvas, &labState->enemies[i]);
-		}
-		else
-		{
-			DebugBreak();
-		}
+		DrawAbility(canvas, enemy, &enemy->ability);
 	}
 
-	if (player->health > 0.0f)
+	if (player->health > 0)
 	{
-		if (playerAbility->durationLeft > 0.0f)
+		if (playerAbility->castTimeLeft > 0.0f)
 		{
-			playerAbility->durationLeft = Max2(0.0f, playerAbility->durationLeft - seconds);
-			if (playerAbility->durationLeft == 0.0f)
+			playerAbility->castTimeLeft = Max2(0.0f, playerAbility->castTimeLeft - seconds);
+			if (playerAbility->id == WhiteAbility1ID)
 			{
-				F32 minAngle = NormalizeAngle(playerAbility->angle - WhiteAbilityAngleRange * 0.5f);
-				F32 maxAngle = NormalizeAngle(playerAbility->angle + WhiteAbilityAngleRange * 0.5f);
-				DamageEnemiesInSlice(labState, labState->player.position, WhiteAbilityRadius, minAngle, maxAngle, WhiteAbilityDamage);
+				if (playerAbility->castTimeLeft == 0.0f)
+				{
+					F32 minAngle = NormalizeAngle(playerAbility->angle - WhiteAbility1AngleRange * 0.5f);
+					F32 maxAngle = NormalizeAngle(playerAbility->angle + WhiteAbility1AngleRange * 0.5f);
+
+					F32 hitAnyEnemy = false;
+					for (I32 i = 0; i < CombatLabEnemyN; ++i)
+					{
+						Entity* enemy = &labState->enemies[i];
+						if (IsEntityInSlice(enemy, player->position, WhiteAbility1Radius, minAngle, maxAngle))
+						{
+							B32 enemyWasAlive = (enemy->health > 0);
+							DoDamage(enemy, 30);
+							B32 enemyIsDead = (enemy->health == 0);
+
+							if (enemyWasAlive)
+							{
+								hitAnyEnemy = true;
+							}
+
+							if (enemyWasAlive && enemyIsDead)
+							{
+								GainExp(labState, 20);
+							}
+						}
+					}
+
+					if (hitAnyEnemy)
+					{
+						GainSpecialResource(player, 20);
+					}
+				}
+			}
+			else if (playerAbility->id == WhiteAbility2ID)
+			{
+				V2 moveDirection = RotationVector(playerAbility->angle);
+				player->position = player->position + seconds * WhiteAbility2MoveSpeed * moveDirection;
+				if (playerAbility->castTimeLeft == 0.0f)
+				{
+					V2 oldPosition = player->position - WhiteAbility2TotalCastTime * WhiteAbility2MoveSpeed * moveDirection;
+					DamageEnemiesOnLine(labState, oldPosition, player->position, WhiteAbility2Damage);
+				}
+			}
+			else if (playerAbility->id == WhiteAbility3ID)
+			{
+				if (playerAbility->castTimeLeft == 0.0f)
+				{
+					for (I32 i = 0; i < CombatLabEnemyN; ++i)
+					{
+						Entity* enemy = &labState->enemies[i];
+						if (enemy->health == 0)
+						{
+							continue;
+						}
+
+						F32 playerEnemyDistance = GetEntityDistance(player, enemy);
+						if (playerEnemyDistance < WhiteAbility3Radius)
+						{
+							V2 direction = PointDirection(player->position, enemy->position);
+							F32 distance = player->radius + enemy->radius + WhiteAbility3Radius;
+							enemy->position = player->position + distance * direction;
+							InterruptAbility(enemy);
+							DoDamage(enemy, WhiteAbility3Damage);
+						}
+					}
+				}
+			}
+			else
+			{
+				DebugBreak();
 			}
 		}
 	
-		Assert(playerAbility->durationLeft >= 0.0f);
-		if (playerAbility->durationLeft == 0.0f)
+		Assert(playerAbility->castTimeLeft >= 0.0f);
+		if (playerAbility->castTimeLeft == 0.0f)
 		{
-			if (labState->useAbility)
+			if (labState->useAbilityID == WhiteAbility1ID)
 			{
+				playerAbility->id = WhiteAbility1ID;
 				playerAbility->angle = LineAngle(labState->player.position, mousePosition);
-				playerAbility->durationLeft = WhiteAbilityTotalDuration;
+				playerAbility->castTimeLeft = WhiteAbility1TotalCastTime;
+			}
+			else if (labState->useAbilityID == WhiteAbility2ID)
+			{
+				if (player->level >= 2)
+				{
+					Assert(player->hasSpecialResource);
+					if (player->specialResource >= WhiteAbility2ResourceCost)
+					{
+						player->specialResource -= WhiteAbility2ResourceCost;
+						playerAbility->id = WhiteAbility2ID;
+						playerAbility->angle = LineAngle(labState->player.position, mousePosition);
+						playerAbility->castTimeLeft = WhiteAbility2TotalCastTime;
+					}
+				}
+			}
+			else if (labState->useAbilityID == WhiteAbility3ID)
+			{
+				if (player->level >= 3)
+				{
+					Assert(player->hasSpecialResource);
+					if (player->specialResource >= WhiteAbility3ResourceCost)
+					{
+						player->specialResource -= WhiteAbility3ResourceCost;
+						playerAbility->id = WhiteAbility3ID;
+						playerAbility->castTimeLeft = WhiteAbility3TotalCastTime;
+					}
+				}
+			}
+			else
+			{
+				Assert(labState->useAbilityID == NoAbilityID);
 			}
 		}
 	}
 
-	if (player->health > 0.0f)
+	if (player->health > 0)
 	{
-		F32 enemyMoveSpeed = 5.0f;
-
 		Entity* attackingEnemies[CombatLabEnemyN];
+
 		I32 attackingEnemyN = 0;
 		for (I32 i = 0; i < CombatLabEnemyN; ++i) 
 		{
@@ -726,14 +1140,13 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 
 			F32 followDistance = 10.0f;
 
-			if (enemy->health > 0.0f)
+			if (enemy->health > 0)
 			{
-				F32 distanceFromPlayer = Distance(enemy->position, player->position);
+				F32 distanceFromPlayer = GetEntityDistance(enemy, player);
 				if (distanceFromPlayer <= followDistance)
 				{
 					enemy->isAttacking = true;
 				}
-
 
 				if (enemy->isAttacking)
 				{
@@ -744,7 +1157,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 				else
 				{
 					Ability* ability = &enemy->ability;
-					ability->durationLeft = 0.0f;
+					ability->castTimeLeft = 0.0f;
 				}
 			}
 		}
@@ -789,10 +1202,46 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 			Entity* enemy = attackingEnemies[i];
 			Assert(enemy->health >= 0.0f);
 
+			if (enemy->type == RedEntity && enemy->level >= 2)
+			{
+				GainSpecialResource(enemy, 10 * secondsPassed);
+			}
+
+			if (enemy->type == BlueEntity)
+			{
+				if (enemy->level >= 2)
+				{
+					GainSpecialResource(enemy, 10 * secondsPassed);
+				}
+
+				if (enemy->level >= 3)
+				{
+					Assert(enemy->hasSpecialResource);
+					if (enemy->specialResource >= 50)
+					{
+						F32 distanceFromPlayer = GetEntityDistance(enemy, player);
+						if (distanceFromPlayer <= 1.0f && player->slowTimeLeft < 1.0f)
+						{
+							player->slowTimeLeft = 1.0f;
+						}
+					}
+				}
+			}
+
+			F32 enemyMoveSpeed = 5.0f;
 			F32 attackDistance = 0.0f;
 			if (enemy->type == RedEntity)
 			{
-				attackDistance = 5.0f;
+				enemyMoveSpeed = 7.5f;
+				attackDistance = 4.0f;
+				if (enemy->level >= 3)
+				{
+					Assert(enemy->hasSpecialResource);
+					if (enemy->specialResource >= 50)
+					{
+						enemyMoveSpeed *= 2.0f;
+					}
+				}
 			}
 			else if (enemy->type == BlueEntity)
 			{
@@ -807,25 +1256,66 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 			F32 distanceFromTarget = Distance(enemy->position, targetPosition);
 
 			Ability* ability = &enemy->ability;
-			if (ability->durationLeft > 0.0f)
+			if (ability->castTimeLeft > 0.0f)
 			{
-				ability->durationLeft = Max2(0.0f, ability->durationLeft - seconds);
-				if (ability->durationLeft == 0.0f)
+				ability->castTimeLeft = Max2(0.0f, ability->castTimeLeft - seconds);
+
+				if (ability->id == RedAbility2ID)
 				{
-					if (enemy->type == RedEntity)
+					Assert(enemy->level >= 2);
+					ability->angle = LineAngle(enemy->position, player->position);
+				}
+				else if (ability->id == BlueAbility3ID)
+				{
+					Assert(enemy->level >= 3);
+					ability->position = player->position;
+				}
+
+				if (ability->castTimeLeft == 0.0f)
+				{
+					if (ability->id == RedAbility1ID)
 					{
-						F32 minAngle = NormalizeAngle(ability->angle - RedAbilityAngleRange * 0.5f);
-						F32 maxAngle = NormalizeAngle(ability->angle + RedAbilityAngleRange * 0.5f);
-						if (IsEntityInSlice(player, enemy->position, RedAbilityRadius, minAngle, maxAngle))
+						F32 minAngle = NormalizeAngle(ability->angle - RedAbility1AngleRange * 0.5f);
+						F32 maxAngle = NormalizeAngle(ability->angle + RedAbility1AngleRange * 0.5f);
+						if (IsEntityInSlice(player, enemy->position, RedAbility1Radius, minAngle, maxAngle))
 						{
-							DoDamage(player, RedAbilityDamage);
+							DoDamage(player, RedAbility1Damage);
 						}
 					}
-					else if (enemy->type == BlueEntity)
+					else if (ability->id == RedAbility2ID)
 					{
-						if (IsEntityInCircle(player, ability->position, BlueAbilityRadius))
+						F32 minAngle = NormalizeAngle(ability->angle - RedAbility2AngleRange * 0.5f);
+						F32 maxAngle = NormalizeAngle(ability->angle + RedAbility2AngleRange * 0.5f);
+						if (IsEntityInSlice(player, enemy->position, RedAbility2Radius, minAngle, maxAngle))
 						{
-							DoDamage(player, BlueAbilityDamage);
+							DoDamage(player, RedAbility2Damage);
+						}
+					}
+					else if (ability->id == BlueAbility1ID)
+					{
+						Assert(enemy->type == BlueEntity);
+						if (IsEntityInCircle(player, ability->position, BlueAbility1Radius))
+						{
+							DoDamage(player, BlueAbility1Damage);
+						}
+					}
+					else if (ability->id == BlueAbility2ID)
+					{
+						Assert(enemy->type == BlueEntity);
+						F32 distanceFromPlayer = GetEntityDistance(enemy, player);
+						if (distanceFromPlayer <= BlueAbility2Radius)
+						{
+							DoDamage(player, BlueAbility2Damage);
+							player->slowTimeLeft += BlueAbility2SlowTime;
+						}
+					}
+					else if (ability->id == BlueAbility3ID)
+					{
+						Assert(enemy->type == BlueEntity);
+						if (IsEntityInCircle(player, ability->position, BlueAbility3Radius))
+						{
+							DoDamage(player, BlueAbility3Damage);
+							player->slowTimeLeft += BlueAbility3SlowTime;
 						}
 					}
 					else
@@ -834,31 +1324,100 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 					}
 				}
 			}
-	
-			if (ability->durationLeft == 0.0f)
+
+			B32 canMove = false;
+			if (ability->castTimeLeft == 0.0f)
 			{
-				if (distanceFromTarget > 0.1f)
+				canMove = true;
+			}
+			else if (ability->id == RedAbility2ID && enemy->level >= 3)
+			{
+				canMove = true;
+			}
+			else
+			{
+				canMove = false;
+			}
+
+			if (canMove)
+			{
+				V2 moveDirection = PointDirection(enemy->position, targetPosition);
+				enemy->position = enemy->position + seconds * enemyMoveSpeed * moveDirection;
+			}
+	
+			if (ability->castTimeLeft == 0.0f)
+			{
+				if (enemy->type == BlueEntity && enemy->level == 2)
 				{
-					V2 moveDirection = PointDirection(enemy->position, targetPosition);
-					enemy->position = enemy->position + seconds * enemyMoveSpeed * moveDirection;
+					F32 distanceFromPlayer = GetEntityDistance(enemy, player);
+					Assert(enemy->hasSpecialResource);
+					if (distanceFromPlayer <= BlueAbility2Radius && enemy->specialResource >= BlueAbility2ResourceCost)
+					{
+						ability->id = BlueAbility2ID;
+						ability->castTimeLeft = BlueAbility2TotalCastTime;
+						enemy->specialResource -= BlueAbility2ResourceCost;
+					}
 				}
-				else
+				else if (enemy->type == BlueEntity && enemy->level == 3)
+				{	
+					Assert(enemy->hasSpecialResource);
+					if (enemy->specialResource >= BlueAbility3ResourceCost)
+					{
+						ability->id = BlueAbility3ID;
+						ability->position = player->position;
+						ability->castTimeLeft = BlueAbility3TotalCastTime;
+						enemy->specialResource -= BlueAbility3ResourceCost;
+					}
+				}
+
+				if (ability->castTimeLeft == 0.0f && distanceFromTarget < 0.1f)
 				{
 					if (enemy->type == RedEntity)
 					{
-						ability->angle = LineAngle(enemy->position, player->position);
-						ability->durationLeft = RedAbilityTotalDuration;
+						bool useRedAbility = true;
+						if (enemy->level >= 2)
+						{
+							Assert(enemy->hasSpecialResource);
+							if (enemy->specialResource >= 100)
+							{
+								ability->id = RedAbility2ID;
+								ability->angle = LineAngle(enemy->position, player->position);
+								ability->castTimeLeft = RedAbility2TotalCastTime;
+								enemy->specialResource -= 100;
+								useRedAbility = false;
+							}
+						}
+
+						if (useRedAbility)
+						{
+							ability->id = RedAbility1ID;
+							ability->angle = LineAngle(enemy->position, player->position);
+							ability->castTimeLeft = RedAbility1TotalCastTime;
+						}
 					}
 					else if (enemy->type == BlueEntity)
 					{
+						ability->id = BlueAbility1ID;
 						ability->position = player->position;
-						ability->durationLeft = BlueAbilityTotalDuration;
+						ability->castTimeLeft = BlueAbility1TotalCastTime;
 					}
 					else
 					{
 						DebugBreak();
 					}
 				}
+			}
+		}
+	}
+	else
+	{
+		Assert(player->health == 0);
+		for (I32 i = 0; i < CombatLabEnemyN; ++i)
+		{
+			Entity* enemy = &labState->enemies[i];
+			if (enemy->ability.castTimeLeft > 0.0f)
+			{
+				InterruptAbility(enemy);
 			}
 		}
 	}
@@ -939,9 +1498,3 @@ static void CombatLab(HINSTANCE instance)
 		ReleaseDC(window, context);
 	}
 }
-
-// TODO: DamageEnemiesInSlice does more than it says, needs rethinking!
-// TODO: Blue ability should slow the player down!
-// TODO: Green entities and abilities?
-// TODO: Rename Duration to CastTime?
-// TODO: Multiple player abilities!
