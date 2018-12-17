@@ -494,3 +494,20 @@ static void DrawBitmapPolyOutline(Bitmap* bitmap, I32 polyN, I32* polyColRow, V4
 		DrawBitmapBresenhamLine(bitmap, row1, col1, row2, col2, color);
 	}
 }
+
+static void DrawBitmapRect(Bitmap* bitmap, I32 left, I32 right, I32 top, I32 bottom, V4 color)
+{
+	U32 colorCode = GetColorCode(color);
+	left = ClipInt(left, 0, bitmap->width - 1);
+	right = ClipInt(right, 0, bitmap->width - 1);
+	top = ClipInt(top, 0, bitmap->height - 1);
+	bottom = ClipInt(bottom, 0, bitmap->height - 1);
+	for (I32 col = left; col <= right; ++col)
+	{
+		for (I32 row = top; row <= bottom; ++row)
+		{
+			U32* pixelAddress = GetBitmapPixelAddress(bitmap, row, col);
+			*pixelAddress = colorCode;
+		}
+	}
+}
