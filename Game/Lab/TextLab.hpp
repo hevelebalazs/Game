@@ -26,7 +26,7 @@ static void TextLabResize(TextLabState* labState, I32 width, I32 height)
 	Canvas* canvas = &labState->canvas;
 	ResizeBitmap(&canvas->bitmap, width, height);
 	canvas->camera = camera;
-	camera->unitInPixels = 1.0f;
+	camera->unitInPixels = 2.0f;
 }
 
 static void TextLabBlit(Canvas canvas, HDC context, RECT rect)

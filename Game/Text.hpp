@@ -43,11 +43,12 @@ static void DrawGlyph(Canvas canvas, Glyph* glyph, F32 x, F32 y, V4 color)
 	}
 
 	Camera* camera = canvas.camera;
+	Assert(camera->unitInPixels > 0.0f);
 	DrawBitmap(
 		canvas,
 		&bitmap,
-		x + glyph->offsetX * camera->unitInPixels,
-		y + glyph->offsetY * camera->unitInPixels
+		x + glyph->offsetX / camera->unitInPixels,
+		y + glyph->offsetY / camera->unitInPixels
 	);
 }
 
@@ -57,16 +58,17 @@ static void DrawTextLine(Canvas canvas, I8* text, F32 baseLineY, F32 left, Glyph
 	F32 textY = baseLineY;
 
 	Camera* camera = canvas.camera;
+	Assert(camera->unitInPixels > 0.0f);
 	for (I32 i = 0; text[i]; ++i)
 	{
 		U8 c = text[i];
 		Glyph* glyph = &glyphData->glyphs[c];
 		DrawGlyph(canvas, glyph, textX, textY, textColor);
-		textX += glyph->advanceX * camera->unitInPixels;
+		textX += glyph->advanceX / camera->unitInPixels;
 		U8 nextC = text[i + 1];
 		if (nextC > 0)
 		{
-			textX += glyphData->kerningTable[c][nextC] * camera->unitInPixels;
+			textX += glyphData->kerningTable[c][nextC] / camera->unitInPixels;
 		}
 	}
 }
