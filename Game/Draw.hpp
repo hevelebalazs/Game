@@ -1285,6 +1285,14 @@ static void DrawQuadPoints(Canvas canvas, V2 point1, V2 point2, V2 point3, V2 po
 	DrawQuad(canvas, quad, color);
 }
 
+static void DrawBitmap(Canvas canvas, Bitmap* bitmap, F32 left, F32 top)
+{
+	Camera* camera = canvas.camera;
+	I32 pixelLeft = UnitXtoPixel(camera, left);
+	I32 pixelTop  = UnitYtoPixel(camera, top);
+	CopyBitmap(bitmap, &canvas.bitmap, pixelLeft, pixelTop);
+}
+
 static void DrawScaledRotatedBitmap(Canvas canvas, Bitmap* bitmap, V2 position, F32 width, F32 height, F32 rotationAngle)
 {
 	Camera* camera = canvas.camera;

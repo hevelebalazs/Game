@@ -139,6 +139,8 @@
     <ClInclude Include="Lab\MapLab.hpp" />
     <ClInclude Include="Lab\PhysicsLab.hpp" />
     <ClInclude Include="Lab\RoadLab.hpp" />
+    <ClInclude Include="Lab\stb_truetype.h" />
+    <ClInclude Include="Lab\TextLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="Map.hpp" />
@@ -148,6 +150,7 @@
     <ClInclude Include="PlayerHuman.hpp" />
     <ClInclude Include="Draw.hpp" />
     <ClInclude Include="Road.hpp" />
+    <ClInclude Include="Text.hpp" />
     <ClInclude Include="Texture.hpp" />
     <ClInclude Include="Car.hpp" />
     <ClInclude Include="Type.hpp" />

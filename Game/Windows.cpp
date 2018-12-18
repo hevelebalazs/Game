@@ -17,6 +17,7 @@
 #include "Lab/MapLab.hpp"
 #include "Lab/PhysicsLab.hpp"
 #include "Lab/RoadLab.hpp"
+#include "Lab/TextLab.hpp"
 #include "Lab/ThreadLab.hpp"
 
 static B32 running;
@@ -56,12 +57,12 @@ void WinUpdate(Canvas canvas, HDC context, RECT clientRect)
 	I32 windowHeight = clientRect.bottom - clientRect.top;
 
 	Bitmap bitmap = canvas.bitmap;
-
+	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
 				  0, 0, windowWidth, windowHeight,
 				  bitmap.memory,
-				  &bitmap.info,
+				  &bitmapInfo,
 				  DIB_RGB_COLORS,
 				  SRCCOPY
 	);
@@ -288,7 +289,7 @@ void RunGame(HINSTANCE instance)
 
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	CombatLab(instance);
+	TextLab(instance);
 	// RunGame(instance);
 	return 0;
 }
