@@ -18,3 +18,16 @@ static V2 GetMousePosition(Camera* camera, HWND window)
 
 	return point;
 }
+
+static BITMAPINFO GetBitmapInfo(Bitmap* bitmap)
+{
+	BITMAPINFO info = {};
+	BITMAPINFOHEADER* header = &info.bmiHeader;
+	header->biSize = sizeof(*header);
+	header->biWidth = bitmap->width;
+	header->biHeight = -bitmap->height;
+	header->biPlanes = 1;
+	header->biBitCount = 32;
+	header->biCompression = BI_RGB;
+	return info;
+}

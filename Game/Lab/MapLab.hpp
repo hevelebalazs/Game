@@ -57,11 +57,12 @@ static void MapLabBlit(Canvas canvas, HDC context, RECT rect)
 	I32 height = rect.bottom - rect.top;
 
 	Bitmap bitmap = canvas.bitmap;
+	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
 		          0, 0, width, height,
 		          bitmap.memory,
-		          &bitmap.info,
+		          &bitmapInfo,
 		          DIB_RGB_COLORS,
 		          SRCCOPY
 	);

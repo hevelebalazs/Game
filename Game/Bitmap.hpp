@@ -13,8 +13,6 @@ struct Bitmap
 	I32 width;
 	I32 height;
 	U32* memory;
-	// TODO: get rid of this Windows specific thing
-	BITMAPINFO info;
 };
 
 #define BitmapBytesPerPixel 4
@@ -28,14 +26,6 @@ static void ResizeBitmap(Bitmap* bitmap, I32 width, I32 height)
 
 	bitmap->width = width;
 	bitmap->height = height;
-
-	BITMAPINFOHEADER* header = &bitmap->info.bmiHeader;
-	header->biSize = sizeof(*header);
-	header->biWidth = bitmap->width;
-	header->biHeight = -bitmap->height;
-	header->biPlanes = 1;
-	header->biBitCount = 32;
-	header->biCompression = BI_RGB;
 
 	I32 bitmapMemorySize = (bitmap->width * bitmap->height);
 	bitmap->memory = new U32[bitmapMemorySize];
@@ -59,6 +49,13 @@ static U32 GetColorCode(V4 color)
 	U8 blue  = (U8)(color.blue * 255);
 
 	U32 colorCode = (alpha << 24) + (red << 16) + (green << 8) + (blue);
+	return colorCode;
+}
+
+static U32 MakeColorCode(F32 red, F32 green, F32 blue)
+{
+	V4 color = MakeColor(red, green, blue);
+	U32 colorCode = GetColorCode(color);
 	return colorCode;
 }
 
@@ -90,6 +87,13 @@ static V4 MakeAlphaColor(F32 red, F32 green, F32 blue, F32 alpha)
 	return color;
 }
 
+static U32 MakeAlphaColorCode(F32 red, F32 green, F32 blue, F32 alpha)
+{
+	V4 color = MakeAlphaColor(red, green, blue, alpha);
+	U32 colorCode = GetColorCode(color);
+	return colorCode;
+}
+
 static V4 GetColorFromColorCode(U32 colorCode)
 {
 	V4 color = {};
@@ -107,6 +111,28 @@ static V4 AddColors(V4 color1, V4 color2)
 	result.green = (color1.green + color2.green);
 	result.blue  = (color1.blue  + color2.blue);
 	return result;
+}
+
+static V4 MixColors(V4 baseColor, V4 colorToAdd)
+{
+	V4 result = {};
+	Assert(IsBetween(baseColor.alpha, 0.0f, 1.0f));
+	Assert(IsBetween(colorToAdd.alpha, 0.0f, 1.0f));
+	result.alpha = baseColor.alpha + (1.0f - baseColor.alpha) * colorToAdd.alpha;
+	Assert(IsBetween(result.alpha, 0.0f, 1.0f));
+	result.red = colorToAdd.red + (baseColor.red * (1.0f - colorToAdd.alpha));
+	result.green = colorToAdd.green + (baseColor.green * (1.0f - colorToAdd.alpha));
+	result.blue = colorToAdd.blue + (baseColor.blue * (1.0f - colorToAdd.alpha));
+	return result;
+}
+
+static U32 MixColorCodes(U32 baseColorCode, U32 colorCodeToAdd)
+{
+	V4 baseColor = GetColorFromColorCode(baseColorCode);
+	V4 colorToAdd = GetColorFromColorCode(colorCodeToAdd);
+	V4 resultColor = MixColors(baseColor, colorToAdd);
+	U32 resultColorCode = GetColorCode(resultColor);
+	return resultColorCode;
 }
 
 static V4 InterpolateColors(V4 color1, F32 ratio, V4 color2)
@@ -421,6 +447,50 @@ static void CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 to
 	}
 }
 
+static void CopyBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toLeft, I32 toTop)
+{
+	I32 toRight = toLeft + fromBitmap->width - 1;
+	I32 toBottom = toTop + fromBitmap->height - 1;
+
+	I32 fromLeft = 0;
+	if (toLeft < 0)
+	{
+		fromLeft = -toLeft;
+	}
+
+	I32 fromRight = fromBitmap->width - 1;
+	if (toRight > toBitmap->width - 1)
+	{
+		fromRight -= (toRight - (toBitmap->width - 1));
+	}
+
+	I32 fromTop = 0;
+	if (toTop < 0)
+	{
+		fromTop = -toTop;
+	}
+
+	I32 fromBottom = fromBitmap->height - 1;
+	if (toBottom > toBitmap->height - 1)
+	{
+		fromBottom -= (toBottom - (toBitmap->height - 1));
+	}
+
+	for (I32 fromRow = fromTop; fromRow <= fromBottom; ++fromRow)
+	{
+		for (I32 fromCol = fromLeft; fromCol <= fromRight; ++fromCol)
+		{
+			I32 toRow = toTop + fromRow;
+			I32 toCol = toLeft + fromCol;
+
+			V4 fromColor = GetBitmapPixelColor(fromBitmap, fromRow, fromCol);
+			V4 toColor = GetBitmapPixelColor(toBitmap, toRow, toCol);
+			V4 mixedColor = MixColors(toColor, fromColor);
+			*GetBitmapPixelAddress(toBitmap, toRow, toCol) = GetColorCode(mixedColor);
+		}
+	}
+}
+
 static void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toLeft, I32 toRight, I32 toTop, I32 toBottom)
 {
 	F32 toWidth  = (F32)(toRight - toLeft);
@@ -431,7 +501,6 @@ static void CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I32 toLeft
 	I32 top    = ClipInt(toTop,     0, toBitmap->height);
 	I32 bottom = ClipInt(toBottom, -1, toBitmap->height - 1);
 
-	
 	F32 fromHeightStart = ((F32)fromBitmap->height - 1.0f) * ((F32)top - toTop) / toHeight;
 	F32 fromHeightAdd   = ((F32)fromBitmap->height - 1.0f) / toHeight;
 	F32 fromWidthStart  = ((F32)fromBitmap->width  - 1.0f) * ((F32)left - toLeft) / toWidth;

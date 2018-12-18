@@ -2,6 +2,8 @@
 
 #include <Windows.h>
 
+#include "Lab.hpp"
+
 #include "../Bitmap.hpp"
 #include "../Car.hpp"
 #include "../Debug.hpp"
@@ -31,11 +33,12 @@ static void CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
+	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap->width, bitmap->height,
 				  0, 0, width, height,
 				  bitmap->memory,
-				  &bitmap->info,
+				  &bitmapInfo,
 				  DIB_RGB_COLORS,
 				  SRCCOPY
 	);
