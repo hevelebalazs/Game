@@ -471,6 +471,7 @@ static void CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowH
 {
 	CombatLabReset(labState);
 
+	labState->canvas.glyphData = GetGlobalGlyphData();
 	CombatLabResize(labState, windowWidth, windowHeight);
 }
 
@@ -911,7 +912,7 @@ static void DrawExpBar(Canvas* canvas, CombatLabState* labState)
 		I32 left = 0;
 		I32 right = bitmap->width - 1;
 		I32 bottom = bitmap->height - 1;
-		I32 top = bottom - 20;
+		I32 top = bottom - 10;
 		V4 unfilledColor = MakeColor(0.3f, 0.3f, 0.3f);
 		V4 filledColor = MakeColor(0.6f, 0.6f, 0.6f);
 		DrawBitmapRect(bitmap, left, right, top, bottom, unfilledColor);
@@ -922,6 +923,36 @@ static void DrawExpBar(Canvas* canvas, CombatLabState* labState)
 		I32 rightFilled = left + Floor(F32(right - left) * F32(expGained) / F32(expNeeded));
 		DrawBitmapRect(bitmap, left, rightFilled, top, bottom, filledColor);
 	}
+}
+
+static void DrawUI(Canvas* canvas, CombatLabState* labState)
+{
+	DrawExpBar(canvas, labState);
+
+	Bitmap* bitmap = &canvas->bitmap;
+	I32 boxSize = 40;
+	I32 boxBottom = (bitmap->height - 1) - 15;
+	I32 boxTop = boxBottom- boxSize;
+	I32 boxCenterX = (bitmap->width - 1) / 2;
+	I32 boxLeft = boxCenterX - boxSize / 2;
+	I32 boxRight = boxCenterX + boxSize / 2;
+	
+	V4 boxColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, boxLeft, boxRight, boxTop, boxBottom, boxColor);
+
+	V4 boxOutlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, boxLeft, boxRight, boxTop, boxBottom, boxOutlineColor);
+
+	Camera* camera = canvas->camera;
+	I32 boxHeight = boxBottom - boxTop;
+	I32 boxBaseLineYPixel = boxBottom - (boxHeight - TextHeightInPixels) / 2 - TextPixelsBelowBaseLine;
+	F32 boxBaseLineY = PixelToUnitY(camera, F32(boxBaseLineYPixel));
+	char* boxText = "LMB";
+	F32 textWidth = GetTextWidth(canvas, boxText);
+	F32 textLeft = PixelToUnitX(camera, F32(boxCenterX)) - textWidth * 0.5f;
+
+	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawTextLine(canvas, boxText, boxBaseLineY, textLeft, textColor);
 }
 
 static F32 GetEntityDistance(Entity* entity1, Entity* entity2)
@@ -1430,7 +1461,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		DrawEntity(canvas, enemy);
 	}
 
-	DrawExpBar(canvas, labState);
+	DrawUI(canvas, labState);
 }
 
 static void CombatLab(HINSTANCE instance)

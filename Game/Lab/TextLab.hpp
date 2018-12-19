@@ -245,5 +245,4 @@ static void TextLab(HINSTANCE instance)
 	}
 }
 
-// [TODO: Pass Canvas by pointer!]
-// TODO: Separate UI rendering from game rendering?
+// TODO: Canvas.bitmap should be a pointer?
