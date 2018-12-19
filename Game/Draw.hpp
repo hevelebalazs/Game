@@ -9,7 +9,7 @@
 #include "Texture.hpp"
 #include "Type.hpp"
 
-struct Camera 
+struct Camera
 {
 	V2 center;
 	V2 screenPixelSize;
@@ -114,12 +114,12 @@ struct PixelPosition
 	I32 col;
 };
 
-static void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) 
+static void FloodFill(Canvas* canvas, V2 start, V4 color, MemArena* tmpArena) 
 {
 	U32 colorCode = GetColorCode(color);
 
-	Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+	Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
 
 	I32 positionCount = 0;
 	PixelPosition* positions = ArenaPushArray(tmpArena, PixelPosition, 0);
@@ -308,11 +308,11 @@ static F32 CameraBottomSide(Camera* camera)
 	return bottomSide;
 }
 
-static void ClearScreen(Canvas canvas, V4 color)
+static void ClearScreen(Canvas* canvas, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 *pixel = bitmap.memory;
 	for (I32 row = 0; row < bitmap.height; ++row) 
 	{
@@ -373,9 +373,9 @@ static BresenhamContext BresenhamInitPixel(V2 pixelPoint1, V2 pixelPoint2)
 	return context;
 }
 
-static BresenhamContext BresenhamInitUnit(Canvas canvas, V2 point1, V2 point2)
+static BresenhamContext BresenhamInitUnit(Canvas* canvas, V2 point1, V2 point2)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	V2 pixelPoint1 = UnitToPixel(camera, point1);
 	V2 pixelPoint2 = UnitToPixel(camera, point2);
 	BresenhamContext context = BresenhamInitPixel(pixelPoint1, pixelPoint2);
@@ -397,9 +397,9 @@ static void BresenhamAdvance(BresenhamContext* context)
 	}
 }
 
-static void Bresenham(Canvas canvas, V2 point1, V2 point2, V4 color)
+static void Bresenham(Canvas* canvas, V2 point1, V2 point2, V4 color)
 {
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 colorCode = GetColorCode(color);
 
 	BresenhamContext context = BresenhamInitUnit(canvas, point1, point2);
@@ -455,9 +455,9 @@ static V2 LineAtY(V2 linePoint1, V2 linePoint2, F32 y)
 }
 
 // TODO: check this for performance issues
-static void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
+static void DrawHorizontalTrapezoid(Canvas* canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	F32 cameraTop     = CameraTopSide(camera);
 	F32 cameraBottom  = CameraBottomSide(camera);
 
@@ -498,7 +498,7 @@ static void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 b
 		bottomRight = LineAtY(topRight, bottomRight, cameraBottom);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 colorCode = GetColorCode(color);
 
 	BresenhamContext leftLine = BresenhamInitUnit(canvas, topLeft, bottomLeft);
@@ -550,9 +550,9 @@ static void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 b
 }
 
 // TODO: check this for performance issues
-static void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
+static void DrawVerticalTrapezoid(Canvas* canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	F32 cameraLeft  = CameraLeftSide(camera);
 	F32 cameraRight = CameraRightSide(camera);
 
@@ -593,7 +593,7 @@ static void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bot
 		bottomRight = LineAtX(bottomLeft, bottomRight, cameraRight);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 colorCode = GetColorCode(color);
 
 	BresenhamContext topLine = BresenhamInitUnit(canvas, topLeft, topRight);
@@ -645,11 +645,11 @@ static void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bot
 	}
 }
 
-static void DrawRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
+static void DrawRect(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera *camera = canvas.camera;
+	Camera *camera = canvas->camera;
 	I32 topPixel =    UnitYtoPixel(camera, top);
 	I32 leftPixel =   UnitXtoPixel(camera, left);
 	I32 bottomPixel = UnitYtoPixel(camera, bottom);
@@ -665,7 +665,7 @@ static void DrawRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4
 		IntSwap(&leftPixel, &rightPixel);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
 	leftPixel   = IntMax2(leftPixel, 0);
@@ -681,7 +681,7 @@ static void DrawRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4
 	}
 }
 
-static void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
+static void DrawGridLine(Canvas* canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
 {
 	F32 left   = 0.0f;
 	F32 right  = 0.0f;
@@ -708,18 +708,18 @@ static void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 line
 	DrawRect(canvas, left, right, top, bottom, color);
 }
 
-static void DrawQuad(Canvas canvas, Quad quad, V4 color)
+static void DrawQuad(Canvas* canvas, Quad quad, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
 	V2* points = quad.points;
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	for (I32 i = 0; i < 4; ++i)
 	{
 		points[i] = UnitToPixel(camera, points[i]);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	I32 minX = bitmap.width;
 	I32 minY = bitmap.height;
 	I32 maxX = 0;
@@ -777,7 +777,7 @@ static void DrawQuad(Canvas canvas, Quad quad, V4 color)
 	}
 }
 
-static void DrawLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
+static void DrawLine(Canvas* canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
 {
 	V2 direction = PointDirection(point2, point1);
 
@@ -796,10 +796,10 @@ static void DrawLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidt
 
 #define WorldTextureScale 20.0f
 
-static void FillScreenWithWorldTexture(Canvas canvas, Texture texture)
+static void FillScreenWithWorldTexture(Canvas* canvas, Texture texture)
 {
-	Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+	Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
 
 	F32 pixelInUnits = Invert(camera->unitInPixels);
 
@@ -848,10 +848,10 @@ static void FillScreenWithWorldTexture(Canvas canvas, Texture texture)
 	}
 }
 
-static void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
+static void DrawWorldTextureQuad(Canvas* canvas, Quad quad, Texture texture)
 {
-    Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+    Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
     
     V2* points = quad.points;
     for (I32 i = 0; i < 4; ++i)
@@ -959,7 +959,7 @@ static void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
 	}
 }
 
-static void DrawWorldTextureLine(Canvas canvas, V2 point1, V2 point2, F32 lineWidth, Texture texture)
+static void DrawWorldTextureLine(Canvas* canvas, V2 point1, V2 point2, F32 lineWidth, Texture texture)
 {
 	V2 direction = PointDirection(point2, point1);
 	V2 turnedDirection = TurnVectorToRight(direction);
@@ -974,7 +974,7 @@ static void DrawWorldTextureLine(Canvas canvas, V2 point1, V2 point2, F32 lineWi
 	DrawWorldTextureQuad(canvas, quad, texture);
 }
 
-static void DrawRectOutline(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
+static void DrawRectOutline(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
 {
 	V2 topLeft     = MakePoint(left,  top);
 	V2 topRight    = MakePoint(right, top);
@@ -988,9 +988,9 @@ static void DrawRectOutline(Canvas canvas, F32 left, F32 right, F32 top, F32 bot
 }
 
 // TODO: change the order of parameters to left, right, top, bottom
-static void WorldTextureRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, Texture texture)
+static void WorldTextureRect(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, Texture texture)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	I32 topPixel =    UnitYtoPixel(camera, top);
 	I32 leftPixel =   UnitXtoPixel(camera, left);
 	I32 bottomPixel = UnitYtoPixel(camera, bottom);
@@ -1006,7 +1006,7 @@ static void WorldTextureRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bo
 		IntSwap(&leftPixel, &rightPixel);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
@@ -1075,7 +1075,7 @@ static void WorldTextureRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bo
 	}
 }
 
-static void WorldTextureGridLine(Canvas canvas, V2 point1, V2 point2, F32 width, Texture texture)
+static void WorldTextureGridLine(Canvas* canvas, V2 point1, V2 point2, F32 width, Texture texture)
 {
 	F32 left   = Min2(point1.x, point2.x);
 	F32 right  = Max2(point1.x, point2.x);
@@ -1098,7 +1098,7 @@ static void WorldTextureGridLine(Canvas canvas, V2 point1, V2 point2, F32 width,
 	WorldTextureRect(canvas, left, right, top, bottom, texture);
 }
 
-static void DrawPolyOutline(Canvas canvas, V2* points, I32 pointN, V4 color)
+static void DrawPolyOutline(Canvas* canvas, V2* points, I32 pointN, V4 color)
 {
 	I32 prev = pointN - 1;
 	for (I32 i = 0; i < pointN; ++i) 
@@ -1108,17 +1108,17 @@ static void DrawPolyOutline(Canvas canvas, V2* points, I32 pointN, V4 color)
 	}
 }
 
-static void DrawPoly(Canvas canvas, V2* points, I32 pointN, V4 color)
+static void DrawPoly(Canvas* canvas, V2* points, I32 pointN, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	for (I32 i = 0; i < pointN; ++i)
 	{
 		points[i] = UnitToPixel(camera, points[i]);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	I32 minX = bitmap.width;
 	I32 minY = bitmap.height;
 	I32 maxX = 0;
@@ -1175,10 +1175,10 @@ static void DrawPoly(Canvas canvas, V2* points, I32 pointN, V4 color)
 	}
 }
 
-static void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture texture)
+static void DrawWorldTexturePoly(Canvas* canvas, V2* points, I32 pointN, Texture texture)
 {
-	Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+	Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
 
 	I32 minX = bitmap.width;
 	I32 minY = bitmap.height;
@@ -1281,43 +1281,43 @@ static void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture 
 	}
 }
 
-static void DrawQuadPoints(Canvas canvas, V2 point1, V2 point2, V2 point3, V2 point4, V4 color)
+static void DrawQuadPoints(Canvas* canvas, V2 point1, V2 point2, V2 point3, V2 point4, V4 color)
 {
 	Quad quad = {point1, point2, point3, point4};
 	DrawQuad(canvas, quad, color);
 }
 
-static void DrawBitmap(Canvas canvas, Bitmap* bitmap, F32 left, F32 top)
+static void DrawBitmap(Canvas* canvas, Bitmap* bitmap, F32 left, F32 top)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	I32 pixelLeft = UnitXtoPixel(camera, left);
 	I32 pixelTop  = UnitYtoPixel(camera, top);
-	CopyBitmap(bitmap, &canvas.bitmap, pixelLeft, pixelTop);
+	CopyBitmap(bitmap, &canvas->bitmap, pixelLeft, pixelTop);
 }
 
-static void DrawScaledRotatedBitmap(Canvas canvas, Bitmap* bitmap, V2 position, F32 width, F32 height, F32 rotationAngle)
+static void DrawScaledRotatedBitmap(Canvas* canvas, Bitmap* bitmap, V2 position, F32 width, F32 height, F32 rotationAngle)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	I32 col = UnitXtoPixel(camera, position.x);
 	I32 row = UnitYtoPixel(camera, position.y);
 
 	F32 pixelWidth  = GetUnitDistanceInPixel(camera, width);
 	F32 pixelHeight = GetUnitDistanceInPixel(camera, height);
 
-	CopyScaledRotatedBitmap(bitmap, &canvas.bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
+	CopyScaledRotatedBitmap(bitmap, &canvas->bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
 }
 
-static void DrawStretchedBitmap(Canvas canvas, Bitmap* bitmap, F32 left, F32 right, F32 top, F32 bottom)
+static void DrawStretchedBitmap(Canvas* canvas, Bitmap* bitmap, F32 left, F32 right, F32 top, F32 bottom)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	I32 pixelLeft   = UnitXtoPixel(camera, left);
 	I32 pixelRight  = UnitXtoPixel(camera, right);
 	I32 pixelTop    = UnitYtoPixel(camera, top);
 	I32 pixelBottom = UnitYtoPixel(camera, bottom);
-	CopyStretchedBitmap(bitmap, &canvas.bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
+	CopyStretchedBitmap(bitmap, &canvas->bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
 }
 
-static void DrawGlyph(Canvas canvas, Glyph* glyph, F32 x, F32 y, V4 color)
+static void DrawGlyph(Canvas* canvas, Glyph* glyph, F32 x, F32 y, V4 color)
 {
 	static U32 bitmapData[32][32];
 	static Bitmap bitmap;
@@ -1340,7 +1340,7 @@ static void DrawGlyph(Canvas canvas, Glyph* glyph, F32 x, F32 y, V4 color)
 		}
 	}
 
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	Assert(camera->unitInPixels > 0.0f);
 	DrawBitmap(
 		canvas,
@@ -1350,9 +1350,9 @@ static void DrawGlyph(Canvas canvas, Glyph* glyph, F32 x, F32 y, V4 color)
 	);
 }
 
-static F32 GetTextWidth(Canvas canvas, I8* text)
+static F32 GetTextWidth(Canvas* canvas, I8* text)
 {
-	GlyphData* glyphData = canvas.glyphData;
+	GlyphData* glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
 
 	F32 pixelWidth = 0.0f;
@@ -1369,18 +1369,18 @@ static F32 GetTextWidth(Canvas canvas, I8* text)
 		}
 	}
 
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	Assert(camera->unitInPixels > 0.0f);
 	F32 width = pixelWidth / camera->unitInPixels;
 	return width;
 }
 
-static void DrawTextLine(Canvas canvas, I8* text, F32 baseLineY, F32 left, V4 textColor)
+static void DrawTextLine(Canvas* canvas, I8* text, F32 baseLineY, F32 left, V4 textColor)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	Assert(camera->unitInPixels > 0.0f);
 
-	GlyphData* glyphData = canvas.glyphData;
+	GlyphData* glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
 
 	F32 textX = left;

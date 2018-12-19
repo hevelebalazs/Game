@@ -48,12 +48,12 @@ static void ThreadLabResize(ThreadLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 1.0f;
 }
 
-static void ThreadLabBlit(Canvas canvas, HDC context, RECT rect)
+static void ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -159,7 +159,7 @@ static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wpar
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			ThreadLabBlit(labState->canvas, context, clientRect);
+			ThreadLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -234,7 +234,7 @@ static void ThreadLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		ThreadLabBlit(labState->canvas, context, rect);
+		ThreadLabBlit(&labState->canvas, context, rect);
 		ReleaseDC(window, context);
 	}
 }

@@ -920,7 +920,7 @@ static B32 IsPointOnBuildingConnector(V2 point, Building building)
 	}
 }
 
-static void HighlightBuilding(Canvas canvas, Building building, V4 color)
+static void HighlightBuilding(Canvas* canvas, Building building, V4 color)
 {
 	DrawRect(
 		canvas,
@@ -929,7 +929,7 @@ static void HighlightBuilding(Canvas canvas, Building building, V4 color)
 	);
 }
 
-static void DrawBuildingInside(Canvas canvas, Building building)
+static void DrawBuildingInside(Canvas* canvas, Building building)
 {
 	V4 color = {};
 
@@ -1252,7 +1252,7 @@ static V2 NextVisiblePointAlongRay(Building building, V2 closePoint, V2 farPoint
 //       something along the lines of rays on the bitmap?
 //       or something based on rooms and doors?
 //       or should there be a big area and each line would cut down from it if crossed?
-static void DrawVisibleAreaInBuilding(Canvas canvas, Building building, V2 center, MemArena* tmpArena)
+static void DrawVisibleAreaInBuilding(Canvas* canvas, Building building, V2 center, MemArena* tmpArena)
 {
 	BuildingInside* inside = building.inside;
 
@@ -1370,7 +1370,7 @@ static void DrawVisibleAreaInBuilding(Canvas canvas, Building building, V2 cente
 	ArenaPopTo(tmpArena, helper.corners);
 }
 
-static void HighlightBuildingConnector(Canvas canvas, Building building, V4 color)
+static void HighlightBuildingConnector(Canvas* canvas, Building building, V4 color)
 {
 	F32 roadWidth = ConnectRoadWidth;
 
@@ -1390,7 +1390,7 @@ static void HighlightBuildingConnector(Canvas canvas, Building building, V4 colo
 	DrawLine(canvas, building.connectPointClose, building.connectPointFarShow, color, roadWidth);
 }
 
-static void DrawConnectRoad(Canvas canvas, Building building, Texture roadTexture)
+static void DrawConnectRoad(Canvas* canvas, Building building, Texture roadTexture)
 {
 	F32 roadWidth = ConnectRoadWidth;
 

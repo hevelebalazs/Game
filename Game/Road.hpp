@@ -726,7 +726,7 @@ static B32 IsPointOnRoadSidewalk(V2 point, Road* road)
 	return result;
 }
 
-static void HighlightRoad(Canvas canvas, Road* road, V4 color)
+static void HighlightRoad(Canvas* canvas, Road* road, V4 color)
 {
 	F32 side = LaneWidth + SidewalkWidth;
 	F32 length = RoadLength(road);
@@ -837,7 +837,7 @@ static V4 TurnPointToLane(Road* road, I32 laneIndex, V2 point)
 	return result;
 }
 
-static void HighlightRoadSidewalk(Canvas canvas, Road* road, V4 color)
+static void HighlightRoadSidewalk(Canvas* canvas, Road* road, V4 color)
 {
 	F32 closeSide = LaneWidth;
 	F32 farSide   = LaneWidth + SidewalkWidth;
@@ -859,7 +859,7 @@ static void HighlightRoadSidewalk(Canvas canvas, Road* road, V4 color)
 	DrawQuad(canvas, rightSidewalkQuad, color);
 }
 
-static void DrawCrossing(Canvas canvas, Road* road)
+static void DrawCrossing(Canvas* canvas, Road* road)
 {
 	V4 stepColor = MakeColor(1.0f, 1.0f, 1.0f);
 	F32 stepDistance = -LaneWidth;
@@ -896,7 +896,7 @@ static void DrawCrossing(Canvas canvas, Road* road)
 	}
 }
 
-static void DrawTexturedCrossing(Canvas canvas, Road* road, Texture roadTexture, Texture stripeTexture)
+static void DrawTexturedCrossing(Canvas* canvas, Road* road, Texture roadTexture, Texture stripeTexture)
 {
 	F32 stepDistance = -LaneWidth;
 	B32 drawStep = true;
@@ -987,21 +987,21 @@ static I32 RoadSidewalkIndex(Road* road, V2 point)
 	return result;
 }
 
-static void DrawRoad(Canvas canvas, Road* road)
+static void DrawRoad(Canvas* canvas, Road* road)
 {
 	DrawLine(canvas, road->endPoint1, road->endPoint2, RoadColor, 2.0f * LaneWidth);
 	DrawLine(canvas, road->endPoint1, road->endPoint2, RoadStripeColor, RoadStripeWidth);
 	DrawCrossing(canvas, road);
 }
 
-static void DrawTexturedRoad(Canvas canvas, Road* road, Texture roadTexture, Texture stripeTexture)
+static void DrawTexturedRoad(Canvas* canvas, Road* road, Texture roadTexture, Texture stripeTexture)
 {
 	DrawWorldTextureLine(canvas, road->endPoint1, road->endPoint2, 2.0f * LaneWidth, roadTexture);
 	DrawWorldTextureLine(canvas, road->endPoint1, road->endPoint2, RoadStripeWidth, stripeTexture);
 	DrawTexturedCrossing(canvas, road, roadTexture, stripeTexture);
 }
 
-static void DrawRoadSidewalk(Canvas canvas, Road* road)
+static void DrawRoadSidewalk(Canvas* canvas, Road* road)
 {
 	V2 side1 = FromRoadCoord1(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
 	V2 side2 = FromRoadCoord2(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
@@ -1012,7 +1012,7 @@ static void DrawRoadSidewalk(Canvas canvas, Road* road)
 	DrawLine(canvas, side1, side2, SidewalkColor, SidewalkWidth);
 }
 
-static void DrawTexturedRoadSidewalk(Canvas canvas, Road* road, Texture sidewalkTexture)
+static void DrawTexturedRoadSidewalk(Canvas* canvas, Road* road, Texture sidewalkTexture)
 {
 	V2 side1 = FromRoadCoord1(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
 	V2 side2 = FromRoadCoord2(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
@@ -1363,7 +1363,7 @@ static void UpdateTrafficLight(TrafficLight* trafficLight, F32 seconds)
 	}
 }
 
-static void DrawTrafficLight(Canvas canvas, TrafficLight* trafficLight)
+static void DrawTrafficLight(Canvas* canvas, TrafficLight* trafficLight)
 {
 	V4 drawColor = {};
 	switch (trafficLight->color) 
@@ -1445,7 +1445,7 @@ static void UpdateTrafficLights(Junction* junction, F32 seconds)
 	}
 }
 
-static void DrawTrafficLights(Canvas canvas, Junction* junction)
+static void DrawTrafficLights(Canvas* canvas, Junction* junction)
 {
 	if (junction->roadN >= 3) 
 	{
@@ -1502,7 +1502,7 @@ static void CalculateStopDistances(Junction* junction)
 	}
 }
 
-static void DrawJunctionStripes(Canvas canvas, Junction* junction)
+static void DrawJunctionStripes(Canvas* canvas, Junction* junction)
 {
 	if (junction->roadN <= 2) 
 	{
@@ -1549,7 +1549,7 @@ static void DrawJunctionStripes(Canvas canvas, Junction* junction)
 	}
 }
 
-static void DrawJunctionPlaceholder(Canvas canvas, Junction* junction, V4 color)
+static void DrawJunctionPlaceholder(Canvas* canvas, Junction* junction, V4 color)
 {
 	V2 position = junction->position;
 	F32 side = LaneWidth + SidewalkWidth;
@@ -1569,7 +1569,7 @@ static void DrawJunctionPlaceholder(Canvas canvas, Junction* junction, V4 color)
 	);
 }
 
-static void DrawJunction(Canvas canvas, Junction* junction)
+static void DrawJunction(Canvas* canvas, Junction* junction)
 {
 	if (junction->roadN >= 1) 
 	{
@@ -1586,7 +1586,7 @@ static void DrawJunction(Canvas canvas, Junction* junction)
 	}
 }
 
-static void HighlightJunctionSidewalk(Canvas canvas, Junction* junction, V4 color)
+static void HighlightJunctionSidewalk(Canvas* canvas, Junction* junction, V4 color)
 {
 	Assert(junction->roadN >= 1);
 	for (I32 i = 0; i < junction->roadN; ++i) 
@@ -1597,7 +1597,7 @@ static void HighlightJunctionSidewalk(Canvas canvas, Junction* junction, V4 colo
 	DrawJunction(canvas, junction);
 }
 
-static void HighlightJunction(Canvas canvas, Junction* junction, V4 color)
+static void HighlightJunction(Canvas* canvas, Junction* junction, V4 color)
 {
 	if (junction->roadN >= 1) 
 	{
@@ -1613,7 +1613,7 @@ static void HighlightJunction(Canvas canvas, Junction* junction, V4 color)
 	}
 }
 
-static void DrawJunctionSidewalk(Canvas canvas, Junction* junction)
+static void DrawJunctionSidewalk(Canvas* canvas, Junction* junction)
 {
 	if (junction->roadN >= 1) 
 	{
@@ -1625,7 +1625,7 @@ static void DrawJunctionSidewalk(Canvas canvas, Junction* junction)
 	}
 }
 
-static void DrawTexturedJunctionSidewalk(Canvas canvas, Junction* junction, Texture sidewalkTexture)
+static void DrawTexturedJunctionSidewalk(Canvas* canvas, Junction* junction, Texture sidewalkTexture)
 {
 	if (junction->roadN >= 1) 
 	{
@@ -1637,7 +1637,7 @@ static void DrawTexturedJunctionSidewalk(Canvas canvas, Junction* junction, Text
 	}
 }
 
-static void DrawTexturedJunctionStripes(Canvas canvas, Junction* junction, Texture stripeTexture)
+static void DrawTexturedJunctionStripes(Canvas* canvas, Junction* junction, Texture stripeTexture)
 {
 	if (junction->roadN <= 2) 
 	{
@@ -1685,7 +1685,7 @@ static void DrawTexturedJunctionStripes(Canvas canvas, Junction* junction, Textu
 	}
 }
 
-static void DrawTexturedJunction(Canvas canvas, Junction* junction, Texture roadTexture, Texture stripeTexture)
+static void DrawTexturedJunction(Canvas* canvas, Junction* junction, Texture roadTexture, Texture stripeTexture)
 {
 	if (junction->roadN >= 1) 
 	{

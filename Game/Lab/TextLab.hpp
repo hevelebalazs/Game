@@ -27,12 +27,12 @@ static void TextLabResize(TextLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 2.0f;
 }
 
-static void TextLabBlit(Canvas canvas, HDC context, RECT rect)
+static void TextLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -52,12 +52,12 @@ static void TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeigh
 	labState->canvas.glyphData = GetGlobalGlyphData();
 }
 
-static void DrawToolTip(Canvas canvas)
+static void DrawToolTip(Canvas* canvas)
 {
-	GlyphData* glyphData = canvas.glyphData;
+	GlyphData* glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
 
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	Assert(camera->unitInPixels > 0.0f);
 	F32 width = 300.0f / camera->unitInPixels;
 	F32 centerX = (CameraLeftSide(camera) + CameraRightSide(camera)) * 0.5f;
@@ -103,7 +103,7 @@ static void DrawToolTip(Canvas canvas)
 
 static void TextLabUpdate(TextLabState* labState)
 {
-	Canvas canvas = labState->canvas;
+	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
@@ -112,7 +112,7 @@ static void TextLabUpdate(TextLabState* labState)
 	V4 bottomLeftColor = MakeColor(0.0f, 0.0f, 1.0f);
 	V4 bottomRightColor = MakeColor(1.0f, 0.0f, 0.0f);
 
-	Bitmap* bitmap = &canvas.bitmap;
+	Bitmap* bitmap = &canvas->bitmap;
 	U32* pixel = bitmap->memory;
 	for (I32 row = 0; row < bitmap->height; ++row)
 	{
@@ -131,7 +131,7 @@ static void TextLabUpdate(TextLabState* labState)
 		}
 	}
 
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	F32 baseLineY = 0.5f * (CameraTopSide(camera) + CameraBottomSide(camera));
 	F32 baseLineLeft = CameraLeftSide(camera);
 	F32 baseLineRight = CameraRightSide(camera);
@@ -165,7 +165,7 @@ static LRESULT CALLBACK TextLabCallback(HWND window, UINT message, WPARAM wparam
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			TextLabBlit(labState->canvas, context, clientRect);
+			TextLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -240,10 +240,10 @@ static void TextLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		TextLabBlit(labState->canvas, context, rect);
+		TextLabBlit(&labState->canvas, context, rect);
 		ReleaseDC(window, context); 
 	}
 }
 
-// TODO: Pass Canvas by pointer!
+// [TODO: Pass Canvas by pointer!]
 // TODO: Separate UI rendering from game rendering?

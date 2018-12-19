@@ -51,12 +51,12 @@ static void MapLabResize(MapLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 1.0f;
 }
 
-static void MapLabBlit(Canvas canvas, HDC context, RECT rect)
+static void MapLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -92,7 +92,7 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			MapLabBlit(labState->canvas, context, clientRect);
+			MapLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -201,7 +201,7 @@ static void MapLabInit(MapLabState* labState, I32 windowWidth, I32 windowHeight)
 
 static void MapLabUpdate(MapLabState* labState, V2 mousePosition)
 {
-	Canvas canvas = labState->canvas;
+	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
@@ -209,7 +209,7 @@ static void MapLabUpdate(MapLabState* labState, V2 mousePosition)
 	V4 visibleLineColor = MakeColor(1.0f, 0.0f, 1.0f);
 
 	labState->playerPosition = (labState->playerPosition + labState->playerVelocity);
-	canvas.camera->center = labState->playerPosition;
+	canvas->camera->center = labState->playerPosition;
 	
 	Map* map = &labState->map;
 	GenerateMapTileWorkList* workList = &map->generateTileWorkList;
@@ -279,7 +279,7 @@ static void MapLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		MapLabBlit(gMapLabState.canvas, context, rect);
+		MapLabBlit(&gMapLabState.canvas, context, rect);
 		ReleaseDC(window, context);
 	}
 }

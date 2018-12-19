@@ -139,7 +139,6 @@
     <ClInclude Include="Lab\MapLab.hpp" />
     <ClInclude Include="Lab\PhysicsLab.hpp" />
     <ClInclude Include="Lab\RoadLab.hpp" />
-    <ClInclude Include="Lab\stb_truetype.h" />
     <ClInclude Include="Lab\TextLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
     <ClInclude Include="Light.hpp" />
