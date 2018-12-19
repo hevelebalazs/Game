@@ -12,8 +12,6 @@ struct TextLabState
 	Camera camera;
 	Canvas canvas;
 
-	GlyphData* glyphData;
-
 	B32 running;
 };
 static TextLabState gTextLabState;
@@ -51,7 +49,56 @@ static void TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeigh
 	labState->running = true;
 	TextLabResize(labState, windowWidth, windowHeight);
 
-	labState->glyphData = GetGlobalGlyphData();
+	labState->canvas.glyphData = GetGlobalGlyphData();
+}
+
+static void DrawToolTip(Canvas canvas)
+{
+	GlyphData* glyphData = canvas.glyphData;
+	Assert(glyphData != 0);
+
+	Camera* camera = canvas.camera;
+	Assert(camera->unitInPixels > 0.0f);
+	F32 width = 300.0f / camera->unitInPixels;
+	F32 centerX = (CameraLeftSide(camera) + CameraRightSide(camera)) * 0.5f;
+	F32 centerY = (CameraTopSide(camera) + CameraBottomSide(camera)) * 0.5f;
+	F32 left = centerX - width * 0.5f;
+	F32 right = centerX + width * 0.5f;
+
+	F32 padding = 5.0f / camera->unitInPixels;
+	F32 topPadding = 8.0f / camera->unitInPixels;
+	
+	char* lines[] =
+	{
+		"LMB",
+		"Use time: 0.5 sec",
+		"Hit in a direction, dealing 30 damage",
+		"to the first enemy hit.",
+		"Generates 20 Energy if it hits anything."
+	};
+	I32 lineN = sizeof(lines) / sizeof(char*);
+
+	F32 tooltipHeight = topPadding + lineN * (TextHeightInPixels / camera->unitInPixels) + padding;
+	F32 top = centerY - tooltipHeight * 0.5f;
+	F32 bottom = centerY + tooltipHeight * 0.5f;
+
+	V4 toolTipColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawRect(canvas, left, right, top, bottom, toolTipColor);
+
+	V4 toolTipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawRectOutline(canvas, left, right, top, bottom, toolTipBorderColor);
+
+	V4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
+	F32 baseLineY = top + topPadding + TextPixelsAboveBaseLine / camera->unitInPixels;
+	F32 textLeft = left + padding;
+	for (I32 i = 0; i < lineN; ++i)
+	{
+		V4 color = (i == 0) ? titleColor : normalColor;
+		char* line = lines[i];
+		DrawTextLine(canvas, line, baseLineY, textLeft, color);
+		baseLineY += TextHeightInPixels / camera->unitInPixels;
+	}
 }
 
 static void TextLabUpdate(TextLabState* labState)
@@ -89,8 +136,9 @@ static void TextLabUpdate(TextLabState* labState)
 	F32 baseLineLeft = CameraLeftSide(camera);
 	F32 baseLineRight = CameraRightSide(camera);
 
-	V4 textColor = MakeColor(0.0f, 1.0f, 1.0f);
-	DrawTextLine(canvas, "The quick brown fox jumps over the lazy dog. 1234567890", baseLineY, baseLineLeft, labState->glyphData, textColor);
+	V4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
+
+	DrawToolTip(canvas);
 }
 
 static LRESULT CALLBACK TextLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -196,3 +244,6 @@ static void TextLab(HINSTANCE instance)
 		ReleaseDC(window, context); 
 	}
 }
+
+// TODO: Pass Canvas by pointer!
+// TODO: Separate UI rendering from game rendering?

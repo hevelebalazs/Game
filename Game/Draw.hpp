@@ -5,6 +5,7 @@
 #include "Geometry.hpp"
 #include "Math.hpp"
 #include "Memory.hpp"
+#include "Text.hpp"
 #include "Texture.hpp"
 #include "Type.hpp"
 
@@ -21,6 +22,7 @@ struct Canvas
 {
 	Bitmap bitmap;
 	Camera* camera;
+	GlyphData* glyphData;
 };
 
 static I32 UnitXtoPixel(Camera* camera, F32 unitX)
@@ -1313,4 +1315,90 @@ static void DrawStretchedBitmap(Canvas canvas, Bitmap* bitmap, F32 left, F32 rig
 	I32 pixelTop    = UnitYtoPixel(camera, top);
 	I32 pixelBottom = UnitYtoPixel(camera, bottom);
 	CopyStretchedBitmap(bitmap, &canvas.bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
+}
+
+static void DrawGlyph(Canvas canvas, Glyph* glyph, F32 x, F32 y, V4 color)
+{
+	static U32 bitmapData[32][32];
+	static Bitmap bitmap;
+
+	bitmap.width = 32;
+	bitmap.height = 32;
+	bitmap.memory = (U32*)bitmapData;
+
+	for (I32 row = 0; row < 32; ++row)
+	{
+		for (I32 col = 0; col < 32; ++col)
+		{
+			F32 alpha = (F32)glyph->alpha[row][col] / 255.0f;
+			V4 drawColor = {};
+			drawColor.red = color.red * alpha;
+			drawColor.green = color.green * alpha;
+			drawColor.blue = color.blue * alpha;
+			drawColor.alpha = alpha;
+			bitmapData[row][col] = GetColorCode(drawColor);
+		}
+	}
+
+	Camera* camera = canvas.camera;
+	Assert(camera->unitInPixels > 0.0f);
+	DrawBitmap(
+		canvas,
+		&bitmap,
+		x + glyph->offsetX / camera->unitInPixels,
+		y + glyph->offsetY / camera->unitInPixels
+	);
+}
+
+static F32 GetTextWidth(Canvas canvas, I8* text)
+{
+	GlyphData* glyphData = canvas.glyphData;
+	Assert(glyphData != 0);
+
+	F32 pixelWidth = 0.0f;
+	for (I32 i = 0; text[i]; ++i)
+	{
+		U8 c = text[i];
+		Glyph* glyph = &glyphData->glyphs[c];
+		pixelWidth += glyph->advanceX;
+		
+		U8 nextC = text[i + 1];
+		if (nextC > 0)
+		{
+			pixelWidth += glyphData->kerningTable[c][nextC];
+		}
+	}
+
+	Camera* camera = canvas.camera;
+	Assert(camera->unitInPixels > 0.0f);
+	F32 width = pixelWidth / camera->unitInPixels;
+	return width;
+}
+
+static void DrawTextLine(Canvas canvas, I8* text, F32 baseLineY, F32 left, V4 textColor)
+{
+	Camera* camera = canvas.camera;
+	Assert(camera->unitInPixels > 0.0f);
+
+	GlyphData* glyphData = canvas.glyphData;
+	Assert(glyphData != 0);
+
+	F32 textX = left;
+	F32 textY = baseLineY;
+
+	for (I32 i = 0; text[i]; ++i)
+	{
+		U8 c = text[i];
+		Glyph* glyph = &glyphData->glyphs[c];
+
+		F32 right = textX + glyph->advanceX / camera->unitInPixels;
+		U8 nextC = text[i + 1];
+		if (nextC > 0)
+		{
+			right += glyphData->kerningTable[c][nextC] / camera->unitInPixels;
+		}
+
+		DrawGlyph(canvas, glyph, textX, textY, textColor);
+		textX = right;
+	}
 }

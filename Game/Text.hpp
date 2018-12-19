@@ -1,7 +1,10 @@
 #pragma once
 
-#include "Draw.hpp"
 #include "Type.hpp"
+
+#define TextHeightInPixels 15
+#define TextPixelsAboveBaseLine 10
+#define TextPixelsBelowBaseLine 4
 
 struct Glyph
 {
@@ -18,60 +21,6 @@ struct GlyphData
 	B32 initialized;
 };
 GlyphData gGlyphData;
-
-static void DrawGlyph(Canvas canvas, Glyph* glyph, F32 x, F32 y, V4 color)
-{
-	static U32 bitmapData[32][32];
-	static Bitmap bitmap;
-
-	bitmap.width = 32;
-	bitmap.height = 32;
-	bitmap.memory = (U32*)bitmapData;
-
-	for (I32 row = 0; row < 32; ++row)
-	{
-		for (I32 col = 0; col < 32; ++col)
-		{
-			F32 alpha = (F32)glyph->alpha[row][col] / 255.0f;
-			V4 drawColor = {};
-			drawColor.red = color.red * alpha;
-			drawColor.green = color.green * alpha;
-			drawColor.blue = color.blue * alpha;
-			drawColor.alpha = alpha;
-			bitmapData[row][col] = GetColorCode(drawColor);
-		}
-	}
-
-	Camera* camera = canvas.camera;
-	Assert(camera->unitInPixels > 0.0f);
-	DrawBitmap(
-		canvas,
-		&bitmap,
-		x + glyph->offsetX / camera->unitInPixels,
-		y + glyph->offsetY / camera->unitInPixels
-	);
-}
-
-static void DrawTextLine(Canvas canvas, I8* text, F32 baseLineY, F32 left, GlyphData* glyphData, V4 textColor)
-{
-	F32 textX = left;
-	F32 textY = baseLineY;
-
-	Camera* camera = canvas.camera;
-	Assert(camera->unitInPixels > 0.0f);
-	for (I32 i = 0; text[i]; ++i)
-	{
-		U8 c = text[i];
-		Glyph* glyph = &glyphData->glyphs[c];
-		DrawGlyph(canvas, glyph, textX, textY, textColor);
-		textX += glyph->advanceX / camera->unitInPixels;
-		U8 nextC = text[i + 1];
-		if (nextC > 0)
-		{
-			textX += glyphData->kerningTable[c][nextC] / camera->unitInPixels;
-		}
-	}
-}
 
 static void InitGlyphData(GlyphData* glyphData);
 static GlyphData* GetGlobalGlyphData()
