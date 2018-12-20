@@ -52,22 +52,8 @@ static void TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeigh
 	labState->canvas.glyphData = GetGlobalGlyphData();
 }
 
-static void DrawToolTip(Canvas* canvas)
+static void DrawTestToolTip(Canvas* canvas)
 {
-	GlyphData* glyphData = canvas->glyphData;
-	Assert(glyphData != 0);
-
-	Camera* camera = canvas->camera;
-	Assert(camera->unitInPixels > 0.0f);
-	F32 width = 300.0f / camera->unitInPixels;
-	F32 centerX = (CameraLeftSide(camera) + CameraRightSide(camera)) * 0.5f;
-	F32 centerY = (CameraTopSide(camera) + CameraBottomSide(camera)) * 0.5f;
-	F32 left = centerX - width * 0.5f;
-	F32 right = centerX + width * 0.5f;
-
-	F32 padding = 5.0f / camera->unitInPixels;
-	F32 topPadding = 8.0f / camera->unitInPixels;
-	
 	char* lines[] =
 	{
 		"LMB",
@@ -78,27 +64,10 @@ static void DrawToolTip(Canvas* canvas)
 	};
 	I32 lineN = sizeof(lines) / sizeof(char*);
 
-	F32 tooltipHeight = topPadding + lineN * (TextHeightInPixels / camera->unitInPixels) + padding;
-	F32 top = centerY - tooltipHeight * 0.5f;
-	F32 bottom = centerY + tooltipHeight * 0.5f;
-
-	V4 toolTipColor = MakeColor(0.0f, 0.0f, 0.0f);
-	DrawRect(canvas, left, right, top, bottom, toolTipColor);
-
-	V4 toolTipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawRectOutline(canvas, left, right, top, bottom, toolTipBorderColor);
-
-	V4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
-	V4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
-	F32 baseLineY = top + topPadding + TextPixelsAboveBaseLine / camera->unitInPixels;
-	F32 textLeft = left + padding;
-	for (I32 i = 0; i < lineN; ++i)
-	{
-		V4 color = (i == 0) ? titleColor : normalColor;
-		char* line = lines[i];
-		DrawTextLine(canvas, line, baseLineY, textLeft, color);
-		baseLineY += TextHeightInPixels / camera->unitInPixels;
-	}
+	Bitmap* bitmap = &canvas->bitmap;
+	I32 tooltipLeft = (bitmap->width / 2) - (TooltipWidth / 2);
+	I32 tooltipTop = (bitmap->height / 2) - (GetTooltipHeight(lineN) / 2);
+	DrawBitmapTooltip(bitmap, lines, lineN, canvas->glyphData, tooltipTop, tooltipLeft);
 }
 
 static void TextLabUpdate(TextLabState* labState)
@@ -138,7 +107,7 @@ static void TextLabUpdate(TextLabState* labState)
 
 	V4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
 
-	DrawToolTip(canvas);
+	DrawTestToolTip(canvas);
 }
 
 static LRESULT CALLBACK TextLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)

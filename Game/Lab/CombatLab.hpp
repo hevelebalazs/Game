@@ -43,7 +43,7 @@
 #define BlueAbility2SlowTime 3.0f
 #define BlueAbility2ResourceCost 50
 
-#define BlueAbility3Radius 1.5f
+#define BlueAbility3Radius 2.0f
 #define BlueAbility3TotalCastTime 1.0f
 #define BlueAbility3Damage 40
 #define BlueAbility3SlowTime 6.0f
@@ -855,6 +855,7 @@ static void DrawBlueAbility3(Canvas* canvas, Entity* entity, Ability* ability)
 		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility3TotalCastTime;
 		F32 fillRadius = durationRatio * BlueAbility3Radius;
 		
+		Bresenham(canvas, entity->position, ability->position, color);
 		DrawCircleOutline(canvas, ability->position, BlueAbility3Radius, color);
 		DrawCircle(canvas, ability->position, fillRadius, color);
 	}
@@ -925,34 +926,102 @@ static void DrawExpBar(Canvas* canvas, CombatLabState* labState)
 	}
 }
 
-static void DrawUI(Canvas* canvas, CombatLabState* labState)
+static void DrawUIBox(Bitmap* bitmap, I32 centerX, I32 centerY, I32 size, char* text, GlyphData* glyphData)
+{
+	I32 left   = centerX - size / 2;
+	I32 right  = centerX + size / 2;
+	I32 top    = centerY - size / 2;
+	I32 bottom = centerY + size / 2;
+
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	I32 textBaseLineY = bottom - (size - TextHeightInPixels) / 2 - TextPixelsBelowBaseLine;
+	F32 textWidth = GetTextPixelWidth(text, glyphData);
+	I32 textLeft = centerX - I32(textWidth * 0.5f);
+
+	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, textColor);
+}
+
+static void DrawUI(Canvas* canvas, CombatLabState* labState, V2 mousePosition)
 {
 	DrawExpBar(canvas, labState);
 
 	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+
+	I32 mouseX = UnitXtoPixel(canvas->camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel(canvas->camera, mousePosition.y);
+
 	I32 boxSize = 40;
-	I32 boxBottom = (bitmap->height - 1) - 15;
-	I32 boxTop = boxBottom- boxSize;
-	I32 boxCenterX = (bitmap->width - 1) / 2;
-	I32 boxLeft = boxCenterX - boxSize / 2;
-	I32 boxRight = boxCenterX + boxSize / 2;
-	
-	V4 boxColor = MakeColor(0.0f, 0.0f, 0.0f);
-	DrawBitmapRect(bitmap, boxLeft, boxRight, boxTop, boxBottom, boxColor);
+	I32 boxPadding = 5;
+	I32 boxCount = 3;
+	I32 boxBarWidth = boxCount * boxSize + (boxCount - 1) * boxPadding;
 
-	V4 boxOutlineColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawBitmapRectOutline(bitmap, boxLeft, boxRight, boxTop, boxBottom, boxOutlineColor);
+	I32 boxCenterX = (bitmap->width - 1) / 2 - boxBarWidth / 2 + boxSize / 2;
+	I32 boxCenterY = (bitmap->height - 1) - 10 - boxPadding - boxSize / 2;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "LMB", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		char* lines[] =
+		{
+			"Ability 1",
+			"Use time: 0.5 sec",
+			"Hit in a direction, dealing 30 damage",
+			"to enemies closer than 5 meters.",
+			"Generates 20 Energy if it hits anything."
+		};
+		I32 lineN = sizeof(lines) / sizeof(lines[0]);
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapTooltipBottom(bitmap, lines, lineN, glyphData, tooltipBottom, tooltipLeft);
+	}
 
-	Camera* camera = canvas->camera;
-	I32 boxHeight = boxBottom - boxTop;
-	I32 boxBaseLineYPixel = boxBottom - (boxHeight - TextHeightInPixels) / 2 - TextPixelsBelowBaseLine;
-	F32 boxBaseLineY = PixelToUnitY(camera, F32(boxBaseLineYPixel));
-	char* boxText = "LMB";
-	F32 textWidth = GetTextWidth(canvas, boxText);
-	F32 textLeft = PixelToUnitX(camera, F32(boxCenterX)) - textWidth * 0.5f;
+	boxCenterX += boxSize + boxPadding;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "Q", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		char* lines[] =
+		{
+			"Ability 2",
+			"Energy cost: 30",
+			"Charge in a direction, dealing 10 damage",
+			"to enemies in your way.",
+			"Requires level 2."
+		};
+		I32 lineN = sizeof(lines) / sizeof(lines[0]);
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapTooltipBottom(bitmap, lines, lineN, glyphData, tooltipBottom, tooltipLeft);
+	}
 
-	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawTextLine(canvas, boxText, boxBaseLineY, textLeft, textColor);
+	boxCenterX += boxSize + boxPadding;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "W", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		char* lines[] =
+		{
+			"Ability 3",
+			"Energy cost: 60",
+			"Use time: 0.3 sec",
+			"Spin around, kicking enemies closer than 5",
+			"meters, knocking them away, dealing them",
+			"50 damage, and interrupting their abilities.",
+			"Requires level 3."
+		};
+		I32 lineN = sizeof(lines) / sizeof(lines[0]);
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapTooltipBottom(bitmap, lines, lineN, glyphData, tooltipBottom, tooltipLeft);
+	}
 }
 
 static F32 GetEntityDistance(Entity* entity1, Entity* entity2)
@@ -1461,7 +1530,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		DrawEntity(canvas, enemy);
 	}
 
-	DrawUI(canvas, labState);
+	DrawUI(canvas, labState, mousePosition);
 }
 
 static void CombatLab(HINSTANCE instance)
