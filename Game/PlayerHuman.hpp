@@ -204,7 +204,7 @@ static void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds/*, GameState
 	}
 }
 
-static void DrawPlayerHuman(Canvas canvas, PlayerHuman* playerHuman)
+static void DrawPlayerHuman(Canvas* canvas, PlayerHuman* playerHuman)
 {
 	Human* human = &playerHuman->human;
 

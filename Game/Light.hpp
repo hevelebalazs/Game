@@ -5,14 +5,14 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
-static void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistance, F32 minAngle, F32 maxAngle, F32 baseBrightness) 
+static void LightSector(Canvas* canvas, V2 center, F32 minDistance, F32 maxDistance, F32 minAngle, F32 maxAngle, F32 baseBrightness) 
 {
 	V2 radius = MakePoint(maxDistance, maxDistance);
 	V2 topLeft = (center - radius);
 	V2 bottomRight = (center + radius);
 
-	Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+	Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
 	V2 topLeftPixel = UnitToPixel(camera, topLeft);
 	V2 bottomRightPixel = UnitToPixel(camera, bottomRight);
 
@@ -53,7 +53,7 @@ static void LightSector(Canvas canvas, V2 center, F32 minDistance, F32 maxDistan
 	}
 }
 
-static void LightCircle(Canvas canvas, V2 center, F32 seeDistance, F32 baseBrightness)
+static void LightCircle(Canvas* canvas, V2 center, F32 seeDistance, F32 baseBrightness)
 {
 	LightSector(canvas, center, 0.0f, seeDistance, -PI, PI, baseBrightness);
 }

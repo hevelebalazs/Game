@@ -77,12 +77,12 @@ static void RoadLabResize(RoadLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 50.0f;
 }
 
-static void RoadLabBlit(Canvas canvas, HDC context, RECT rect)
+static void RoadLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -110,7 +110,7 @@ static B32 CanJunctionBePlacedAtPoint(Map* map, V2 point)
 	return valid;
 }
 
-static void HighlightJunctionCorner(Canvas canvas, Junction* junction, I32 cornerIndex, V4 color)
+static void HighlightJunctionCorner(Canvas* canvas, Junction* junction, I32 cornerIndex, V4 color)
 {
 	F32 radius = LaneWidth * 0.25f;
 	V2 corner = GetJunctionCorner(junction, cornerIndex);
@@ -131,7 +131,7 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 	}
 
 	Map* map = &labState->map;
-	Canvas canvas = labState->canvas;
+	Canvas* canvas = &labState->canvas;
 	V4 black = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, black);
 
@@ -396,7 +396,7 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
 
-			RoadLabBlit(labState->canvas, context, clientRect);
+			RoadLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -561,7 +561,7 @@ static void RoadLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		RoadLabBlit(labState->canvas, context, rect);
+		RoadLabBlit(&labState->canvas, context, rect);
 		ReleaseDC(window, context);
 	}
 }

@@ -159,7 +159,7 @@ static void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 	}
 }
 
-static void DrawAutoHuman(Canvas canvas, AutoHuman* autoHuman) 
+static void DrawAutoHuman(Canvas* canvas, AutoHuman* autoHuman) 
 {
 	if (autoHuman->dead) 
 	{

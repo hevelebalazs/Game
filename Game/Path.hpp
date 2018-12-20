@@ -1589,7 +1589,7 @@ static B32 IsNodeEndPoint(PathNode* node, V4 point)
 	return result;
 }
 
-static void DrawPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
+static void DrawPath(Canvas* canvas, PathNode* firstNode, V4 color, F32 lineWidth)
 {
 	PathNode* node = firstNode;
 
@@ -1615,7 +1615,7 @@ static void DrawPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth
 	}
 }
 
-static void DrawBezierPathFromPoint(Canvas canvas, PathNode* firstNode, V4 startPoint, V4 color, F32 lineWidth)
+static void DrawBezierPathFromPoint(Canvas* canvas, PathNode* firstNode, V4 startPoint, V4 color, F32 lineWidth)
 {
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
@@ -1642,7 +1642,7 @@ static void DrawBezierPathFromPoint(Canvas canvas, PathNode* firstNode, V4 start
 	}
 }
 
-static void DrawBezierPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
+static void DrawBezierPath(Canvas* canvas, PathNode* firstNode, V4 color, F32 lineWidth)
 {
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};

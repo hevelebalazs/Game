@@ -115,7 +115,7 @@ static F32 GetBezier4DistanceFromEnd(Bezier4 bezier4, F32 ratio)
 	return result;
 }
 
-static void DrawBezier4(Canvas canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount)
+static void DrawBezier4(Canvas* canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount)
 {
 	V2 point = bezier4.points[0];
 

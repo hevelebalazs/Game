@@ -12,8 +12,6 @@ struct TextLabState
 	Camera camera;
 	Canvas canvas;
 
-	GlyphData* glyphData;
-
 	B32 running;
 };
 static TextLabState gTextLabState;
@@ -26,15 +24,15 @@ static void TextLabResize(TextLabState* labState, I32 width, I32 height)
 	Canvas* canvas = &labState->canvas;
 	ResizeBitmap(&canvas->bitmap, width, height);
 	canvas->camera = camera;
-	camera->unitInPixels = 1.0f;
+	camera->unitInPixels = 2.0f;
 }
 
-static void TextLabBlit(Canvas canvas, HDC context, RECT rect)
+static void TextLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -51,12 +49,30 @@ static void TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeigh
 	labState->running = true;
 	TextLabResize(labState, windowWidth, windowHeight);
 
-	labState->glyphData = GetGlobalGlyphData();
+	labState->canvas.glyphData = GetGlobalGlyphData();
+}
+
+static void DrawTestToolTip(Canvas* canvas)
+{
+	char* lines[] =
+	{
+		"LMB",
+		"Use time: 0.5 sec",
+		"Hit in a direction, dealing 30 damage",
+		"to the first enemy hit.",
+		"Generates 20 Energy if it hits anything."
+	};
+	I32 lineN = sizeof(lines) / sizeof(char*);
+
+	Bitmap* bitmap = &canvas->bitmap;
+	I32 tooltipLeft = (bitmap->width / 2) - (TooltipWidth / 2);
+	I32 tooltipTop = (bitmap->height / 2) - (GetTooltipHeight(lineN) / 2);
+	DrawBitmapTooltip(bitmap, lines, lineN, canvas->glyphData, tooltipTop, tooltipLeft);
 }
 
 static void TextLabUpdate(TextLabState* labState)
 {
-	Canvas canvas = labState->canvas;
+	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
@@ -65,7 +81,7 @@ static void TextLabUpdate(TextLabState* labState)
 	V4 bottomLeftColor = MakeColor(0.0f, 0.0f, 1.0f);
 	V4 bottomRightColor = MakeColor(1.0f, 0.0f, 0.0f);
 
-	Bitmap* bitmap = &canvas.bitmap;
+	Bitmap* bitmap = &canvas->bitmap;
 	U32* pixel = bitmap->memory;
 	for (I32 row = 0; row < bitmap->height; ++row)
 	{
@@ -84,13 +100,14 @@ static void TextLabUpdate(TextLabState* labState)
 		}
 	}
 
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	F32 baseLineY = 0.5f * (CameraTopSide(camera) + CameraBottomSide(camera));
 	F32 baseLineLeft = CameraLeftSide(camera);
 	F32 baseLineRight = CameraRightSide(camera);
 
-	V4 textColor = MakeColor(0.0f, 1.0f, 1.0f);
-	DrawTextLine(canvas, "The quick brown fox jumps over the lazy dog. 1234567890", baseLineY, baseLineLeft, labState->glyphData, textColor);
+	V4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
+
+	DrawTestToolTip(canvas);
 }
 
 static LRESULT CALLBACK TextLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -117,7 +134,7 @@ static LRESULT CALLBACK TextLabCallback(HWND window, UINT message, WPARAM wparam
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			TextLabBlit(labState->canvas, context, clientRect);
+			TextLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -192,7 +209,9 @@ static void TextLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		TextLabBlit(labState->canvas, context, rect);
+		TextLabBlit(&labState->canvas, context, rect);
 		ReleaseDC(window, context); 
 	}
 }
+
+// TODO: Canvas.bitmap should be a pointer?

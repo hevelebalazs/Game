@@ -454,7 +454,7 @@ static MapElem GetPedestrianElemAtPoint(Map* map, V2 point)
 	return result;
 }
 
-static void DrawGroundElems(Canvas canvas, Map* map)
+static void DrawGroundElems(Canvas* canvas, Map* map)
 {
 	ClearScreen(canvas, GrassColor);
 
@@ -477,7 +477,7 @@ static void DrawGroundElems(Canvas canvas, Map* map)
 	}
 }
 
-static void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures)
+static void DrawTexturedGroundElems(Canvas* canvas, Map* map, MapTextures* textures)
 {
 	FillScreenWithWorldTexture(canvas, textures->grassTexture);
 	
@@ -500,7 +500,7 @@ static void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textur
 	}
 }
 
-static void DrawAllTrafficLights(Canvas canvas, Map* map)
+static void DrawAllTrafficLights(Canvas* canvas, Map* map)
 {
 	for (I32 i = 0; i < map->junctionN; ++i)
 	{
@@ -524,7 +524,7 @@ static B32 AreMapElemsEqual(MapElem elem1, MapElem elem2)
 	}
 }
 
-static void HighlightMapElem(Canvas canvas, MapElem mapElem, V4 color)
+static void HighlightMapElem(Canvas* canvas, MapElem mapElem, V4 color)
 {
 	if (mapElem.type == MapElemBuilding)
 	{
@@ -630,7 +630,7 @@ static void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitm
 	Canvas canvas = {};
 	canvas.bitmap = *bitmap;
 	canvas.camera = &camera;
-	DrawGroundElems(canvas, map);
+	DrawGroundElems(&canvas, map);
 	// DrawTexturedGroundElems(canvas, map, mapTextures);
 }
 
@@ -697,7 +697,7 @@ static Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
 	return bitmap;
 }
 
-static void DrawMapTile(Canvas canvas, Map* map, MapTileIndex tileIndex, MapTextures* textures)
+static void DrawMapTile(Canvas* canvas, Map* map, MapTileIndex tileIndex, MapTextures* textures)
 {
 	F32 tileLeft   = map->left + (tileIndex.col * MapTileSide);
 	F32 tileRight  = tileLeft + MapTileSide;
@@ -716,7 +716,7 @@ static void PushDrawMapTileWork(DrawMapTileWorkList* workList, DrawMapTileWork w
 	ReleaseSemaphore(workList->semaphore, 1, 0);
 }
 
-static void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F32 top, F32 bottom, MapTextures* textures)
+static void DrawVisibleMapTiles(Canvas* canvas, Map* map, F32 left, F32 right, F32 top, F32 bottom, MapTextures* textures)
 {
 	V2 topLeft     = MakePoint(left, top);
 	V2 bottomRight = MakePoint(right, bottom);
@@ -742,7 +742,7 @@ static void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F3
 			if (IsMapTileIndexValid(map, tileIndex)) 
 			{
 				DrawMapTileWork work = {};
-				work.canvas = canvas;
+				work.canvas = *canvas;
 				work.map = map;
 				work.tileIndex = tileIndex;
 				work.textures = textures;
@@ -767,7 +767,7 @@ static DWORD WINAPI DrawMapTileWorkProc(LPVOID parameter)
 		Assert (workList->firstWorkToDo < workList->workN);
 		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
 		DrawMapTileWork work = workList->works[workIndex];
-		DrawMapTile(work.canvas, work.map, work.tileIndex, work.textures);
+		DrawMapTile(&work.canvas, work.map, work.tileIndex, work.textures);
 		ReleaseSemaphore(workList->semaphoreDone, 1, 0);
 	}
 }

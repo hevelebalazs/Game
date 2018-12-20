@@ -43,7 +43,7 @@
 #define BlueAbility2SlowTime 3.0f
 #define BlueAbility2ResourceCost 50
 
-#define BlueAbility3Radius 1.5f
+#define BlueAbility3Radius 2.0f
 #define BlueAbility3TotalCastTime 1.0f
 #define BlueAbility3Damage 40
 #define BlueAbility3SlowTime 6.0f
@@ -152,17 +152,17 @@ static void CombatLabResize(CombatLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 20.0f;
 }
 
-static void CombatLabBlit(Canvas canvas, HDC context, RECT rect)
+static void CombatLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
-	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
+	Bitmap* bitmap = &canvas->bitmap;
+	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
 	StretchDIBits(context,
-				  0, 0, bitmap.width, bitmap.height,
+				  0, 0, bitmap->width, bitmap->height,
 				  0, 0, width, height,
-				  bitmap.memory,
+				  bitmap->memory,
 				  &bitmapInfo,
 				  DIB_RGB_COLORS,
 				  SRCCOPY
@@ -342,7 +342,7 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			CombatLabBlit(labState->canvas, context, clientRect);
+			CombatLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -471,14 +471,15 @@ static void CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowH
 {
 	CombatLabReset(labState);
 
+	labState->canvas.glyphData = GetGlobalGlyphData();
 	CombatLabResize(labState, windowWidth, windowHeight);
 }
 
-static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
+static void DrawSlice(Canvas* canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera *camera = canvas.camera;
+	Camera *camera = canvas->camera;
 	I32 centerXPixel = UnitXtoPixel(camera, center.x);
 	I32 centerYPixel = UnitYtoPixel(camera, center.y);
 	V2 pixelCenter = MakeVector(F32(centerXPixel), F32(centerYPixel));
@@ -501,7 +502,7 @@ static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 ma
 	I32 pixelRadius = I32(radius * camera->unitInPixels);
 	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
 	leftPixel   = IntMax2(leftPixel, 0);
@@ -526,7 +527,7 @@ static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 ma
 	}
 }
 
-static void DrawSliceOutline(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
+static void DrawSliceOutline(Canvas* canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
 {
 	if (minAngle > maxAngle)
 	{
@@ -550,11 +551,11 @@ static void DrawSliceOutline(Canvas canvas, V2 center, F32 radius, F32 minAngle,
 	}
 }
 
-static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
+static void DrawCircle(Canvas* canvas, V2 center, F32 radius, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera *camera = canvas.camera;
+	Camera *camera = canvas->camera;
 
 	I32 centerXPixel = UnitXtoPixel(camera, center.x);
 	I32 centerYPixel = UnitYtoPixel(camera, center.y);
@@ -577,7 +578,7 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 	I32 pixelRadius = I32(radius * camera->unitInPixels);
 	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
 	leftPixel   = IntMax2(leftPixel, 0);
@@ -597,7 +598,7 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 	}
 }
 
-static void DrawCircleOutline(Canvas canvas, V2 center, F32 radius, V4 color)
+static void DrawCircleOutline(Canvas* canvas, V2 center, F32 radius, V4 color)
 {
 	I32 lineN = 20;
 	F32 angleAdvance = (2.0f * PI) / F32(lineN);
@@ -614,7 +615,7 @@ static void DrawCircleOutline(Canvas canvas, V2 center, F32 radius, V4 color)
 	}
 }
 
-static void DrawEntity(Canvas canvas, Entity* entity)
+static void DrawEntity(Canvas* canvas, Entity* entity)
 {
 	V4 color = {};
 	switch (entity->type)
@@ -729,7 +730,7 @@ static B32 IsEntityInCircle(Entity* entity, V2 center, F32 radius)
 	return result;
 }
 
-static void DrawWhiteAbility1(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawWhiteAbility1(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability)
 	Assert(ability->id == WhiteAbility1ID);
@@ -749,7 +750,7 @@ static void DrawWhiteAbility1(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawWhiteAbility3(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawWhiteAbility3(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == WhiteAbility3ID);
@@ -766,7 +767,7 @@ static void DrawWhiteAbility3(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawRedAbility1(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawRedAbility1(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == RedAbility1ID);
@@ -786,7 +787,7 @@ static void DrawRedAbility1(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawRedAbility3(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawRedAbility3(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == RedAbility2ID);
@@ -808,7 +809,7 @@ static void DrawRedAbility3(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawBlueAbility1(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawBlueAbility1(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability)
 	Assert(ability->id == BlueAbility1ID);
@@ -825,7 +826,7 @@ static void DrawBlueAbility1(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawBlueAbility2(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawBlueAbility2(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == BlueAbility2ID);
@@ -842,7 +843,7 @@ static void DrawBlueAbility2(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawBlueAbility3(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawBlueAbility3(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == BlueAbility3ID);
@@ -854,12 +855,13 @@ static void DrawBlueAbility3(Canvas canvas, Entity* entity, Ability* ability)
 		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility3TotalCastTime;
 		F32 fillRadius = durationRatio * BlueAbility3Radius;
 		
+		Bresenham(canvas, entity->position, ability->position, color);
 		DrawCircleOutline(canvas, ability->position, BlueAbility3Radius, color);
 		DrawCircle(canvas, ability->position, fillRadius, color);
 	}
 }
 
-static void DrawAbility(Canvas canvas, Entity* entity, Ability* ability)
+static void DrawAbility(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	if (ability->id == WhiteAbility1ID)
@@ -902,16 +904,16 @@ static void DrawAbility(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawExpBar(Canvas canvas, CombatLabState* labState)
+static void DrawExpBar(Canvas* canvas, CombatLabState* labState)
 {
 	I32 level = labState->player.level;
 	if (level < MaxLevel)
 	{
-		Bitmap* bitmap = &canvas.bitmap;
+		Bitmap* bitmap = &canvas->bitmap;
 		I32 left = 0;
 		I32 right = bitmap->width - 1;
 		I32 bottom = bitmap->height - 1;
-		I32 top = bottom - 20;
+		I32 top = bottom - 10;
 		V4 unfilledColor = MakeColor(0.3f, 0.3f, 0.3f);
 		V4 filledColor = MakeColor(0.6f, 0.6f, 0.6f);
 		DrawBitmapRect(bitmap, left, right, top, bottom, unfilledColor);
@@ -921,6 +923,104 @@ static void DrawExpBar(Canvas canvas, CombatLabState* labState)
 		I32 expNeeded = gExpNeededForNextLevel[level];
 		I32 rightFilled = left + Floor(F32(right - left) * F32(expGained) / F32(expNeeded));
 		DrawBitmapRect(bitmap, left, rightFilled, top, bottom, filledColor);
+	}
+}
+
+static void DrawUIBox(Bitmap* bitmap, I32 centerX, I32 centerY, I32 size, char* text, GlyphData* glyphData)
+{
+	I32 left   = centerX - size / 2;
+	I32 right  = centerX + size / 2;
+	I32 top    = centerY - size / 2;
+	I32 bottom = centerY + size / 2;
+
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	I32 textBaseLineY = bottom - (size - TextHeightInPixels) / 2 - TextPixelsBelowBaseLine;
+	F32 textWidth = GetTextPixelWidth(text, glyphData);
+	I32 textLeft = centerX - I32(textWidth * 0.5f);
+
+	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, textColor);
+}
+
+static void DrawUI(Canvas* canvas, CombatLabState* labState, V2 mousePosition)
+{
+	DrawExpBar(canvas, labState);
+
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+
+	I32 mouseX = UnitXtoPixel(canvas->camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel(canvas->camera, mousePosition.y);
+
+	I32 boxSize = 40;
+	I32 boxPadding = 5;
+	I32 boxCount = 3;
+	I32 boxBarWidth = boxCount * boxSize + (boxCount - 1) * boxPadding;
+
+	I32 boxCenterX = (bitmap->width - 1) / 2 - boxBarWidth / 2 + boxSize / 2;
+	I32 boxCenterY = (bitmap->height - 1) - 10 - boxPadding - boxSize / 2;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "LMB", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		char* lines[] =
+		{
+			"Ability 1",
+			"Use time: 0.5 sec",
+			"Hit in a direction, dealing 30 damage",
+			"to enemies closer than 5 meters.",
+			"Generates 20 Energy if it hits anything."
+		};
+		I32 lineN = sizeof(lines) / sizeof(lines[0]);
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapTooltipBottom(bitmap, lines, lineN, glyphData, tooltipBottom, tooltipLeft);
+	}
+
+	boxCenterX += boxSize + boxPadding;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "Q", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		char* lines[] =
+		{
+			"Ability 2",
+			"Energy cost: 30",
+			"Charge in a direction, dealing 10 damage",
+			"to enemies in your way.",
+			"Requires level 2."
+		};
+		I32 lineN = sizeof(lines) / sizeof(lines[0]);
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapTooltipBottom(bitmap, lines, lineN, glyphData, tooltipBottom, tooltipLeft);
+	}
+
+	boxCenterX += boxSize + boxPadding;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "W", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		char* lines[] =
+		{
+			"Ability 3",
+			"Energy cost: 60",
+			"Use time: 0.3 sec",
+			"Spin around, kicking enemies closer than 5",
+			"meters, knocking them away, dealing them",
+			"50 damage, and interrupting their abilities.",
+			"Requires level 3."
+		};
+		I32 lineN = sizeof(lines) / sizeof(lines[0]);
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapTooltipBottom(bitmap, lines, lineN, glyphData, tooltipBottom, tooltipLeft);
 	}
 }
 
@@ -964,7 +1064,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		player->position = player->position + seconds * player->velocity;
 	}
 
-	Canvas canvas = labState->canvas;
+	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
@@ -1430,7 +1530,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		DrawEntity(canvas, enemy);
 	}
 
-	DrawExpBar(canvas, labState);
+	DrawUI(canvas, labState, mousePosition);
 }
 
 static void CombatLab(HINSTANCE instance)
@@ -1495,7 +1595,7 @@ static void CombatLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		CombatLabBlit(labState->canvas, context, rect);
+		CombatLabBlit(&labState->canvas, context, rect);
 		ReleaseDC(window, context);
 	}
 }

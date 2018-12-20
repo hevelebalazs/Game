@@ -404,7 +404,7 @@ static void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 static void GameDraw(GameStorage* gameStorage)
 {
 	GameState* gameState = gameStorage->gameState;
-	Canvas canvas = gameState->canvas;
+	Canvas* canvas = &gameState->canvas;
 
 	V4 clearColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, clearColor);
@@ -428,18 +428,18 @@ static void GameDraw(GameStorage* gameStorage)
 		{
 			V4 black = MakeColor(0.0f, 0.0f, 0.0f);
 
-			Canvas maskData = gameState->maskCanvas;
+			Canvas* maskData = &gameState->maskCanvas;
 			ClearScreen(maskData, black);
 
 			DrawVisibleAreaInBuilding(maskData, *inBuilding, gameState->playerHuman.human.position, &gameStorage->tmpArena);
 
-			ApplyBitmapMask(canvas.bitmap, maskData.bitmap);
+			ApplyBitmapMask(canvas->bitmap, maskData->bitmap);
 		}
 	} 
 	else 
 	{
 		Map* map = &gameState->map;
-		Camera* camera = canvas.camera;
+		Camera* camera = canvas->camera;
 		float visibleRadius = 50.0f;
 		F32 left   = CameraLeftSide(camera)   - visibleRadius;
 		F32 right  = CameraRightSide(camera)  + visibleRadius;

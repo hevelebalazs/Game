@@ -38,12 +38,12 @@ static void PhysicsLabResize(PhysicsLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 20.0f;
 }
 
-static void PhysicsLabBlit(Canvas canvas, HDC context, RECT rect)
+static void PhysicsLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -80,7 +80,7 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			PhysicsLabBlit(labState->canvas, context, clientRect);
+			PhysicsLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -169,7 +169,7 @@ static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windo
 	PhysicsLabResize(labState, windowWidth, windowHeight);
 }
 
-static void DrawWheel(Canvas canvas, V2 center, F32 angle)
+static void DrawWheel(Canvas* canvas, V2 center, F32 angle)
 {
 	V2 frontDirection = RotationVector(angle);
 	V2 sideDirection = TurnVectorToRight(frontDirection);
@@ -191,7 +191,7 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 {
 	PlayerCar* car = &labState->car;
 
-	Canvas canvas = labState->canvas;
+	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
@@ -327,7 +327,7 @@ static void PhysicsLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		PhysicsLabBlit(labState->canvas, context, rect);
+		PhysicsLabBlit(&labState->canvas, context, rect);
 		ReleaseDC(window, context);
 	}
 }

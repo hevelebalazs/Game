@@ -107,9 +107,6 @@
     <ClInclude Include="Lab\TextLab.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Lab\stb_truetype.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Text.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

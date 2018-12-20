@@ -51,12 +51,12 @@ void WinDraw(HWND window)
 	GameDraw(&globalGameStorage);
 }
 
-void WinUpdate(Canvas canvas, HDC context, RECT clientRect)
+void WinUpdate(Canvas* canvas, HDC context, RECT clientRect)
 {
 	I32 windowWidth = clientRect.right - clientRect.left;
 	I32 windowHeight = clientRect.bottom - clientRect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
@@ -92,7 +92,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
 
-			WinUpdate(globalGameState->canvas, context, clientRect);
+			WinUpdate(&globalGameState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -263,7 +263,7 @@ void RunGame(HINSTANCE instance)
 
 		HDC context = GetDC(window);
 
-		WinUpdate(globalGameState->canvas, context, rect);
+		WinUpdate(&globalGameState->canvas, context, rect);
 
 		ReleaseDC(window, context);
 		LARGE_INTEGER nowCounter;
@@ -289,7 +289,7 @@ void RunGame(HINSTANCE instance)
 
 I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	TextLab(instance);
+	CombatLab(instance);
 	// RunGame(instance);
 	return 0;
 }

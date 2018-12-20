@@ -136,7 +136,7 @@ static void MoveCar(Car* car, V4 point)
 	car->angle = VectorAngle(point.direction);
 }
 
-static void DrawCar(Canvas canvas, Car car)
+static void DrawCar(Canvas* canvas, Car car)
 {
 	Assert(car.bitmap != 0);
 	DrawScaledRotatedBitmap(canvas, car.bitmap, car.position, car.width, car.length, car.angle);

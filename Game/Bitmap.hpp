@@ -6,6 +6,7 @@
 #include "Geometry.hpp"
 #include "Math.hpp"
 #include "Memory.hpp"
+#include "Text.hpp"
 #include "Type.hpp"
 
 struct Bitmap
@@ -172,13 +173,26 @@ static U32 GetClosestBitmapColorCode(Bitmap* bitmap, F32 heightRatio, F32 widthR
 	return colorCode;
 }
 
+static B32 IsValidBitmapPixel(Bitmap* bitmap, I32 row, I32 col)
+{
+	B32 isValid = IsIntBetween(row, 0, bitmap->height - 1) && IsIntBetween(col, 0, bitmap->width - 1);
+	return isValid;
+}
+
 static void PaintBitmapPixel(Bitmap* bitmap, I32 row, I32 col, U32 colorCode)
 {
-	Assert(row >= 0 && row < bitmap->height);
-	Assert(col >= 0 && col < bitmap->width);
+	Assert(IsValidBitmapPixel(bitmap, row, col));
 
 	U32* pixelAddress = GetBitmapPixelAddress(bitmap, row, col);
 	*pixelAddress = colorCode;
+}
+
+static void MixBitmapPixel(Bitmap* bitmap, I32 row, I32 col, V4 newColor)
+{
+	Assert(IsValidBitmapPixel(bitmap, row, col));
+	V4 oldColor = GetBitmapPixelColor(bitmap, row, col);
+	V4 mixedColor = MixColors(oldColor, newColor);
+	PaintBitmapPixel(bitmap, row, col, GetColorCode(mixedColor));
 }
 
 struct BresenhamData 
@@ -579,4 +593,132 @@ static void DrawBitmapRect(Bitmap* bitmap, I32 left, I32 right, I32 top, I32 bot
 			*pixelAddress = colorCode;
 		}
 	}
+}
+
+static void DrawBitmapRectOutline(Bitmap* bitmap, I32 left, I32 right, I32 top, I32 bottom, V4 color)
+{
+	DrawBitmapBresenhamLine(bitmap, top, left, top, right, color);
+	DrawBitmapBresenhamLine(bitmap, top, right, bottom, right, color);
+	DrawBitmapBresenhamLine(bitmap, bottom, right, bottom, left, color);
+	DrawBitmapBresenhamLine(bitmap, bottom, left, top, left, color);
+}
+
+static void DrawBitmapGlyph(Bitmap* bitmap, Glyph* glyph, I32 x, I32 baseLineY, V4 color)
+{
+	I32 startCol = x + I32(glyph->offsetX);
+	I32 startRow = baseLineY + I32(glyph->offsetY);
+
+	for (I32 row = 0; row < 32; ++row)
+	{
+		for (I32 col = 0; col < 32; ++col)
+		{
+			U8 alphaValue = glyph->alpha[row][col];
+			if (alphaValue == 0)
+			{
+				continue;
+			}
+
+			F32 alpha = (F32)alphaValue / 255.0f;
+			V4 newColor = {};
+			newColor.red = color.red * alpha;
+			newColor.green = color.green * alpha;
+			newColor.blue = color.blue * alpha;
+			newColor.alpha = alpha;
+	
+			I32 toRow = startRow + row;
+			I32 toCol = startCol + col;
+
+			if (IsValidBitmapPixel(bitmap, toRow, toCol))
+			{
+				MixBitmapPixel(bitmap, toRow, toCol, newColor);
+			}
+		}
+	}
+}
+
+static void DrawBitmapTextLine(Bitmap* bitmap, I8* text, GlyphData* glyphData, I32 left, I32 baseLineY, V4 color)
+{
+	F32 textX = F32(left);
+	F32 textY = F32(baseLineY);
+
+	for (I32 i = 0; text[i]; ++i)
+	{
+		U8 c = text[i];
+		Glyph* glyph = &glyphData->glyphs[c];
+
+		F32 right = textX + glyph->advanceX;
+		U8 nextC = text[i + 1];
+		if (nextC > 0)
+		{
+			right += glyphData->kerningTable[c][nextC];
+		}
+
+		DrawBitmapGlyph(bitmap, glyph, I32(textX), I32(textY), color);
+		textX = right;
+	}
+}
+
+static F32 GetTextPixelWidth(I8* text, GlyphData* glyphData)
+{
+	Assert(glyphData != 0);
+
+	F32 width = 0.0f;
+	for (I32 i = 0; text[i]; ++i)
+	{
+		U8 c = text[i];
+		Glyph* glyph = &glyphData->glyphs[c];
+		width += glyph->advanceX;
+		
+		U8 nextC = text[i + 1];
+		if (nextC > 0)
+		{
+			width += glyphData->kerningTable[c][nextC];
+		}
+	}
+
+	return width;
+}
+
+#define TooltipWidth 300
+#define TooltipPadding 3
+#define TooltipTopPadding 5
+
+static I32 GetTooltipHeight(I32 lineN)
+{
+	I32 height = TooltipTopPadding + lineN * (TextHeightInPixels) + TooltipPadding;
+	return height;
+}
+
+static void DrawBitmapTooltip(Bitmap* bitmap, char** lines, I32 lineN, GlyphData* glyphData, I32 top, I32 left)
+{
+	Assert(glyphData != 0);
+
+	I32 right = left + TooltipWidth;
+
+	I32 height = GetTooltipHeight(lineN);
+	I32 bottom = top + height;
+
+	V4 tooltipColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, tooltipColor);
+
+	V4 tooltipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, tooltipBorderColor);
+
+	V4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
+	I32 baseLineY = top + TooltipTopPadding + TextPixelsAboveBaseLine;
+	I32 textLeft = left + TooltipPadding;
+	for (I32 i = 0; i < lineN; ++i)
+	{
+		V4 color = (i == 0) ? titleColor : normalColor;
+		char* line = lines[i];
+		DrawBitmapTextLine(bitmap, line, glyphData, textLeft, baseLineY, color);
+		baseLineY += TextHeightInPixels;
+	}
+}
+
+static void DrawBitmapTooltipBottom(Bitmap* bitmap, char** lines, I32 lineN, GlyphData* glyphData, I32 bottom, I32 left)
+{
+	I32 top = bottom - GetTooltipHeight(lineN);
+	DrawBitmapTooltip(bitmap, lines, lineN, glyphData, top, left);
 }
