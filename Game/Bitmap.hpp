@@ -6,6 +6,7 @@
 #include "Geometry.hpp"
 #include "Math.hpp"
 #include "Memory.hpp"
+#include "String.hpp"
 #include "Text.hpp"
 #include "Type.hpp"
 
@@ -644,6 +645,11 @@ static void DrawBitmapTextLine(Bitmap* bitmap, I8* text, GlyphData* glyphData, I
 	for (I32 i = 0; text[i]; ++i)
 	{
 		U8 c = text[i];
+		if (c == '\n')
+		{
+			continue;
+		}
+
 		Glyph* glyph = &glyphData->glyphs[c];
 
 		F32 right = textX + glyph->advanceX;
@@ -687,6 +693,69 @@ static I32 GetTooltipHeight(I32 lineN)
 {
 	I32 height = TooltipTopPadding + lineN * (TextHeightInPixels) + TooltipPadding;
 	return height;
+}
+
+static void DrawBitmapStringTooltip(Bitmap* bitmap, String string, GlyphData* glyphData, I32 top, I32 left)
+{
+	I32 lineN = GetNumberOfLines(string);
+
+	Assert(glyphData != 0);
+
+	I32 right = left + TooltipWidth;
+
+	I32 height = GetTooltipHeight(lineN);
+	I32 bottom = top + height;
+
+	V4 tooltipColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, tooltipColor);
+
+	V4 tooltipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, tooltipBorderColor);
+
+	V4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
+	I32 baseLineY = top + TooltipTopPadding + TextPixelsAboveBaseLine;
+	I32 textLeft = left + TooltipPadding;
+
+	F32 textX = F32(textLeft);
+	I32 lineIndex = 0;
+
+	for (I32 i = 0; i < string.usedSize; ++i)
+	{
+		U8 c = string.buffer[i];
+		Assert(c != 0);
+
+		if (c == '\n')
+		{
+			lineIndex++;
+			baseLineY += TextHeightInPixels;
+			textX = F32(textLeft);
+		}
+		else
+		{
+			Glyph* glyph = &glyphData->glyphs[c];
+
+			F32 right = textX + glyph->advanceX;
+			U8 nextC = string.buffer[i + 1];
+			if (nextC > 0)
+			{
+				right += glyphData->kerningTable[c][nextC];
+			}
+
+			V4 color = (lineIndex == 0) ? titleColor : normalColor;
+			DrawBitmapGlyph(bitmap, glyph, I32(textX), I32(baseLineY), color);
+			textX = right;
+		}
+
+		Assert(textX <= right);
+	}
+}
+
+static void DrawBitmapStringTooltipBottom(Bitmap* bitmap, String string, GlyphData* glyphData, I32 bottom, I32 left)
+{
+	I32 lineN = GetNumberOfLines(string);
+	I32 top = bottom - GetTooltipHeight(lineN);
+	DrawBitmapStringTooltip(bitmap, string, glyphData, top, left);
 }
 
 static void DrawBitmapTooltip(Bitmap* bitmap, char** lines, I32 lineN, GlyphData* glyphData, I32 top, I32 left)

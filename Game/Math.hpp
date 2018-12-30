@@ -106,11 +106,6 @@ static I32 Floor(F32 x)
 	return (I32)floorf(x);
 }
 
-static F32 Lerp(F32 value1, F32 ratio, F32 value2)
-{
-	return ((1.0f - ratio) * value1) + ((ratio) * value2);
-}
-
 static I32 RandMod(I32 mod)
 {
 	return (rand() % mod);
@@ -291,6 +286,12 @@ static F32 RandomBetween(F32 min, F32 max)
 static B32 IsBetween(F32 test, F32 min, F32 max)
 {
 	return (min <= test && test <= max);
+}
+
+static F32 Lerp(F32 value1, F32 ratio, F32 value2)
+{
+	Assert(IsBetween(ratio, 0.0f, 1.0f));
+	return ((1.0f - ratio) * value1) + ((ratio) * value2);
 }
 
 static B32 IsIntBetween(I32 test, I32 min, I32 max)
