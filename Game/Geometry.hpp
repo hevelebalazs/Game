@@ -170,7 +170,6 @@ static V2 RotationVector(F32 angle)
 static V2 NormalVector(V2 vector)
 {
 	F32 length = VectorLength(vector);
-
 	if (length == 0.0f) 
 	{
 		return vector;

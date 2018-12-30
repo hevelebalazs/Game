@@ -1335,3 +1335,10 @@ static void DrawTextLine(Canvas* canvas, I8* text, F32 baseLineY, F32 left, V4 t
 	I32 baseLineYPixel = UnitYtoPixel(canvas->camera, baseLineY);
 	DrawBitmapTextLine(&canvas->bitmap, text, canvas->glyphData, leftPixel, baseLineYPixel, textColor);
 }
+
+static void DrawTextLineXCentered(Canvas* canvas, I8* text, F32 baseLineY, F32 centerX, V4 textColor)
+{
+	Assert(canvas->glyphData != 0);
+	F32 left = centerX - GetTextWidth(canvas, text) * 0.5f;
+	DrawTextLine(canvas, text, baseLineY, left, textColor);
+}
