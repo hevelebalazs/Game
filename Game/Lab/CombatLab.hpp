@@ -54,7 +54,7 @@
 
 #define MaxLevel 5
 
-static I32 ExpNeededForNextLevel[] = 
+static I32 ExperienceNeededForNextLevel[] = 
 {
 	0,
 	100,
@@ -211,7 +211,7 @@ struct CombatLabState
 	B32 followMouse;
 	I32 useAbilityID;
 
-	I32 expGainedThisLevel;
+	I32 experienceGainedThisLevel;
 
 	F32 secondsFraction;
 
@@ -386,6 +386,68 @@ static void func AddCombatLogLine(CombatLabState* labState, I8* line)
 static I8 gCombatLogLine[CombatLogLineSize];
 #define CombatLog(labState, line) {OneLineString(gCombatLogLine, CombatLogLineSize, line); AddCombatLogLine(labState, gCombatLogLine);}
 
+static I32 func GetMaxHealth(Entity* entity)
+{
+	I32 maxHealth = 10 * entity->constitution;
+	Assert(maxHealth > 0);
+	return maxHealth;
+}
+
+static void func SetLevel(Entity* entity, I32 level)
+{
+	Assert(IsIntBetween(level, 1, MaxLevel));
+	entity->level = level;
+
+	if (entity->type == WhiteEntity)
+	{
+		entity->constitution = ConstitutionOnLevel[level];
+		entity->strength = WhiteStrengthOnLevel[level];
+		entity->intellect = 0;
+		entity->dexterity = WhiteDexterityOnLevel[level];
+	}
+	else if (entity->type == RedEntity)
+	{
+		entity->constitution = ConstitutionOnLevel[level];
+		entity->strength = RedStrengthOnLevel[level];
+		entity->intellect = 0;
+		entity->dexterity = 0;
+	}
+	else if (entity->type == BlueEntity)
+	{
+		entity->constitution = ConstitutionOnLevel[level];
+		entity->strength = 0;
+		entity->intellect = BlueIntellectOnLevel[level];
+		entity->dexterity = BlueDexterityOnLevel[level];
+	}
+	else
+	{
+		DebugBreak();
+	}
+
+	entity->health = GetMaxHealth(entity);
+}
+
+static void func GainExperience(CombatLabState* labState, I32 experience)
+{
+	Entity* player = &labState->player;
+	if (player->level < MaxLevel)
+	{
+		labState->experienceGainedThisLevel += experience;
+
+		CombatLog(labState, player->name + " Gains " + experience + " experience.");
+
+		if (labState->experienceGainedThisLevel >= ExperienceNeededForNextLevel[player->level])
+		{
+			I32 level = player->level + 1;
+			SetLevel(player, level);
+
+			CombatLog(labState, player->name + " reaches level " + player->level + ".");
+
+			labState->experienceGainedThisLevel -= ExperienceNeededForNextLevel[player->level];
+		}
+	}
+}
+
 static void func DoDamage(CombatLabState* labState, Entity* source, Entity* target, I32 damage)
 {
 	if (target->health > 0)
@@ -435,8 +497,19 @@ static void func DoDamage(CombatLabState* labState, Entity* source, Entity* targ
 			ability->castRatioLeft = 0.0f;
 
 			CombatLog(labState, source->name + " kills " + target->name + ".");
+
+			if (source == &labState->player)
+			{
+				GainExperience(labState, 20);
+			}
 		}
 	}
+}
+
+static void func SlowEntity(CombatLabState* labState, Entity* source, Entity* target, F32 seconds)
+{
+	target->slowTimeLeft += seconds;
+	CombatLog(labState, source->name + " slows " + target->name + " for " + seconds + " sec.");
 }
 
 static void func InterruptAbility(Entity* entity)
@@ -444,47 +517,6 @@ static void func InterruptAbility(Entity* entity)
 	Ability* ability = &entity->ability;
 	ability->id = NoAbilityID;
 	ability->castRatioLeft = 0.0f;
-}
-
-static I32 func GetMaxHealth(Entity* entity)
-{
-	I32 maxHealth = 10 * entity->constitution;
-	Assert(maxHealth > 0);
-	return maxHealth;
-}
-
-static void func SetLevel(Entity* entity, I32 level)
-{
-	Assert(IsIntBetween(level, 1, MaxLevel));
-	entity->level = level;
-
-	if (entity->type == WhiteEntity)
-	{
-		entity->constitution = ConstitutionOnLevel[level];
-		entity->strength = WhiteStrengthOnLevel[level];
-		entity->intellect = 0;
-		entity->dexterity = WhiteDexterityOnLevel[level];
-	}
-	else if (entity->type == RedEntity)
-	{
-		entity->constitution = ConstitutionOnLevel[level];
-		entity->strength = RedStrengthOnLevel[level];
-		entity->intellect = 0;
-		entity->dexterity = 0;
-	}
-	else if (entity->type == BlueEntity)
-	{
-		entity->constitution = ConstitutionOnLevel[level];
-		entity->strength = 0;
-		entity->intellect = BlueIntellectOnLevel[level];
-		entity->dexterity = BlueDexterityOnLevel[level];
-	}
-	else
-	{
-		DebugBreak();
-	}
-
-	entity->health = GetMaxHealth(entity);
 }
 
 static void func CombatLabReset(CombatLabState* labState)
@@ -541,10 +573,26 @@ static void func CombatLabReset(CombatLabState* labState)
 			enemy->specialResource = 0;
 		}
 
-		OneLineString(enemy->name, EntityNameSize, "Enemy " + (i + 1));
+		switch (enemy->type)
+		{
+			case RedEntity:
+			{
+				OneLineString(enemy->name, EntityNameSize, "Red " + enemy->level);
+				break;
+			}
+			case BlueEntity:
+			{
+				OneLineString(enemy->name, EntityNameSize, "Blue " + enemy->level);
+				break;
+			}
+			default:
+			{
+				DebugBreak();
+			}
+		}
 	}
 
-	labState->expGainedThisLevel = 0;
+	labState->experienceGainedThisLevel = 0;
 
 	labState->damageTextAlertN = 0;
 }
@@ -975,75 +1023,64 @@ static void func DrawEntity(Canvas* canvas, Entity* entity)
 
 	DrawCircle(canvas, entity->position, entity->radius, color);
 
+	Camera* camera = canvas->camera;
+	Bitmap* bitmap = &canvas->bitmap;
+
 	V4 healthBarBackgroundColor = (entity->health > 0.0f) ? MakeColor(0.5f, 0.0f, 0.0f) : MakeColor(0.5f, 0.5f, 0.5f);
 	V4 healthBarColor = MakeColor(1.0f, 0.0f, 0.0f);
 
-	F32 healthBarWidth = 2.0f * entity->radius;
-	F32 healthBarHeight = 0.3f * healthBarWidth;
+	I32 healthBarWidth = 40;
+	I32 healthBarHeight = 10;
 
-	F32 healthBarX = entity->position.x;
-	F32 healthBarY = entity->position.y - entity->radius - healthBarHeight - healthBarHeight * 0.5f;
+	I32 healthBarX = UnitXtoPixel(camera, entity->position.x);
+	I32 healthBarY = UnitYtoPixel(camera, entity->position.y - entity->radius) - healthBarHeight - healthBarHeight / 2;
 
-	F32 healthBarLeft   = healthBarX - 0.5f * healthBarWidth;
-	F32 healthBarRight  = healthBarX + 0.5f * healthBarWidth;
-	F32 healthBarTop    = healthBarY - 0.5f * healthBarHeight;
-	F32 healthBarBottom = healthBarY + 0.5f * healthBarHeight;
-	DrawRect(canvas, healthBarLeft, healthBarRight, healthBarTop, healthBarBottom, healthBarBackgroundColor);
+	I32 healthBarLeft   = healthBarX - healthBarWidth / 2;
+	I32 healthBarRight  = healthBarX + healthBarWidth / 2;
+	I32 healthBarTop    = healthBarY - healthBarHeight / 2;
+	I32 healthBarBottom = healthBarY + healthBarHeight / 2;
+	DrawBitmapRect(bitmap, healthBarLeft, healthBarRight, healthBarTop, healthBarBottom, healthBarBackgroundColor);
 
 	F32 healthRatio = F32(entity->health) / GetMaxHealth(entity);
 	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
-	F32 healthBarFilledX = healthBarLeft + healthRatio * (healthBarRight - healthBarLeft);
-	DrawRect(canvas, healthBarLeft, healthBarFilledX, healthBarTop, healthBarBottom, healthBarColor);
+	if (healthRatio > 0.0f)
+	{
+		I32 healthBarFilledX = healthBarLeft + I32(healthRatio * F32(healthBarWidth));
+		DrawBitmapRect(bitmap, healthBarLeft, healthBarFilledX, healthBarTop, healthBarBottom, healthBarColor);
+	}
 
 	if (entity->health > 0)
 	{
 		for (I32 health = 50; health < entity->health; health += 50)
 		{
 			F32 ratio = F32(health) / GetMaxHealth(entity);
-			F32 x = Lerp(healthBarLeft, ratio, healthBarRight);
-			Bresenham(canvas, MakePoint(x, healthBarTop), MakePoint(x, healthBarBottom), healthBarBackgroundColor);
+			I32 x = I32(Lerp(F32(healthBarLeft), ratio, F32(healthBarRight)));
+			DrawBitmapBresenhamLine(bitmap, healthBarTop, x, healthBarBottom, x, healthBarBackgroundColor);
 		}
 	}
-
-	Assert(IsIntBetween(entity->level, 1, MaxLevel));
-	V4 levelBoxColor = MakeColor(1.0f, 1.0f, 1.0f);
-
-	/*
-	F32 spaceBetweenLevelBoxes = 0.05f;
-	F32 levelBoxBarWidth = healthBarWidth;
-	F32 levelBoxSize = (levelBoxBarWidth - (MaxLevel - 1) * spaceBetweenLevelBoxes) / MaxLevel;
-	F32 levelBoxBottom = healthBarTop - 0.05f;
-	F32 levelBoxTop = levelBoxBottom - levelBoxSize;
-	for (I32 i = 1; i <= entity->level; i++)
-	{
-		F32 spaceBoxLeft = healthBarLeft + (i - 1) * (levelBoxSize + spaceBetweenLevelBoxes);
-		F32 spaceBoxRight = spaceBoxLeft + levelBoxSize;
-		DrawRect(canvas, spaceBoxLeft, spaceBoxRight, levelBoxTop, levelBoxBottom, levelBoxColor);
-	}
-	*/
 
 	if (entity->hasSpecialResource)
 	{
 		V4 filledColor = MakeColor(1.0f, 1.0f, 0.0f);
 		V4 emptyColor = MakeColor(0.3f, 0.3f, 0.3f);
-		F32 barTop = healthBarBottom + 0.05f;
-		F32 barBottom = barTop - 0.2f;
-		F32 barLeft = healthBarLeft;
-		F32 barRight = healthBarRight;
-		DrawRect(canvas, barLeft, barRight, barTop, barBottom, emptyColor);
+		I32 barTop = healthBarBottom + 2;
+		I32 barBottom = barTop + 3;
+		I32 barLeft = healthBarLeft;
+		I32 barRight = healthBarRight;
+		DrawBitmapRect(bitmap, barLeft, barRight, barTop, barBottom, emptyColor);
 		
 		Assert(entity->maxSpecialResource > 0);
 		Assert(IsIntBetween(entity->specialResource, 0, entity->maxSpecialResource));
 		F32 filledRatio = F32(entity->specialResource) / F32(entity->maxSpecialResource);
-		F32 barFilledX = barLeft + (barRight - barLeft) * filledRatio;
-		DrawRect(canvas, barLeft, barFilledX, barTop, barBottom, filledColor);
+		I32 barFilledX = barLeft + I32(F32(barRight - barLeft) * filledRatio);
+		DrawBitmapRect(bitmap, barLeft, barFilledX, barTop, barBottom, filledColor);
 	}
 
 	Assert(StringIsTerminated(entity->name, EntityNameSize));
-	F32 nameX = healthBarLeft;
-	F32 nameLineY = healthBarTop - 0.2f;
+	I32 nameX = healthBarLeft;
+	I32 nameLineY = healthBarTop - 2 - TextPixelsBelowBaseLine;
 	V4 nameColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawTextLine(canvas, entity->name, nameLineY, nameX, nameColor);
+	DrawBitmapTextLine(bitmap, entity->name, canvas->glyphData, nameX, nameLineY, nameColor);
 }
 
 static B32 func IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, F32 maxAngle)
@@ -1052,22 +1089,6 @@ static B32 func IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAn
 	F32 angle = LineAngle(center, entity->position);
 	B32 result = (distance < radius + entity->radius && IsAngleBetween(minAngle, angle, maxAngle));
 	return result;
-}
-
-static void func GainExp(CombatLabState* labState, I32 exp)
-{
-	Entity* player = &labState->player;
-	if (player->level < MaxLevel)
-	{
-		labState->expGainedThisLevel += exp;
-		if (labState->expGainedThisLevel >= ExpNeededForNextLevel[player->level])
-		{
-			I32 level = player->level + 1;
-			SetLevel(player, level);
-
-			labState->expGainedThisLevel -= ExpNeededForNextLevel[player->level];
-		}
-	}
 }
 
 static B32 func IsEntityInCircle(Entity* entity, V2 center, F32 radius)
@@ -1241,7 +1262,7 @@ static void func DrawAbility(Canvas* canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void func DrawExpBar(Canvas* canvas, CombatLabState* labState)
+static void func DrawExperienceBar(Canvas* canvas, CombatLabState* labState)
 {
 	I32 level = labState->player.level;
 	if (level < MaxLevel)
@@ -1255,10 +1276,10 @@ static void func DrawExpBar(Canvas* canvas, CombatLabState* labState)
 		V4 filledColor = MakeColor(0.6f, 0.6f, 0.6f);
 		DrawBitmapRect(bitmap, left, right, top, bottom, unfilledColor);
 
-		I32 expGained = labState->expGainedThisLevel;
+		I32 experienceGained = labState->experienceGainedThisLevel;
 		Assert(IsIntBetween(level, 1, MaxLevel - 1));
-		I32 expNeeded = ExpNeededForNextLevel[level];
-		I32 rightFilled = left + Floor(F32(right - left) * F32(expGained) / F32(expNeeded));
+		I32 experienceNeeded = ExperienceNeededForNextLevel[level];
+		I32 rightFilled = left + Floor(F32(right - left) * F32(experienceGained) / F32(experienceNeeded));
 		DrawBitmapRect(bitmap, left, rightFilled, top, bottom, filledColor);
 	}
 }
@@ -1403,7 +1424,7 @@ static void func DrawCombatLog(Canvas* canvas, CombatLabState* labState)
 
 static void func DrawUI(Canvas* canvas, CombatLabState* labState, V2 mousePosition)
 {
-	DrawExpBar(canvas, labState);
+	DrawExperienceBar(canvas, labState);
 
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
@@ -1550,6 +1571,10 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	{
 		playerMoveSpeed *= 0.5f;
 		player->slowTimeLeft = Max2(0.0f, player->slowTimeLeft - seconds);
+		if (player->slowTimeLeft == 0.0f)
+		{
+			CombatLog(labState, player->name + " is no longer slowed.");
+		}
 	}
 	Assert(player->slowTimeLeft >= 0.0f);
 
@@ -1654,11 +1679,6 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 							if (enemyWasAlive)
 							{
 								hitAnyEnemy = true;
-							}
-
-							if (enemyWasAlive && enemyIsDead)
-							{
-								GainExp(labState, 20);
 							}
 						}
 					}
@@ -1938,7 +1958,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 						{
 							I32 damage = GetAbilityDamage(enemy, BlueAbility2ID);
 							DoDamage(labState, enemy, player, damage);
-							player->slowTimeLeft += BlueAbility2SlowTime;
+							SlowEntity(labState, enemy, player, BlueAbility2SlowTime);
 						}
 					}
 					else if (ability->id == BlueAbility3ID)
@@ -1948,7 +1968,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 						{
 							I32 damage = GetAbilityDamage(enemy, BlueAbility3ID);
 							DoDamage(labState, enemy, player, damage);
-							player->slowTimeLeft += BlueAbility3SlowTime;
+							SlowEntity(labState, enemy, player, BlueAbility3SlowTime);
 						}
 					}
 					else
@@ -2133,18 +2153,3 @@ static void func CombatLab(HINSTANCE instance)
 		ReleaseDC(window, context);
 	}
 }
-
-// TODO: Combat log!
-	// TODO: Exp gains!
-		// TODO: Add exp gains to DoDamage function!
-	// TODO: Level up!
-	// TODO: Buffs/debuffs!
-	// TODO: Line colors?
-	// TODO: Energy gain?
-// TODO: Make healthbar use bitmap draws!
-// TODO: Player only gains exp when they kill an enemy using ability 1!
-// TODO: Unit frames?
-// TODO: Rename MakeColor to Color?
-// TODO: Disable zoom?
-	// TODO: Or handle UI properly on each possible zoom level!
-// TODO: Create an ExperienceBarHeight constant?

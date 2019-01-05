@@ -264,7 +264,10 @@ static void func DrawBitmapBresenhamLine(Bitmap* bitmap, I32 row1, I32 col1, I32
 	BresenhamData data = InitBresenham(row1, col1, row2, col2);
 	while (1) 
 	{
-		PaintBitmapPixel(bitmap, data.row1, data.col1, colorCode);
+		if (IsValidBitmapPixel(bitmap, data.row1, data.col1))
+		{
+			PaintBitmapPixel(bitmap, data.row1, data.col1, colorCode);
+		}
 
 		if (data.row1 == data.row2 && data.col1 == data.col2)
 		{
