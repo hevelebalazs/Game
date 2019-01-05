@@ -4,7 +4,7 @@
 
 #include "../Draw.hpp"
 
-static V2 GetMousePosition(Camera* camera, HWND window)
+static V2 func GetMousePosition(Camera* camera, HWND window)
 {
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
@@ -19,7 +19,7 @@ static V2 GetMousePosition(Camera* camera, HWND window)
 	return point;
 }
 
-static BITMAPINFO GetBitmapInfo(Bitmap* bitmap)
+static BITMAPINFO func GetBitmapInfo(Bitmap* bitmap)
 {
 	BITMAPINFO info = {};
 	BITMAPINFOHEADER* header = &info.bmiHeader;

@@ -29,7 +29,7 @@ static F32 globalTargetFPS = 60.0f;
 static F32 globalTargetFrameS = 1.0f / globalTargetFPS;
 static F32 globalTargetFrameMS = globalTargetFrameS * 1000.0f;
 
-static V2 WinMousePosition(HWND window)
+static V2 func WinMousePosition(HWND window)
 {
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
@@ -44,14 +44,14 @@ static V2 WinMousePosition(HWND window)
 	return point;
 }
 
-void WinDraw(HWND window)
+static void func WinDraw(HWND window)
 {
 	V2 mousePoint = WinMousePosition(window);
 
 	GameDraw(&globalGameStorage);
 }
 
-void WinUpdate(Canvas* canvas, HDC context, RECT clientRect)
+static void func WinUpdate(Canvas* canvas, HDC context, RECT clientRect)
 {
 	I32 windowWidth = clientRect.right - clientRect.left;
 	I32 windowHeight = clientRect.bottom - clientRect.top;
@@ -69,7 +69,7 @@ void WinUpdate(Canvas* canvas, HDC context, RECT clientRect)
 }
 
 //TODO: fetch all the user input and pass it to GameUpdate?
-LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
 
@@ -179,7 +179,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	return result;
 }
 
-void RunGame(HINSTANCE instance)
+static void func RunGame(HINSTANCE instance)
 {
 	WNDCLASS windowClass = {};
 
@@ -287,7 +287,7 @@ void RunGame(HINSTANCE instance)
 	}
 }
 
-I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
+I32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
 	CombatLab(instance);
 	// RunGame(instance);

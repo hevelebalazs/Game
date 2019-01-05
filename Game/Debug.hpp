@@ -7,6 +7,8 @@
 
 #include "Type.hpp"
 
+#define func
+
 #ifdef DEBUG_MODE
 	#define Assert(value) {if (!(value)) DebugBreak();}
 	#define Verify(call) {if (!(call)) DebugBreak();}
@@ -17,7 +19,7 @@
 	#define InvalidCodePath
 #endif
 
-static I32 Log(const I8* format, ...)
+I32 func Log(const I8* format, ...)
 {
     static I8 buffer[1024];
     va_list args;

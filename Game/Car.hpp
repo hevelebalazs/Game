@@ -77,7 +77,7 @@ struct CollisionInfo
 #define CarBitmapWidth 140
 #define CarBitmapHeight 300
 
-static Quad GetCarCorners(Car* car)
+static Quad func GetCarCorners(Car* car)
 {
 	Quad result = {};
 
@@ -95,7 +95,7 @@ static Quad GetCarCorners(Car* car)
 	return result;
 }
 
-static Quad GetCarStopArea(Car* car)
+static Quad func GetCarStopArea(Car* car)
 {
 	V2 toFrontUnitVector = RotationVector(car->angle);
 	V2 toRightUnitVector = RotationVector(car->angle + PI * 0.5f);
@@ -123,26 +123,26 @@ static Quad GetCarStopArea(Car* car)
 	return result;
 }
 
-static B32 IsCarOnPoint(Car* car, V2 point)
+static B32 func IsCarOnPoint(Car* car, V2 point)
 {
 	Quad carCorners = GetCarCorners(car);
 	B32 result = IsPointInQuad(carCorners, point);
 	return result;
 }
 
-static void MoveCar(Car* car, V4 point)
+static void func MoveCar(Car* car, V4 point)
 {
 	car->position = point.position;
 	car->angle = VectorAngle(point.direction);
 }
 
-static void DrawCar(Canvas* canvas, Car car)
+static void func DrawCar(Canvas* canvas, Car car)
 {
 	Assert(car.bitmap != 0);
 	DrawScaledRotatedBitmap(canvas, car.bitmap, car.position, car.width, car.length, car.angle);
 }
 
-static V4 GetRandomCarColor()
+static V4 func GetRandomCarColor()
 {
 	F32 colorSum = RandomBetween(1.0f, 1.5f);
 	F32 red = RandomBetween(0.0f, colorSum);
@@ -155,7 +155,7 @@ static V4 GetRandomCarColor()
 	return color;
 }
 
-static V4 GetRandomWindowColor()
+static V4 func GetRandomWindowColor()
 {
 	F32 red   = RandomBetween(0.0f, 0.05f);
 	F32 green = RandomBetween(0.0f, 0.05f);
@@ -164,7 +164,7 @@ static V4 GetRandomWindowColor()
 	return color;
 }
 
-static V4 GetShadowColor(V4 color)
+static V4 func GetShadowColor(V4 color)
 {
 	F32 shadowRatio = 0.5f;
 	F32 red   = shadowRatio * color.red;
@@ -174,7 +174,7 @@ static V4 GetShadowColor(V4 color)
 	return shadowColor;
 }
 
-static V4 GetRandomFrontLampColor()
+static V4 func GetRandomFrontLampColor()
 {
 	F32 redGreenValue = RandomBetween(0.0f, 1.0f);
 	F32 red   = redGreenValue;
@@ -184,12 +184,12 @@ static V4 GetRandomFrontLampColor()
 	return color;
 }
 
-static void AllocateCarBitmap(Bitmap* carBitmap)
+static void func AllocateCarBitmap(Bitmap* carBitmap)
 {
 	ResizeBitmap(carBitmap, CarBitmapWidth, CarBitmapHeight);
 }
 
-static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
+static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 {
 	Assert(carBitmap != 0);
 
@@ -537,7 +537,7 @@ static void GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	FloodfillBitmap(carBitmap, backRightLampCenterRow, backRightLampCenterCol, backLampColor, tmpArena);
 }
 
-static void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpArena, PathPool* pathPool)
+static void func MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpArena, PathPool* pathPool)
 {
 	MapElem targetElem = GetJunctionElem(autoCar->onJunction);
 	MapElem nextElem = GetJunctionElem(junction);
@@ -557,7 +557,7 @@ static void MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena
 	}
 }
 
-static bool IsAutoCarBeforeARedLight(AutoCar* autoCar)
+static bool func IsAutoCarBeforeARedLight(AutoCar* autoCar)
 {
 	B32 result = false;
 	PathNode* moveNode = autoCar->moveNode;
@@ -599,7 +599,7 @@ static bool IsAutoCarBeforeARedLight(AutoCar* autoCar)
 	return result;
 }
 
-static void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool)
+static void func UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool)
 {
 	Car* car = &autoCar->car;
 
@@ -662,7 +662,7 @@ static void UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, Pat
 	Assert(IsBetween(autoCar->bezierRatio, 0.0f, 1.0f));
 }
 
-static V2 GetCarCorner(Car* car, I32 cornerIndex)
+static V2 func GetCarCorner(Car* car, I32 cornerIndex)
 {
 	Assert(IsIntBetween(cornerIndex, 0, 3));
 
@@ -699,7 +699,7 @@ static V2 GetCarCorner(Car* car, I32 cornerIndex)
 	return result;
 }
 
-static void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
+static void func UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 {
 	F32 speed = VectorLength(car->velocity);
 	V2 carDirection = RotationVector(car->car.angle);
@@ -766,7 +766,7 @@ static void UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 	car->car.angle = car->car.angle + (seconds * car->angularVelocity);
 }
 
-static CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2)
+static CollisionInfo func operator+(CollisionInfo hit1, CollisionInfo hit2)
 {
 	CollisionInfo hit = {};
 
@@ -785,7 +785,7 @@ static CollisionInfo operator+(CollisionInfo hit1, CollisionInfo hit2)
 	return hit;
 }
 
-static CollisionInfo GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 point1, V2 point2)
+static CollisionInfo func GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 point1, V2 point2)
 {
 	CollisionInfo hit = {};
 
@@ -807,7 +807,7 @@ static CollisionInfo GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 point1
 	return hit;
 }
 
-static V2 GetCarRelativeCoordinates(Car* car, V2 point)
+static V2 func GetCarRelativeCoordinates(Car* car, V2 point)
 {
 	V2 result = {};
 	V2 pointVector = (point - car->position);
@@ -820,7 +820,7 @@ static V2 GetCarRelativeCoordinates(Car* car, V2 point)
 	return result;
 }
 
-static CollisionInfo GetCarPointCollisionInfo(Car* oldCar, Car* newCar, V2 point)
+static CollisionInfo func GetCarPointCollisionInfo(Car* oldCar, Car* newCar, V2 point)
 {
 	CollisionInfo hit = {};
 
@@ -862,7 +862,7 @@ static CollisionInfo GetCarPointCollisionInfo(Car* oldCar, Car* newCar, V2 point
 	return hit;
 }
 
-static CollisionInfo GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* points, I32 pointN)
+static CollisionInfo func GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* points, I32 pointN)
 {
 	CollisionInfo hit = {};
 
@@ -884,7 +884,7 @@ static CollisionInfo GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* point
 	return hit;
 }
 
-static V2 GetCarPointVelocity(PlayerCar* car, V2 point)
+static V2 func GetCarPointVelocity(PlayerCar* car, V2 point)
 {
 	V2 velocity = car->velocity;
 	V2 pointVector = (point - car->car.position);
@@ -893,7 +893,7 @@ static V2 GetCarPointVelocity(PlayerCar* car, V2 point)
 	return velocity;
 }
 
-static void UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, CollisionInfo hit)
+static void func UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, CollisionInfo hit)
 {
 	if (hit.count > 1) 
 	{

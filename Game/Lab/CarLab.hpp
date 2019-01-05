@@ -27,7 +27,7 @@ struct CarLabState
 };
 static CarLabState gCarLabState;
 
-static void CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
+static void func CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
 {
 	Bitmap* bitmap = &carLabState->windowBitmap;
 	I32 width = rect.right - rect.left;
@@ -44,13 +44,13 @@ static void CarLabBlit(CarLabState* carLabState, HDC context, RECT rect)
 	);
 }
 
-static void CarLabResize(CarLabState* carLabState, I32 width, I32 height)
+static void func CarLabResize(CarLabState* carLabState, I32 width, I32 height)
 {
 	Bitmap* windowBitmap = &carLabState->windowBitmap;
 	ResizeBitmap(windowBitmap, width, height);
 }
 
-static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func CarLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
 
@@ -137,7 +137,7 @@ static LRESULT CALLBACK CarLabCallback(HWND window, UINT message, WPARAM wparam,
 	return result;
 }
 
-static void CarLabInit(CarLabState* carLabState, I32 windowWidth, I32 windowHeight)
+static void func CarLabInit(CarLabState* carLabState, I32 windowWidth, I32 windowHeight)
 {
 	InitRandom();
 	carLabState->running = true;
@@ -152,7 +152,7 @@ static void CarLabInit(CarLabState* carLabState, I32 windowWidth, I32 windowHeig
 	carLabState->zoomValue = 1.0f;
 }
 
-static void CarLabUpdate(CarLabState* carLabState)
+static void func CarLabUpdate(CarLabState* carLabState)
 {
 	Bitmap* windowBitmap = &carLabState->windowBitmap;
 	Bitmap* carBitmap = &carLabState->carBitmap;
@@ -168,7 +168,7 @@ static void CarLabUpdate(CarLabState* carLabState)
 	CopyScaledRotatedBitmap(carBitmap, windowBitmap, halfWindowHeight, halfWindowWidth, width, height, rotationAngle);
 }
 
-static void CarLab(HINSTANCE instance)
+static void func CarLab(HINSTANCE instance)
 {
 	WNDCLASS winClass = {};
 	winClass.style = CS_OWNDC;

@@ -40,7 +40,7 @@ struct MapLabState
 };
 static MapLabState gMapLabState;
 
-static void MapLabResize(MapLabState* labState, I32 width, I32 height)
+static void func MapLabResize(MapLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -51,7 +51,7 @@ static void MapLabResize(MapLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 1.0f;
 }
 
-static void MapLabBlit(Canvas* canvas, HDC context, RECT rect)
+static void func MapLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
@@ -68,7 +68,7 @@ static void MapLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func MapLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	MapLabState* labState = &gMapLabState;
 	LRESULT result = 0;
@@ -165,7 +165,7 @@ static LRESULT CALLBACK MapLabCallback(HWND window, UINT message, WPARAM wparam,
 	return result;
 }
 
-static void MapLabInit(MapLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func MapLabInit(MapLabState* labState, I32 windowWidth, I32 windowHeight)
 {
 	labState->running = true;
 
@@ -199,7 +199,7 @@ static void MapLabInit(MapLabState* labState, I32 windowWidth, I32 windowHeight)
 	GenerateMapTextures(&labState->mapTextures, &labState->tmpArena);
 }
 
-static void MapLabUpdate(MapLabState* labState, V2 mousePosition)
+static void func MapLabUpdate(MapLabState* labState, V2 mousePosition)
 {
 	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -230,7 +230,7 @@ static void MapLabUpdate(MapLabState* labState, V2 mousePosition)
 	DrawRect(canvas, playerLeft, playerRight, playerTop, playerBottom, playerColor);
 }
 
-static void MapLab(HINSTANCE instance)
+static void func MapLab(HINSTANCE instance)
 {
 	MapLabState* labState = &gMapLabState;
 

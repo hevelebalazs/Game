@@ -16,7 +16,7 @@ struct TextLabState
 };
 static TextLabState gTextLabState;
 
-static void TextLabResize(TextLabState* labState, I32 width, I32 height)
+static void func TextLabResize(TextLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -27,7 +27,7 @@ static void TextLabResize(TextLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 2.0f;
 }
 
-static void TextLabBlit(Canvas* canvas, HDC context, RECT rect)
+static void func TextLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
@@ -44,7 +44,7 @@ static void TextLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static void TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeight)
 {
 	labState->running = true;
 	TextLabResize(labState, windowWidth, windowHeight);
@@ -52,7 +52,7 @@ static void TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeigh
 	labState->canvas.glyphData = GetGlobalGlyphData();
 }
 
-static void DrawTestToolTip(Canvas* canvas)
+static void func DrawTestToolTip(Canvas* canvas)
 {
 	char* lines[] =
 	{
@@ -70,7 +70,7 @@ static void DrawTestToolTip(Canvas* canvas)
 	DrawBitmapTooltip(bitmap, lines, lineN, canvas->glyphData, tooltipTop, tooltipLeft);
 }
 
-static void TextLabUpdate(TextLabState* labState)
+static void func TextLabUpdate(TextLabState* labState)
 {
 	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -110,7 +110,7 @@ static void TextLabUpdate(TextLabState* labState)
 	DrawTestToolTip(canvas);
 }
 
-static LRESULT CALLBACK TextLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func TextLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	TextLabState* labState = &gTextLabState;
 	LRESULT result = 0;
@@ -161,7 +161,7 @@ static LRESULT CALLBACK TextLabCallback(HWND window, UINT message, WPARAM wparam
 	return result;
 }
 
-static void TextLab(HINSTANCE instance)
+static void func TextLab(HINSTANCE instance)
 {
 	TextLabState* labState = &gTextLabState;
 
