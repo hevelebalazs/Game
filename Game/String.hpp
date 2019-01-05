@@ -4,6 +4,7 @@
 #include "Type.hpp"
 
 #define AddLine(string, value) {string = string + value + "\n";}
+#define OneLineString(memory, maxSize, line) {StartString(memory, maxSize) + line;}
 
 struct String
 {
@@ -14,7 +15,36 @@ struct String
 
 static void CloseString(String* string);
 
-static String func StartString(I8* buffer, I32 bufferSize)
+static B32 func StringIsTerminated(I8* string, I32 length)
+{
+	B32 isTerminated = false;
+	for (I32 i = 0; i < length; ++i)
+	{
+		if (string[i] == 0)
+		{
+			isTerminated = true;
+			break;
+		}
+	}
+	return isTerminated;
+}
+
+static void func StringCopy(I8* from, I8* to, I32 maxSize)
+{
+	B32 terminated = false;
+	for (I32 i = 0; i < maxSize; ++i)
+	{
+		to[i] = from[i];
+		if (from[i] == 0)
+		{
+			terminated = true;
+			break;
+		}
+	}
+	Assert(terminated);
+}
+
+String func StartString(I8* buffer, I32 bufferSize)
 {
 	Assert(bufferSize > 0);
 	String string = {};
