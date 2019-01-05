@@ -258,11 +258,12 @@ static void WorldLabBlit(WorldLabState* labState, HDC context, RECT rect)
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
+	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap->width, bitmap->height,
 				  0, 0, width, height,
 				  bitmap->memory,
-				  &bitmap->info,
+				  &bitmapInfo,
 				  DIB_RGB_COLORS,
 				  SRCCOPY
 	);
@@ -366,8 +367,8 @@ static void WorldLabUpdate(WorldLabState* labState, V2 mouse)
 		F32 top = gridTop + gridCellSize * gridBitmap->row;
 		F32 bottom = top + gridCellSize;
 
-		DrawStretchedBitmap(*canvas, &gridBitmap->bitmap, left, right, top, bottom);
-		DrawRectOutline(*canvas, left, right, top, bottom, bitmapBorderColor);
+		DrawStretchedBitmap(canvas, &gridBitmap->bitmap, left, right, top, bottom);
+		DrawRectOutline(canvas, left, right, top, bottom, bitmapBorderColor);
 	}
 
 	F32 screenPixelSize = 600.0f;
@@ -381,7 +382,7 @@ static void WorldLabUpdate(WorldLabState* labState, V2 mouse)
 	F32 bottom = centerY + halfScreenSize;
 
 	V4 screenBorderColor = MakeColor(1.0f, 0.0f, 0.0f);
-	DrawRectOutline(*canvas, left, right, top, bottom, screenBorderColor);
+	DrawRectOutline(canvas, left, right, top, bottom, screenBorderColor);
 
 	F32 screenUnitSize = screenPixelSize / camera->unitInPixels;
 	F32 bitmapUnitSize = (gridRight - gridLeft) / (1 << labState->gridLevel);

@@ -27,7 +27,7 @@ struct Human
 	I32 healthPoints;
 };
 
-static B32 IsHumanCrossedByLine(Human* human, Line line)
+static B32 func IsHumanCrossedByLine(Human* human, Line line)
 {
 	F32 left   = (human->position.x - HumanRadius);
 	F32 right  = (human->position.x + HumanRadius);
@@ -78,7 +78,7 @@ static B32 IsHumanCrossedByLine(Human* human, Line line)
 	}
 }
 
-static void DrawPoliceRadius(Canvas canvas, Human* human, F32 radius)
+static void func DrawPoliceRadius(Canvas* canvas, Human* human, F32 radius)
 {
 	V4 color = MakeColor(0.0f, 0.0f, 1.0f);
 	V2 position = human->position;
@@ -89,12 +89,12 @@ static void DrawPoliceRadius(Canvas canvas, Human* human, F32 radius)
 	DrawRectOutline(canvas, top, left, bottom, right, color);
 }
 
-static void MoveHuman(Human* human, V4 point)
+static void func MoveHuman(Human* human, V4 point)
 {
 	human->position = point.position;
 }
 
-static void DrawHealthPoints(Canvas canvas, Human* human)
+static void func DrawHealthPoints(Canvas* canvas, Human* human)
 {
 	I32 healthPoints = MaxHealthPoints;
 
@@ -124,7 +124,7 @@ static void DrawHealthPoints(Canvas canvas, Human* human)
 	}
 }
 
-static void DrawHuman(Canvas canvas, Human human)
+static void func DrawHuman(Canvas* canvas, Human human)
 {
 	F32 radius = HumanRadius;
 	V2 position = human.position;

@@ -126,7 +126,7 @@ struct MapElem
 	};
 };
 
-static void GenerateMapTextures(MapTextures* textures, MemArena* tmpArena)
+static void func GenerateMapTextures(MapTextures* textures, MemArena* tmpArena)
 {
 	textures->grassTexture    = GrassTexture(8, tmpArena);
 	textures->roadTexture     = RandomGreyTexture(8, 100, 150);
@@ -134,14 +134,14 @@ static void GenerateMapTextures(MapTextures* textures, MemArena* tmpArena)
 	textures->stripeTexture   = RandomGreyTexture(8, 200, 255);
 }
 
-static Junction* GetRandomJunction(Map* map)
+static Junction* func GetRandomJunction(Map* map)
 {
 	I32 junctionIndex = RandMod(map->junctionN);
 	Junction* junction = &map->junctions[junctionIndex];
 	return junction;
 }
 
-static Junction* GetJunctionAtPoint(Map* map, V2 point)
+static Junction* func GetJunctionAtPoint(Map* map, V2 point)
 {
 	Junction* result = 0;
 	for (I32 i = 0; i < map->junctionN; ++i) 
@@ -156,7 +156,7 @@ static Junction* GetJunctionAtPoint(Map* map, V2 point)
 	return result;
 }
 
-static MapElem GetRoadElem(Road* road)
+static MapElem func GetRoadElem(Road* road)
 {
 	MapElem result = {};
 	result.type = MapElemRoad;
@@ -165,7 +165,7 @@ static MapElem GetRoadElem(Road* road)
 	return result;
 }
 
-static MapElem GetJunctionElem(Junction* junction)
+static MapElem func GetJunctionElem(Junction* junction)
 {
 	MapElem result = {};
 	result.type = MapElemJunction;
@@ -174,7 +174,7 @@ static MapElem GetJunctionElem(Junction* junction)
 	return result;
 }
 
-static MapElem GetClosestRoadElem(Map* map, V2 point)
+static MapElem func GetClosestRoadElem(Map* map, V2 point)
 {
 	MapElem result = {};
 
@@ -227,7 +227,7 @@ static MapElem GetClosestRoadElem(Map* map, V2 point)
 	return result;
 }
 
-static V2 GetBuildingCenter(Building* building)
+static V2 func GetBuildingCenter(Building* building)
 {
 	V2 result = {};
 	result.x = (building->left + building->right) * 0.5f;
@@ -235,14 +235,14 @@ static V2 GetBuildingCenter(Building* building)
 	return result;
 }
 
-static Building* GetRandomBuilding(Map* map)
+static Building* func GetRandomBuilding(Map* map)
 {
 	I32 buildingIndex = RandMod(map->buildingN);
 	Building* building = &map->buildings[buildingIndex];
 	return building;
 }
 
-static Building* GetClosestBuilding(Map* map, V2 point, BuildingType type)
+static Building* func GetClosestBuilding(Map* map, V2 point, BuildingType type)
 {
 	Building* result = 0;
 
@@ -267,7 +267,7 @@ static Building* GetClosestBuilding(Map* map, V2 point, BuildingType type)
 	return result;
 }
 
-static BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, F32 radius, V2 closePoint, V2 farPoint)
+static BuildingCrossInfo func GetClosestExtBuildingCrossInfo(Map* map, F32 radius, V2 closePoint, V2 farPoint)
 {
 	BuildingCrossInfo result = {};
 
@@ -290,7 +290,7 @@ static BuildingCrossInfo GetClosestExtBuildingCrossInfo(Map* map, F32 radius, V2
 	return result;
 }
 
-static Building* GetClosestCrossedBuilding(Map* map, V2 pointClose, V2 pointFar, Building* excludedBuilding)
+static Building* func GetClosestCrossedBuilding(Map* map, V2 pointClose, V2 pointFar, Building* excludedBuilding)
 {
 	Building* result = 0;
 
@@ -319,7 +319,7 @@ static Building* GetClosestCrossedBuilding(Map* map, V2 pointClose, V2 pointFar,
 	return result;
 }
 
-static Building* GetBuildingAtPoint(Map* map, V2 point)
+static Building* func GetBuildingAtPoint(Map* map, V2 point)
 {
 	Building* result = 0;
 	for (I32 i = 0; i < map->buildingN; ++i) 
@@ -333,7 +333,7 @@ static Building* GetBuildingAtPoint(Map* map, V2 point)
 	return result;
 }
 
-static MapElem GetBuildingElem(Building* building)
+static MapElem func GetBuildingElem(Building* building)
 {
 	MapElem result = {};
 	result.type = MapElemBuilding;
@@ -342,7 +342,7 @@ static MapElem GetBuildingElem(Building* building)
 	return result;
 }
 
-static MapElem GetBuildingConnectorElem(Building* building)
+static MapElem func GetBuildingConnectorElem(Building* building)
 {
 	MapElem result = {};
 	result.type = MapElemBuildingConnector;
@@ -351,7 +351,7 @@ static MapElem GetBuildingConnectorElem(Building* building)
 	return result;
 }
 
-static MapElem GetRoadElemAtPoint(Map* map, V2 point)
+static MapElem func GetRoadElemAtPoint(Map* map, V2 point)
 {
 	MapElem result = {};
 	result.type = MapElemNone;
@@ -394,7 +394,7 @@ static MapElem GetRoadElemAtPoint(Map* map, V2 point)
 	return result;
 }
 
-static MapElem GetJunctionSidewalkElem(Junction* junction)
+static MapElem func GetJunctionSidewalkElem(Junction* junction)
 {
 	MapElem result = {};
 	result.type = MapElemJunctionSidewalk;
@@ -403,7 +403,7 @@ static MapElem GetJunctionSidewalkElem(Junction* junction)
 	return result;
 }
 
-static MapElem GetRoadSidewalkElem(Road* road)
+static MapElem func GetRoadSidewalkElem(Road* road)
 {
 	MapElem result = {};
 	result.type = MapElemRoadSidewalk;
@@ -412,7 +412,7 @@ static MapElem GetRoadSidewalkElem(Road* road)
 	return result;
 }
 
-static MapElem GetCrossingElem(Road* road)
+static MapElem func GetCrossingElem(Road* road)
 {
 	MapElem result = {};
 	result.type = MapElemCrossing;
@@ -421,7 +421,7 @@ static MapElem GetCrossingElem(Road* road)
 	return result;
 }
 
-static MapElem GetPedestrianElemAtPoint(Map* map, V2 point)
+static MapElem func GetPedestrianElemAtPoint(Map* map, V2 point)
 {
 	MapElem result = {};
 
@@ -454,7 +454,7 @@ static MapElem GetPedestrianElemAtPoint(Map* map, V2 point)
 	return result;
 }
 
-static void DrawGroundElems(Canvas canvas, Map* map)
+static void func DrawGroundElems(Canvas* canvas, Map* map)
 {
 	ClearScreen(canvas, GrassColor);
 
@@ -477,7 +477,7 @@ static void DrawGroundElems(Canvas canvas, Map* map)
 	}
 }
 
-static void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textures)
+static void func DrawTexturedGroundElems(Canvas* canvas, Map* map, MapTextures* textures)
 {
 	FillScreenWithWorldTexture(canvas, textures->grassTexture);
 	
@@ -500,7 +500,7 @@ static void DrawTexturedGroundElems(Canvas canvas, Map* map, MapTextures* textur
 	}
 }
 
-static void DrawAllTrafficLights(Canvas canvas, Map* map)
+static void func DrawAllTrafficLights(Canvas* canvas, Map* map)
 {
 	for (I32 i = 0; i < map->junctionN; ++i)
 	{
@@ -508,7 +508,7 @@ static void DrawAllTrafficLights(Canvas canvas, Map* map)
 	}
 }
 
-static B32 AreMapElemsEqual(MapElem elem1, MapElem elem2)
+static B32 func AreMapElemsEqual(MapElem elem1, MapElem elem2)
 {
 	if (elem1.type != elem2.type) 
 	{
@@ -524,7 +524,7 @@ static B32 AreMapElemsEqual(MapElem elem1, MapElem elem2)
 	}
 }
 
-static void HighlightMapElem(Canvas canvas, MapElem mapElem, V4 color)
+static void func HighlightMapElem(Canvas* canvas, MapElem mapElem, V4 color)
 {
 	if (mapElem.type == MapElemBuilding)
 	{
@@ -552,7 +552,7 @@ static void HighlightMapElem(Canvas canvas, MapElem mapElem, V4 color)
 	}
 }
 
-static B32 IsMapTileIndexValid(Map* map, MapTileIndex tileIndex)
+static B32 func IsMapTileIndexValid(Map* map, MapTileIndex tileIndex)
 {
 	B32 isValid = true;
 	if (tileIndex.row < 0 || tileIndex.row >= map->tileRowN)
@@ -566,7 +566,7 @@ static B32 IsMapTileIndexValid(Map* map, MapTileIndex tileIndex)
 	return isValid;
 }
 
-static MapTileIndex GetMapTileIndexContainingPoint(Map* map, V2 point)
+static MapTileIndex func GetMapTileIndexContainingPoint(Map* map, V2 point)
 {
 	MapTileIndex tileIndex = {};
 	tileIndex.col = Floor((point.x - map->left) / MapTileSide);
@@ -574,7 +574,7 @@ static MapTileIndex GetMapTileIndexContainingPoint(Map* map, V2 point)
 	return tileIndex;
 }
 
-static B32 IsMapTileCached(Map* map, MapTileIndex tileIndex)
+static B32 func IsMapTileCached(Map* map, MapTileIndex tileIndex)
 {
 	B32 isCached = false;
 	for (I32 i = 0; i < map->cachedTileN; ++i) 
@@ -598,7 +598,7 @@ static V2 GetMapTileCenter(Map* map, MapTileIndex tileIndex)
 	return tileCenter;
 }
 
-static CachedMapTile* GetFarthestCachedMapTile(Map* map, V2 point)
+static CachedMapTile* func GetFarthestCachedMapTile(Map* map, V2 point)
 {
 	Assert(map->cachedTileN > 0);
 	CachedMapTile* cachedTile = 0;
@@ -619,7 +619,7 @@ static CachedMapTile* GetFarthestCachedMapTile(Map* map, V2 point)
 	return cachedTile;
 }
 
-static void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitmap, MapTextures* mapTextures)
+static void func GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitmap, MapTextures* mapTextures)
 {
 	Camera camera = {};
 	camera.center = GetMapTileCenter(map, tileIndex);
@@ -630,11 +630,11 @@ static void GenerateMapTileBitmap(Map* map, MapTileIndex tileIndex, Bitmap* bitm
 	Canvas canvas = {};
 	canvas.bitmap = *bitmap;
 	canvas.camera = &camera;
-	DrawGroundElems(canvas, map);
+	DrawGroundElems(&canvas, map);
 	// DrawTexturedGroundElems(canvas, map, mapTextures);
 }
 
-static DWORD WINAPI GenerateMapTileWorkProc(LPVOID parameter)
+static DWORD WINAPI func GenerateMapTileWorkProc(LPVOID parameter)
 {
 	GenerateMapTileWorkList* workList = (GenerateMapTileWorkList*)parameter;
 	while (1) 
@@ -648,14 +648,14 @@ static DWORD WINAPI GenerateMapTileWorkProc(LPVOID parameter)
 	}
 }
 
-static void PushGenerateMapTileWork(GenerateMapTileWorkList* workList, GenerateMapTileWork work)
+static void func PushGenerateMapTileWork(GenerateMapTileWorkList* workList, GenerateMapTileWork work)
 {
 	workList->works[workList->workPushedN % MaxGenerateMapTileWorkListN] = work;
 	workList->workPushedN++;
 	ReleaseSemaphore(workList->semaphore, 1, 0);
 }
 
-static void CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures)
+static void func CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures)
 {
 	Assert(!IsMapTileCached(map, tileIndex));
 	CachedMapTile* cachedTile = 0;
@@ -680,7 +680,7 @@ static void CacheMapTile(Map* map, MapTileIndex tileIndex, MapTextures* textures
 	PushGenerateMapTileWork(&map->generateTileWorkList, work);
 }
 
-static Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
+static Bitmap* func GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
 {
 	Bitmap* bitmap = 0;
 	for (I32 i = 0; i < map->cachedTileN; ++i) 
@@ -697,7 +697,7 @@ static Bitmap* GetCachedTileBitmap(Map* map, MapTileIndex tileIndex)
 	return bitmap;
 }
 
-static void DrawMapTile(Canvas canvas, Map* map, MapTileIndex tileIndex, MapTextures* textures)
+static void func DrawMapTile(Canvas* canvas, Map* map, MapTileIndex tileIndex, MapTextures* textures)
 {
 	F32 tileLeft   = map->left + (tileIndex.col * MapTileSide);
 	F32 tileRight  = tileLeft + MapTileSide;
@@ -708,7 +708,7 @@ static void DrawMapTile(Canvas canvas, Map* map, MapTileIndex tileIndex, MapText
 	DrawStretchedBitmap(canvas, tileBitmap, tileLeft, tileRight, tileTop, tileBottom);
 }
 
-static void PushDrawMapTileWork(DrawMapTileWorkList* workList, DrawMapTileWork work)
+static void func PushDrawMapTileWork(DrawMapTileWorkList* workList, DrawMapTileWork work)
 {
 	Assert(workList->workN < MaxDrawMapTileWorkListN);
 	workList->works[workList->workN] = work;
@@ -716,7 +716,7 @@ static void PushDrawMapTileWork(DrawMapTileWorkList* workList, DrawMapTileWork w
 	ReleaseSemaphore(workList->semaphore, 1, 0);
 }
 
-static void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F32 top, F32 bottom, MapTextures* textures)
+static void func DrawVisibleMapTiles(Canvas* canvas, Map* map, F32 left, F32 right, F32 top, F32 bottom, MapTextures* textures)
 {
 	V2 topLeft     = MakePoint(left, top);
 	V2 bottomRight = MakePoint(right, bottom);
@@ -742,7 +742,7 @@ static void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F3
 			if (IsMapTileIndexValid(map, tileIndex)) 
 			{
 				DrawMapTileWork work = {};
-				work.canvas = canvas;
+				work.canvas = *canvas;
 				work.map = map;
 				work.tileIndex = tileIndex;
 				work.textures = textures;
@@ -759,7 +759,7 @@ static void DrawVisibleMapTiles(Canvas canvas, Map* map, F32 left, F32 right, F3
 	map->drawTileWorkList.firstWorkToDo = 0;
 }
 
-static DWORD WINAPI DrawMapTileWorkProc(LPVOID parameter)
+static DWORD WINAPI func DrawMapTileWorkProc(LPVOID parameter)
 {
 	DrawMapTileWorkList* workList = (DrawMapTileWorkList*)parameter;
 	while (1) {
@@ -767,7 +767,7 @@ static DWORD WINAPI DrawMapTileWorkProc(LPVOID parameter)
 		Assert (workList->firstWorkToDo < workList->workN);
 		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
 		DrawMapTileWork work = workList->works[workIndex];
-		DrawMapTile(work.canvas, work.map, work.tileIndex, work.textures);
+		DrawMapTile(&work.canvas, work.map, work.tileIndex, work.textures);
 		ReleaseSemaphore(workList->semaphoreDone, 1, 0);
 	}
 }

@@ -10,7 +10,7 @@ struct Bezier4
 	V2 points[4];
 };
 
-static Bezier4 TurnBezier4(V4 startPoint, V4 endPoint)
+static Bezier4 func TurnBezier4(V4 startPoint, V4 endPoint)
 {
 	Bezier4 result = {};
 
@@ -24,13 +24,13 @@ static Bezier4 TurnBezier4(V4 startPoint, V4 endPoint)
 	return result;
 }
 
-static V2 Bezier4Interpolation(V2 point1, F32 ratio1, V2 point2, F32 ratio2)
+static V2 func Bezier4Interpolation(V2 point1, F32 ratio1, V2 point2, F32 ratio2)
 {
 	V2 result = (ratio1 * point1) + (ratio2 * point2);
 	return result;
 }
 
-static V2 Bezier4Point(Bezier4 bezier4, F32 ratio)
+static V2 func Bezier4Point(Bezier4 bezier4, F32 ratio)
 {
 	F32 ratio2 = (1.0f - ratio);
 
@@ -46,7 +46,7 @@ static V2 Bezier4Point(Bezier4 bezier4, F32 ratio)
 	return p1234;
 }
 
-static V4 Bezier4DirectedPoint(Bezier4 bezier4, F32 ratio)
+static V4 func Bezier4DirectedPoint(Bezier4 bezier4, F32 ratio)
 {
 	F32 ratio2 = (1.0f - ratio);
 
@@ -69,7 +69,7 @@ static V4 Bezier4DirectedPoint(Bezier4 bezier4, F32 ratio)
 #define Bezier4SegmentN 10
 #define Bezier4PointN (Bezier4SegmentN + 1)
 
-static F32 MoveOnBezier4(Bezier4 bezier4, F32 startRatio, F32 moveDistance)
+static F32 func MoveOnBezier4(Bezier4 bezier4, F32 startRatio, F32 moveDistance)
 {
 	Assert(IsBetween(startRatio, 0.0f, 1.0f));
 	Assert(moveDistance >= 0.0f);
@@ -99,7 +99,7 @@ static F32 MoveOnBezier4(Bezier4 bezier4, F32 startRatio, F32 moveDistance)
 	return ratio;
 }
 
-static F32 GetBezier4DistanceFromEnd(Bezier4 bezier4, F32 ratio)
+static F32 func GetBezier4DistanceFromEnd(Bezier4 bezier4, F32 ratio)
 {
 	F32 result = 0;
 	V2 position = Bezier4Point(bezier4, ratio);
@@ -115,7 +115,7 @@ static F32 GetBezier4DistanceFromEnd(Bezier4 bezier4, F32 ratio)
 	return result;
 }
 
-static void DrawBezier4(Canvas canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount)
+static void func DrawBezier4(Canvas* canvas, Bezier4 bezier4, V4 color, F32 lineWidth, I32 segmentCount)
 {
 	V2 point = bezier4.points[0];
 

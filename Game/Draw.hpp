@@ -5,10 +5,11 @@
 #include "Geometry.hpp"
 #include "Math.hpp"
 #include "Memory.hpp"
+#include "Text.hpp"
 #include "Texture.hpp"
 #include "Type.hpp"
 
-struct Camera 
+struct Camera
 {
 	V2 center;
 	V2 screenPixelSize;
@@ -21,21 +22,22 @@ struct Canvas
 {
 	Bitmap bitmap;
 	Camera* camera;
+	GlyphData* glyphData;
 };
 
-static I32 UnitXtoPixel(Camera* camera, F32 unitX)
+static I32 func UnitXtoPixel(Camera* camera, F32 unitX)
 {
 	I32 pixelX = Floor((camera->screenPixelSize.x * 0.5f) + ((unitX - camera->center.x) * camera->unitInPixels));
 	return pixelX;
 }
 
-static I32 UnitYtoPixel(Camera* camera, F32 unitY)
+static I32 func UnitYtoPixel(Camera* camera, F32 unitY)
 {
 	I32 pixelY = Floor((camera->screenPixelSize.y * 0.5f) + ((unitY - camera->center.y) * camera->unitInPixels));
 	return pixelY;
 }
 
-static V2 UnitToPixel(Camera* camera, V2 unit)
+static V2 func UnitToPixel(Camera* camera, V2 unit)
 {
 	F32 x = (F32)UnitXtoPixel(camera, unit.x);
 	F32 y = (F32)UnitYtoPixel(camera, unit.y);
@@ -43,32 +45,32 @@ static V2 UnitToPixel(Camera* camera, V2 unit)
 	return result;
 }
 
-static void ResizeCamera(Camera* camera, I32 width, I32 height)
+static void func ResizeCamera(Camera* camera, I32 width, I32 height)
 {
 	camera->screenPixelSize.x = (F32)width;
 	camera->screenPixelSize.y = (F32)height;
 	camera->center = (0.5f * camera->screenPixelSize);
 }
 
-static U32* GetPixelAddress(Bitmap bitmap, I32 row, I32 col)
+static U32* func GetPixelAddress(Bitmap bitmap, I32 row, I32 col)
 {
 	U32* address = bitmap.memory + row * bitmap.width + col;
 	return address;
 }
 
-static U32 GetPixel(Bitmap bitmap, I32 row, I32 col)
+static U32 func GetPixel(Bitmap bitmap, I32 row, I32 col)
 {
 	U32* pixelAddress = GetPixelAddress(bitmap, row, col);
 	return *pixelAddress;
 }
 
-static void SetPixel(Bitmap bitmap, I32 row, I32 col, U32 colorCode)
+static void func SetPixel(Bitmap bitmap, I32 row, I32 col, U32 colorCode)
 {
 	U32* pixelAddress = GetPixelAddress(bitmap, row, col);
 	*pixelAddress = colorCode;
 }
 
-static void SetPixelCheck(Bitmap bitmap, I32 row, I32 col, I32 colorCode)
+static void func SetPixelCheck(Bitmap bitmap, I32 row, I32 col, I32 colorCode)
 {
 	if ((row >= 0 && row < bitmap.height) && (col >= 0 && col < bitmap.width))
 	{
@@ -76,7 +78,7 @@ static void SetPixelCheck(Bitmap bitmap, I32 row, I32 col, I32 colorCode)
 	}
 }
 
-static V4 ColorProd(V4 color1, V4 color2)
+static V4 func ColorProd(V4 color1, V4 color2)
 {
 	V4 result = {};
 	result.red   = color1.red   * color2.red;
@@ -85,7 +87,7 @@ static V4 ColorProd(V4 color1, V4 color2)
 	return result;
 }
 
-static void ApplyBitmapMask(Bitmap bitmap, Bitmap mask)
+static void func ApplyBitmapMask(Bitmap bitmap, Bitmap mask)
 {
 	U32* pixel = bitmap.memory;
 	U32* maskPixel = mask.memory;
@@ -112,12 +114,12 @@ struct PixelPosition
 	I32 col;
 };
 
-static void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena) 
+static void func FloodFill(Canvas* canvas, V2 start, V4 color, MemArena* tmpArena) 
 {
 	U32 colorCode = GetColorCode(color);
 
-	Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+	Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
 
 	I32 positionCount = 0;
 	PixelPosition* positions = ArenaPushArray(tmpArena, PixelPosition, 0);
@@ -225,14 +227,14 @@ static void FloodFill(Canvas canvas, V2 start, V4 color, MemArena* tmpArena)
 	ArenaPopTo(tmpArena, positions);
 }
 
-static void SmoothZoom(Camera* camera, F32 pixelPerUnit)
+static void func SmoothZoom(Camera* camera, F32 pixelPerUnit)
 {
 	camera->targetUnitInPixels = pixelPerUnit;
 }
 
 #define PixelPerUnitChangeSpeed 10.0f
 
-static void UpdateCamera(Camera* camera, F32 seconds)
+static void func UpdateCamera(Camera* camera, F32 seconds)
 {
 	if (camera->unitInPixels != camera->targetUnitInPixels) 
 	{
@@ -254,27 +256,27 @@ static void UpdateCamera(Camera* camera, F32 seconds)
 	}
 }
 
-static F32 GetUnitDistanceInPixel(Camera* camera, F32 unitDistance)
+static F32 func GetUnitDistanceInPixel(Camera* camera, F32 unitDistance)
 {
 	F32 pixelDistance = unitDistance * camera->unitInPixels;
 	return pixelDistance;
 }
 
-static F32 PixelToUnitX(Camera* camera, F32 pixelX)
+static F32 func PixelToUnitX(Camera* camera, F32 pixelX)
 {
 	F32 pixelInUnits = Invert(camera->unitInPixels);
 	F32 unitX = camera->center.x + (pixelX - camera->screenPixelSize.x * 0.5f) * pixelInUnits;
 	return unitX;
 }
 
-static F32 PixelToUnitY(Camera* camera, F32 pixelY) 
+static F32 func PixelToUnitY(Camera* camera, F32 pixelY) 
 {
 	F32 pixelInUnits = Invert(camera->unitInPixels);
 	F32 unitY = camera->center.y + (pixelY - camera->screenPixelSize.y * 0.5f) * pixelInUnits;
 	return unitY;
 }
 
-static V2 PixelToUnit(Camera* camera, V2 pixel)
+static V2 func PixelToUnit(Camera* camera, V2 pixel)
 {
 	V2 result = {};
 	result.x = PixelToUnitX(camera, pixel.x);
@@ -282,35 +284,35 @@ static V2 PixelToUnit(Camera* camera, V2 pixel)
 	return result;
 }
 
-static F32 CameraLeftSide(Camera* camera)
+static F32 func CameraLeftSide(Camera* camera)
 {
 	F32 leftSide = PixelToUnitX(camera, 0);
 	return leftSide;
 }
 
-static F32 CameraRightSide(Camera* camera)
+static F32 func CameraRightSide(Camera* camera)
 {
 	F32 rightSide = PixelToUnitX(camera, camera->screenPixelSize.x - 1);
 	return rightSide;
 }
 
-static F32 CameraTopSide(Camera* camera)
+static F32 func CameraTopSide(Camera* camera)
 {
 	F32 topSide = PixelToUnitY(camera, 0);
 	return topSide;
 }
 
-static F32 CameraBottomSide(Camera* camera)
+static F32 func CameraBottomSide(Camera* camera)
 {
 	F32 bottomSide = PixelToUnitY(camera, camera->screenPixelSize.y - 1);
 	return bottomSide;
 }
 
-static void ClearScreen(Canvas canvas, V4 color)
+static void func ClearScreen(Canvas* canvas, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 *pixel = bitmap.memory;
 	for (I32 row = 0; row < bitmap.height; ++row) 
 	{
@@ -332,7 +334,7 @@ struct BresenhamContext
 	I32 error, error2;
 };
 
-static BresenhamContext BresenhamInitPixel(V2 pixelPoint1, V2 pixelPoint2)
+static BresenhamContext func BresenhamInitPixel(V2 pixelPoint1, V2 pixelPoint2)
 {
 	BresenhamContext context = {};
 
@@ -371,16 +373,16 @@ static BresenhamContext BresenhamInitPixel(V2 pixelPoint1, V2 pixelPoint2)
 	return context;
 }
 
-static BresenhamContext BresenhamInitUnit(Canvas canvas, V2 point1, V2 point2)
+static BresenhamContext func BresenhamInitUnit(Canvas* canvas, V2 point1, V2 point2)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	V2 pixelPoint1 = UnitToPixel(camera, point1);
 	V2 pixelPoint2 = UnitToPixel(camera, point2);
 	BresenhamContext context = BresenhamInitPixel(pixelPoint1, pixelPoint2);
 	return context;
 }
 
-static void BresenhamAdvance(BresenhamContext* context)
+static void func BresenhamAdvance(BresenhamContext* context)
 {
 	context->error2 = context->error;
 	if (context->error2 > -context->absX) 
@@ -395,9 +397,9 @@ static void BresenhamAdvance(BresenhamContext* context)
 	}
 }
 
-static void Bresenham(Canvas canvas, V2 point1, V2 point2, V4 color)
+static void func Bresenham(Canvas* canvas, V2 point1, V2 point2, V4 color)
 {
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 colorCode = GetColorCode(color);
 
 	BresenhamContext context = BresenhamInitUnit(canvas, point1, point2);
@@ -415,7 +417,7 @@ static void Bresenham(Canvas canvas, V2 point1, V2 point2, V4 color)
 }
 
 // TODO: move this to Geometry?
-static V2 LineAtX(V2 linePoint1, V2 linePoint2, F32 x)
+static V2 func LineAtX(V2 linePoint1, V2 linePoint2, F32 x)
 {
 	F32 minX = Min2(linePoint1.x, linePoint2.x);
 	F32 maxX = Max2(linePoint1.x, linePoint2.x);
@@ -434,7 +436,7 @@ static V2 LineAtX(V2 linePoint1, V2 linePoint2, F32 x)
 }
 
 // TODO: move this to Geometry?
-static V2 LineAtY(V2 linePoint1, V2 linePoint2, F32 y)
+static V2 func LineAtY(V2 linePoint1, V2 linePoint2, F32 y)
 {
 	F32 minY = Min2(linePoint1.y, linePoint2.y);
 	F32 maxY = Max2(linePoint1.y, linePoint2.y);
@@ -453,9 +455,9 @@ static V2 LineAtY(V2 linePoint1, V2 linePoint2, F32 y)
 }
 
 // TODO: check this for performance issues
-static void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
+static void func DrawHorizontalTrapezoid(Canvas* canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	F32 cameraTop     = CameraTopSide(camera);
 	F32 cameraBottom  = CameraBottomSide(camera);
 
@@ -496,7 +498,7 @@ static void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 b
 		bottomRight = LineAtY(topRight, bottomRight, cameraBottom);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 colorCode = GetColorCode(color);
 
 	BresenhamContext leftLine = BresenhamInitUnit(canvas, topLeft, bottomLeft);
@@ -548,9 +550,9 @@ static void DrawHorizontalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 b
 }
 
 // TODO: check this for performance issues
-static void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
+static void func DrawVerticalTrapezoid(Canvas* canvas, V2 topLeft, V2 topRight, V2 bottomLeft, V2 bottomRight, V4 color)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	F32 cameraLeft  = CameraLeftSide(camera);
 	F32 cameraRight = CameraRightSide(camera);
 
@@ -591,7 +593,7 @@ static void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bot
 		bottomRight = LineAtX(bottomLeft, bottomRight, cameraRight);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	U32 colorCode = GetColorCode(color);
 
 	BresenhamContext topLine = BresenhamInitUnit(canvas, topLeft, topRight);
@@ -643,11 +645,11 @@ static void DrawVerticalTrapezoid(Canvas canvas, V2 topLeft, V2 topRight, V2 bot
 	}
 }
 
-static void DrawRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
+static void func DrawRect(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera *camera = canvas.camera;
+	Camera *camera = canvas->camera;
 	I32 topPixel =    UnitYtoPixel(camera, top);
 	I32 leftPixel =   UnitXtoPixel(camera, left);
 	I32 bottomPixel = UnitYtoPixel(camera, bottom);
@@ -663,7 +665,7 @@ static void DrawRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4
 		IntSwap(&leftPixel, &rightPixel);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
 	leftPixel   = IntMax2(leftPixel, 0);
@@ -679,7 +681,7 @@ static void DrawRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4
 	}
 }
 
-static void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
+static void func DrawGridLine(Canvas* canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
 {
 	F32 left   = 0.0f;
 	F32 right  = 0.0f;
@@ -706,18 +708,18 @@ static void DrawGridLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 line
 	DrawRect(canvas, left, right, top, bottom, color);
 }
 
-static void DrawQuad(Canvas canvas, Quad quad, V4 color)
+static void func DrawQuad(Canvas* canvas, Quad quad, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
 	V2* points = quad.points;
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	for (I32 i = 0; i < 4; ++i)
 	{
 		points[i] = UnitToPixel(camera, points[i]);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	I32 minX = bitmap.width;
 	I32 minY = bitmap.height;
 	I32 maxX = 0;
@@ -775,7 +777,7 @@ static void DrawQuad(Canvas canvas, Quad quad, V4 color)
 	}
 }
 
-static void DrawLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
+static void func DrawLine(Canvas* canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
 {
 	V2 direction = PointDirection(point2, point1);
 
@@ -794,10 +796,10 @@ static void DrawLine(Canvas canvas, V2 point1, V2 point2, V4 color, F32 lineWidt
 
 #define WorldTextureScale 20.0f
 
-static void FillScreenWithWorldTexture(Canvas canvas, Texture texture)
+static void func FillScreenWithWorldTexture(Canvas* canvas, Texture texture)
 {
-	Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+	Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
 
 	F32 pixelInUnits = Invert(camera->unitInPixels);
 
@@ -846,10 +848,10 @@ static void FillScreenWithWorldTexture(Canvas canvas, Texture texture)
 	}
 }
 
-static void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
+static void func DrawWorldTextureQuad(Canvas* canvas, Quad quad, Texture texture)
 {
-    Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+    Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
     
     V2* points = quad.points;
     for (I32 i = 0; i < 4; ++i)
@@ -957,7 +959,7 @@ static void DrawWorldTextureQuad(Canvas canvas, Quad quad, Texture texture)
 	}
 }
 
-static void DrawWorldTextureLine(Canvas canvas, V2 point1, V2 point2, F32 lineWidth, Texture texture)
+static void func DrawWorldTextureLine(Canvas* canvas, V2 point1, V2 point2, F32 lineWidth, Texture texture)
 {
 	V2 direction = PointDirection(point2, point1);
 	V2 turnedDirection = TurnVectorToRight(direction);
@@ -972,7 +974,7 @@ static void DrawWorldTextureLine(Canvas canvas, V2 point1, V2 point2, F32 lineWi
 	DrawWorldTextureQuad(canvas, quad, texture);
 }
 
-static void DrawRectOutline(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
+static void func DrawRectOutline(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
 {
 	V2 topLeft     = MakePoint(left,  top);
 	V2 topRight    = MakePoint(right, top);
@@ -986,9 +988,9 @@ static void DrawRectOutline(Canvas canvas, F32 left, F32 right, F32 top, F32 bot
 }
 
 // TODO: change the order of parameters to left, right, top, bottom
-static void WorldTextureRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bottom, Texture texture)
+static void func WorldTextureRect(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, Texture texture)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	I32 topPixel =    UnitYtoPixel(camera, top);
 	I32 leftPixel =   UnitXtoPixel(camera, left);
 	I32 bottomPixel = UnitYtoPixel(camera, bottom);
@@ -1004,7 +1006,7 @@ static void WorldTextureRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bo
 		IntSwap(&leftPixel, &rightPixel);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
@@ -1073,7 +1075,7 @@ static void WorldTextureRect(Canvas canvas, F32 left, F32 right, F32 top, F32 bo
 	}
 }
 
-static void WorldTextureGridLine(Canvas canvas, V2 point1, V2 point2, F32 width, Texture texture)
+static void func WorldTextureGridLine(Canvas* canvas, V2 point1, V2 point2, F32 width, Texture texture)
 {
 	F32 left   = Min2(point1.x, point2.x);
 	F32 right  = Max2(point1.x, point2.x);
@@ -1096,7 +1098,7 @@ static void WorldTextureGridLine(Canvas canvas, V2 point1, V2 point2, F32 width,
 	WorldTextureRect(canvas, left, right, top, bottom, texture);
 }
 
-static void DrawPolyOutline(Canvas canvas, V2* points, I32 pointN, V4 color)
+static void func DrawPolyOutline(Canvas* canvas, V2* points, I32 pointN, V4 color)
 {
 	I32 prev = pointN - 1;
 	for (I32 i = 0; i < pointN; ++i) 
@@ -1106,17 +1108,17 @@ static void DrawPolyOutline(Canvas canvas, V2* points, I32 pointN, V4 color)
 	}
 }
 
-static void DrawPoly(Canvas canvas, V2* points, I32 pointN, V4 color)
+static void func DrawPoly(Canvas* canvas, V2* points, I32 pointN, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	for (I32 i = 0; i < pointN; ++i)
 	{
 		points[i] = UnitToPixel(camera, points[i]);
 	}
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	I32 minX = bitmap.width;
 	I32 minY = bitmap.height;
 	I32 maxX = 0;
@@ -1173,10 +1175,10 @@ static void DrawPoly(Canvas canvas, V2* points, I32 pointN, V4 color)
 	}
 }
 
-static void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture texture)
+static void func DrawWorldTexturePoly(Canvas* canvas, V2* points, I32 pointN, Texture texture)
 {
-	Bitmap bitmap = canvas.bitmap;
-	Camera* camera = canvas.camera;
+	Bitmap bitmap = canvas->bitmap;
+	Camera* camera = canvas->camera;
 
 	I32 minX = bitmap.width;
 	I32 minY = bitmap.height;
@@ -1279,30 +1281,64 @@ static void DrawWorldTexturePoly(Canvas canvas, V2* points, I32 pointN, Texture 
 	}
 }
 
-static void DrawQuadPoints(Canvas canvas, V2 point1, V2 point2, V2 point3, V2 point4, V4 color)
+static void func DrawQuadPoints(Canvas* canvas, V2 point1, V2 point2, V2 point3, V2 point4, V4 color)
 {
 	Quad quad = {point1, point2, point3, point4};
 	DrawQuad(canvas, quad, color);
 }
 
-static void DrawScaledRotatedBitmap(Canvas canvas, Bitmap* bitmap, V2 position, F32 width, F32 height, F32 rotationAngle)
+static void func DrawBitmap(Canvas* canvas, Bitmap* bitmap, F32 left, F32 top)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
+	I32 pixelLeft = UnitXtoPixel(camera, left);
+	I32 pixelTop  = UnitYtoPixel(camera, top);
+	CopyBitmap(bitmap, &canvas->bitmap, pixelLeft, pixelTop);
+}
+
+static void func DrawScaledRotatedBitmap(Canvas* canvas, Bitmap* bitmap, V2 position, F32 width, F32 height, F32 rotationAngle)
+{
+	Camera* camera = canvas->camera;
 	I32 col = UnitXtoPixel(camera, position.x);
 	I32 row = UnitYtoPixel(camera, position.y);
 
 	F32 pixelWidth  = GetUnitDistanceInPixel(camera, width);
 	F32 pixelHeight = GetUnitDistanceInPixel(camera, height);
 
-	CopyScaledRotatedBitmap(bitmap, &canvas.bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
+	CopyScaledRotatedBitmap(bitmap, &canvas->bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
 }
 
-static void DrawStretchedBitmap(Canvas canvas, Bitmap* bitmap, F32 left, F32 right, F32 top, F32 bottom)
+static void func DrawStretchedBitmap(Canvas* canvas, Bitmap* bitmap, F32 left, F32 right, F32 top, F32 bottom)
 {
-	Camera* camera = canvas.camera;
+	Camera* camera = canvas->camera;
 	I32 pixelLeft   = UnitXtoPixel(camera, left);
 	I32 pixelRight  = UnitXtoPixel(camera, right);
 	I32 pixelTop    = UnitYtoPixel(camera, top);
 	I32 pixelBottom = UnitYtoPixel(camera, bottom);
-	CopyStretchedBitmap(bitmap, &canvas.bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
+	CopyStretchedBitmap(bitmap, &canvas->bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
+}
+
+static F32 func GetTextWidth(Canvas* canvas, I8* text)
+{
+	Assert(canvas->glyphData != 0);
+	F32 pixelWidth = GetTextPixelWidth(text, canvas->glyphData);
+
+	Camera* camera = canvas->camera;
+	Assert(camera->unitInPixels > 0.0f);
+	F32 width = pixelWidth / camera->unitInPixels;
+	return width;
+}
+
+static void func DrawTextLine(Canvas* canvas, I8* text, F32 baseLineY, F32 left, V4 textColor)
+{
+	Assert(canvas->glyphData != 0);
+	I32 leftPixel = UnitXtoPixel(canvas->camera, left);
+	I32 baseLineYPixel = UnitYtoPixel(canvas->camera, baseLineY);
+	DrawBitmapTextLine(&canvas->bitmap, text, canvas->glyphData, leftPixel, baseLineYPixel, textColor);
+}
+
+static void func DrawTextLineXCentered(Canvas* canvas, I8* text, F32 baseLineY, F32 centerX, V4 textColor)
+{
+	Assert(canvas->glyphData != 0);
+	F32 left = centerX - GetTextWidth(canvas, text) * 0.5f;
+	DrawTextLine(canvas, text, baseLineY, left, textColor);
 }

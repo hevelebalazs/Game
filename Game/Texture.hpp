@@ -11,7 +11,7 @@ struct Texture
 	U32* memory;
 };
 
-static Texture CopyTexture(Texture* texture) 
+static Texture func CopyTexture(Texture* texture) 
 {
 	Texture result = {};
 	result.side = texture->side;
@@ -35,14 +35,14 @@ static Texture CopyTexture(Texture* texture)
 	return result;
 }
 
-static void Swap2(U32* i1, U32* i2)
+static void func Swap2(U32* i1, U32* i2)
 {
 	U32 tmp = *i1;
 	*i1 = *i2;
 	*i2 = tmp;
 }
 
-static void Swap4(U32* i1, U32* i2, U32* i3, U32* i4)
+static void func Swap4(U32* i1, U32* i2, U32* i3, U32* i4)
 {
 	U32 tmp = *i1;
 	*i1 = *i2;
@@ -51,19 +51,19 @@ static void Swap4(U32* i1, U32* i2, U32* i3, U32* i4)
 	*i4 = tmp;
 }
 
-static U32* TextureAddress(Texture* texture, I32 row, I32 col)
+static U32* func TextureAddress(Texture* texture, I32 row, I32 col)
 {
 	U32* result = texture->memory + (row * texture->side) + col;
 	return result;
 }
 
-static U32 TextureValue(Texture* texture, I32 row, I32 col)
+static U32 func TextureValue(Texture* texture, I32 row, I32 col)
 {
 	U32 result = *TextureAddress(texture, row, col);
 	return result;
 }
 
-static void RotateTextureUpsideDown(Texture* texture)
+static void func RotateTextureUpsideDown(Texture* texture)
 {
 	I32 side = texture->side;
 	I32 halfSide = (side / 2);
@@ -79,7 +79,7 @@ static void RotateTextureUpsideDown(Texture* texture)
 	}
 }
 
-static void RotateTextureLeft(Texture* texture)
+static void func RotateTextureLeft(Texture* texture)
 {
 	I32 side = texture->side;
 	I32 halfSide = (side / 2);
@@ -97,7 +97,7 @@ static void RotateTextureLeft(Texture* texture)
 	}
 }
 
-static void RotateTextureRight(Texture* texture)
+static void func RotateTextureRight(Texture* texture)
 {
 	I32 side = texture->side;
 	I32 halfSide = (side / 2);
@@ -115,7 +115,7 @@ static void RotateTextureRight(Texture* texture)
 	}
 }
 
-static Texture RoofTexture(I32 logSide) 
+static Texture func RoofTexture(I32 logSide) 
 {
 	Texture result = {};
 	result.logSide = logSide;
@@ -162,7 +162,7 @@ static Texture RoofTexture(I32 logSide)
 	return result;
 }
 
-static Texture GrassTexture(I32 logSide, MemArena* tmpArena)
+static Texture func GrassTexture(I32 logSide, MemArena* tmpArena)
 {
 	Texture result = {};
 	result.logSide = logSide;
@@ -263,7 +263,7 @@ static Texture GrassTexture(I32 logSide, MemArena* tmpArena)
 	return result;
 }
 
-static Texture RandomGreyTexture(I32 logSide, I32 minRatio, I32 maxRatio)
+static Texture func RandomGreyTexture(I32 logSide, I32 minRatio, I32 maxRatio)
 {
 	Texture result = {};
 	result.logSide = logSide;
@@ -286,20 +286,20 @@ static Texture RandomGreyTexture(I32 logSide, I32 minRatio, I32 maxRatio)
 	return result;
 }
 
-static U32 TextureColorCodeInt(Texture texture, I32 row, I32 col)
+static U32 func TextureColorCodeInt(Texture texture, I32 row, I32 col)
 {
 	U32 result = *(texture.memory + (row << texture.logSide) + (col));
 	return result;
 }
 
-static V4 TextureColorInt(Texture texture, I32 row, I32 col)
+static V4 func TextureColorInt(Texture texture, I32 row, I32 col)
 {
 	I32 colorCode = TextureColorCodeInt(texture, row, col);
 	V4 result = GetColorFromColorCode(colorCode);
 	return result;
 }
 
-static V4 TextureColor(Texture texture, F32 x, F32 y)
+static V4 func TextureColor(Texture texture, F32 x, F32 y)
 {
 	I32 row = ((I32)y & (texture.side - 1));
 	I32 col = ((I32)x & (texture.side - 1));
@@ -307,14 +307,14 @@ static V4 TextureColor(Texture texture, F32 x, F32 y)
 	return color;
 }
 
-static U32 TextureColorCode(Texture texture, F32 x, F32 y)
+static U32 func TextureColorCode(Texture texture, F32 x, F32 y)
 {
 	V4 color = TextureColor(texture, x, y);
 	U32 colorCode = GetColorCode(color);
 	return colorCode;
 }
 
-static U32 ColorCodeLerp(U32 colorCode1, U8 ratio, U32 colorCode2)
+static U32 func ColorCodeLerp(U32 colorCode1, U8 ratio, U32 colorCode2)
 {
 	struct ColorCode 
 	{
@@ -349,7 +349,7 @@ static U32 ColorCodeLerp(U32 colorCode1, U8 ratio, U32 colorCode2)
 	return result.u;
 }
 
-static U32 TextureColorCode(Texture texture, I32 x, U8 subx, I32 y, U8 suby)
+static U32 func TextureColorCode(Texture texture, I32 x, U8 subx, I32 y, U8 suby)
 {
 	I32 row1 = y;
 	I32 row2 = (row1 + 1) & (texture.side - 1);

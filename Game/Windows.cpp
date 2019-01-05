@@ -17,6 +17,7 @@
 #include "Lab/MapLab.hpp"
 #include "Lab/PhysicsLab.hpp"
 #include "Lab/RoadLab.hpp"
+#include "Lab/TextLab.hpp"
 #include "Lab/ThreadLab.hpp"
 #include "Lab/WorldLab.hpp"
 
@@ -29,7 +30,7 @@ static F32 globalTargetFPS = 60.0f;
 static F32 globalTargetFrameS = 1.0f / globalTargetFPS;
 static F32 globalTargetFrameMS = globalTargetFrameS * 1000.0f;
 
-static V2 WinMousePosition(HWND window)
+static V2 func WinMousePosition(HWND window)
 {
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
@@ -44,32 +45,32 @@ static V2 WinMousePosition(HWND window)
 	return point;
 }
 
-void WinDraw(HWND window)
+static void func WinDraw(HWND window)
 {
 	V2 mousePoint = WinMousePosition(window);
 
 	GameDraw(&globalGameStorage);
 }
 
-void WinUpdate(Canvas canvas, HDC context, RECT clientRect)
+static void func WinUpdate(Canvas* canvas, HDC context, RECT clientRect)
 {
 	I32 windowWidth = clientRect.right - clientRect.left;
 	I32 windowHeight = clientRect.bottom - clientRect.top;
 
-	Bitmap bitmap = canvas.bitmap;
-
+	Bitmap bitmap = canvas->bitmap;
+	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
 				  0, 0, windowWidth, windowHeight,
 				  bitmap.memory,
-				  &bitmap.info,
+				  &bitmapInfo,
 				  DIB_RGB_COLORS,
 				  SRCCOPY
 	);
 }
 
 //TODO: fetch all the user input and pass it to GameUpdate?
-LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
 
@@ -92,7 +93,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			RECT clientRect;
 			GetClientRect(window, &clientRect);
 
-			WinUpdate(globalGameState->canvas, context, clientRect);
+			WinUpdate(&globalGameState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -179,7 +180,7 @@ LRESULT CALLBACK WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lp
 	return result;
 }
 
-void RunGame(HINSTANCE instance)
+static void func RunGame(HINSTANCE instance)
 {
 	WNDCLASS windowClass = {};
 
@@ -263,7 +264,7 @@ void RunGame(HINSTANCE instance)
 
 		HDC context = GetDC(window);
 
-		WinUpdate(globalGameState->canvas, context, rect);
+		WinUpdate(&globalGameState->canvas, context, rect);
 
 		ReleaseDC(window, context);
 		LARGE_INTEGER nowCounter;
@@ -287,7 +288,7 @@ void RunGame(HINSTANCE instance)
 	}
 }
 
-I32 CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
+I32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
 	//RunGame(instance);
 	WorldLab(instance);

@@ -5,8 +5,11 @@
 #include "Lab.hpp"
 
 #include "../Geometry.hpp"
+#include "../String.hpp"
 
-#define CombatLabEnemyN 20
+#define WhiteColor MakeColor(1.0f, 1.0f, 1.0f)
+#define BlueColor MakeColor(0.0f, 0.0f, 1.0f)
+#define RedColor MakeColor(1.0f, 0.0f, 0.0f)
 
 #define WhiteAbility1Radius 5.0f
 #define WhiteAbility1TotalCastTime 0.5f
@@ -26,32 +29,32 @@
 #define RedAbility1Radius 5.0f
 #define RedAbility1TotalCastTime 0.8f
 #define RedAbility1AngleRange (0.5f * PI)
-#define RedAbility1Damage 20
+#define RedAbility1Damage 10
 
 #define RedAbility2Radius 5.0f
 #define RedAbility2TotalCastTime 0.5f
 #define RedAbility2AngleRange (0.25f * PI)
-#define RedAbility2Damage 50
+#define RedAbility2Damage 30
 
 #define BlueAbility1Radius 3.0f
 #define BlueAbility1TotalCastTime 1.0f
-#define BlueAbility1Damage 20
+#define BlueAbility1Damage 10
 
 #define BlueAbility2Radius 3.0f
 #define BlueAbility2TotalCastTime 1.0f
-#define BlueAbility2Damage 20
+#define BlueAbility2Damage 15
 #define BlueAbility2SlowTime 3.0f
 #define BlueAbility2ResourceCost 50
 
-#define BlueAbility3Radius 1.5f
+#define BlueAbility3Radius 2.0f
 #define BlueAbility3TotalCastTime 1.0f
-#define BlueAbility3Damage 40
+#define BlueAbility3Damage 30
 #define BlueAbility3SlowTime 6.0f
 #define BlueAbility3ResourceCost 100
 
 #define MaxLevel 5
 
-static int gExpNeededForNextLevel[] = 
+static I32 ExpNeededForNextLevel[] = 
 {
 	0,
 	100,
@@ -60,14 +63,65 @@ static int gExpNeededForNextLevel[] =
 	500
 };
 
-static int gEnemyHPOnLevel[] =
+static I32 ConstitutionOnLevel[] =
 {
 	0,
-	100,
-	200,
-	350,
-	550,
-	800
+	10,
+	20,
+	35,
+	55,
+	80
+};
+
+static I32 RedStrengthOnLevel[] =
+{
+	0,
+	10,
+	15,
+	25,
+	40,
+	65
+};
+
+static I32 WhiteStrengthOnLevel[] =
+{
+	0,
+	5,
+	10,
+	15,
+	20,
+	25,
+	30
+};
+
+static I32 BlueIntellectOnLevel[] =
+{
+	0,
+	10,
+	15,
+	25,
+	40,
+	65
+};
+
+static I32 WhiteDexterityOnLevel[] =
+{
+	0,
+	5,
+	10,
+	15,
+	20,
+	25
+};
+
+static I32 BlueDexterityOnLevel[] =
+{
+	0,
+	5,
+	10,
+	15,
+	20,
+	25
 };
 
 enum AbilityID
@@ -86,7 +140,7 @@ enum AbilityID
 struct Ability
 {
 	I32 id;
-	F32 castTimeLeft;
+	F32 castRatioLeft;
 
 	V2 position;
 	F32 angle;
@@ -109,7 +163,6 @@ struct Entity
 	F32 radius;
 
 	I32 health;
-	I32 maxHealth;
 
 	Ability ability;
 
@@ -121,7 +174,24 @@ struct Entity
 	I32 specialResource;
 
 	F32 slowTimeLeft;
+
+	I32 strength;
+	I32 intellect;
+	I32 constitution;
+	I32 dexterity;
 };
+
+struct DamageTextAlert
+{
+	V4 color;
+	F32 centerX;
+	F32 baseLineY;
+	I32 damage;
+	F32 timeRemaining;
+};
+
+#define CombatLabEnemyN 20
+#define CombatLabDamageTextAlertMaxN 100
 
 struct CombatLabState
 {
@@ -138,10 +208,20 @@ struct CombatLabState
 	I32 expGainedThisLevel;
 
 	F32 secondsFraction;
+
+	B32 moveLeft;
+	B32 moveRight;
+	B32 moveUp;
+	B32 moveDown;
+
+	DamageTextAlert damageTextAlerts[CombatLabDamageTextAlertMaxN];
+	I32 damageTextAlertN;
+
+	B32 showCharacterInfo;
 };
 static CombatLabState gCombatLabState;
 
-static void CombatLabResize(CombatLabState* labState, I32 width, I32 height)
+static void func CombatLabResize(CombatLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -152,47 +232,217 @@ static void CombatLabResize(CombatLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 20.0f;
 }
 
-static void CombatLabBlit(Canvas canvas, HDC context, RECT rect)
+static void func CombatLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap* bitmap = &canvas->bitmap;
+	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
 	StretchDIBits(context,
-				  0, 0, bitmap.width, bitmap.height,
+				  0, 0, bitmap->width, bitmap->height,
 				  0, 0, width, height,
-				  bitmap.memory,
-				  &bitmap.info,
+				  bitmap->memory,
+				  &bitmapInfo,
 				  DIB_RGB_COLORS,
 				  SRCCOPY
 	);
 }
 
-static void GainSpecialResource(Entity* entity, I32 amount)
+static void func GainSpecialResource(Entity* entity, I32 amount)
 {
 	Assert(entity->hasSpecialResource);
 	Assert(amount >= 0);
 	entity->specialResource = IntMin2(entity->specialResource + amount, entity->maxSpecialResource);
 }
 
-static void DoDamage(Entity* entity, I32 damage)
+static F32 func GetAbilityCastTime(Entity* entity, I32 abilityID)
+{
+	Assert(entity->dexterity >= 0);
+	F32 castTimeRatio = 100.0f / (100.0f + F32(entity->dexterity));
+	F32 castTime = 0.0f;
+	switch (abilityID)
+	{
+		case WhiteAbility1ID:
+		{
+			castTime = castTimeRatio * WhiteAbility1TotalCastTime;
+			break;
+		}
+		case WhiteAbility2ID:
+		{
+			castTime = WhiteAbility2TotalCastTime;
+			break;
+		}
+		case WhiteAbility3ID:
+		{
+			castTime = castTimeRatio * WhiteAbility3TotalCastTime;
+			break;
+		}
+		case RedAbility1ID:
+		{
+			castTime = castTimeRatio * RedAbility1TotalCastTime;
+			break;
+		}
+		case RedAbility2ID:
+		{
+			castTime = castTimeRatio * RedAbility2TotalCastTime;
+			break;
+		}
+		case BlueAbility1ID:
+		{
+			castTime = castTimeRatio * BlueAbility1TotalCastTime;
+			break;
+		}
+		case BlueAbility2ID:
+		{
+			castTime = castTimeRatio * BlueAbility2TotalCastTime;
+			break;
+		}
+		case BlueAbility3ID:
+		{
+			castTime = castTimeRatio * BlueAbility3TotalCastTime;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	Assert(castTime > 0.0f);
+	return castTime;
+}
+
+static I32 func GetAbilityDamage(Entity* entity, AbilityID abilityID)
+{
+	I32 damage = 0;
+	switch (abilityID)
+	{
+		case WhiteAbility1ID:
+		{
+			damage = WhiteAbility1Damage + entity->strength;
+			break;
+		}
+		case WhiteAbility2ID:
+		{
+			damage = WhiteAbility2Damage + entity->strength;
+			break;
+		}
+		case WhiteAbility3ID:
+		{
+			damage = WhiteAbility3Damage + entity->strength;
+			break;
+		}
+		case RedAbility1ID:
+		{
+			damage = RedAbility1Damage + entity->strength;
+			break;
+		}
+		case RedAbility2ID:
+		{
+			damage = RedAbility2Damage + entity->strength;
+			break;
+		}
+		case BlueAbility1ID:
+		{
+			damage = BlueAbility1Damage + entity->intellect;
+			break;
+		}
+		case BlueAbility2ID:
+		{
+			damage = BlueAbility1Damage + entity->intellect;
+			break;
+		}
+		case BlueAbility3ID:
+		{
+			damage = BlueAbility3Damage + entity->intellect;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return damage;
+}
+
+static void func DoDamage(Entity* entity, I32 damage)
 {
 	entity->health = IntMax2(entity->health - damage, 0);
 	if (entity->health == 0)
 	{
 		Ability* ability = &entity->ability;
-		ability->castTimeLeft = 0.0f;
+		ability->castRatioLeft = 0.0f;
 	}
 }
 
-static void InterruptAbility(Entity* entity)
+static void func DoAndDisplayDamage(CombatLabState* labState, Entity* entity, I32 damage, V4 color)
+{
+	if (entity->health > 0)
+	{
+		DoDamage(entity, damage);
+
+		Assert(labState->damageTextAlertN < CombatLabDamageTextAlertMaxN);
+		DamageTextAlert* alert = &labState->damageTextAlerts[labState->damageTextAlertN];
+		alert->color = color;
+		alert->damage = damage;
+		alert->centerX = entity->position.x;
+		alert->baseLineY = entity->position.y;
+		alert->timeRemaining = 1.0f;
+
+		labState->damageTextAlertN++;
+	}
+}
+
+static void func InterruptAbility(Entity* entity)
 {
 	Ability* ability = &entity->ability;
 	ability->id = NoAbilityID;
-	ability->castTimeLeft = 0.0f;
+	ability->castRatioLeft = 0.0f;
 }
 
-static void CombatLabReset(CombatLabState* labState)
+static I32 func GetMaxHealth(Entity* entity)
+{
+	I32 maxHealth = 10 * entity->constitution;
+	Assert(maxHealth > 0);
+	return maxHealth;
+}
+
+static void func SetLevel(Entity* entity, I32 level)
+{
+	Assert(IsIntBetween(level, 1, MaxLevel));
+	entity->level = level;
+
+	if (entity->type == WhiteEntity)
+	{
+		entity->constitution = ConstitutionOnLevel[level];
+		entity->strength = WhiteStrengthOnLevel[level];
+		entity->intellect = 0;
+		entity->dexterity = WhiteDexterityOnLevel[level];
+	}
+	else if (entity->type == RedEntity)
+	{
+		entity->constitution = ConstitutionOnLevel[level];
+		entity->strength = RedStrengthOnLevel[level];
+		entity->intellect = 0;
+		entity->dexterity = 0;
+	}
+	else if (entity->type == BlueEntity)
+	{
+		entity->constitution = ConstitutionOnLevel[level];
+		entity->strength = 0;
+		entity->intellect = BlueIntellectOnLevel[level];
+		entity->dexterity = BlueDexterityOnLevel[level];
+	}
+	else
+	{
+		DebugBreak();
+	}
+
+	entity->health = GetMaxHealth(entity);
+}
+
+static void func CombatLabReset(CombatLabState* labState)
 {
 	InitRandom();
 
@@ -200,13 +450,10 @@ static void CombatLabReset(CombatLabState* labState)
 
 	Entity* player = &labState->player;
 	player->type = WhiteEntity;
-	player->level = 1;
+	SetLevel(player, 1);
 
 	player->position = MakePoint(0.0f, 0.0f);
 	player->radius = 1.0f;
-
-	player->maxHealth = 100;
-	player->health = player->maxHealth;
 
 	player->hasSpecialResource = true;
 	player->specialResource = 0;
@@ -230,13 +477,12 @@ static void CombatLabReset(CombatLabState* labState)
 			enemy->ability.id = BlueAbility1ID;
 		}
 
-		enemy->level = IntRandom(1, 3);
+		SetLevel(enemy, IntRandom(1, 3));
 		enemy->position.x = player->position.x + RandomBetween(-50.0f, +50.0f);
 		enemy->position.y = player->position.y + RandomBetween(-50.0f, +50.0f);
 		enemy->radius = player->radius;
 
-		enemy->maxHealth = gEnemyHPOnLevel[enemy->level];
-		enemy->health = enemy->maxHealth;
+		enemy->health = GetMaxHealth(enemy);
 
 		enemy->hasSpecialResource = false;
 		enemy->isAttacking = false;
@@ -250,16 +496,17 @@ static void CombatLabReset(CombatLabState* labState)
 	}
 
 	labState->expGainedThisLevel = 0;
+
+	labState->damageTextAlertN = 0;
 }
 
-static void CombatLabResetAtLevel(CombatLabState* labState, I32 level)
+static void func CombatLabResetAtLevel(CombatLabState* labState, I32 level)
 {
-	Assert(IsIntBetween(level, 1, MaxLevel));
 	CombatLabReset(labState);
-	labState->player.level = level;
+	SetLevel(&labState->player, level);
 }
 
-static Entity* GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
+static Entity* func  GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
 {
 	Entity* result = 0;
 	for (I32 i = 0; i < CombatLabEnemyN; ++i)
@@ -274,7 +521,7 @@ static Entity* GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
 	return result;
 }
 
-static B32 IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
+static B32 func IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
 {
 	B32 result = false;
 	if (Distance(entity->position, point1) <= entity->radius)
@@ -303,19 +550,19 @@ static B32 IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
 	return result;
 }
 
-static void DamageEnemiesOnLine(CombatLabState* labState, V2 point1, V2 point2, I32 damage)
+static void func DamageEnemiesOnLine(CombatLabState* labState, V2 point1, V2 point2, I32 damage)
 {
 	for (I32 i = 0; i < CombatLabEnemyN; ++i)
 	{
 		Entity* enemy = &labState->enemies[i];
 		if (IsEntityOnLine(enemy, point1, point2))
 		{
-			DoDamage(enemy, damage);
+			DoAndDisplayDamage(labState, enemy, damage, WhiteColor);
 		}
 	}
 }
 
-static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
 
@@ -341,7 +588,7 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
 
-			CombatLabBlit(labState->canvas, context, clientRect);
+			CombatLabBlit(&labState->canvas, context, clientRect);
 
 			EndPaint(window, &paint);
 			break;
@@ -391,9 +638,29 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 					labState->useAbilityID = WhiteAbility2ID;
 					break;
 				}
-				case 'W':
+				case 'E':
 				{
 					labState->useAbilityID = WhiteAbility3ID;
+					break;
+				}
+				case 'A':
+				{
+					labState->moveLeft = true;
+					break;
+				}
+				case 'D':
+				{
+					labState->moveRight = true;
+					break;
+				}
+				case 'W':
+				{
+					labState->moveUp = true;
+					break;
+				}
+				case 'S':
+				{
+					labState->moveDown = true;
 					break;
 				}
 			}
@@ -402,7 +669,6 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 		case WM_KEYUP: 
 		{
 			WPARAM keyCode = wparam;
-
 			switch (keyCode) 
 			{
 				case '1':
@@ -435,7 +701,7 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 					labState->useAbilityID = NoAbilityID;
 					break;
 				}
-				case 'W':
+				case 'E':
 				{
 					labState->useAbilityID = NoAbilityID;
 					break;
@@ -445,6 +711,31 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 					Entity* player = &labState->player;
 					Assert(player->hasSpecialResource);
 					player->specialResource = player->maxSpecialResource;
+					break;
+				}
+				case 'A':
+				{
+					labState->moveLeft = false;
+					break;
+				}
+				case 'D':
+				{
+					labState->moveRight = false;
+					break;
+				}
+				case 'W':
+				{
+					labState->moveUp = false;
+					break;
+				}
+				case 'S':
+				{
+					labState->moveDown = false;
+					break;
+				}
+				case 'C':
+				{
+					labState->showCharacterInfo = !labState->showCharacterInfo;
 					break;
 				}
 			}
@@ -466,18 +757,19 @@ static LRESULT CALLBACK CombatLabCallback(HWND window, UINT message, WPARAM wpar
 	return result;
 }
 
-static void CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowHeight)
 {
 	CombatLabReset(labState);
 
+	labState->canvas.glyphData = GetGlobalGlyphData();
 	CombatLabResize(labState, windowWidth, windowHeight);
 }
 
-static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
+static void func DrawSlice(Canvas* canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera *camera = canvas.camera;
+	Camera *camera = canvas->camera;
 	I32 centerXPixel = UnitXtoPixel(camera, center.x);
 	I32 centerYPixel = UnitYtoPixel(camera, center.y);
 	V2 pixelCenter = MakeVector(F32(centerXPixel), F32(centerYPixel));
@@ -500,7 +792,7 @@ static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 ma
 	I32 pixelRadius = I32(radius * camera->unitInPixels);
 	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
 	leftPixel   = IntMax2(leftPixel, 0);
@@ -525,7 +817,7 @@ static void DrawSlice(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 ma
 	}
 }
 
-static void DrawSliceOutline(Canvas canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
+static void func DrawSliceOutline(Canvas* canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
 {
 	if (minAngle > maxAngle)
 	{
@@ -549,11 +841,11 @@ static void DrawSliceOutline(Canvas canvas, V2 center, F32 radius, F32 minAngle,
 	}
 }
 
-static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
+static void func DrawCircle(Canvas* canvas, V2 center, F32 radius, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
-	Camera *camera = canvas.camera;
+	Camera *camera = canvas->camera;
 
 	I32 centerXPixel = UnitXtoPixel(camera, center.x);
 	I32 centerYPixel = UnitYtoPixel(camera, center.y);
@@ -576,7 +868,7 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 	I32 pixelRadius = I32(radius * camera->unitInPixels);
 	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
 
-	Bitmap bitmap = canvas.bitmap;
+	Bitmap bitmap = canvas->bitmap;
 	topPixel    = IntMax2(topPixel, 0);
 	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
 	leftPixel   = IntMax2(leftPixel, 0);
@@ -596,7 +888,7 @@ static void DrawCircle(Canvas canvas, V2 center, F32 radius, V4 color)
 	}
 }
 
-static void DrawCircleOutline(Canvas canvas, V2 center, F32 radius, V4 color)
+static void func DrawCircleOutline(Canvas* canvas, V2 center, F32 radius, V4 color)
 {
 	I32 lineN = 20;
 	F32 angleAdvance = (2.0f * PI) / F32(lineN);
@@ -613,7 +905,7 @@ static void DrawCircleOutline(Canvas canvas, V2 center, F32 radius, V4 color)
 	}
 }
 
-static void DrawEntity(Canvas canvas, Entity* entity)
+static void func DrawEntity(Canvas* canvas, Entity* entity)
 {
 	V4 color = {};
 	switch (entity->type)
@@ -633,16 +925,7 @@ static void DrawEntity(Canvas canvas, Entity* entity)
 
 	DrawCircle(canvas, entity->position, entity->radius, color);
 
-	V4 healthBarBackgroundColor = {};
-	if (entity->health > 0.0f)
-	{
-		healthBarBackgroundColor = MakeColor(0.5f, 0.0f, 0.0f);
-	}
-	else
-	{
-		healthBarBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
-	}
-
+	V4 healthBarBackgroundColor = (entity->health > 0.0f) ? MakeColor(0.5f, 0.0f, 0.0f) : MakeColor(0.5f, 0.5f, 0.5f);
 	V4 healthBarColor = MakeColor(1.0f, 0.0f, 0.0f);
 
 	F32 healthBarWidth = 2.0f * entity->radius;
@@ -657,10 +940,20 @@ static void DrawEntity(Canvas canvas, Entity* entity)
 	F32 healthBarBottom = healthBarY + 0.5f * healthBarHeight;
 	DrawRect(canvas, healthBarLeft, healthBarRight, healthBarTop, healthBarBottom, healthBarBackgroundColor);
 
-	F32 healthRatio = F32(entity->health) / F32(entity->maxHealth);
+	F32 healthRatio = F32(entity->health) / GetMaxHealth(entity);
 	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
 	F32 healthBarFilledX = healthBarLeft + healthRatio * (healthBarRight - healthBarLeft);
 	DrawRect(canvas, healthBarLeft, healthBarFilledX, healthBarTop, healthBarBottom, healthBarColor);
+
+	if (entity->health > 0)
+	{
+		for (I32 health = 50; health < entity->health; health += 50)
+		{
+			F32 ratio = F32(health) / GetMaxHealth(entity);
+			F32 x = Lerp(healthBarLeft, ratio, healthBarRight);
+			Bresenham(canvas, MakePoint(x, healthBarTop), MakePoint(x, healthBarBottom), healthBarBackgroundColor);
+		}
+	}
 
 	Assert(IsIntBetween(entity->level, 1, MaxLevel));
 	V4 levelBoxColor = MakeColor(1.0f, 1.0f, 1.0f);
@@ -695,7 +988,7 @@ static void DrawEntity(Canvas canvas, Entity* entity)
 	}
 }
 
-static B32 IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, F32 maxAngle)
+static B32 func IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, F32 maxAngle)
 {
 	F32 distance = Distance(entity->position, center);
 	F32 angle = LineAngle(center, entity->position);
@@ -703,21 +996,23 @@ static B32 IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, 
 	return result;
 }
 
-static void GainExp(CombatLabState* labState, I32 exp)
+static void func GainExp(CombatLabState* labState, I32 exp)
 {
-	I32 level = labState->player.level;
-	if (level < MaxLevel)
+	Entity* player = &labState->player;
+	if (player->level < MaxLevel)
 	{
 		labState->expGainedThisLevel += exp;
-		if (labState->expGainedThisLevel >= gExpNeededForNextLevel[level])
+		if (labState->expGainedThisLevel >= ExpNeededForNextLevel[player->level])
 		{
-			labState->player.level++;
-			labState->expGainedThisLevel -= gExpNeededForNextLevel[level];
+			I32 level = player->level + 1;
+			SetLevel(player, level);
+
+			labState->expGainedThisLevel -= ExpNeededForNextLevel[player->level];
 		}
 	}
 }
 
-static B32 IsEntityInCircle(Entity* entity, V2 center, F32 radius)
+static B32 func IsEntityInCircle(Entity* entity, V2 center, F32 radius)
 {
 	B32 result = false;
 	F32 distanceFromCenter = Distance(entity->position, center);
@@ -728,18 +1023,16 @@ static B32 IsEntityInCircle(Entity* entity, V2 center, F32 radius)
 	return result;
 }
 
-static void DrawWhiteAbility1(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawWhiteAbility1(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability)
 	Assert(ability->id == WhiteAbility1ID);
 	V4 color = MakeColor(0.8f, 0.8f, 0.8f);
 	F32 radius = entity->radius + WhiteAbility1Radius;
 
-	if (ability->castTimeLeft > 0.0f)
+	if (ability->castRatioLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->castTimeLeft, 0.0f, WhiteAbility1TotalCastTime));
-		F32 durationRatio = 1.0f - ability->castTimeLeft / WhiteAbility1TotalCastTime;
-		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
+		F32 fillRadius = Lerp(radius, ability->castRatioLeft, entity->radius);
 
 		F32 minAngle = NormalizeAngle(ability->angle - WhiteAbility1AngleRange * 0.5f);
 		F32 maxAngle = NormalizeAngle(ability->angle + WhiteAbility1AngleRange * 0.5f);
@@ -748,35 +1041,31 @@ static void DrawWhiteAbility1(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawWhiteAbility3(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawWhiteAbility3(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == WhiteAbility3ID);
 	V4 color = MakeColor(0.8f, 0.8f, 0.8f);
 	F32 radius = entity->radius + WhiteAbility3Radius;
 
-	if (ability->castTimeLeft > 0.0f)
+	if (ability->castRatioLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->castTimeLeft, 0.0f, WhiteAbility3TotalCastTime));
-		F32 durationRatio = 1.0f - ability->castTimeLeft / WhiteAbility3TotalCastTime;
-		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
+		F32 fillRadius = Lerp(radius - entity->radius, ability->castRatioLeft, entity->radius);
 		DrawCircleOutline(canvas, entity->position, radius, color);
 		DrawCircle(canvas, entity->position, fillRadius, color);
 	}
 }
 
-static void DrawRedAbility1(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawRedAbility1(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == RedAbility1ID);
 	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
 	F32 radius = entity->radius + RedAbility1Radius;
 
-	if (ability->castTimeLeft > 0.0f)
+	if (ability->castRatioLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->castTimeLeft, 0.0f, RedAbility1TotalCastTime));
-		F32 durationRatio = 1.0f - ability->castTimeLeft / RedAbility1TotalCastTime;
-		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
+		F32 fillRadius = Lerp(radius - entity->radius, ability->castRatioLeft, entity->radius);
 
 		F32 minAngle = NormalizeAngle(ability->angle - RedAbility1AngleRange * 0.5f);
 		F32 maxAngle = NormalizeAngle(ability->angle + RedAbility1AngleRange * 0.5f);
@@ -785,7 +1074,7 @@ static void DrawRedAbility1(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawRedAbility3(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawRedAbility3(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == RedAbility2ID);
@@ -794,11 +1083,9 @@ static void DrawRedAbility3(Canvas canvas, Entity* entity, Ability* ability)
 	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
 	F32 radius = entity->radius + RedAbility2Radius;
 
-	if (ability->castTimeLeft > 0.0f)
+	if (ability->castRatioLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->castTimeLeft, 0.0f, RedAbility2TotalCastTime));
-		F32 durationRatio = 1.0f - ability->castTimeLeft / RedAbility2TotalCastTime;
-		F32 fillRadius = entity->radius + (durationRatio) * (radius - entity->radius);
+		F32 fillRadius = Lerp(radius - entity->radius, ability->castRatioLeft, entity->radius);
 
 		F32 minAngle = NormalizeAngle(ability->angle - RedAbility2AngleRange * 0.5f);
 		F32 maxAngle = NormalizeAngle(ability->angle + RedAbility2AngleRange * 0.5f);
@@ -807,58 +1094,53 @@ static void DrawRedAbility3(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawBlueAbility1(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawBlueAbility1(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability)
 	Assert(ability->id == BlueAbility1ID);
 
 	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
-	if (ability->castTimeLeft > 0.0f)
+	if (ability->castRatioLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->castTimeLeft, 0.0f, BlueAbility1TotalCastTime));
-		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility1TotalCastTime;
-		F32 fillRadius = durationRatio * BlueAbility1Radius;
+		F32 fillRadius = Lerp(BlueAbility1Radius, ability->castRatioLeft, 0.0f);
 
 		DrawCircleOutline(canvas, ability->position, BlueAbility1Radius, color);
 		DrawCircle(canvas, ability->position, fillRadius, color);
 	}
 }
 
-static void DrawBlueAbility2(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawBlueAbility2(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == BlueAbility2ID);
 
 	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
-	if (ability->castTimeLeft > 0.0f)
+	if (ability->castRatioLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->castTimeLeft, 0.0f, BlueAbility2TotalCastTime));
-		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility2TotalCastTime;
-		F32 fillRadius = entity->radius + durationRatio * BlueAbility2Radius;
+		F32 fillRadius = Lerp(entity->radius + BlueAbility2Radius, ability->castRatioLeft, entity->radius);
 		
 		DrawCircleOutline(canvas, entity->position, entity->radius + BlueAbility2Radius, color);
 		DrawCircle(canvas, entity->position, fillRadius, color);
 	}
 }
 
-static void DrawBlueAbility3(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawBlueAbility3(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	Assert(ability->id == BlueAbility3ID);
 
 	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
-	if (ability->castTimeLeft > 0.0f)
+	if (ability->castRatioLeft > 0.0f)
 	{
-		Assert(IsBetween(ability->castTimeLeft, 0.0f, BlueAbility3TotalCastTime));
-		F32 durationRatio = 1.0f - ability->castTimeLeft / BlueAbility3TotalCastTime;
-		F32 fillRadius = durationRatio * BlueAbility3Radius;
+		F32 fillRadius = Lerp(BlueAbility3Radius, ability->castRatioLeft, 0.0f);
 		
+		Bresenham(canvas, entity->position, ability->position, color);
 		DrawCircleOutline(canvas, ability->position, BlueAbility3Radius, color);
 		DrawCircle(canvas, ability->position, fillRadius, color);
 	}
 }
 
-static void DrawAbility(Canvas canvas, Entity* entity, Ability* ability)
+static void func DrawAbility(Canvas* canvas, Entity* entity, Ability* ability)
 {
 	Assert(ability == &entity->ability);
 	if (ability->id == WhiteAbility1ID)
@@ -901,35 +1183,268 @@ static void DrawAbility(Canvas canvas, Entity* entity, Ability* ability)
 	}
 }
 
-static void DrawExpBar(Canvas canvas, CombatLabState* labState)
+static void func DrawExpBar(Canvas* canvas, CombatLabState* labState)
 {
 	I32 level = labState->player.level;
 	if (level < MaxLevel)
 	{
-		Bitmap* bitmap = &canvas.bitmap;
+		Bitmap* bitmap = &canvas->bitmap;
 		I32 left = 0;
 		I32 right = bitmap->width - 1;
 		I32 bottom = bitmap->height - 1;
-		I32 top = bottom - 20;
+		I32 top = bottom - 10;
 		V4 unfilledColor = MakeColor(0.3f, 0.3f, 0.3f);
 		V4 filledColor = MakeColor(0.6f, 0.6f, 0.6f);
 		DrawBitmapRect(bitmap, left, right, top, bottom, unfilledColor);
 
 		I32 expGained = labState->expGainedThisLevel;
 		Assert(IsIntBetween(level, 1, MaxLevel - 1));
-		I32 expNeeded = gExpNeededForNextLevel[level];
+		I32 expNeeded = ExpNeededForNextLevel[level];
 		I32 rightFilled = left + Floor(F32(right - left) * F32(expGained) / F32(expNeeded));
 		DrawBitmapRect(bitmap, left, rightFilled, top, bottom, filledColor);
 	}
 }
 
-static F32 GetEntityDistance(Entity* entity1, Entity* entity2)
+static void func DrawUIBox(Bitmap* bitmap, I32 centerX, I32 centerY, I32 size, I8* text, GlyphData* glyphData)
+{
+	I32 left   = centerX - size / 2;
+	I32 right  = centerX + size / 2;
+	I32 top    = centerY - size / 2;
+	I32 bottom = centerY + size / 2;
+
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	I32 textBaseLineY = bottom - (size - TextHeightInPixels) / 2 - TextPixelsBelowBaseLine;
+	F32 textWidth = GetTextPixelWidth(text, glyphData);
+	I32 textLeft = centerX - I32(textWidth * 0.5f);
+
+	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, textColor);
+}
+
+static void func DrawUIBoxBottom(Bitmap* bitmap, I32 centerX, I32 bottom, I32 size, I8* text, GlyphData* glyphData)
+{
+	I32 centerY = bottom - size / 2;
+	DrawUIBox(bitmap, centerX, centerY, size, text, glyphData);
+}
+
+static void func DrawDamageTextAlert(Canvas* canvas, DamageTextAlert* alert)
+{
+	Assert(alert->timeRemaining > 0.0f);
+	I8 text[32] = {};
+	String string = StartString(text, 32);
+	string = string + alert->damage + " Damage";
+	DrawTextLineXCentered(canvas, text, alert->baseLineY, alert->centerX, alert->color);
+}
+
+static void func DrawCharacterInfo(Canvas* canvas, CombatLabState* labState)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+	Entity* entity = &labState->player;
+
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+	I32 padding = 5;
+	I32 width = 400;
+	I32 height = 190;
+
+	I32 right = (bitmap->width - 1) - padding;
+	I32 left = right - width;
+	I32 top = (bitmap->height - 1) / 2 - height / 2;
+	I32 bottom = top + height;
+
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 infoColor = MakeColor(0.3f, 0.3f, 0.3f);
+
+	I32 textLeft = left + padding;
+	I32 textY = top + padding + TextPixelsAboveBaseLine;
+
+	GlyphData* glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+	DrawBitmapTextLine(bitmap, "Character Info", glyphData, textLeft, textY, titleColor);
+
+	I8 lineBuffer[128] = {};
+	textY += TextHeightInPixels;
+	String string = StartString(lineBuffer, 128);
+	AddLine(string, "Level " + entity->level);
+	DrawBitmapTextLine(bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
+
+	textY += TextHeightInPixels;
+	textY += TextHeightInPixels;
+	DrawBitmapTextLine(bitmap, "Attributes", glyphData, textLeft, textY, titleColor);
+
+	textY += TextHeightInPixels;
+	string = StartString(lineBuffer, 128);
+	AddLine(string, "Constitution: " + entity->constitution);
+	DrawBitmapTextLine(bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
+
+	textY += TextHeightInPixels;
+	DrawBitmapTextLine(bitmap, "Increases maximum health.", glyphData, textLeft, textY, infoColor);
+
+	textY += TextHeightInPixels;
+	string = StartString(lineBuffer, 128);
+	AddLine(string, "Strength: " + entity->strength);
+	DrawBitmapTextLine(bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
+
+	textY += TextHeightInPixels;
+	DrawBitmapTextLine(bitmap, "Increases damage of physical attacks.", glyphData, textLeft, textY, infoColor);
+
+	textY += TextHeightInPixels;
+	string = StartString(lineBuffer, 128);
+	AddLine(string, "Intellect: " + entity->intellect);
+	DrawBitmapTextLine(bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
+
+	textY += TextHeightInPixels;
+	DrawBitmapTextLine(bitmap, "Increases damage of magical attacks.", glyphData, textLeft, textY, infoColor);
+
+	textY += TextHeightInPixels;
+	string = StartString(lineBuffer, 128);
+	AddLine(string, "Dexterity: " + entity->dexterity);
+	DrawBitmapTextLine(bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
+
+	textY += TextHeightInPixels;
+	DrawBitmapTextLine(bitmap, "Reduces use time of abilities.", glyphData, textLeft, textY, infoColor);
+}
+
+static void func DrawUI(Canvas* canvas, CombatLabState* labState, V2 mousePosition)
+{
+	DrawExpBar(canvas, labState);
+
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+
+	I32 mouseX = UnitXtoPixel(canvas->camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel(canvas->camera, mousePosition.y);
+
+	I32 boxSize = 40;
+	I32 boxPadding = 5;
+	I32 boxCount = 3;
+	I32 boxBarWidth = boxCount * boxSize + (boxCount - 1) * boxPadding;
+
+	I32 boxCenterX = (bitmap->width - 1) / 2 - boxBarWidth / 2 + boxSize / 2;
+	I32 boxCenterY = (bitmap->height - 1) - 10 - boxPadding - boxSize / 2;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "LMB", glyphData);
+
+	static I8 tooltipBuffer[256] = {};
+	String tooltipText = StartString(tooltipBuffer, 256);
+
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		I32 damage = GetAbilityDamage(&labState->player, WhiteAbility1ID);
+		F32 castTime = GetAbilityCastTime(&labState->player, WhiteAbility1ID);
+
+		AddLine(tooltipText, "Ability 1");
+		AddLine(tooltipText, "Use time: " + castTime + " sec");
+		AddLine(tooltipText, "Hit in a direction, dealing " + damage + " damage");
+		AddLine(tooltipText, "to enemies closer than " + WhiteAbility1Radius + " meters.");
+		AddLine(tooltipText, "Generates 20 energy if it hits anything");
+
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
+	}
+
+	boxCenterX += boxSize + boxPadding;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "Q", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		I32 damage = GetAbilityDamage(&labState->player, WhiteAbility2ID);
+
+		AddLine(tooltipText, "Ability 2");
+		AddLine(tooltipText, "Energy cost: " + WhiteAbility2ResourceCost);
+		AddLine(tooltipText, "Charge in a direction, dealing " + damage + " damage");
+		AddLine(tooltipText, "to enemies in your way.");
+		AddLine(tooltipText, "Requires level 2");
+
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
+	}
+
+	boxCenterX += boxSize + boxPadding;
+	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "E", glyphData);
+	if (IsIntBetween(mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
+		IsIntBetween(mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
+	{
+		I32 damage = GetAbilityDamage(&labState->player, WhiteAbility3ID);
+		F32 castTime = GetAbilityCastTime(&labState->player, WhiteAbility3ID);
+
+		AddLine(tooltipText, "Ability 3");
+		AddLine(tooltipText, "Energy cost: " + WhiteAbility3ResourceCost);
+		AddLine(tooltipText, "Use time: " + castTime + " sec");
+		AddLine(tooltipText, "Spin around, kicking enemies closer than");
+		AddLine(tooltipText, WhiteAbility3Radius + " meters, knocking them away, dealing");
+		AddLine(tooltipText, damage + " damage and interrupting their abilities.");
+		AddLine(tooltipText, "Requires level 3.");
+
+		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
+		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
+		DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
+	}
+
+	I32 smallBoxSize = 30;
+	I32 smallBoxCenterX = (bitmap->width - 1) - boxPadding - smallBoxSize / 2;
+	I32 smallBoxCenterY = (bitmap->height - 1) - 10 - boxPadding - smallBoxSize / 2;
+	DrawUIBox(bitmap, smallBoxCenterX, smallBoxCenterY, smallBoxSize, "C", glyphData);
+
+	if (labState->showCharacterInfo)
+	{
+		DrawCharacterInfo(canvas, labState);
+	}
+}
+
+static void func DrawAndUpdateDamageTextAlerts(Canvas* canvas, CombatLabState* labState, F32 seconds)
+{
+	for (I32 i = 0; i < labState->damageTextAlertN; ++i)
+	{
+		DamageTextAlert* alert = &labState->damageTextAlerts[i];
+		if (alert->timeRemaining > 0.0f)
+		{
+			F32 scrollUpSpeed = 1.0f;
+			alert->baseLineY -= scrollUpSpeed * seconds;
+
+			DrawDamageTextAlert(canvas, alert);
+			alert->timeRemaining -= seconds;
+			if (alert->timeRemaining <= 0.0f)
+			{
+				alert->timeRemaining = 0.0f;
+			}
+		}
+	}
+
+	I32 remainingN = 0;
+	for (I32 i = 0; i < labState->damageTextAlertN; ++i)
+	{
+		DamageTextAlert* alert = &labState->damageTextAlerts[i];
+		if (alert->timeRemaining > 0.0f)
+		{
+			labState->damageTextAlerts[remainingN] = *alert;
+			remainingN++;
+		}
+	}
+
+	labState->damageTextAlertN = remainingN;
+}
+
+static F32 func GetEntityDistance(Entity* entity1, Entity* entity2)
 {
 	F32 distance = Distance(entity1->position, entity2->position) - entity1->radius - entity2->radius;
 	return distance;
 }
 
-static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seconds)
+static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seconds)
 {
 	I32 secondsPassed = 0;
 	labState->secondsFraction += seconds;
@@ -942,28 +1457,43 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 	Entity* player = &labState->player;
 	Ability* playerAbility = &player->ability;
 
-	player->velocity = MakeVector(0.0f, 0.0f);
-	if (labState->followMouse)
+	F32 playerMoveSpeed = 10.0f;
+	if (player->slowTimeLeft > 0.0f)
 	{
-		F32 playerMoveSpeed = 10.0f;
-		if (player->slowTimeLeft > 0.0f)
-		{
-			playerMoveSpeed *= 0.5f;
-			player->slowTimeLeft = Max2(0.0f, player->slowTimeLeft - seconds);
-		}
-		Assert(player->slowTimeLeft >= 0.0f);
+		playerMoveSpeed *= 0.5f;
+		player->slowTimeLeft = Max2(0.0f, player->slowTimeLeft - seconds);
+	}
+	Assert(player->slowTimeLeft >= 0.0f);
 
-		V2 targetPosition = mousePosition;
-		V2 moveDirection = PointDirection(player->position, targetPosition);
-		player->velocity = playerMoveSpeed * moveDirection;
+	V2 targetPosition = mousePosition;
+	// V2 moveDirection = PointDirection(player->position, targetPosition);
+	V2 moveDirection = MakeVector(0.0f, 0.0f);
+	if (labState->moveLeft)
+	{
+		moveDirection.x -= 1.0f;
+	}
+	if (labState->moveRight)
+	{
+		moveDirection.x += 1.0f;
 	}
 
-	if (player->health > 0.0f && playerAbility->castTimeLeft == 0.0f)
+	if (labState->moveUp)
+	{
+		moveDirection.y -= 1.0f;
+	}
+	if (labState->moveDown)
+	{
+		moveDirection.y += 1.0f;
+	}
+
+	player->velocity = playerMoveSpeed * NormalVector(moveDirection);
+
+	if (player->health > 0.0f && playerAbility->castRatioLeft == 0.0f)
 	{
 		player->position = player->position + seconds * player->velocity;
 	}
 
-	Canvas canvas = labState->canvas;
+	Canvas* canvas = &labState->canvas;
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
@@ -1008,12 +1538,16 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 
 	if (player->health > 0)
 	{
-		if (playerAbility->castTimeLeft > 0.0f)
+		if (playerAbility->castRatioLeft > 0.0f)
 		{
-			playerAbility->castTimeLeft = Max2(0.0f, playerAbility->castTimeLeft - seconds);
+			F32 totalCastTime = GetAbilityCastTime(player, playerAbility->id);
+			F32 castTimeLeft = playerAbility->castRatioLeft * totalCastTime;
+			castTimeLeft = Max2(0.0f, castTimeLeft - seconds);
+			playerAbility->castRatioLeft = castTimeLeft / totalCastTime;
+
 			if (playerAbility->id == WhiteAbility1ID)
 			{
-				if (playerAbility->castTimeLeft == 0.0f)
+				if (playerAbility->castRatioLeft == 0.0f)
 				{
 					F32 minAngle = NormalizeAngle(playerAbility->angle - WhiteAbility1AngleRange * 0.5f);
 					F32 maxAngle = NormalizeAngle(playerAbility->angle + WhiteAbility1AngleRange * 0.5f);
@@ -1025,7 +1559,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						if (IsEntityInSlice(enemy, player->position, WhiteAbility1Radius, minAngle, maxAngle))
 						{
 							B32 enemyWasAlive = (enemy->health > 0);
-							DoDamage(enemy, 30);
+							I32 damage = GetAbilityDamage(player, WhiteAbility1ID);
+							DoAndDisplayDamage(labState, enemy, damage, WhiteColor);
 							B32 enemyIsDead = (enemy->health == 0);
 
 							if (enemyWasAlive)
@@ -1050,15 +1585,16 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 			{
 				V2 moveDirection = RotationVector(playerAbility->angle);
 				player->position = player->position + seconds * WhiteAbility2MoveSpeed * moveDirection;
-				if (playerAbility->castTimeLeft == 0.0f)
+				if (playerAbility->castRatioLeft == 0.0f)
 				{
 					V2 oldPosition = player->position - WhiteAbility2TotalCastTime * WhiteAbility2MoveSpeed * moveDirection;
-					DamageEnemiesOnLine(labState, oldPosition, player->position, WhiteAbility2Damage);
+					I32 damage = GetAbilityDamage(player, WhiteAbility2ID);
+					DamageEnemiesOnLine(labState, oldPosition, player->position, damage);
 				}
 			}
 			else if (playerAbility->id == WhiteAbility3ID)
 			{
-				if (playerAbility->castTimeLeft == 0.0f)
+				if (playerAbility->castRatioLeft == 0.0f)
 				{
 					for (I32 i = 0; i < CombatLabEnemyN; ++i)
 					{
@@ -1075,7 +1611,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 							F32 distance = player->radius + enemy->radius + WhiteAbility3Radius;
 							enemy->position = player->position + distance * direction;
 							InterruptAbility(enemy);
-							DoDamage(enemy, WhiteAbility3Damage);
+							I32 damage = GetAbilityDamage(player, WhiteAbility3ID);
+							DoAndDisplayDamage(labState, enemy, damage, WhiteColor);
 						}
 					}
 				}
@@ -1086,14 +1623,14 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 			}
 		}
 	
-		Assert(playerAbility->castTimeLeft >= 0.0f);
-		if (playerAbility->castTimeLeft == 0.0f)
+		Assert(playerAbility->castRatioLeft >= 0.0f);
+		if (playerAbility->castRatioLeft == 0.0f)
 		{
 			if (labState->useAbilityID == WhiteAbility1ID)
 			{
 				playerAbility->id = WhiteAbility1ID;
-				playerAbility->angle = LineAngle(labState->player.position, mousePosition);
-				playerAbility->castTimeLeft = WhiteAbility1TotalCastTime;
+				playerAbility->angle = LineAngle(player->position, mousePosition);
+				playerAbility->castRatioLeft = 1.0f;
 			}
 			else if (labState->useAbilityID == WhiteAbility2ID)
 			{
@@ -1104,8 +1641,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 					{
 						player->specialResource -= WhiteAbility2ResourceCost;
 						playerAbility->id = WhiteAbility2ID;
-						playerAbility->angle = LineAngle(labState->player.position, mousePosition);
-						playerAbility->castTimeLeft = WhiteAbility2TotalCastTime;
+						playerAbility->angle = LineAngle(player->position, mousePosition);
+						playerAbility->castRatioLeft = 1.0f;
 					}
 				}
 			}
@@ -1118,7 +1655,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 					{
 						player->specialResource -= WhiteAbility3ResourceCost;
 						playerAbility->id = WhiteAbility3ID;
-						playerAbility->castTimeLeft = WhiteAbility3TotalCastTime;
+						playerAbility->castRatioLeft = 1.0f;
 					}
 				}
 			}
@@ -1157,7 +1694,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 				else
 				{
 					Ability* ability = &enemy->ability;
-					ability->castTimeLeft = 0.0f;
+					ability->castRatioLeft = 0.0f;
 				}
 			}
 		}
@@ -1256,9 +1793,12 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 			F32 distanceFromTarget = Distance(enemy->position, targetPosition);
 
 			Ability* ability = &enemy->ability;
-			if (ability->castTimeLeft > 0.0f)
+			if (ability->castRatioLeft > 0.0f)
 			{
-				ability->castTimeLeft = Max2(0.0f, ability->castTimeLeft - seconds);
+				F32 totalCastTime = GetAbilityCastTime(enemy, ability->id);
+				F32 castTimeLeft = ability->castRatioLeft * totalCastTime;
+				castTimeLeft = Max2(0.0f, castTimeLeft - seconds);
+				ability->castRatioLeft = castTimeLeft / totalCastTime;
 
 				if (ability->id == RedAbility2ID)
 				{
@@ -1271,7 +1811,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 					ability->position = player->position;
 				}
 
-				if (ability->castTimeLeft == 0.0f)
+				if (ability->castRatioLeft == 0.0f)
 				{
 					if (ability->id == RedAbility1ID)
 					{
@@ -1279,7 +1819,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						F32 maxAngle = NormalizeAngle(ability->angle + RedAbility1AngleRange * 0.5f);
 						if (IsEntityInSlice(player, enemy->position, RedAbility1Radius, minAngle, maxAngle))
 						{
-							DoDamage(player, RedAbility1Damage);
+							I32 damage = GetAbilityDamage(enemy, RedAbility1ID);
+							DoAndDisplayDamage(labState, player, damage, RedColor);
 						}
 					}
 					else if (ability->id == RedAbility2ID)
@@ -1288,7 +1829,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						F32 maxAngle = NormalizeAngle(ability->angle + RedAbility2AngleRange * 0.5f);
 						if (IsEntityInSlice(player, enemy->position, RedAbility2Radius, minAngle, maxAngle))
 						{
-							DoDamage(player, RedAbility2Damage);
+							I32 damage = GetAbilityDamage(enemy, RedAbility2ID);
+							DoAndDisplayDamage(labState, player, damage, RedColor);
 						}
 					}
 					else if (ability->id == BlueAbility1ID)
@@ -1296,7 +1838,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						Assert(enemy->type == BlueEntity);
 						if (IsEntityInCircle(player, ability->position, BlueAbility1Radius))
 						{
-							DoDamage(player, BlueAbility1Damage);
+							I32 damage = GetAbilityDamage(enemy, BlueAbility1ID);
+							DoAndDisplayDamage(labState, player, damage, BlueColor);
 						}
 					}
 					else if (ability->id == BlueAbility2ID)
@@ -1305,7 +1848,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						F32 distanceFromPlayer = GetEntityDistance(enemy, player);
 						if (distanceFromPlayer <= BlueAbility2Radius)
 						{
-							DoDamage(player, BlueAbility2Damage);
+							I32 damage = GetAbilityDamage(enemy, BlueAbility2ID);
+							DoAndDisplayDamage(labState, player, damage, BlueColor);
 							player->slowTimeLeft += BlueAbility2SlowTime;
 						}
 					}
@@ -1314,7 +1858,8 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						Assert(enemy->type == BlueEntity);
 						if (IsEntityInCircle(player, ability->position, BlueAbility3Radius))
 						{
-							DoDamage(player, BlueAbility3Damage);
+							I32 damage = GetAbilityDamage(enemy, BlueAbility3ID);
+							DoAndDisplayDamage(labState, player, damage, BlueColor);
 							player->slowTimeLeft += BlueAbility3SlowTime;
 						}
 					}
@@ -1326,7 +1871,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 			}
 
 			B32 canMove = false;
-			if (ability->castTimeLeft == 0.0f)
+			if (ability->castRatioLeft == 0.0f)
 			{
 				canMove = true;
 			}
@@ -1345,7 +1890,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 				enemy->position = enemy->position + seconds * enemyMoveSpeed * moveDirection;
 			}
 	
-			if (ability->castTimeLeft == 0.0f)
+			if (ability->castRatioLeft == 0.0f)
 			{
 				if (enemy->type == BlueEntity && enemy->level == 2)
 				{
@@ -1354,7 +1899,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 					if (distanceFromPlayer <= BlueAbility2Radius && enemy->specialResource >= BlueAbility2ResourceCost)
 					{
 						ability->id = BlueAbility2ID;
-						ability->castTimeLeft = BlueAbility2TotalCastTime;
+						ability->castRatioLeft = 1.0f;
 						enemy->specialResource -= BlueAbility2ResourceCost;
 					}
 				}
@@ -1365,12 +1910,12 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 					{
 						ability->id = BlueAbility3ID;
 						ability->position = player->position;
-						ability->castTimeLeft = BlueAbility3TotalCastTime;
+						ability->castRatioLeft = 1.0f;
 						enemy->specialResource -= BlueAbility3ResourceCost;
 					}
 				}
 
-				if (ability->castTimeLeft == 0.0f && distanceFromTarget < 0.1f)
+				if (ability->castRatioLeft == 0.0f && distanceFromTarget < 0.1f)
 				{
 					if (enemy->type == RedEntity)
 					{
@@ -1382,7 +1927,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 							{
 								ability->id = RedAbility2ID;
 								ability->angle = LineAngle(enemy->position, player->position);
-								ability->castTimeLeft = RedAbility2TotalCastTime;
+								ability->castRatioLeft = 1.0f;
 								enemy->specialResource -= 100;
 								useRedAbility = false;
 							}
@@ -1392,14 +1937,14 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						{
 							ability->id = RedAbility1ID;
 							ability->angle = LineAngle(enemy->position, player->position);
-							ability->castTimeLeft = RedAbility1TotalCastTime;
+							ability->castRatioLeft = 1.0f;
 						}
 					}
 					else if (enemy->type == BlueEntity)
 					{
 						ability->id = BlueAbility1ID;
 						ability->position = player->position;
-						ability->castTimeLeft = BlueAbility1TotalCastTime;
+						ability->castRatioLeft = 1.0f;
 					}
 					else
 					{
@@ -1415,7 +1960,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		for (I32 i = 0; i < CombatLabEnemyN; ++i)
 		{
 			Entity* enemy = &labState->enemies[i];
-			if (enemy->ability.castTimeLeft > 0.0f)
+			if (enemy->ability.castRatioLeft > 0.0f)
 			{
 				InterruptAbility(enemy);
 			}
@@ -1429,10 +1974,12 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 		DrawEntity(canvas, enemy);
 	}
 
-	DrawExpBar(canvas, labState);
+	DrawAndUpdateDamageTextAlerts(canvas, labState, seconds);
+
+	DrawUI(canvas, labState, mousePosition);
 }
 
-static void CombatLab(HINSTANCE instance)
+static void func CombatLab(HINSTANCE instance)
 {
 	WNDCLASS winClass = {};
 	winClass.style = CS_OWNDC;
@@ -1494,7 +2041,10 @@ static void CombatLab(HINSTANCE instance)
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		CombatLabBlit(labState->canvas, context, rect);
+		CombatLabBlit(&labState->canvas, context, rect);
 		ReleaseDC(window, context);
 	}
 }
+
+// TODO: Player only gains exp when they kill an enemy using ability 1!
+// TODO: Unit frames?

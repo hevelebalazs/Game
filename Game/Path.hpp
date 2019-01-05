@@ -33,27 +33,27 @@ struct Path
 	MemArena* arena;
 };
 
-static void PushNode(Path* path, PathNode node)
+static void func PushNode(Path* path, PathNode node)
 {
 	ArenaPushType(path->arena, PathNode);
 	path->nodes[path->nodeCount] = node;
 	path->nodeCount++;
 }
 
-static PathNode ElemNode(MapElem elem)
+static PathNode func ElemNode(MapElem elem)
 {
 	PathNode node = {};
 	node.elem = elem;
 	return node;
 }
 
-static void PushElem(Path* path, MapElem elem)
+static void func PushElem(Path* path, MapElem elem)
 {
 	PathNode node = ElemNode(elem);
 	PushNode(path, node);
 }
 
-static PathNode RoadNode(Road* road)
+static PathNode func RoadNode(Road* road)
 {
 	PathNode node = {};
 	node.elem = GetRoadElem(road);
@@ -61,7 +61,7 @@ static PathNode RoadNode(Road* road)
 	return node;
 }
 
-static PathNode JunctionNode(Junction* junction)
+static PathNode func JunctionNode(Junction* junction)
 {
 	PathNode node = {};
 	node.elem = GetJunctionElem(junction);
@@ -69,7 +69,7 @@ static PathNode JunctionNode(Junction* junction)
 	return node;
 }
 
-static PathNode BuildingNode(Building* building)
+static PathNode func BuildingNode(Building* building)
 {
 	PathNode node = {};
 	node.elem = GetBuildingElem(building);
@@ -77,25 +77,25 @@ static PathNode BuildingNode(Building* building)
 	return node;
 }
 
-static void PushRoad(Path* path, Road* road)
+static void func PushRoad(Path* path, Road* road)
 {
 	PathNode node = RoadNode(road);
 	PushNode(path, node);
 }
 
-static void PushJunction(Path* path, Junction* junction)
+static void func PushJunction(Path* path, Junction* junction)
 {
 	PathNode node = JunctionNode(junction);
 	PushNode(path, node);
 }
 
-static void PushBuilding(Path* path, Building* building)
+static void func PushBuilding(Path* path, Building* building)
 {
 	PathNode node = BuildingNode(building);
 	PushNode(path, node);
 }
 
-static void InvertSegment(Path* path, I32 startIndex, I32 endIndex)
+static void func InvertSegment(Path* path, I32 startIndex, I32 endIndex)
 {
 	while (startIndex < endIndex) 
 	{
@@ -118,12 +118,12 @@ struct PathHelper
 	I32* sourceIndex;
 };
 
-static void PushFromBuildingToRoadElem(Path* path, Building* building)
+static void func PushFromBuildingToRoadElem(Path* path, Building* building)
 {
 	// TODO: Update this in a Building project!
 }
 
-static void PushFromRoadElemToBuilding(Path* path, Building *building)
+static void func PushFromRoadElemToBuilding(Path* path, Building *building)
 {
 	I32 startIndex = path->nodeCount;
 	PushFromBuildingToRoadElem(path, building);
@@ -132,7 +132,7 @@ static void PushFromRoadElemToBuilding(Path* path, Building *building)
 	InvertSegment(path, startIndex, endIndex);
 }
 
-static void AddRoadToHelper(Map* map, Road* road, I32 sourceIndex, PathHelper* pathHelper)
+static void func AddRoadToHelper(Map* map, Road* road, I32 sourceIndex, PathHelper* pathHelper)
 {
 	I32 roadIndex = (I32)(road - map->roads);
 
@@ -146,7 +146,7 @@ static void AddRoadToHelper(Map* map, Road* road, I32 sourceIndex, PathHelper* p
 	}
 }
 
-static void AddJunctionToHelper(Map* map, Junction* junction, I32 sourceIndex, PathHelper* pathHelper)
+static void func AddJunctionToHelper(Map* map, Junction* junction, I32 sourceIndex, PathHelper* pathHelper)
 {
 	I32 junctionIndex = (I32)(junction - map->junctions);
 
@@ -160,12 +160,12 @@ static void AddJunctionToHelper(Map* map, Junction* junction, I32 sourceIndex, P
 	}
 }
 
-static void ClearPathHelper(PathHelper* helper) 
+static void func ClearPathHelper(PathHelper* helper) 
 {
 	helper->nodeCount = 0;
 }
 
-static void ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper)
+static void func ConnectRoadElemsHelper(Map* map, MapElem elemStart, MapElem elemEnd, PathHelper* helper)
 {
 	ClearPathHelper(helper);
 	if (elemStart.address == elemEnd.address) 
@@ -278,7 +278,7 @@ static void PushConnectRoadElems(Path* path, Map* map, MapElem elemStart, MapEle
 	InvertSegment(path, startIndex, endIndex);
 }
 
-static MapElem SidewalkElemToRoadElem(MapElem sidewalkElem)
+static MapElem func SidewalkElemToRoadElem(MapElem sidewalkElem)
 {
 	MapElem roadElem = sidewalkElem;
 
@@ -294,7 +294,7 @@ static MapElem SidewalkElemToRoadElem(MapElem sidewalkElem)
 	return roadElem;
 }
 
-static MapElem RoadElemToSidewalkElem(MapElem roadElem)
+static MapElem func RoadElemToSidewalkElem(MapElem roadElem)
 {
 	MapElem sidewalkElem = roadElem;
 
@@ -311,7 +311,7 @@ static MapElem RoadElemToSidewalkElem(MapElem roadElem)
 }
 
 // TODO: create a LaneIndex enum
-static void PushRoadSidewalk(Path* path, Road* road, I32 laneIndex)
+static void func PushRoadSidewalk(Path* path, Road* road, I32 laneIndex)
 {
 	PathNode node = {};
 	node.elem.type = MapElemRoadSidewalk;
@@ -320,7 +320,7 @@ static void PushRoadSidewalk(Path* path, Road* road, I32 laneIndex)
 	PushNode(path, node);
 }
 
-static void PushJunctionSidewalk(Path* path, Junction* junction, I32 cornerIndex)
+static void func PushJunctionSidewalk(Path* path, Junction* junction, I32 cornerIndex)
 {
 	PathNode node = {};
 	node.elem.type = MapElemJunctionSidewalk;
@@ -329,7 +329,7 @@ static void PushJunctionSidewalk(Path* path, Junction* junction, I32 cornerIndex
 	PushNode(path, node);
 }
 
-static void PushCrossRoad(Path* path, Road* road, V2 startPoint, Junction* junction, I32 quarterIndex)
+static void func PushCrossRoad(Path* path, Road* road, V2 startPoint, Junction* junction, I32 quarterIndex)
 {
 	if (road) 
 	{
@@ -347,7 +347,7 @@ struct PathAroundJunction
 	B32 goClockwise;
 };
 
-static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, I32 startCornerIndex, I32 endSubElemIndex)
+static PathAroundJunction func GetPathAroundJunction(MapElem elem, MapElem nextElem, I32 startCornerIndex, I32 endSubElemIndex)
 {
 	PathAroundJunction result = {};
 	Assert(elem.type == MapElemJunctionSidewalk);
@@ -390,7 +390,7 @@ static PathAroundJunction GetPathAroundJunction(MapElem elem, MapElem nextElem, 
 	return result;
 }
 
-static I32 GetPathAroundJunctionIndexDistance(PathAroundJunction pathAroundJunction)
+static I32 func GetPathAroundJunctionIndexDistance(PathAroundJunction pathAroundJunction)
 {
 	Junction* junction = pathAroundJunction.junction;
 	I32 startCornerIndex = pathAroundJunction.startCornerIndex;
@@ -408,7 +408,7 @@ static I32 GetPathAroundJunctionIndexDistance(PathAroundJunction pathAroundJunct
 	return indexDistance;
 }
 
-static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunction)
+static void func PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunction)
 {
 	Junction* junction = pathAroundJunction.junction;
 	I32 startCornerIndex = pathAroundJunction.startCornerIndex;
@@ -463,7 +463,7 @@ static void PushPathAroundJunction(Path* path, PathAroundJunction pathAroundJunc
 	}
 }
 
-static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I32 startSubIndex,
+static void func PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I32 startSubIndex,
 									 MapElem endElem, I32 endSubIndex, PathHelper* helper) 
 {
 	MapElem startRoadElem = SidewalkElemToRoadElem(startElem);
@@ -584,31 +584,31 @@ static void PushConnectSidewalkElems(Path* path, Map* map, MapElem startElem, I3
 	}
 }
 
-static Building* CommonAncestor(Building* building1, Building* building2)
+static Building* func CommonAncestor(Building* building1, Building* building2)
 {
 	Building* building = 0;
 	// TODO: Update this in a Building project!
 	return building;
 }
 
-static void PushDownTheTree(Path* path, Building* buildingStart, Building* buildingEnd)
+static void func PushDownTheTree(Path* path, Building* buildingStart, Building* buildingEnd)
 {
 	// TODO: Update this in a Building project!
 }
 
-static void PushUpTheTree(Path* path, Building* buildingStart, Building* buildingEnd)
+static void func PushUpTheTree(Path* path, Building* buildingStart, Building* buildingEnd)
 {
 	// TODO: Update this in a Building project!
 }
 
-static MapElem GetConnectRoadElem(Building* building)
+static MapElem func GetConnectRoadElem(Building* building)
 {
 	MapElem result = {};
 	// TODO: Update this in a Building project!
 	return result;
 }
 
-static PathNode* GetFreePathNode(PathPool* pathPool)
+static PathNode* func GetFreePathNode(PathPool* pathPool)
 {
 	PathNode* result = 0;
 
@@ -630,7 +630,7 @@ static PathNode* GetFreePathNode(PathPool* pathPool)
 	return result;
 }
 
-static PathNode* PushPathToPool(Path path, PathPool* pathPool)
+PathNode* func PushPathToPool(Path path, PathPool* pathPool)
 {
 	PathNode* result = 0;
 	PathNode* previous = 0;
@@ -658,13 +658,13 @@ static PathNode* PushPathToPool(Path path, PathPool* pathPool)
 	return result;
 }
 
-static void ResetPathPool(PathPool* pathPool)
+static void func ResetPathPool(PathPool* pathPool)
 {
 	pathPool->firstFreeNode = 0;
 	pathPool->nodeCount = 0;
 }
 
-static PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool)
+static PathNode* func  PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPool)
 {
 	PathNode* result = GetFreePathNode(pathPool);
 
@@ -674,7 +674,7 @@ static PathNode* PrefixPath(MapElem elem, PathNode* firstNode, PathPool* pathPoo
 	return result;
 }
 
-static PathHelper PathHelperForMap(Map* map, MemArena* arena)
+static PathHelper func PathHelperForMap(Map* map, MemArena* arena)
 {
 	PathHelper helper = {};
 	helper.nodes = ArenaPushArray(arena, PathNode, map->junctionN + map->roadN);
@@ -686,7 +686,7 @@ static PathHelper PathHelperForMap(Map* map, MemArena* arena)
 }
 
 // TODO: rename this to CarPath?
-static PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* tmpArena, PathPool* pathPool)
+static PathNode* func ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemArena* tmpArena, PathPool* pathPool)
 {
 	if (elemStart.type == MapElemRoadSidewalk || elemStart.type == MapElemJunctionSidewalk) 
 	{
@@ -880,7 +880,7 @@ static PathNode* ConnectElems(Map* map, MapElem elemStart, MapElem elemEnd, MemA
 
 // TODO: remove arena from argument list?
 // TODO: rename this to PedestrianPath?
-static PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, I32 startSubIndex, MapElem endElem, I32 endSubIndex,
+static PathNode* func ConnectPedestrianElems(Map* map, MapElem startElem, I32 startSubIndex, MapElem endElem, I32 endSubIndex,
 							   MemArena* arena, PathPool* pathPool) 
 {
 	Assert(startElem.type == MapElemJunctionSidewalk || startElem.type == MapElemRoadSidewalk || startElem.type == MapElemCrossing);
@@ -922,7 +922,7 @@ static PathNode* ConnectPedestrianElems(Map* map, MapElem startElem, I32 startSu
 	return firstNode;
 }
 
-static void FreePathNode(PathNode* node, PathPool* pathPool)
+static void func FreePathNode(PathNode* node, PathPool* pathPool)
 {
 	if (node) 
 	{
@@ -931,7 +931,7 @@ static void FreePathNode(PathNode* node, PathPool* pathPool)
 	}
 }
 
-static void FreePath(PathNode* firstNode, PathPool* pathPool)
+static void func FreePath(PathNode* firstNode, PathPool* pathPool)
 {
 	if (firstNode) 
 	{
@@ -947,7 +947,7 @@ static void FreePath(PathNode* firstNode, PathPool* pathPool)
 	}
 }
 
-static V2 NextPointAroundBuilding(Building* building, V2 startPoint, V2 targetPoint)
+static V2 func NextPointAroundBuilding(Building* building, V2 startPoint, V2 targetPoint)
 {
 	V2 result = {};
 	if (startPoint.x == building->left && startPoint.y < building->bottom) 
@@ -1002,7 +1002,7 @@ static V2 NextPointAroundBuilding(Building* building, V2 startPoint, V2 targetPo
 	return result;
 }
 
-static V4 StartNodePoint(PathNode* node)
+static V4 func StartNodePoint(PathNode* node)
 {
 	V2 position = {};
 	V2 direction = {};
@@ -1036,7 +1036,7 @@ static V4 StartNodePoint(PathNode* node)
 	return result;
 }
 
-static V4 NextFromBuildingToNothing(V4 startPoint, Building* building)
+static V4 func NextFromBuildingToNothing(V4 startPoint, Building* building)
 {
 	V4 result = {};
 
@@ -1054,13 +1054,13 @@ static V4 NextFromBuildingToNothing(V4 startPoint, Building* building)
 	return result;
 }
 
-static B32 EndFromBuildingToNothing(V4 point, Building* building)
+static B32 func EndFromBuildingToNothing(V4 point, Building* building)
 {
 	B32 result = (point.position == building->connectPointClose);
 	return result;
 }
 
-static V4 NextFromBuildingToBuilding(V4 startPoint, Building* building, Building* nextBuilding)
+static V4 func NextFromBuildingToBuilding(V4 startPoint, Building* building, Building* nextBuilding)
 {
 	V4 result = {};
 
@@ -1069,7 +1069,7 @@ static V4 NextFromBuildingToBuilding(V4 startPoint, Building* building, Building
 	return result;
 }
 
-static B32 EndFromBuildingToBuilding(V4 point, Building* building, Building* nextBuilding)
+static B32 func EndFromBuildingToBuilding(V4 point, Building* building, Building* nextBuilding)
 {
 	B32 result = false;
 
@@ -1078,7 +1078,7 @@ static B32 EndFromBuildingToBuilding(V4 point, Building* building, Building* nex
 	return result;
 }
 
-static V4 NextFromBuildingToRoad(V4 startPoint, Building* building, Road* road)
+static V4 func NextFromBuildingToRoad(V4 startPoint, Building* building, Road* road)
 {
 	V4 result = {};
 
@@ -1096,13 +1096,13 @@ static V4 NextFromBuildingToRoad(V4 startPoint, Building* building, Road* road)
 	return result;
 }
 
-static B32 EndFromBuildingToRoad(V4 point, Building* building, Road* road)
+static B32 func EndFromBuildingToRoad(V4 point, Building* building, Road* road)
 {
 	B32 result = (point.position == building->connectPointFarShow);
 	return result;
 }
 
-static V4 NextFromBuildingToJunction(V4 startPoint, Building* building, Junction* junction)
+static V4 func NextFromBuildingToJunction(V4 startPoint, Building* building, Junction* junction)
 {
 	V4 result = {};
 
@@ -1120,33 +1120,33 @@ static V4 NextFromBuildingToJunction(V4 startPoint, Building* building, Junction
 	return result;
 }
 
-static B32 EndFromBuildingToJunction(V4 point, Building* building, Junction* junction)
+static B32 func EndFromBuildingToJunction(V4 point, Building* building, Junction* junction)
 {
 	B32 result = (point.position == building->connectPointFarShow);
 	return result;
 }
 
 // TODO: Update this when buildings are added back!
-static V4 NextFromRoadToBuilding(V4 startPoint, Road* road, Building* building)
+static V4 func NextFromRoadToBuilding(V4 startPoint, Road* road, Building* building)
 {
 	V4 result = {};
 	return result;
 }
 
 // TODO: Update this when buildings are added back!
-static B32 EndFromRoadToBuilding(V4 point, Road* road, Building* building)
+static B32 func EndFromRoadToBuilding(V4 point, Road* road, Building* building)
 {
 	B32 result = true;
 	return result;
 }
 
-static V4 NextFromRoadToJunction(V4 startPoint, Road* road, Junction* junction)
+static V4 func NextFromRoadToJunction(V4 startPoint, Road* road, Junction* junction)
 {
 	V4 result = GetRoadLeavePoint(junction, road);
 	return result;
 }
 
-static B32 EndFromRoadToJunction(V4 point, Road* road, Junction* junction)
+static B32 func EndFromRoadToJunction(V4 point, Road* road, Junction* junction)
 {
 	V4 endPoint = {};
 	endPoint = GetRoadLeavePoint(junction, road);
@@ -1155,7 +1155,7 @@ static B32 EndFromRoadToJunction(V4 point, Road* road, Junction* junction)
 	return result;
 }
 
-static V4 NextFromJunctionToNothing(V4 startPoint, Junction* junction)
+static V4 func NextFromJunctionToNothing(V4 startPoint, Junction* junction)
 {
 	V4 result = {};
 	result.position = junction->position;
@@ -1163,13 +1163,13 @@ static V4 NextFromJunctionToNothing(V4 startPoint, Junction* junction)
 	return result;
 }
 
-static B32 EndFromJunctionToNothing(V4 point, Junction* junction)
+static B32 func EndFromJunctionToNothing(V4 point, Junction* junction)
 {
 	B32 result = (point.position == junction->position);
 	return result;
 }
 
-static V4 NextFromJunctionToBuilding(V4 startPoint, Junction* junction, Building* building)
+static V4 func NextFromJunctionToBuilding(V4 startPoint, Junction* junction, Building* building)
 {
 	V4 result = {};
 
@@ -1179,26 +1179,26 @@ static V4 NextFromJunctionToBuilding(V4 startPoint, Junction* junction, Building
 	return result;
 }
 
-static B32 EndFromJunctionToBuilding(V4 point, Junction* junction, Building* building)
+static B32 func EndFromJunctionToBuilding(V4 point, Junction* junction, Building* building)
 {
 	B32 result = (point.position == building->connectPointFarShow);
 	return result;
 }
 
-static V4 NextFromJunctionToRoad(V4 startPoint, Junction* junction, Road* road)
+static V4 func NextFromJunctionToRoad(V4 startPoint, Junction* junction, Road* road)
 {
 	V4 result = GetRoadEnterPoint(junction, road);
 	return result;
 }
 
-static B32 EndFromJunctionToRoad(V4 point, Junction* junction, Road* road)
+static B32 func EndFromJunctionToRoad(V4 point, Junction* junction, Road* road)
 {
 	V4 endPoint = GetRoadEnterPoint(junction, road);
 	B32 result = (point.position == endPoint.position);
 	return result;
 }
 
-static V4 NextFromRoadSidewalkToJunctionSidewalk(V4 startPoint, Road* road, Junction* junction, I32 junctionCornerIndex)
+static V4 func NextFromRoadSidewalkToJunctionSidewalk(V4 startPoint, Road* road, Junction* junction, I32 junctionCornerIndex)
 {
 	V4 result = {};
 	V2 corner = GetJunctionCorner(junction, junctionCornerIndex);
@@ -1206,14 +1206,14 @@ static V4 NextFromRoadSidewalkToJunctionSidewalk(V4 startPoint, Road* road, Junc
 	return result;
 }
 
-static B32 EndFromRoadSidewalkToJunctionSidewalk(V4 point, Road* road, Junction* junction, I32 junctionCornerIndex) 
+static B32 func EndFromRoadSidewalkToJunctionSidewalk(V4 point, Road* road, Junction* junction, I32 junctionCornerIndex) 
 {
 	V2 corner = GetJunctionCorner(junction, junctionCornerIndex);
 	B32 result = (point.position == corner);
 	return result;
 }
 
-static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad, I32 sidewalkIndex)
+static V4 func NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad, I32 sidewalkIndex)
 {
 	Assert(road == nextRoad);
 	Assert(sidewalkIndex == LeftRoadSidewalkIndex || sidewalkIndex == RightRoadSidewalkIndex);
@@ -1259,7 +1259,7 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 	return result;
 }
 
-static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad)
+static V4 func NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad)
 {
 	V4 result = {};
 
@@ -1307,7 +1307,7 @@ static V4 NextFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 	return result;
 }
 
-static B32 EndFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad, I32 sidewalkIndex)
+static B32 func EndFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoad, I32 sidewalkIndex)
 {
 	B32 result = false;
 	Assert(road == nextRoad);
@@ -1328,19 +1328,19 @@ static B32 EndFromRoadSidewalkToRoadSidewalk(V4 point, Road* road, Road* nextRoa
 	return result;
 }
 
-static V4 NextFromJunctionSidewalkToNothing(V4 startPoint, Junction* junction)
+static V4 func NextFromJunctionSidewalkToNothing(V4 startPoint, Junction* junction)
 {
 	V4 result = startPoint;
 	return result;
 }
 
-static B32 EndFromJunctionSidewalkToNothing(V4 point, Junction* junction)
+static B32 func EndFromJunctionSidewalkToNothing(V4 point, Junction* junction)
 {
 	B32 result = true;
 	return result;
 }
 
-static V4 NextFromJunctionSidewalkToJunctionSidewalk(V4 startPoint, Junction* junction, Junction* nextJunction, I32 cornerIndex)
+static V4 func NextFromJunctionSidewalkToJunctionSidewalk(V4 startPoint, Junction* junction, Junction* nextJunction, I32 cornerIndex)
 {
 	V4 result = {};
 	Assert(junction == nextJunction);
@@ -1348,7 +1348,7 @@ static V4 NextFromJunctionSidewalkToJunctionSidewalk(V4 startPoint, Junction* ju
 	return result;
 }
 
-static B32 EndFromJunctionSidewalkToJunctionSidewalk(V4 point, Junction* junction, Junction* nextJunction, I32 cornerIndex)
+static B32 func EndFromJunctionSidewalkToJunctionSidewalk(V4 point, Junction* junction, Junction* nextJunction, I32 cornerIndex)
 {
 	Assert(junction == nextJunction);
 	V2 corner = GetJunctionCorner(junction, cornerIndex);
@@ -1357,7 +1357,7 @@ static B32 EndFromJunctionSidewalkToJunctionSidewalk(V4 point, Junction* junctio
 }
 
 // TODO: make this work with indices instead of floating-point comparison
-static V4 NextNodePoint(PathNode* node, V4 startPoint)
+static V4 func NextNodePoint(PathNode* node, V4 startPoint)
 {
 	V4 result = {};
 
@@ -1472,7 +1472,7 @@ static V4 NextNodePoint(PathNode* node, V4 startPoint)
 	return result;
 }
 
-static B32 IsNodeEndPoint(PathNode* node, V4 point)
+static B32 func IsNodeEndPoint(PathNode* node, V4 point)
 {
 	B32 result = false;
 
@@ -1589,7 +1589,7 @@ static B32 IsNodeEndPoint(PathNode* node, V4 point)
 	return result;
 }
 
-static void DrawPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
+static void func DrawPath(Canvas* canvas, PathNode* firstNode, V4 color, F32 lineWidth)
 {
 	PathNode* node = firstNode;
 
@@ -1615,7 +1615,7 @@ static void DrawPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth
 	}
 }
 
-static void DrawBezierPathFromPoint(Canvas canvas, PathNode* firstNode, V4 startPoint, V4 color, F32 lineWidth)
+static void func DrawBezierPathFromPoint(Canvas* canvas, PathNode* firstNode, V4 startPoint, V4 color, F32 lineWidth)
 {
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
@@ -1642,7 +1642,7 @@ static void DrawBezierPathFromPoint(Canvas canvas, PathNode* firstNode, V4 start
 	}
 }
 
-static void DrawBezierPath(Canvas canvas, PathNode* firstNode, V4 color, F32 lineWidth)
+static void func DrawBezierPath(Canvas* canvas, PathNode* firstNode, V4 color, F32 lineWidth)
 {
 	PathNode* node = firstNode;
 	Bezier4 bezier4 = {};
