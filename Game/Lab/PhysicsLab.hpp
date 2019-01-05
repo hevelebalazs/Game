@@ -27,7 +27,7 @@ struct PhysicsLabState
 };
 static PhysicsLabState gPhysicsLabState;
 
-static void PhysicsLabResize(PhysicsLabState* labState, I32 width, I32 height)
+static void func PhysicsLabResize(PhysicsLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -38,7 +38,7 @@ static void PhysicsLabResize(PhysicsLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 20.0f;
 }
 
-static void PhysicsLabBlit(Canvas* canvas, HDC context, RECT rect)
+static void func PhysicsLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
@@ -55,7 +55,7 @@ static void PhysicsLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func PhysicsLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	PhysicsLabState* labState = &gPhysicsLabState;
 	PlayerCar* car = &labState->car;
@@ -142,7 +142,7 @@ static LRESULT CALLBACK PhysicsLabCallback(HWND window, UINT message, WPARAM wpa
 	return result;
 }
 
-static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windowHeight)
 {
 	labState->running = true;
 
@@ -169,7 +169,7 @@ static void PhysicsLabInit(PhysicsLabState* labState, I32 windowWidth, I32 windo
 	PhysicsLabResize(labState, windowWidth, windowHeight);
 }
 
-static void DrawWheel(Canvas* canvas, V2 center, F32 angle)
+static void func DrawWheel(Canvas* canvas, V2 center, F32 angle)
 {
 	V2 frontDirection = RotationVector(angle);
 	V2 sideDirection = TurnVectorToRight(frontDirection);
@@ -187,7 +187,7 @@ static void DrawWheel(Canvas* canvas, V2 center, F32 angle)
 	DrawQuad(canvas, wheelQuad, wheelColor);
 }
 
-static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
+static void func PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 {
 	PlayerCar* car = &labState->car;
 
@@ -278,7 +278,7 @@ static void PhysicsLabUpdate(PhysicsLabState* labState, V2 mouse)
 	DrawPolyOutline(canvas, labState->walls, labState->wallN, wallColor);
 }
 
-static void PhysicsLab(HINSTANCE instance)
+static void func PhysicsLab(HINSTANCE instance)
 {
 	WNDCLASS winClass = {};
 	winClass.style = CS_OWNDC;

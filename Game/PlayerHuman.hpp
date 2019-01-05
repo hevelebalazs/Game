@@ -37,7 +37,7 @@ struct GameState;
 
 // TODO: this doesn't belong here, move it somewhere else
 // TODO: add an aimPosition parameter?
-static void ShootBullet(PlayerHuman* playerHuman, V2 targetPoint)
+static void func ShootBullet(PlayerHuman* playerHuman, V2 targetPoint)
 {
 	Human* human = &playerHuman->human;
 	V2 aimStartPoint = playerHuman->human.position;
@@ -53,7 +53,7 @@ static void ShootBullet(PlayerHuman* playerHuman, V2 targetPoint)
 	bullet->position.direction = PointDirection(human->position, targetPoint);
 }
 
-static void MoveHuman(Human* human, V2 moveVector)
+static void func MoveHuman(Human* human, V2 moveVector)
 {
 	Map* map = human->map;
 
@@ -113,7 +113,7 @@ static void MoveHuman(Human* human, V2 moveVector)
 }
 
 // TODO: Put back bullet damage!
-static void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds/*, GameState* gameState*/)
+static void func UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds/*, GameState* gameState*/)
 {
 	Human* human = &playerHuman->human;
 
@@ -204,7 +204,7 @@ static void UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds/*, GameState
 	}
 }
 
-static void DrawPlayerHuman(Canvas* canvas, PlayerHuman* playerHuman)
+static void func DrawPlayerHuman(Canvas* canvas, PlayerHuman* playerHuman)
 {
 	Human* human = &playerHuman->human;
 

@@ -17,7 +17,7 @@ struct MemArena
 	U32 maxSize;
 };
 
-static MemArena CreateMemArena(U32 maxSize)
+static MemArena func CreateMemArena(U32 maxSize)
 {
 	MemArena result = {};
 	result.baseAddress = new I8[maxSize];
@@ -27,12 +27,12 @@ static MemArena CreateMemArena(U32 maxSize)
 	return result;
 }
 
-static void ArenaReset(MemArena* arena)
+static void func ArenaReset(MemArena* arena)
 {
 	arena->usedSize = 0;
 }
 
-static void* ArenaAlloc(MemArena* arena, U32 size)
+static void* func ArenaAlloc(MemArena* arena, U32 size)
 {
 	Assert(arena->usedSize + size <= arena->maxSize);
 	if (arena->usedSize + size <= arena->maxSize) 
@@ -47,18 +47,18 @@ static void* ArenaAlloc(MemArena* arena, U32 size)
 	}
 }
 
-static U32 GetArenaSize(MemArena* arena)
+static U32 func GetArenaSize(MemArena* arena)
 {
 	return arena->usedSize;
 }
 
-static void SetArenaSize(MemArena* arena, U32 size)
+static void func SetArenaSize(MemArena* arena, U32 size)
 {
 	arena->usedSize = size;
 }
 
 // TODO: only pop if the address is smaller than the current one?
-static void ArenaPopTo(MemArena* arena, void* address)
+static void func ArenaPopTo(MemArena* arena, void* address)
 {
 	arena->usedSize = (U32)((I8*)address - arena->baseAddress);
 }

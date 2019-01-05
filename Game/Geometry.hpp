@@ -32,14 +32,14 @@ struct Quad
 
 // TODO: create a type that always represents a unit vector?
 
-static void Poly16Add(Poly16* poly, V2 point)
+static void func Poly16Add(Poly16* poly, V2 point)
 {
 	Assert(poly->pointN < 16);
 	poly->points[poly->pointN] = point;
 	poly->pointN++;
 }
 
-static V2 MakePoint(F32 x, F32 y)
+static V2 func MakePoint(F32 x, F32 y)
 {
 	V2 point = {};
 	point.x = x;
@@ -47,13 +47,13 @@ static V2 MakePoint(F32 x, F32 y)
 	return point;
 }
 
-static V2 MakeVector(F32 x, F32 y)
+static V2 func MakeVector(F32 x, F32 y)
 {
 	V2 result = MakePoint(x, y);
 	return result;
 }
 
-static Quad MakeQuad(V2 point1, V2 point2, V2 point3, V2 point4)
+static Quad func MakeQuad(V2 point1, V2 point2, V2 point3, V2 point4)
 {
 	Quad quad = {};
 	quad.points[0] = point1;
@@ -63,18 +63,18 @@ static Quad MakeQuad(V2 point1, V2 point2, V2 point3, V2 point4)
 	return quad;
 }
 
-static F32 DistanceSquare(V2 point1, V2 point2)
+static F32 func DistanceSquare(V2 point1, V2 point2)
 {
 	return (point1.x - point2.x) * (point1.x - point2.x) +
 		(point1.y - point2.y) * (point1.y - point2.y);
 }
 
-static F32 CityDistance(V2 point1, V2 point2)
+static F32 func CityDistance(V2 point1, V2 point2)
 {
 	return fabsf(point1.x - point2.x) + fabsf(point1.y - point2.y);
 }
 
-static F32 Distance(V2 point1, V2 point2)
+static F32 func Distance(V2 point1, V2 point2)
 {
 	F32 dx = (point1.x - point2.x);
 	F32 dy = (point1.y - point2.y);
@@ -82,24 +82,24 @@ static F32 Distance(V2 point1, V2 point2)
 	return sqrtf((dx * dx) + (dy * dy));
 }
 
-static F32 VectorLength(V2 vector)
+static F32 func VectorLength(V2 vector)
 {
 	return sqrtf((vector.x * vector.x) + (vector.y * vector.y));
 }
 
-static F32 VectorAngle(V2 vector)
+static F32 func VectorAngle(V2 vector)
 {
 	return atan2f(vector.y, vector.x);
 }
 
-static F32 LineAngle(V2 startPoint, V2 endPoint)
+static F32 func LineAngle(V2 startPoint, V2 endPoint)
 {
 	V2 diff = (endPoint - startPoint);
 	F32 angle = VectorAngle(diff);
 	return angle;
 }
 
-static F32 NormalizeAngle(F32 angle)
+static F32 func NormalizeAngle(F32 angle)
 {
 	while (angle > PI)
 	{
@@ -114,7 +114,7 @@ static F32 NormalizeAngle(F32 angle)
 	return angle;
 }
 
-static F32 AngleDifference(F32 leftAngle, F32 rightAngle)
+static F32 func AngleDifference(F32 leftAngle, F32 rightAngle)
 {
 	Assert(IsBetween(leftAngle,  -PI, +PI));
 	Assert(IsBetween(rightAngle, -PI, +PI));
@@ -132,7 +132,7 @@ static F32 AngleDifference(F32 leftAngle, F32 rightAngle)
 	return result;
 }
 
-static B32 TurnsRight(V2 point1, V2 point2, V2 point3)
+static B32 func TurnsRight(V2 point1, V2 point2, V2 point3)
 {
 	F32 dx1 = point2.x - point1.x;
 	F32 dy1 = point2.y - point1.y;
@@ -144,7 +144,7 @@ static B32 TurnsRight(V2 point1, V2 point2, V2 point3)
 	return (det > 0.0f);
 }
 
-static B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
+static B32 func IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
 {
 	Assert(IsBetween(minAngle, -PI, +PI));
 	Assert(IsBetween(angle,    -PI, +PI));
@@ -161,13 +161,13 @@ static B32 IsAngleBetween(F32 minAngle, F32 angle, F32 maxAngle)
 	return result;
 }
 
-static V2 RotationVector(F32 angle)
+static V2 func RotationVector(F32 angle)
 {
 	V2 result = MakePoint(cosf(angle), sinf(angle));
 	return result;
 }
 
-static V2 NormalVector(V2 vector)
+static V2 func NormalVector(V2 vector)
 {
 	F32 length = VectorLength(vector);
 	if (length == 0.0f) 
@@ -179,7 +179,7 @@ static V2 NormalVector(V2 vector)
 	return result;
 }
 
-static V2 PointDirection(V2 startPoint, V2 endPoint)
+static V2 func PointDirection(V2 startPoint, V2 endPoint)
 {
 	V2 vector = {endPoint.x - startPoint.x, endPoint.y - startPoint.y};
 	vector = NormalVector(vector);
@@ -187,7 +187,7 @@ static V2 PointDirection(V2 startPoint, V2 endPoint)
 	return vector;
 }
 
-static B32 IsPointInQuad(Quad quad, V2 point)
+static B32 func IsPointInQuad(Quad quad, V2 point)
 {
 	V2* points = quad.points;
 	if (point.x < points[0].x && point.x < points[1].x && point.x < points[2].x && point.x < points[3].x)
@@ -232,7 +232,7 @@ static B32 IsPointInQuad(Quad quad, V2 point)
 	}
 }
 
-static V2 TurnVectorToRight(V2 vector)
+static V2 func TurnVectorToRight(V2 vector)
 {
 	V2 result = {};
 	result.x = -vector.y;
@@ -240,7 +240,7 @@ static V2 TurnVectorToRight(V2 vector)
 	return result;
 }
 
-static V2 XYToBase(V2 point, V2 baseUnit)
+static V2 func XYToBase(V2 point, V2 baseUnit)
 {
 	F32 cosa = baseUnit.x;
 	F32 sina = baseUnit.y;
@@ -253,7 +253,7 @@ static V2 XYToBase(V2 point, V2 baseUnit)
 }
 
 // TODO: can this be merged with LineIntersection?
-static B32 DoLinesCross(V2 line11, V2 line12, V2 line21, V2 line22)
+static B32 func DoLinesCross(V2 line11, V2 line12, V2 line21, V2 line22)
 {
 	B32 right1 = TurnsRight(line11, line21, line22);
 	B32 right2 = TurnsRight(line12, line21, line22);
@@ -272,12 +272,12 @@ static B32 DoLinesCross(V2 line11, V2 line12, V2 line21, V2 line22)
 	return true;
 }
 
-static F32 Determinant(F32 a, F32 b, F32 c, F32 d)
+static F32 func Determinant(F32 a, F32 b, F32 c, F32 d)
 {
 	return (a * d) - (b * c);
 }
 
-static V2 LineIntersection(V2 line11, V2 line12, V2 line21, V2 line22)
+static V2 func LineIntersection(V2 line11, V2 line12, V2 line21, V2 line22)
 {
 	F32 det1  = Determinant(line11.x, line11.y, line12.x, line12.y);
 	F32 detX1 = Determinant(line11.x,     1.0f, line12.x,     1.0f);
@@ -303,13 +303,13 @@ static V2 LineIntersection(V2 line11, V2 line12, V2 line21, V2 line22)
 	return result;
 }
 
-static V2 LineIntersection(Line line1, Line line2)
+static V2 func LineIntersection(Line line1, Line line2)
 {
 	V2 intersection = LineIntersection(line1.p1, line1.p2, line2.p1, line2.p2);
 	return intersection;
 }
 
-static B32 IsPointInPoly(V2 point, V2* points, I32 pointN)
+static B32 func IsPointInPoly(V2 point, V2* points, I32 pointN)
 {
 	B32 isInside = false;
 	if (pointN >= 3) 
@@ -329,13 +329,13 @@ static B32 IsPointInPoly(V2 point, V2* points, I32 pointN)
 	return isInside;
 }
 
-static F32 DotProduct(V2 vector1, V2 vector2)
+static F32 func DotProduct(V2 vector1, V2 vector2)
 {
 	return ((vector1.x * vector2.x) + (vector1.y * vector2.y));
 }
 
 // TODO: create a version of this where base is unit length?
-static V2 ParallelVector(V2 vector, V2 base)
+static V2 func ParallelVector(V2 vector, V2 base)
 {
 	V2 unitBase = NormalVector(base);
 	V2 result = DotProduct(vector, unitBase) * unitBase;

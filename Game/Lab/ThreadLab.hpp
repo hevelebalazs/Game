@@ -37,7 +37,7 @@ struct ThreadLabState
 };
 static ThreadLabState gThreadLabState;
 
-static void ThreadLabResize(ThreadLabState* labState, I32 width, I32 height)
+static void func ThreadLabResize(ThreadLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -48,7 +48,7 @@ static void ThreadLabResize(ThreadLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 1.0f;
 }
 
-static void ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
+static void func ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
@@ -65,7 +65,7 @@ static void ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static void PaintRow(Bitmap* bitmap, I32 row, U32 colorCode)
+static void func PaintRow(Bitmap* bitmap, I32 row, U32 colorCode)
 {
 	Assert(row >= 0 && row < bitmap->height);
 	U32* pixel = bitmap->memory + (row * bitmap->width);
@@ -76,7 +76,7 @@ static void PaintRow(Bitmap* bitmap, I32 row, U32 colorCode)
 	}
 }
 
-static DWORD WINAPI RowPaintWorkProc(LPVOID parameter)
+static DWORD WINAPI func RowPaintWorkProc(LPVOID parameter)
 {
 	RowPaintWorkList* workList = (RowPaintWorkList*)parameter;
 	while (1) 
@@ -89,7 +89,7 @@ static DWORD WINAPI RowPaintWorkProc(LPVOID parameter)
 	}
 }
 
-static void PushRowPaintWork(RowPaintWorkList* workList, RowPaintWork work)
+static void func PushRowPaintWork(RowPaintWorkList* workList, RowPaintWork work)
 {
 	Assert(workList->workN < MaxRowPaintWorkListN);
 	workList->works[workList->workN] = work;
@@ -97,7 +97,7 @@ static void PushRowPaintWork(RowPaintWorkList* workList, RowPaintWork work)
 	ReleaseSemaphore(workList->semaphore, 1, 0);
 }
 
-static void ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 windowHeight)
 {
 	labState->running = true;
 	ThreadLabResize(labState, windowWidth, windowHeight);
@@ -109,7 +109,7 @@ static void ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 windowH
 	}
 }
 
-static void ThreadLabUpdate(ThreadLabState* labState)
+static void func ThreadLabUpdate(ThreadLabState* labState)
 {
 	Canvas canvas = labState->canvas;
 	V4 backgroundColor = MakeColor(0.8f, 1.0f, 1.0f);
@@ -135,7 +135,7 @@ static void ThreadLabUpdate(ThreadLabState* labState)
 	}
 }
 
-static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func ThreadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	ThreadLabState* labState = &gThreadLabState;
 	LRESULT result = 0;
@@ -186,7 +186,7 @@ static LRESULT CALLBACK ThreadLabCallback(HWND window, UINT message, WPARAM wpar
 	return result;
 }
 
-static void ThreadLab(HINSTANCE instance)
+static void func ThreadLab(HINSTANCE instance)
 {
 	ThreadLabState* labState = &gThreadLabState;
 

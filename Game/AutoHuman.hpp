@@ -24,7 +24,7 @@ struct AutoHuman
 	B32 dead;
 };
 
-static void InitAutoHumanMovement(AutoHuman* autoHuman)
+static void func InitAutoHumanMovement(AutoHuman* autoHuman)
 {
 	Human* human = &autoHuman->human;
 
@@ -34,7 +34,7 @@ static void InitAutoHumanMovement(AutoHuman* autoHuman)
 	autoHuman->moveSeconds = 0.0f;
 }
 
-static void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+static void func MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
 	Human* human = &autoHuman->human;
 
@@ -60,7 +60,7 @@ static void MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, Me
 	}
 }
 
-static void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+static void func UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
 	if (autoHuman->dead)
 	{
@@ -135,7 +135,7 @@ static void UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, 
 	}
 }
 
-static void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
+static void func KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 {
 	autoHuman->dead = true;
 	if (autoHuman->moveNode)
@@ -146,7 +146,7 @@ static void KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 }
 
 // TODO: make this work with a Human instead of an AutoHuman
-static void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
+static void func DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 {
 	Human* human = &autoHuman->human;
 	if (human->healthPoints > 0)
@@ -159,7 +159,7 @@ static void DamageAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 	}
 }
 
-static void DrawAutoHuman(Canvas* canvas, AutoHuman* autoHuman) 
+static void func DrawAutoHuman(Canvas* canvas, AutoHuman* autoHuman) 
 {
 	if (autoHuman->dead) 
 	{

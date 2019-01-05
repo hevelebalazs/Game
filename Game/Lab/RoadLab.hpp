@@ -66,7 +66,7 @@ struct RoadLabState
 };
 static RoadLabState gRoadLabState;
 
-static void RoadLabResize(RoadLabState* labState, I32 width, I32 height)
+static void func RoadLabResize(RoadLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -77,7 +77,7 @@ static void RoadLabResize(RoadLabState* labState, I32 width, I32 height)
 	camera->unitInPixels = 50.0f;
 }
 
-static void RoadLabBlit(Canvas* canvas, HDC context, RECT rect)
+static void func RoadLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
@@ -94,7 +94,7 @@ static void RoadLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static B32 CanJunctionBePlacedAtPoint(Map* map, V2 point)
+static B32 func CanJunctionBePlacedAtPoint(Map* map, V2 point)
 {
 	B32 valid = true;
 	for (I32 i = 0; i < map->junctionN; ++i) 
@@ -110,7 +110,7 @@ static B32 CanJunctionBePlacedAtPoint(Map* map, V2 point)
 	return valid;
 }
 
-static void HighlightJunctionCorner(Canvas* canvas, Junction* junction, I32 cornerIndex, V4 color)
+static void func HighlightJunctionCorner(Canvas* canvas, Junction* junction, I32 cornerIndex, V4 color)
 {
 	F32 radius = LaneWidth * 0.25f;
 	V2 corner = GetJunctionCorner(junction, cornerIndex);
@@ -121,7 +121,7 @@ static void HighlightJunctionCorner(Canvas* canvas, Junction* junction, I32 corn
 	DrawRect(canvas, left, right, top, bottom, color);
 }
 
-static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
+static void func RoadLabUpdate(RoadLabState* labState, V2 mouse)
 {
 	if (labState->isCameraMoved) 
 	{
@@ -298,7 +298,7 @@ static void RoadLabUpdate(RoadLabState* labState, V2 mouse)
 	}
 }
 
-static void UpdateJunction(Junction* junction)
+static void func UpdateJunction(Junction* junction)
 {
 	CalculateStopDistances(junction);
 	InitTrafficLights(junction);
@@ -308,7 +308,7 @@ static void UpdateJunction(Junction* junction)
 	}
 }
 
-static void RoadLabClick(RoadLabState* labState, V2 mouse)
+static void func RoadLabClick(RoadLabState* labState, V2 mouse)
 {
 	Map* map = &labState->map;
 	if (labState->labMode == RoadPlacingMode) 
@@ -372,7 +372,7 @@ static void RoadLabClick(RoadLabState* labState, V2 mouse)
 	}
 }
 
-static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func RoadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	RoadLabState* labState = &gRoadLabState;
 	LRESULT result = 0;
@@ -485,7 +485,7 @@ static LRESULT CALLBACK RoadLabCallback(HWND window, UINT message, WPARAM wparam
 	return result;
 }
 
-static void RoadLabInit(RoadLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func RoadLabInit(RoadLabState* labState, I32 windowWidth, I32 windowHeight)
 {
 	RoadLabResize(labState, windowWidth, windowHeight);
 	labState->labMode = JunctionPlacingMode;
@@ -510,7 +510,7 @@ static void RoadLabInit(RoadLabState* labState, I32 windowWidth, I32 windowHeigh
 	labState->memArena = CreateMemArena(RoadLabMemArenaSize);
 }
 
-static void RoadLab(HINSTANCE instance)
+static void func RoadLab(HINSTANCE instance)
 {
 	RoadLabState* labState = &gRoadLabState;
 

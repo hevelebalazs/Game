@@ -5,7 +5,7 @@
 #include "Math.hpp"
 #include "Type.hpp"
 
-static void LightSector(Canvas* canvas, V2 center, F32 minDistance, F32 maxDistance, F32 minAngle, F32 maxAngle, F32 baseBrightness) 
+static void func LightSector(Canvas* canvas, V2 center, F32 minDistance, F32 maxDistance, F32 minAngle, F32 maxAngle, F32 baseBrightness) 
 {
 	V2 radius = MakePoint(maxDistance, maxDistance);
 	V2 topLeft = (center - radius);
@@ -53,7 +53,7 @@ static void LightSector(Canvas* canvas, V2 center, F32 minDistance, F32 maxDista
 	}
 }
 
-static void LightCircle(Canvas* canvas, V2 center, F32 seeDistance, F32 baseBrightness)
+static void func LightCircle(Canvas* canvas, V2 center, F32 seeDistance, F32 baseBrightness)
 {
 	LightSector(canvas, center, 0.0f, seeDistance, -PI, PI, baseBrightness);
 }

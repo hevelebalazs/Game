@@ -53,7 +53,7 @@ struct GameStorage
 	MemArena tmpArena;
 };
 
-static void TogglePlayerCar(GameState* gameState)
+static void func TogglePlayerCar(GameState* gameState)
 {
 	V2 playerPosition = {};
 
@@ -82,7 +82,7 @@ static void TogglePlayerCar(GameState* gameState)
 	}
 }
 
-static void WinResize(GameState* gameState, I32 width, I32 height)
+static void func WinResize(GameState* gameState, I32 width, I32 height)
 {
 	if (!gameState)
 	{
@@ -98,7 +98,7 @@ static void WinResize(GameState* gameState, I32 width, I32 height)
 	gameState->maskCanvas.camera = &gameState->camera;
 }
 
-static void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
+static void func GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight)
 {
 	gameStorage->arena = CreateMemArena(10u * 1024u * 1024u);
 	gameStorage->tmpArena = CreateMemArena(10u * 1024u * 1024u);
@@ -222,7 +222,7 @@ static void GameInit(GameStorage* gameStorage, I32 windowWidth, I32 windowHeight
 	GenerateMapTextures(&gameState->mapTextures, &gameStorage->tmpArena);
 }
 
-static CollisionInfo GetCarCollisionInfoWithRoadSides(Car* oldCar, Car* newCar, GameState* gameState)
+static CollisionInfo func GetCarCollisionInfoWithRoadSides(Car* oldCar, Car* newCar, GameState* gameState)
 {
 	CollisionInfo hit = {};
 
@@ -246,7 +246,7 @@ static CollisionInfo GetCarCollisionInfoWithRoadSides(Car* oldCar, Car* newCar, 
 	return hit;
 }
 
-static CollisionInfo GetCarCollisionInfoWithAutoCars(Car* oldCar, Car* newCar, GameState* gameState)
+static CollisionInfo func GetCarCollisionInfoWithAutoCars(Car* oldCar, Car* newCar, GameState* gameState)
 {
 	CollisionInfo hit = {};
 
@@ -262,7 +262,7 @@ static CollisionInfo GetCarCollisionInfoWithAutoCars(Car* oldCar, Car* newCar, G
 }
 
 // TODO: get rid of the mousePosition parameter?
-static void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
+static void func GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 {
 	GameState* gameState = gameStorage->gameState;
 	MemArena* arena = &gameStorage->arena;
@@ -401,7 +401,7 @@ static void GameUpdate(GameStorage* gameStorage, F32 seconds, V2 mousePosition)
 }
 
 // TODO: many things are recalculated, merge GameUpdate with GameDraw?
-static void GameDraw(GameStorage* gameStorage)
+static void func GameDraw(GameStorage* gameStorage)
 {
 	GameState* gameState = gameStorage->gameState;
 	Canvas* canvas = &gameState->canvas;
