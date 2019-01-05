@@ -153,6 +153,7 @@ enum EntityType
 	BlueEntity
 };
 
+#define EntityNameSize 16
 struct Entity
 {
 	EntityType type;
@@ -179,6 +180,8 @@ struct Entity
 	I32 intellect;
 	I32 constitution;
 	I32 dexterity;
+
+	I8 name[EntityNameSize];
 };
 
 struct DamageTextAlert
@@ -192,6 +195,9 @@ struct DamageTextAlert
 
 #define CombatLabEnemyN 20
 #define CombatLabDamageTextAlertMaxN 100
+
+#define CombatLogLineN 12
+#define CombatLogLineSize 64
 
 struct CombatLabState
 {
@@ -218,6 +224,8 @@ struct CombatLabState
 	I32 damageTextAlertN;
 
 	B32 showCharacterInfo;
+
+	I8 combatLogLines[CombatLogLineN][CombatLogLineSize];
 };
 static CombatLabState gCombatLabState;
 
@@ -366,31 +374,68 @@ static I32 GetAbilityDamage(Entity* entity, AbilityID abilityID)
 	return damage;
 }
 
-static void DoDamage(Entity* entity, I32 damage)
+static void AddCombatLogLine(CombatLabState* labState, I8* line)
 {
-	entity->health = IntMax2(entity->health - damage, 0);
-	if (entity->health == 0)
+	for (I32 i = 1; i < CombatLogLineN; i++)
 	{
-		Ability* ability = &entity->ability;
-		ability->castRatioLeft = 0.0f;
+		StringCopy(labState->combatLogLines[i], labState->combatLogLines[i - 1], CombatLogLineSize);
 	}
+	StringCopy(line, labState->combatLogLines[CombatLogLineN - 1], CombatLogLineSize);
 }
 
-static void DoAndDisplayDamage(CombatLabState* labState, Entity* entity, I32 damage, V4 color)
+static I8 gCombatLogLine[CombatLogLineSize];
+#define CombatLog(labState, line) {OneLineString(gCombatLogLine, CombatLogLineSize, line); AddCombatLogLine(labState, gCombatLogLine);}
+
+static void DoDamage(CombatLabState* labState, Entity* source, Entity* target, I32 damage)
 {
-	if (entity->health > 0)
+	if (target->health > 0)
 	{
-		DoDamage(entity, damage);
+		static I8 combatLogLine[CombatLogLineSize];
+
+		target->health = IntMax2(target->health - damage, 0);
 
 		Assert(labState->damageTextAlertN < CombatLabDamageTextAlertMaxN);
 		DamageTextAlert* alert = &labState->damageTextAlerts[labState->damageTextAlertN];
-		alert->color = color;
+
+		switch (source->type)
+		{
+			case WhiteEntity:
+			{
+				alert->color = WhiteColor;
+				break;
+			}
+			case RedEntity:
+			{
+				alert->color = RedColor;
+				break;
+			}
+			case BlueEntity:
+			{
+				alert->color = BlueColor;
+				break;
+			}
+			default:
+			{
+				DebugBreak();
+			}
+		}
+
 		alert->damage = damage;
-		alert->centerX = entity->position.x;
-		alert->baseLineY = entity->position.y;
+		alert->centerX = target->position.x;
+		alert->baseLineY = target->position.y;
 		alert->timeRemaining = 1.0f;
 
 		labState->damageTextAlertN++;
+
+		CombatLog(labState, source->name + " damages " + target->name + " for " + damage + ".");
+
+		if (target->health == 0)
+		{
+			Ability* ability = &target->ability;
+			ability->castRatioLeft = 0.0f;
+
+			CombatLog(labState, source->name + " kills " + target->name + ".");
+		}
 	}
 }
 
@@ -461,6 +506,8 @@ static void CombatLabReset(CombatLabState* labState)
 
 	player->slowTimeLeft = 0.0f;
 
+	OneLineString(player->name, EntityNameSize, "Player");
+
 	player->ability.id = WhiteAbility1ID;
 
 	for (I32 i = 0; i < CombatLabEnemyN; ++i) 
@@ -493,6 +540,8 @@ static void CombatLabReset(CombatLabState* labState)
 			enemy->maxSpecialResource = 100;
 			enemy->specialResource = 0;
 		}
+
+		OneLineString(enemy->name, EntityNameSize, "Enemy " + (i + 1));
 	}
 
 	labState->expGainedThisLevel = 0;
@@ -552,12 +601,13 @@ static B32 IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
 
 static void DamageEnemiesOnLine(CombatLabState* labState, V2 point1, V2 point2, I32 damage)
 {
+	Entity* player = &labState->player;
 	for (I32 i = 0; i < CombatLabEnemyN; ++i)
 	{
 		Entity* enemy = &labState->enemies[i];
 		if (IsEntityOnLine(enemy, point1, point2))
 		{
-			DoAndDisplayDamage(labState, enemy, damage, WhiteColor);
+			DoDamage(labState, player, enemy, damage);
 		}
 	}
 }
@@ -958,6 +1008,7 @@ static void DrawEntity(Canvas* canvas, Entity* entity)
 	Assert(IsIntBetween(entity->level, 1, MaxLevel));
 	V4 levelBoxColor = MakeColor(1.0f, 1.0f, 1.0f);
 
+	/*
 	F32 spaceBetweenLevelBoxes = 0.05f;
 	F32 levelBoxBarWidth = healthBarWidth;
 	F32 levelBoxSize = (levelBoxBarWidth - (MaxLevel - 1) * spaceBetweenLevelBoxes) / MaxLevel;
@@ -969,6 +1020,7 @@ static void DrawEntity(Canvas* canvas, Entity* entity)
 		F32 spaceBoxRight = spaceBoxLeft + levelBoxSize;
 		DrawRect(canvas, spaceBoxLeft, spaceBoxRight, levelBoxTop, levelBoxBottom, levelBoxColor);
 	}
+	*/
 
 	if (entity->hasSpecialResource)
 	{
@@ -986,6 +1038,12 @@ static void DrawEntity(Canvas* canvas, Entity* entity)
 		F32 barFilledX = barLeft + (barRight - barLeft) * filledRatio;
 		DrawRect(canvas, barLeft, barFilledX, barTop, barBottom, filledColor);
 	}
+
+	Assert(StringIsTerminated(entity->name, EntityNameSize));
+	F32 nameX = healthBarLeft;
+	F32 nameLineY = healthBarTop - 0.2f;
+	V4 nameColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawTextLine(canvas, entity->name, nameLineY, nameX, nameColor);
 }
 
 static B32 IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAngle, F32 maxAngle)
@@ -1315,6 +1373,34 @@ static void DrawCharacterInfo(Canvas* canvas, CombatLabState* labState)
 	DrawBitmapTextLine(bitmap, "Reduces use time of abilities.", glyphData, textLeft, textY, infoColor);
 }
 
+static void DrawCombatLog(Canvas* canvas, CombatLabState* labState)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+
+	I32 padding = 5;
+	I32 height = padding + CombatLogLineN * TextHeightInPixels + padding;
+	I32 width = 300;
+
+	I32 bottom = (bitmap->height - 1) - 10 - padding;
+	I32 top = bottom - height;
+	I32 left = padding;
+	I32 right = left + width;
+
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	I32 textX = left + padding;
+	I32 textY = top + padding + TextPixelsAboveBaseLine;
+	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	for (I32 i = 0; i < CombatLogLineN; ++i)
+	{
+		DrawBitmapTextLine(bitmap, labState->combatLogLines[i], canvas->glyphData, textX, textY, textColor);
+		textY += TextHeightInPixels;
+	}
+}
+
 static void DrawUI(Canvas* canvas, CombatLabState* labState, V2 mousePosition)
 {
 	DrawExpBar(canvas, labState);
@@ -1398,6 +1484,8 @@ static void DrawUI(Canvas* canvas, CombatLabState* labState, V2 mousePosition)
 	I32 smallBoxCenterX = (bitmap->width - 1) - boxPadding - smallBoxSize / 2;
 	I32 smallBoxCenterY = (bitmap->height - 1) - 10 - boxPadding - smallBoxSize / 2;
 	DrawUIBox(bitmap, smallBoxCenterX, smallBoxCenterY, smallBoxSize, "C", glyphData);
+
+	DrawCombatLog(canvas, labState);
 
 	if (labState->showCharacterInfo)
 	{
@@ -1560,7 +1648,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						{
 							B32 enemyWasAlive = (enemy->health > 0);
 							I32 damage = GetAbilityDamage(player, WhiteAbility1ID);
-							DoAndDisplayDamage(labState, enemy, damage, WhiteColor);
+							DoDamage(labState, player, enemy, damage);
 							B32 enemyIsDead = (enemy->health == 0);
 
 							if (enemyWasAlive)
@@ -1612,7 +1700,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 							enemy->position = player->position + distance * direction;
 							InterruptAbility(enemy);
 							I32 damage = GetAbilityDamage(player, WhiteAbility3ID);
-							DoAndDisplayDamage(labState, enemy, damage, WhiteColor);
+							DoDamage(labState, player, enemy, damage);
 						}
 					}
 				}
@@ -1820,7 +1908,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						if (IsEntityInSlice(player, enemy->position, RedAbility1Radius, minAngle, maxAngle))
 						{
 							I32 damage = GetAbilityDamage(enemy, RedAbility1ID);
-							DoAndDisplayDamage(labState, player, damage, RedColor);
+							DoDamage(labState, enemy, player, damage);
 						}
 					}
 					else if (ability->id == RedAbility2ID)
@@ -1830,7 +1918,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						if (IsEntityInSlice(player, enemy->position, RedAbility2Radius, minAngle, maxAngle))
 						{
 							I32 damage = GetAbilityDamage(enemy, RedAbility2ID);
-							DoAndDisplayDamage(labState, player, damage, RedColor);
+							DoDamage(labState, enemy, player, damage);
 						}
 					}
 					else if (ability->id == BlueAbility1ID)
@@ -1839,7 +1927,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						if (IsEntityInCircle(player, ability->position, BlueAbility1Radius))
 						{
 							I32 damage = GetAbilityDamage(enemy, BlueAbility1ID);
-							DoAndDisplayDamage(labState, player, damage, BlueColor);
+							DoDamage(labState, enemy, player, damage);
 						}
 					}
 					else if (ability->id == BlueAbility2ID)
@@ -1849,7 +1937,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						if (distanceFromPlayer <= BlueAbility2Radius)
 						{
 							I32 damage = GetAbilityDamage(enemy, BlueAbility2ID);
-							DoAndDisplayDamage(labState, player, damage, BlueColor);
+							DoDamage(labState, enemy, player, damage);
 							player->slowTimeLeft += BlueAbility2SlowTime;
 						}
 					}
@@ -1859,7 +1947,7 @@ static void CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seco
 						if (IsEntityInCircle(player, ability->position, BlueAbility3Radius))
 						{
 							I32 damage = GetAbilityDamage(enemy, BlueAbility3ID);
-							DoAndDisplayDamage(labState, player, damage, BlueColor);
+							DoDamage(labState, enemy, player, damage);
 							player->slowTimeLeft += BlueAbility3SlowTime;
 						}
 					}
@@ -2046,5 +2134,17 @@ static void CombatLab(HINSTANCE instance)
 	}
 }
 
+// TODO: Combat log!
+	// TODO: Exp gains!
+		// TODO: Add exp gains to DoDamage function!
+	// TODO: Level up!
+	// TODO: Buffs/debuffs!
+	// TODO: Line colors?
+	// TODO: Energy gain?
+// TODO: Make healthbar use bitmap draws!
 // TODO: Player only gains exp when they kill an enemy using ability 1!
 // TODO: Unit frames?
+// TODO: Rename MakeColor to Color?
+// TODO: Disable zoom?
+	// TODO: Or handle UI properly on each possible zoom level!
+// TODO: Create an ExperienceBarHeight constant?
