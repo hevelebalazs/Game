@@ -199,6 +199,9 @@ struct DamageTextAlert
 #define CombatLogLineN 12
 #define CombatLogLineSize 64
 
+#define InventoryRowN 5
+#define InventoryColN 8
+
 struct CombatLabState
 {
 	Camera camera;
@@ -226,6 +229,8 @@ struct CombatLabState
 	B32 showCharacterInfo;
 
 	I8 combatLogLines[CombatLogLineN][CombatLogLineSize];
+
+	I32 inventoryItemIds[InventoryRowN][InventoryColN];
 };
 static CombatLabState gCombatLabState;
 
@@ -595,6 +600,8 @@ static void func CombatLabReset(CombatLabState* labState)
 	labState->experienceGainedThisLevel = 0;
 
 	labState->damageTextAlertN = 0;
+
+	labState->inventoryItemIds[0][0] = 1;
 }
 
 static void func CombatLabResetAtLevel(CombatLabState* labState, I32 level)
@@ -1320,7 +1327,7 @@ static void func DrawDamageTextAlert(Canvas* canvas, DamageTextAlert* alert)
 	DrawTextLineXCentered(canvas, text, alert->baseLineY, alert->centerX, alert->color);
 }
 
-static void func DrawCharacterInfo(Canvas* canvas, CombatLabState* labState)
+static void func DrawCharacterInfo(Canvas* canvas, CombatLabState* labState, V2 mousePosition)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	Entity* entity = &labState->player;
@@ -1328,9 +1335,11 @@ static void func DrawCharacterInfo(Canvas* canvas, CombatLabState* labState)
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
 
+	I32 slotSize = 50;
+
 	I32 padding = 5;
 	I32 width = 400;
-	I32 height = 190;
+	I32 height = 190 + slotSize * InventoryRowN;
 
 	I32 right = (bitmap->width - 1) - padding;
 	I32 left = right - width;
@@ -1338,7 +1347,6 @@ static void func DrawCharacterInfo(Canvas* canvas, CombatLabState* labState)
 	I32 bottom = top + height;
 
 	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
-	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
 
 	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
 	V4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
@@ -1392,6 +1400,83 @@ static void func DrawCharacterInfo(Canvas* canvas, CombatLabState* labState)
 
 	textY += TextHeightInPixels;
 	DrawBitmapTextLine(bitmap, "Reduces use time of abilities.", glyphData, textLeft, textY, infoColor);
+
+	V4 slotBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
+	V4 slotOutlineColor = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 slotHoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 itemNameColor = WhiteColor;
+
+	I32 mouseX = UnitXtoPixel(canvas->camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel(canvas->camera, mousePosition.y);
+
+	I32 inventoryLeft = left;
+	I32 inventoryTop = bottom - InventoryRowN * slotSize;
+
+	I32 slotLeft = inventoryLeft;
+	I32 slotTop = inventoryTop;
+
+	B32 hasHoverItem = false;
+	I32 hoverItemRow = 0;
+	I32 hoverItemCol = 0;
+
+	for (I32 row = 0; row < InventoryRowN; row++)
+	{
+		for (I32 col = 0; col < InventoryColN; col++)
+		{
+			I32 slotRight = slotLeft + slotSize;
+			I32 slotBottom = slotTop + slotSize;
+			DrawBitmapRect(bitmap, slotLeft, slotRight, slotTop, slotBottom, slotBackgroundColor);
+			DrawBitmapRectOutline(bitmap, slotLeft, slotRight, slotTop, slotBottom, slotOutlineColor);
+
+			I32 itemId = labState->inventoryItemIds[row][col];
+			Assert(itemId >= 0);
+			if (itemId != 0)
+			{
+				I8 itemName[32];
+				OneLineString(itemName, 32, itemId);
+				DrawBitmapTextLineCentered(bitmap, itemName, glyphData, slotLeft, slotRight, slotTop, slotBottom, itemNameColor);
+			}
+
+			if (IsIntBetween(mouseX, slotLeft, slotRight) && IsIntBetween(mouseY, slotTop, slotBottom))
+			{
+				hasHoverItem = true;
+				hoverItemRow = row;
+				hoverItemCol = col;
+			}
+
+			slotLeft += slotSize;
+		}
+
+		slotTop += slotSize;
+		slotLeft = left;
+	}
+
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	if (hasHoverItem)
+	{
+		Assert(IsIntBetween(hoverItemRow, 0, InventoryRowN - 1));
+		Assert(IsIntBetween(hoverItemCol, 0, InventoryColN -1 ));
+
+		I32 slotLeft   = inventoryLeft + hoverItemCol * slotSize;
+		I32 slotRight  = slotLeft + slotSize;
+		I32 slotTop    = inventoryTop + hoverItemRow * slotSize;
+		I32 slotBottom = slotTop + slotSize;
+		DrawBitmapRectOutline(bitmap, slotLeft, slotRight, slotTop, slotBottom, slotHoverOutlineColor);
+
+		static I8 tooltipBuffer[256] = {};
+		String tooltipText = StartString(tooltipBuffer, 256);
+
+		I32 itemId = labState->inventoryItemIds[hoverItemRow][hoverItemCol];
+		if (itemId > 0)
+		{
+			AddLine(tooltipText, "Item #" + itemId);
+
+			I32 tooltipLeft = IntMin2(slotLeft - TooltipWidth / 2, (bitmap->width - 1) - TooltipWidth - 5);
+			I32 tooltipBottom = slotTop - 5;
+			DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
+		}
+	}
 }
 
 static void func DrawCombatLog(Canvas* canvas, CombatLabState* labState)
@@ -1510,7 +1595,7 @@ static void func DrawUI(Canvas* canvas, CombatLabState* labState, V2 mousePositi
 
 	if (labState->showCharacterInfo)
 	{
-		DrawCharacterInfo(canvas, labState);
+		DrawCharacterInfo(canvas, labState, mousePosition);
 	}
 }
 
@@ -2153,3 +2238,12 @@ static void func CombatLab(HINSTANCE instance)
 		ReleaseDC(window, context);
 	}
 }
+
+// TODO: Separate DrawInventory function!
+// TODO: Add mouse position to CombatLabState struct?
+// TODO: Inventory!
+	// TODO: Item tooltips!
+	// TODO: Moving items!
+	// TODO: Deleting items!
+// TODO: Equip items!
+// TODO: DrawTextLine should calculate where the base line is, not the calling code!
