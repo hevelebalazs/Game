@@ -134,6 +134,7 @@
     <ClInclude Include="Geometry.hpp" />
     <ClInclude Include="GridMap.hpp" />
     <ClInclude Include="Human.hpp" />
+    <ClInclude Include="Item.hpp" />
     <ClInclude Include="Lab\CarLab.hpp" />
     <ClInclude Include="Lab\CombatLab.hpp" />
     <ClInclude Include="Lab\Lab.hpp" />

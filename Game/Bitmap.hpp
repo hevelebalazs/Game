@@ -688,6 +688,16 @@ static F32 func GetTextPixelWidth(I8* text, GlyphData* glyphData)
 	return width;
 }
 
+static void func DrawBitmapTextLineCentered(Bitmap* bitmap, I8* text, GlyphData* glyphData, I32 left, I32 right, I32 top, I32 bottom, V4 color)
+{
+	I32 textHeight = TextHeightInPixels;
+	I32 textWidth = I32(GetTextPixelWidth(text, glyphData));
+	I32 textLeft = (left + right) / 2 - textWidth / 2;
+	I32 textTop = (bottom + top) / 2 - textHeight / 2;
+	I32 textBaseLineY = textTop + TextPixelsAboveBaseLine;
+	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, color);
+}
+
 #define TooltipWidth 300
 #define TooltipPadding 3
 #define TooltipTopPadding 5
