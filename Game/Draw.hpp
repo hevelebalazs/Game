@@ -1317,6 +1317,14 @@ static void func DrawStretchedBitmap(Canvas* canvas, Bitmap* bitmap, F32 left, F
 	CopyStretchedBitmap(bitmap, &canvas->bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
 }
 
+static F32 func GetTextHeight(Canvas* canvas, I8* text)
+{
+	Camera* camera = canvas->camera;
+	Assert(camera->unitInPixels > 0.0f);
+	F32 height = F32(TextHeightInPixels) / camera->unitInPixels;
+	return height;
+}
+
 static F32 func GetTextWidth(Canvas* canvas, I8* text)
 {
 	Assert(canvas->glyphData != 0);
