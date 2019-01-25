@@ -118,7 +118,7 @@ static void func DrawHealthPoints(Canvas* canvas, Human* human)
 			color = EmptyHealthColor;
 		}
 
-		DrawRect(canvas, left, right, top, bottom, color);
+		DrawRectLRTB(canvas, left, right, top, bottom, color);
 
 		left = right + HealthPointPadding;
 	}
@@ -143,7 +143,7 @@ static void func DrawHuman(Canvas* canvas, Human human)
 		color = MakeColor(1.0f, 1.0f, 1.0f);
 	}
 
-	DrawRect(
+	DrawRectLRTB(
 		canvas,
 		position.x - radius, position.x + radius,
 		position.y - radius, position.y + radius,

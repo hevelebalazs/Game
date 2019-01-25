@@ -922,7 +922,7 @@ static B32 func IsPointOnBuildingConnector(V2 point, Building building)
 
 static void func HighlightBuilding(Canvas* canvas, Building building, V4 color)
 {
-	DrawRect(
+	DrawRectLRTB(
 		canvas,
 		building.left, building.right, building.top, building.bottom,
 		color
@@ -968,7 +968,7 @@ static void func DrawBuildingInside(Canvas* canvas, Building building)
 		wallColor.blue -= 0.2f;
 	}
 
-	DrawRect(canvas, building.left, building.right, building.top, building.bottom, color);
+	DrawRectLRTB(canvas, building.left, building.right, building.top, building.bottom, color);
 
 	BuildingInside* inside = building.inside;
 
@@ -1376,7 +1376,7 @@ static void func HighlightBuildingConnector(Canvas* canvas, Building building, V
 
 	if (building.roadAround) 
 	{
-		DrawRect(
+		DrawRectLRTB(
 			canvas,
 			building.left - roadWidth, building.right + roadWidth,
 			building.top - roadWidth, building.bottom + roadWidth,

@@ -645,15 +645,15 @@ static void func DrawVerticalTrapezoid(Canvas* canvas, V2 topLeft, V2 topRight, 
 	}
 }
 
-static void func DrawRect(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
+static void func DrawRectLRTB(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
 {
 	U32 colorCode = GetColorCode(color);
 
 	Camera *camera = canvas->camera;
-	I32 topPixel =    UnitYtoPixel(camera, top);
-	I32 leftPixel =   UnitXtoPixel(camera, left);
+	I32 topPixel    = UnitYtoPixel(camera, top);
+	I32 leftPixel   = UnitXtoPixel(camera, left);
 	I32 bottomPixel = UnitYtoPixel(camera, bottom);
-	I32 rightPixel =  UnitXtoPixel(camera, right);
+	I32 rightPixel  = UnitXtoPixel(camera, right);
 
 	if (topPixel > bottomPixel)
 	{
@@ -681,6 +681,11 @@ static void func DrawRect(Canvas* canvas, F32 left, F32 right, F32 top, F32 bott
 	}
 }
 
+static void func DrawRect(Canvas* canvas, Rect rect, V4 color)
+{
+	DrawRectLRTB(canvas, rect.left, rect.right, rect.top, rect.bottom, color);
+}
+
 static void func DrawGridLine(Canvas* canvas, V2 point1, V2 point2, V4 color, F32 lineWidth)
 {
 	F32 left   = 0.0f;
@@ -705,7 +710,7 @@ static void func DrawGridLine(Canvas* canvas, V2 point1, V2 point2, V4 color, F3
 		right = Max2(point1.x, point2.x);
 	}
 
-	DrawRect(canvas, left, right, top, bottom, color);
+	DrawRectLRTB(canvas, left, right, top, bottom, color);
 }
 
 static void func DrawQuad(Canvas* canvas, Quad quad, V4 color)

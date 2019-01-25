@@ -77,7 +77,7 @@ static void func MoveHuman(Human* human, V2 moveVector)
 				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, HumanRadius, human->position, pointToGo);
 			else
 				human->inBuilding = 0;
-		} 
+		}
 		else 
 		{
 			crossInfo = GetClosestExtBuildingCrossInfo(human->map, HumanRadius, human->position, pointToGo);
