@@ -2158,7 +2158,7 @@ static void func UpdateDroppedItems(Canvas* canvas, CombatLabState* labState, V2
 			labState->hoverDroppedItem = item;
 		}
 
-		DrawRect(canvas, left, right, top, bottom, backgroundColor);
+		DrawRectLRTB(canvas, left, right, top, bottom, backgroundColor);
 		DrawTextLineXCentered(canvas, itemName, item->position.y, item->position.x, color);
 	}
 }

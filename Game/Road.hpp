@@ -1384,7 +1384,7 @@ static void func DrawTrafficLight(Canvas* canvas, TrafficLight* trafficLight)
 
 	V2 position = trafficLight->position;
 	F32 radius = TrafficLightRadius;
-	DrawRect(
+	DrawRectLRTB(
 		canvas,
 		position.x - radius, position.x + radius,
 		position.y - radius, position.y + radius,
@@ -1553,7 +1553,7 @@ static void func DrawJunctionPlaceholder(Canvas* canvas, Junction* junction, V4 
 {
 	V2 position = junction->position;
 	F32 side = LaneWidth + SidewalkWidth;
-	DrawRect(
+	DrawRectLRTB(
 		canvas,
 		position.x - side, position.x + side,
 		position.y - side, position.y + side,
@@ -1561,7 +1561,7 @@ static void func DrawJunctionPlaceholder(Canvas* canvas, Junction* junction, V4 
 	);
 
 	side = LaneWidth;
-	DrawRect(
+	DrawRectLRTB(
 		canvas,
 		position.x - side, position.x + side,
 		position.y - side, position.y + side,

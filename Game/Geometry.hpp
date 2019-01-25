@@ -19,11 +19,47 @@ union Line
 	};
 };
 
+Line MakeLine(V2 point1, V2 point2)
+{
+	Line line = {};
+	line.p1 = point1;
+	line.p2 = point2;
+	return line;
+}
+
+Line MakeLineXYXY(F32 x1, F32 y1, F32 x2, F32 y2)
+{
+	Line line = {};
+	line.x1 = x1;
+	line.y1 = y1;
+	line.x2 = x2;
+	line.y2 = y2;
+	return line;
+}
+
 struct Poly16 
 {
 	V2 points[16];
 	I32 pointN;
 };
+
+struct Rect
+{
+	F32 left;
+	F32 right;
+	F32 top;
+	F32 bottom;
+};
+
+Rect func MakeSquareRect(V2 center, F32 size)
+{
+	Rect rect = {};
+	rect.left   = center.x - size * 0.5f;
+	rect.right  = center.x + size * 0.5f;
+	rect.top    = center.y - size * 0.5f;
+	rect.bottom = center.y + size * 0.5f;
+	return rect;
+}
 
 struct Quad 
 {

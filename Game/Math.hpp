@@ -283,8 +283,10 @@ static F32 func RandomBetween(F32 min, F32 max)
 	return (min) + (max - min) * ((F32)rand() / (F32)RAND_MAX);
 }
 
-static B32 func IsBetween(F32 test, F32 min, F32 max)
+static B32 func IsBetween(F32 test, F32 value1, F32 value2)
 {
+	F32 min = Min2(value1, value2);
+	F32 max = Max2(value1, value2);
 	return (min <= test && test <= max);
 }
 
@@ -292,6 +294,15 @@ static F32 func Lerp(F32 value1, F32 ratio, F32 value2)
 {
 	Assert(IsBetween(ratio, 0.0f, 1.0f));
 	return ((1.0f - ratio) * value1) + ((ratio) * value2);
+}
+
+static V2 func PointLerp(V2 point1, F32 ratio, V2 point2)
+{
+	Assert(IsBetween(ratio, 0.0f, 1.0f));
+	V2 result = {};
+	result.x = Lerp(point1.x, ratio, point2.x);
+	result.y = Lerp(point1.y, ratio, point2.y);
+	return result;
 }
 
 static B32 func IsIntBetween(I32 test, I32 min, I32 max)

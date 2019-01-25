@@ -118,7 +118,7 @@ static void func HighlightJunctionCorner(Canvas* canvas, Junction* junction, I32
 	F32 right  = corner.x + radius;
 	F32 top    = corner.y - radius;
 	F32 bottom = corner.y + radius;
-	DrawRect(canvas, left, right, top, bottom, color);
+	DrawRectLRTB(canvas, left, right, top, bottom, color);
 }
 
 static void func RoadLabUpdate(RoadLabState* labState, V2 mouse)

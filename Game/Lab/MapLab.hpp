@@ -227,7 +227,7 @@ static void func MapLabUpdate(MapLabState* labState, V2 mousePosition)
 	F32 playerRight  = playerPosition.x + playerRadius;
 	F32 playerTop    = playerPosition.y - playerRadius;
 	F32 playerBottom = playerPosition.y + playerRadius;
-	DrawRect(canvas, playerLeft, playerRight, playerTop, playerBottom, playerColor);
+	DrawRectLRTB(canvas, playerLeft, playerRight, playerTop, playerBottom, playerColor);
 }
 
 static void func MapLab(HINSTANCE instance)

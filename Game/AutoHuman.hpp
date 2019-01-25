@@ -178,7 +178,7 @@ static void func DrawAutoHuman(Canvas* canvas, AutoHuman* autoHuman)
 
 			// TODO: make this a global variable?
 			V4 bloodColor = MakeColor(1.0f, 0.0f, 0.0f);
-			DrawRect(canvas, left, right, top, bottom, bloodColor);
+			DrawRectLRTB(canvas, left, right, top, bottom, bloodColor);
 		}
 		InitRandom();
 	} 

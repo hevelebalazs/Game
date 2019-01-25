@@ -17,6 +17,15 @@ struct MemArena
 	U32 maxSize;
 };
 
+static MemArena func CreateMemArena(void* memory, U32 size)
+{
+	MemArena arena = {};
+	arena.baseAddress = (I8*)memory;
+	arena.maxSize = size;
+	arena.usedSize = 0;
+	return arena;
+}
+
 static MemArena func CreateMemArena(U32 maxSize)
 {
 	MemArena result = {};
