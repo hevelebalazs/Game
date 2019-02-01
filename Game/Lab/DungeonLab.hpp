@@ -15,6 +15,9 @@
 #define AisleN (RoomRowN * (RoomColN - 1) + RoomColN * (RoomRowN - 1))
 
 #define PlayerSide 1.0f
+#define EnemySide 1.0f
+
+#define MaxDungeonLabEnemyN 512
 
 #define DungeonLabArenaSize (10 * MegaByte)
 
@@ -49,6 +52,12 @@ struct PointCollision
 	Line collidingLine2;
 };
 
+struct DungeonLabEnemy
+{
+	V2 position;
+	B32 followsPlayer;
+};
+
 struct DungeonLabState
 {
 	Camera camera;
@@ -63,6 +72,9 @@ struct DungeonLabState
 
 	V2 playerPosition;
 	V2 playerVelocity;
+
+	DungeonLabEnemy enemies[MaxDungeonLabEnemyN];
+	I32 enemyN;
 
 	PointCollision playerCollision;
 };
@@ -127,6 +139,35 @@ static V2 func GetRoomSideCenter(Room* room, I32 roomSide)
 	{
 		result.x += RoomSide * 0.5f;
 	}
+	return result;
+}
+
+static V2 func GetOffsetRoomSideCenter(Room* room, I32 roomSide, F32 distanceIn)
+{	
+	V2 result = room->position;
+
+	F32 distanceFromCenter = RoomSide * 0.5f - distanceIn; 
+	if (roomSide == RoomSideTop)
+	{
+		result.y -= distanceFromCenter;
+	}
+	else if (roomSide == RoomSideBottom)
+	{
+		result.y += distanceFromCenter;
+	}
+	else if (roomSide == RoomSideLeft)
+	{
+		result.x -= distanceFromCenter;
+	}
+	else if (roomSide == RoomSideRight)
+	{
+		result.x += distanceFromCenter;
+	}
+	else
+	{
+		DebugBreak();
+	}
+
 	return result;
 }
 
@@ -198,6 +239,20 @@ static Room* func GetRoomAtIndex(DungeonLabState* labState, I32 row, I32 col)
 	index.col = col;
 	Room* room = GetRoomAtIndex(labState, index);
 	return room;
+}
+
+static void func CreateEnemyInRoom(DungeonLabState* labState, Room* room)
+{
+	Assert(labState->enemyN < MaxDungeonLabEnemyN);
+	DungeonLabEnemy* enemy = &labState->enemies[labState->enemyN];
+	labState->enemyN++;
+
+	F32 maxDistanceFromCenter = RoomSide * 0.5f - EnemySide * 0.5f;
+	V2 roomOffset = {};
+	roomOffset.x = RandomBetween(-maxDistanceFromCenter, +maxDistanceFromCenter);
+	roomOffset.y = RandomBetween(-maxDistanceFromCenter, +maxDistanceFromCenter);
+
+	enemy->position = room->position + roomOffset;
 }
 
 static void func DungeonLabInit(DungeonLabState* labState, I32 windowWidth, I32 windowHeight)
@@ -295,6 +350,18 @@ static void func DungeonLabInit(DungeonLabState* labState, I32 windowWidth, I32 
 		}
 	}
 	ArenaPopTo(arena, roomIndexQueue);
+
+	labState->camera.unitInPixels = 50.0f;
+
+	labState->enemyN = 0;
+	for (I32 roomI = 0; roomI < RoomN; roomI++)
+	{
+		Room* room = &labState->rooms[roomI];
+		for (I32 enemyI = 0; enemyI < room->difficulty; enemyI++)
+		{
+			CreateEnemyInRoom(labState, room);
+		}
+	}
 }
 
 static LRESULT CALLBACK func DungeonLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -380,6 +447,15 @@ static LRESULT CALLBACK func DungeonLabCallback(HWND window, UINT message, WPARA
 					break;
 				}
 			}
+			break;
+		}
+		case WM_MOUSEWHEEL: 
+		{
+			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
+			if (wheelDeltaParam > 0)
+				labState->camera.unitInPixels *= 1.10f;
+			else if (wheelDeltaParam < 0)
+				labState->camera.unitInPixels /= 1.10f;
 			break;
 		}
 		case WM_DESTROY:
@@ -813,6 +889,230 @@ static void func UpdatePlayerPhysics(DungeonLabState* labState, F32 seconds)
 	labState->playerPosition = newCollision.position;
 }
 
+static B32 func RoomContainsPoint(Room* room, V2 point)
+{
+	Rect rect = MakeSquareRect(room->position, RoomSide);
+	B32 result = RectContainsPoint(rect, point);
+	return result;
+}
+
+static Room* func GetRoomContainingPoint(DungeonLabState* labState, V2 point)
+{
+	Room* result = 0;
+
+	for (I32 roomI = 0; roomI < RoomN; roomI++)
+	{
+		Room* room = &labState->rooms[roomI];
+		if (RoomContainsPoint(room, point))
+		{
+			result = room;
+			break;
+		}
+	}
+
+	return result;
+}
+
+static V2 func GetAisleCenter(Aisle* aisle)
+{
+	Room* room1 = aisle->room1;
+	Room* room2 = aisle->room2;
+	Assert(room1 != 0 && room2 != 0);
+	V2 center = 0.5f * (room1->position + room2->position);
+	return center;
+}
+
+static B32 func AisleContainsPoint(Aisle* aisle, V2 point)
+{
+	V2 center = GetAisleCenter(aisle);
+
+	Rect rect = {};
+	if (aisle->isVertical)
+	{
+		rect = MakeRect(center, AisleWidth, AisleLength);
+	}
+	else
+	{
+		rect = MakeRect(center, AisleLength, AisleWidth);
+	}
+
+	B32 result = RectContainsPoint(rect, point);
+	return result;
+}
+
+static Aisle* func GetAisleContainingPoint(DungeonLabState* labState, V2 point)
+{
+	Aisle* result = 0;
+
+	for (I32 aisleI = 0; aisleI < AisleN; aisleI++)
+	{
+		Aisle* aisle = &labState->aisles[aisleI];
+		if (AisleContainsPoint(aisle, point))
+		{
+			result = aisle;
+			break;
+		}
+	}
+
+	return result;
+}
+
+static Room* GetNextRoomOnSide(Room* room, I32 roomSide)
+{
+	Room* nextRoom = 0;
+
+	if (roomSide == RoomSideLeft && room->leftAisle != 0)
+	{
+		nextRoom = room->leftAisle->room1;
+	}
+	else if (roomSide == RoomSideRight && room->rightAisle != 0)
+	{
+		nextRoom = room->rightAisle->room2;
+	}
+	else if (roomSide == RoomSideTop && room->topAisle != 0)
+	{
+		nextRoom = room->topAisle->room1;
+	}
+	else if (roomSide == RoomSideBottom && room->bottomAisle != 0)
+	{
+		nextRoom = room->bottomAisle->room2;
+	}
+
+	return nextRoom;
+}
+
+static V2 func GetOffsetRoomAisleEntrance(Room* room, Aisle* aisle, F32 distanceIn)
+{
+	Assert(room != 0 && aisle != 0);
+
+	V2 entrance = {};
+	if (room->leftAisle == aisle)
+	{
+		entrance = GetOffsetRoomSideCenter(room, RoomSideLeft, distanceIn);
+	}
+	else if (room->rightAisle == aisle)
+	{
+		entrance = GetOffsetRoomSideCenter(room, RoomSideRight, distanceIn);
+	}
+	else if (room->topAisle == aisle)
+	{
+		entrance = GetOffsetRoomSideCenter(room, RoomSideTop, distanceIn);
+	}
+	else if (room->bottomAisle == aisle)
+	{
+		entrance = GetOffsetRoomSideCenter(room, RoomSideBottom, distanceIn);
+	}
+	else
+	{
+		DebugBreak();
+	}
+
+	return entrance;
+}
+
+static void func UpdateEnemy(DungeonLabState* labState, DungeonLabEnemy* enemy, F32 seconds)
+{
+	V2 playerPosition = labState->playerPosition;
+
+	if (enemy->followsPlayer)
+	{
+		Room* playerRoom = GetRoomContainingPoint(labState, playerPosition);
+		Aisle* playerAisle = GetAisleContainingPoint(labState, playerPosition);
+		Assert(playerRoom || playerAisle);
+
+		Room* enemyRoom = GetRoomContainingPoint(labState, enemy->position);
+		Aisle* enemyAisle = GetAisleContainingPoint(labState, enemy->position);
+		Assert(enemyRoom || enemyAisle);
+
+		V2 targetPosition = enemy->position;
+		if (enemyRoom)
+		{
+			if (enemyRoom == playerRoom)
+			{
+				targetPosition = playerPosition;
+			}
+			else
+			{
+				I32 roomSide = 0;
+
+				F32 leftRoomRightX = enemyRoom->position.x - RoomSide * 0.5f - AisleLength;
+				F32 rightRoomLeftX = enemyRoom->position.x + RoomSide * 0.5f + AisleLength;
+				if (playerPosition.x < leftRoomRightX ||
+					(playerAisle && playerAisle == enemyRoom->leftAisle))
+				{
+					roomSide = RoomSideLeft;
+				}
+				else if (playerPosition.x > rightRoomLeftX ||
+						 (playerAisle && playerAisle == enemyRoom->rightAisle))
+				{
+					roomSide = RoomSideRight;
+				}
+				else if (playerPosition.y < enemy->position.y)
+				{
+					roomSide = RoomSideTop;
+				}
+				else
+				{
+					roomSide = RoomSideBottom;
+				}
+
+				targetPosition = GetOffsetRoomSideCenter(enemyRoom, roomSide, EnemySide);
+				F32 distance = Distance(enemy->position, targetPosition);
+				if (distance < 2.0f * EnemySide)
+				{
+					targetPosition = GetOffsetRoomSideCenter(enemyRoom, roomSide, -EnemySide);
+				}
+			}
+		}
+		else
+		{
+			Assert(enemyAisle);
+			if (playerAisle == enemyAisle)
+			{
+				targetPosition = playerPosition;
+			}
+			else if (enemyAisle->isVertical)
+			{
+				if (playerPosition.y > enemy->position.y)
+				{
+					targetPosition = GetOffsetRoomAisleEntrance(enemyAisle->room2, enemyAisle, EnemySide);
+				}
+				else
+				{
+					targetPosition = GetOffsetRoomAisleEntrance(enemyAisle->room1, enemyAisle, EnemySide);
+				}
+			}
+			else
+			{
+				if (playerPosition.x > enemy->position.x)
+				{
+					targetPosition = GetOffsetRoomAisleEntrance(enemyAisle->room2, enemyAisle, EnemySide);
+				}
+				else
+				{
+					targetPosition = GetOffsetRoomAisleEntrance(enemyAisle->room1, enemyAisle, EnemySide);
+				}
+			}
+		}
+
+		Canvas* canvas = &labState->canvas;
+		V4 debugColor = MakeColor(0.0f, 0.0f, 1.0f);
+		Bresenham(canvas, enemy->position, targetPosition, debugColor);
+
+		F32 moveSpeed = 3.0f;
+		V2 moveDirection = PointDirection(enemy->position, targetPosition);
+		enemy->position = enemy->position + seconds * moveSpeed * moveDirection;
+	}
+	else
+	{
+		F32 pullDistance = 10.0f;
+		if (Distance (enemy->position, playerPosition) <= pullDistance)
+		{
+			enemy->followsPlayer = true;
+		}
+	}
+}
+
 static void func DungeonLabUpdate(DungeonLabState* labState, V2 mousePosition, F32 seconds)
 {
 	Canvas* canvas = &labState->canvas;
@@ -823,7 +1123,6 @@ static void func DungeonLabUpdate(DungeonLabState* labState, V2 mousePosition, F
 
 	UpdatePlayerPhysics(labState, seconds);
 
-	camera->unitInPixels = 50.0f;
 	camera->center = labState->playerPosition;
 
 	V4 roomColor = MakeColor(0.5f, 0.5f, 0.5f);
@@ -879,12 +1178,20 @@ static void func DungeonLabUpdate(DungeonLabState* labState, V2 mousePosition, F
 
 	DrawAllWalls(canvas, labState);
 
-	// F32 playerSide = 0.1f;
 	F32 playerSide = PlayerSide;
 	V4 playerColor = MakeColor(1.0f, 0.0f, 0.0f);
 	Rect playerRect = MakeSquareRect(labState->playerPosition, playerSide);
-
 	DrawRect(canvas, playerRect, playerColor);
+
+	V4 enemyColor = MakeColor(0.0f, 0.0f, 1.0f);
+	for (I32 enemyI = 0; enemyI < labState->enemyN; enemyI++)
+	{
+		DungeonLabEnemy* enemy = &labState->enemies[enemyI];
+		UpdateEnemy(labState, enemy, seconds);
+
+		Rect enemyRect = MakeSquareRect(enemy->position, EnemySide);
+		DrawRect(canvas, enemyRect, enemyColor);
+	}
 }
 
 static void func DungeonLab(HINSTANCE instance)
@@ -953,13 +1260,3 @@ static void func DungeonLab(HINSTANCE instance)
 		ReleaseDC(window, context);
 	}
 }
-
-// TODO: Zoom in/out!
-// TODO: Add "enemies" that follow the player!
-	// TODO: Path generation!
-// TODO: Add enemies to rooms depending on difficulty!
-// TODO: Add only a limited amount of aisles!
-// TODO: Check only relevant lines for physics?
-// TODO: Remove DrawRectLRTB, use only DrawRect!
-// TODO: Add Rect structure to rest of rect drawing functions!
-// TODO: IntRect!
