@@ -61,6 +61,24 @@ Rect func MakeSquareRect(V2 center, F32 size)
 	return rect;
 }
 
+Rect func MakeRect(V2 center, F32 xSize, F32 ySize)
+{
+	Rect rect = {};
+	rect.left   = center.x - xSize * 0.5f;
+	rect.right  = center.x + xSize * 0.5f;
+	rect.top    = center.y - ySize * 0.5f;
+	rect.bottom = center.y + ySize * 0.5f;
+	return rect;
+}
+
+B32 func RectContainsPoint(Rect rect, V2 point)
+{
+	B32 containsX = IsBetween(point.x, rect.left, rect.right);
+	B32 containsY = IsBetween(point.y, rect.top, rect.bottom);
+	B32 contains = (containsX && containsY);
+	return contains;
+}
+
 struct Quad 
 {
 	V2 points[4];
