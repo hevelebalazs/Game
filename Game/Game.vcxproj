@@ -130,6 +130,7 @@
     <ClInclude Include="Building.hpp" />
     <ClInclude Include="BuildingType.hpp" />
     <ClInclude Include="Debug.hpp" />
+    <ClInclude Include="DungeonMap.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="Geometry.hpp" />
     <ClInclude Include="GridMap.hpp" />

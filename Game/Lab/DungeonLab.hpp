@@ -4,45 +4,12 @@
 
 #include "../Debug.hpp"
 #include "../Draw.hpp"
-
-#define RoomRowN 5
-#define RoomColN 10
-#define RoomN (RoomRowN * RoomColN)
-#define RoomSide 20.0f
-
-#define AisleWidth  3.0f
-#define AisleLength 20.0f
-#define AisleN (RoomRowN * (RoomColN - 1) + RoomColN * (RoomRowN - 1))
+#include "../DungeonMap.hpp"
 
 #define PlayerSide 1.0f
 #define EnemySide 1.0f
 
 #define MaxDungeonLabEnemyN 512
-
-#define DungeonLabArenaSize (10 * MegaByte)
-
-struct Room;
-struct Aisle
-{
-	B32 isVertical;
-
-	V2 position1;
-	V2 position2;
-
-	Room* room1;
-	Room* room2;
-};
-
-struct Room
-{
-	V2 position;
-	Aisle* leftAisle;
-	Aisle* rightAisle;
-	Aisle* topAisle;
-	Aisle* bottomAisle;
-
-	I32 difficulty;
-};
 
 struct PointCollision
 {
@@ -64,11 +31,7 @@ struct DungeonLabState
 	Canvas canvas;
 	B32 running;
 	
-	Room rooms[RoomN];
-	Aisle aisles[AisleN];
-
-	I8 arenaMemory[DungeonLabArenaSize];
-	MemArena arena;
+	DungeonMap map;
 
 	V2 playerPosition;
 	V2 playerVelocity;
@@ -112,135 +75,6 @@ static void func DungeonLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-enum RoomSideDirection
-{
-	RoomSideTop,
-	RoomSideBottom,
-	RoomSideLeft,
-	RoomSideRight
-};
-
-static V2 func GetRoomSideCenter(Room* room, I32 roomSide)
-{
-	V2 result = room->position;
-	if (roomSide == RoomSideTop)
-	{
-		result.y -= RoomSide * 0.5f;
-	}
-	else if (roomSide == RoomSideBottom)
-	{
-		result.y += RoomSide * 0.5f;
-	}
-	else if (roomSide == RoomSideLeft)
-	{
-		result.x -= RoomSide * 0.5f;
-	}
-	else if (roomSide == RoomSideRight)
-	{
-		result.x += RoomSide * 0.5f;
-	}
-	return result;
-}
-
-static V2 func GetOffsetRoomSideCenter(Room* room, I32 roomSide, F32 distanceIn)
-{	
-	V2 result = room->position;
-
-	F32 distanceFromCenter = RoomSide * 0.5f - distanceIn; 
-	if (roomSide == RoomSideTop)
-	{
-		result.y -= distanceFromCenter;
-	}
-	else if (roomSide == RoomSideBottom)
-	{
-		result.y += distanceFromCenter;
-	}
-	else if (roomSide == RoomSideLeft)
-	{
-		result.x -= distanceFromCenter;
-	}
-	else if (roomSide == RoomSideRight)
-	{
-		result.x += distanceFromCenter;
-	}
-	else
-	{
-		DebugBreak();
-	}
-
-	return result;
-}
-
-static void func ConnectLeftAndRightRooms(Room* leftRoom, Room* rightRoom, Aisle* aisle)
-{
-	Assert(leftRoom->position.y == rightRoom->position.y);
-	Assert(leftRoom->position.x < rightRoom->position.x);
-
-	leftRoom->rightAisle = aisle;
-	rightRoom->leftAisle = aisle;
-	aisle->isVertical = false;
-	aisle->room1 = leftRoom;
-	aisle->room2 = rightRoom;
-	aisle->position1 = GetRoomSideCenter(leftRoom, RoomSideRight);
-	aisle->position2 = GetRoomSideCenter(rightRoom, RoomSideLeft);
-}
-
-static void func ConnectTopAndBottomRooms(Room* topRoom, Room* bottomRoom, Aisle* aisle)
-{
-	Assert(topRoom->position.x == bottomRoom->position.x);
-	Assert(topRoom->position.y < bottomRoom->position.y);
-
-	topRoom->bottomAisle = aisle;
-	bottomRoom->topAisle = aisle;
-	aisle->isVertical = true;
-	aisle->room1 = topRoom;
-	aisle->room2 = bottomRoom;
-	aisle->position1 = GetRoomSideCenter(topRoom, RoomSideBottom);
-	aisle->position2 = GetRoomSideCenter(bottomRoom, RoomSideTop);
-}
-
-struct RoomIndex
-{
-	I32 row;
-	I32 col;
-};
-
-B32 operator==(RoomIndex index1, RoomIndex index2)
-{
-	B32 result = (index1.row == index2.row && index1.col == index2.col);
-	return result;
-}
-
-static B32 func RoomIndexIsValid(RoomIndex roomIndex)
-{
-	B32 result = IsIntBetween(roomIndex.row, 0, RoomRowN - 1) && IsIntBetween(roomIndex.col, 0, RoomColN - 1);
-	return result;
-}
-
-static Room* func GetRoomAtIndex(DungeonLabState* labState, RoomIndex roomIndex)
-{
-	Assert(RoomIndexIsValid(roomIndex));
-	Room* room = &labState->rooms[roomIndex.row * RoomColN + roomIndex.col];
-	return room;
-}
-
-static RoomIndex MakeRoomIndex(I32 row, I32 col)
-{
-	RoomIndex roomIndex = {};
-	roomIndex.row = row;
-	roomIndex.col = col;
-	return roomIndex;
-}
-
-static Room* func GetRoomAtIndex(DungeonLabState* labState, I32 row, I32 col)
-{
-	RoomIndex index = {};
-	index.row = row;
-	index.col = col;
-	Room* room = GetRoomAtIndex(labState, index);
-	return room;
-}
-
 static void func CreateEnemyInRoom(DungeonLabState* labState, Room* room)
 {
 	Assert(labState->enemyN < MaxDungeonLabEnemyN);
@@ -252,7 +86,7 @@ static void func CreateEnemyInRoom(DungeonLabState* labState, Room* room)
 	roomOffset.x = RandomBetween(-maxDistanceFromCenter, +maxDistanceFromCenter);
 	roomOffset.y = RandomBetween(-maxDistanceFromCenter, +maxDistanceFromCenter);
 
-	enemy->position = room->position + roomOffset;
+	enemy->position = room->center + roomOffset;
 }
 
 static void func DungeonLabInit(DungeonLabState* labState, I32 windowWidth, I32 windowHeight)
@@ -261,107 +95,31 @@ static void func DungeonLabInit(DungeonLabState* labState, I32 windowWidth, I32 
 
 	labState->running = true;
 	labState->canvas.glyphData = GetGlobalGlyphData();
-
-	MemArena* arena = &labState->arena;
-	*arena = CreateMemArena(labState->arenaMemory, DungeonLabArenaSize);
-
 	DungeonLabResize(labState, windowWidth, windowHeight);
 
-	F32 mapWidth  = RoomColN * RoomSide + (RoomColN - 1) * AisleLength;
-	F32 mapHeight = RoomRowN * RoomSide + (RoomRowN - 1) * AisleLength;
+	DungeonMap* map = &labState->map;
+	InitDungeonMap(map);
 
-	I32 roomIndex = 0;
-	F32 roomTop = -mapHeight * 0.5f;
+	RoomIndex startRoomIndex = GetRandomRoomIndex(map);
+	Room* startRoom = GetRoomAtIndex(map, startRoomIndex);
+
+	labState->playerPosition = startRoom->center;
+	labState->enemyN = 0;
+
 	for (I32 row = 0; row < RoomRowN; row++)
 	{
-		F32 roomLeft = -mapWidth * 0.5f;
 		for (I32 col = 0; col < RoomColN; col++)
 		{
-			Room* room = &labState->rooms[roomIndex];
-			roomIndex++;
-
-			room->position = MakePoint(roomLeft, roomTop);
-
-			roomLeft += (RoomSide + AisleLength);
-		}
-
-		roomTop += (RoomSide + AisleLength);
-	}
-
-	I32 aisleN = 0;
-	for (I32 row = 0; row < RoomRowN; row++)
-	{
-		for (I32 left = 0; left < RoomColN - 1; left++)
-		{
-			Room* leftRoom  = GetRoomAtIndex(labState, row, left);
-			Room* rightRoom = GetRoomAtIndex(labState, row, left + 1);
-			ConnectLeftAndRightRooms(leftRoom, rightRoom, &labState->aisles[aisleN]);
-			aisleN++;
-		}
-	}
-
-	for (I32 col = 0; col < RoomColN; col++)
-	{
-		for (I32 top = 0; top < RoomRowN - 1; top++)
-		{
-			Room* topRoom    = GetRoomAtIndex(labState, top, col);
-			Room* bottomRoom = GetRoomAtIndex(labState, top + 1, col);
-			ConnectTopAndBottomRooms(topRoom, bottomRoom, &labState->aisles[aisleN]);
-			aisleN++;
-		}
-	}
-
-	RoomIndex startRoomIndex = {};
-	startRoomIndex.row = IntRandom(0, RoomRowN - 1);
-	startRoomIndex.col = IntRandom(0, RoomColN - 1);
-	Room* startRoom = GetRoomAtIndex(labState, startRoomIndex);
-	startRoom->difficulty = 0;
-
-	labState->playerPosition = startRoom->position;
-	
-	RoomIndex* roomIndexQueue = ArenaPushArray(arena, RoomIndex, RoomN);
-	I32 queueN = 0;
-	roomIndexQueue[queueN] = startRoomIndex;
-	queueN++;
-
-	for (I32 i = 0; i < queueN; i++)
-	{
-		RoomIndex roomIndex = roomIndexQueue[i];
-		Room* room = GetRoomAtIndex(labState, roomIndex);
-		
-		RoomIndex adjacentRoomIndexes[4] = {};
-		adjacentRoomIndexes[0] = MakeRoomIndex(roomIndex.row, roomIndex.col - 1);
-		adjacentRoomIndexes[1] = MakeRoomIndex(roomIndex.row, roomIndex.col + 1);
-		adjacentRoomIndexes[2] = MakeRoomIndex(roomIndex.row - 1, roomIndex.col);
-		adjacentRoomIndexes[3] = MakeRoomIndex(roomIndex.row + 1, roomIndex.col);
-		for (I32 j = 0; j < 4; j++)
-		{
-			RoomIndex adjacentRoomIndex = adjacentRoomIndexes[j];
-			if (RoomIndexIsValid(adjacentRoomIndex))
+			Room* room = &map->rooms[row * RoomColN + col];
+			I32 enemyN = IntAbs(row - startRoomIndex.row) + IntAbs(col - startRoomIndex.col);
+			for (I32 i = 0; i < enemyN; i++)
 			{
-				Room* adjacentRoom = GetRoomAtIndex(labState, adjacentRoomIndex);
-				if (adjacentRoom->difficulty == 0 && adjacentRoom != startRoom)
-				{
-					adjacentRoom->difficulty = room->difficulty + 1;
-					roomIndexQueue[queueN] = adjacentRoomIndex;
-					queueN++;
-				}
+				CreateEnemyInRoom(labState, room);
 			}
 		}
 	}
-	ArenaPopTo(arena, roomIndexQueue);
 
 	labState->camera.unitInPixels = 50.0f;
-
-	labState->enemyN = 0;
-	for (I32 roomI = 0; roomI < RoomN; roomI++)
-	{
-		Room* room = &labState->rooms[roomI];
-		for (I32 enemyI = 0; enemyI < room->difficulty; enemyI++)
-		{
-			CreateEnemyInRoom(labState, room);
-		}
-	}
 }
 
 static LRESULT CALLBACK func DungeonLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -518,7 +276,7 @@ static void func GetRoomWallsOnSide(V2 point1, V2 point2, B32 hasAisle, LineArra
 
 static void func GetRoomWalls(Room* room, LineArray* lines)
 {
-	V2 center = room->position;
+	V2 center = room->center;
 	V2 topLeft     = MakePoint(center.x - RoomSide * 0.5f, center.y - RoomSide * 0.5f);
 	V2 topRight    = MakePoint(center.x + RoomSide * 0.5f, center.y - RoomSide * 0.5f);
 	V2 bottomLeft  = MakePoint(center.x - RoomSide * 0.5f, center.y + RoomSide * 0.5f);
@@ -553,7 +311,7 @@ static void func GetRoomExtendedWallsOnSide(V2 point1, V2 point2, B32 hasAisle, 
 
 static void func GetRoomExtendedWalls(Room* room, F32 radius, LineArray* lines)
 {
-	V2 center = room->position;
+	V2 center = room->center;
 	F32 sideFromCenter = RoomSide * 0.5f - radius;
 	V2 topLeft     = MakePoint(center.x - sideFromCenter, center.y - sideFromCenter);
 	V2 topRight    = MakePoint(center.x + sideFromCenter, center.y - sideFromCenter);
@@ -630,7 +388,7 @@ static void func DrawLines(Canvas* canvas, LineArray* lines, V4 color)
 	}
 }
 
-static void func DrawAllWalls(Canvas* canvas, DungeonLabState* labState)
+static void func DrawDungeonMapWalls(Canvas* canvas, DungeonMap* map)
 {
 	Line walls[8];
 	LineArray lines = MakeLineArray(walls, 8);
@@ -638,7 +396,7 @@ static void func DrawAllWalls(Canvas* canvas, DungeonLabState* labState)
 	V4 wallColor = MakeColor(1.0f, 1.0f, 1.0f);
 	for (I32 i = 0; i < RoomN; i++)
 	{
-		Room* room = &labState->rooms[i];
+		Room* room = &map->rooms[i];
 
 		lines.size = 0;
 		GetRoomWalls(room, &lines);
@@ -647,7 +405,7 @@ static void func DrawAllWalls(Canvas* canvas, DungeonLabState* labState)
 
 	for (I32 i = 0; i < AisleN; i++)
 	{
-		Aisle* aisle = &labState->aisles[i];
+		Aisle* aisle = &map->aisles[i];
 
 		lines.size = 0;
 		GetAisleWalls(aisle, &lines);
@@ -771,14 +529,14 @@ static void func CheckCollisionWithLine(Line line, PointCollision* oldCollision,
 	}
 }
 
-static void func CheckCollisionWithAllWalls(DungeonLabState* labState, PointCollision* oldCollision, PointCollision* newCollision)
+static void func CheckCollisionWithAllWalls(DungeonMap* map, PointCollision* oldCollision, PointCollision* newCollision)
 {
 	Line lines[8];
 	LineArray lineArray = MakeLineArray(lines, 8);
 
 	for (I32 i = 0; i < RoomN; i++)
 		{
-			Room* room = &labState->rooms[i];
+			Room* room = &map->rooms[i];
 
 			lineArray.size = 0;
 			// GetRoomWalls(room, &lineArray);
@@ -793,7 +551,7 @@ static void func CheckCollisionWithAllWalls(DungeonLabState* labState, PointColl
 
 		for (I32 i = 0; i < AisleN; i++)
 		{
-			Aisle* aisle = &labState->aisles[i];
+			Aisle* aisle = &map->aisles[i];
 
 			lineArray.size = 0;
 			// GetAisleWalls(aisle, &lineArray);
@@ -809,6 +567,8 @@ static void func CheckCollisionWithAllWalls(DungeonLabState* labState, PointColl
 
 static void func UpdatePlayerPhysics(DungeonLabState* labState, F32 seconds)
 {
+	DungeonMap* map = &labState->map;
+
 	PointCollision oldCollision = labState->playerCollision;
 	oldCollision.position = labState->playerPosition;
 
@@ -817,7 +577,7 @@ static void func UpdatePlayerPhysics(DungeonLabState* labState, F32 seconds)
 
 	if (oldCollision.collidingLineN == 0)
 	{
-		CheckCollisionWithAllWalls(labState, &oldCollision, &newCollision);
+		CheckCollisionWithAllWalls(map, &oldCollision, &newCollision);
 	}
 	else if (oldCollision.collidingLineN == 1)
 	{
@@ -841,7 +601,7 @@ static void func UpdatePlayerPhysics(DungeonLabState* labState, F32 seconds)
 				F32 distanceToGo = DotProduct(lineNormal, moveVector);
 				newCollision.position = oldCollision.position + distanceToGo * lineNormal;
 
-				CheckCollisionWithAllWalls(labState, &oldCollision, &newCollision);
+				CheckCollisionWithAllWalls(map, &oldCollision, &newCollision);
 			}
 		}
 	}
@@ -889,139 +649,20 @@ static void func UpdatePlayerPhysics(DungeonLabState* labState, F32 seconds)
 	labState->playerPosition = newCollision.position;
 }
 
-static B32 func RoomContainsPoint(Room* room, V2 point)
-{
-	Rect rect = MakeSquareRect(room->position, RoomSide);
-	B32 result = RectContainsPoint(rect, point);
-	return result;
-}
-
-static Room* func GetRoomContainingPoint(DungeonLabState* labState, V2 point)
-{
-	Room* result = 0;
-
-	for (I32 roomI = 0; roomI < RoomN; roomI++)
-	{
-		Room* room = &labState->rooms[roomI];
-		if (RoomContainsPoint(room, point))
-		{
-			result = room;
-			break;
-		}
-	}
-
-	return result;
-}
-
-static V2 func GetAisleCenter(Aisle* aisle)
-{
-	Room* room1 = aisle->room1;
-	Room* room2 = aisle->room2;
-	Assert(room1 != 0 && room2 != 0);
-	V2 center = 0.5f * (room1->position + room2->position);
-	return center;
-}
-
-static B32 func AisleContainsPoint(Aisle* aisle, V2 point)
-{
-	V2 center = GetAisleCenter(aisle);
-
-	Rect rect = {};
-	if (aisle->isVertical)
-	{
-		rect = MakeRect(center, AisleWidth, AisleLength);
-	}
-	else
-	{
-		rect = MakeRect(center, AisleLength, AisleWidth);
-	}
-
-	B32 result = RectContainsPoint(rect, point);
-	return result;
-}
-
-static Aisle* func GetAisleContainingPoint(DungeonLabState* labState, V2 point)
-{
-	Aisle* result = 0;
-
-	for (I32 aisleI = 0; aisleI < AisleN; aisleI++)
-	{
-		Aisle* aisle = &labState->aisles[aisleI];
-		if (AisleContainsPoint(aisle, point))
-		{
-			result = aisle;
-			break;
-		}
-	}
-
-	return result;
-}
-
-static Room* GetNextRoomOnSide(Room* room, I32 roomSide)
-{
-	Room* nextRoom = 0;
-
-	if (roomSide == RoomSideLeft && room->leftAisle != 0)
-	{
-		nextRoom = room->leftAisle->room1;
-	}
-	else if (roomSide == RoomSideRight && room->rightAisle != 0)
-	{
-		nextRoom = room->rightAisle->room2;
-	}
-	else if (roomSide == RoomSideTop && room->topAisle != 0)
-	{
-		nextRoom = room->topAisle->room1;
-	}
-	else if (roomSide == RoomSideBottom && room->bottomAisle != 0)
-	{
-		nextRoom = room->bottomAisle->room2;
-	}
-
-	return nextRoom;
-}
-
-static V2 func GetOffsetRoomAisleEntrance(Room* room, Aisle* aisle, F32 distanceIn)
-{
-	Assert(room != 0 && aisle != 0);
-
-	V2 entrance = {};
-	if (room->leftAisle == aisle)
-	{
-		entrance = GetOffsetRoomSideCenter(room, RoomSideLeft, distanceIn);
-	}
-	else if (room->rightAisle == aisle)
-	{
-		entrance = GetOffsetRoomSideCenter(room, RoomSideRight, distanceIn);
-	}
-	else if (room->topAisle == aisle)
-	{
-		entrance = GetOffsetRoomSideCenter(room, RoomSideTop, distanceIn);
-	}
-	else if (room->bottomAisle == aisle)
-	{
-		entrance = GetOffsetRoomSideCenter(room, RoomSideBottom, distanceIn);
-	}
-	else
-	{
-		DebugBreak();
-	}
-
-	return entrance;
-}
-
 static void func UpdateEnemy(DungeonLabState* labState, DungeonLabEnemy* enemy, F32 seconds)
 {
+	DungeonMap* map = &labState->map;
+
 	V2 playerPosition = labState->playerPosition;
 
 	if (enemy->followsPlayer)
 	{
-		Room* playerRoom = GetRoomContainingPoint(labState, playerPosition);
-		Aisle* playerAisle = GetAisleContainingPoint(labState, playerPosition);
+		Room* playerRoom = GetRoomContainingPoint(map, playerPosition);
+		Aisle* playerAisle = GetAisleContainingPoint(map, playerPosition);
 		Assert(playerRoom || playerAisle);
 
-		Room* enemyRoom = GetRoomContainingPoint(labState, enemy->position);
-		Aisle* enemyAisle = GetAisleContainingPoint(labState, enemy->position);
+		Room* enemyRoom = GetRoomContainingPoint(map, enemy->position);
+		Aisle* enemyAisle = GetAisleContainingPoint(map, enemy->position);
 		Assert(enemyRoom || enemyAisle);
 
 		V2 targetPosition = enemy->position;
@@ -1035,8 +676,8 @@ static void func UpdateEnemy(DungeonLabState* labState, DungeonLabEnemy* enemy, 
 			{
 				I32 roomSide = 0;
 
-				F32 leftRoomRightX = enemyRoom->position.x - RoomSide * 0.5f - AisleLength;
-				F32 rightRoomLeftX = enemyRoom->position.x + RoomSide * 0.5f + AisleLength;
+				F32 leftRoomRightX = enemyRoom->center.x - RoomSide * 0.5f - AisleLength;
+				F32 rightRoomLeftX = enemyRoom->center.x + RoomSide * 0.5f + AisleLength;
 				if (playerPosition.x < leftRoomRightX ||
 					(playerAisle && playerAisle == enemyRoom->leftAisle))
 				{
@@ -1115,6 +756,8 @@ static void func UpdateEnemy(DungeonLabState* labState, DungeonLabEnemy* enemy, 
 
 static void func DungeonLabUpdate(DungeonLabState* labState, V2 mousePosition, F32 seconds)
 {
+	DungeonMap* map = &labState->map;
+
 	Canvas* canvas = &labState->canvas;
 	Camera* camera = &labState->camera;
 
@@ -1125,58 +768,10 @@ static void func DungeonLabUpdate(DungeonLabState* labState, V2 mousePosition, F
 
 	camera->center = labState->playerPosition;
 
-	V4 roomColor = MakeColor(0.5f, 0.5f, 0.5f);
 	V4 textColor = MakeColor(0.5f, 0.0f, 0.0f);
-	for (I32 i = 0; i < RoomN; i++)
-	{
-		Room* room = &labState->rooms[i];
-		F32 left   = room->position.x - RoomSide * 0.5f;
-		F32 right  = room->position.x + RoomSide * 0.5f;
-		F32 top    = room->position.y - RoomSide * 0.5f;
-		F32 bottom = room->position.y + RoomSide * 0.5f;
-		DrawRectLRTB(canvas, left, right, top, bottom, roomColor);
 
-		/*
-		I8 textBuffer[8];
-		String text = StartString(textBuffer, 8);
-		AddInt(&text, room->difficulty);
-		DrawTextLineXCentered(canvas, textBuffer, room->position.y, room->position.x, textColor);
-		*/
-	}
-
-	V4 aisleColor = roomColor;
-	for (I32 i = 0; i < AisleN; i++)
-	{
-		Aisle* aisle = &labState->aisles[i];
-
-		F32 x1 = aisle->room1->position.x;
-		F32 x2 = aisle->room2->position.x;
-		F32 y1 = aisle->room1->position.y;
-		F32 y2 = aisle->room2->position.y;
-
-		if (aisle->isVertical)
-		{
-			Assert(x1 == x2);
-			Assert(y1 < y2);
-			F32 left   = x1 - AisleWidth * 0.5f;
-			F32 right  = x1 + AisleWidth * 0.5f;
-			F32 top    = y1 + RoomSide * 0.5f;
-			F32 bottom = y2 - RoomSide * 0.5f;
-			DrawRectLRTB(canvas, left, right, top, bottom, aisleColor);
-		}
-		else
-		{
-			Assert(y1 == y2);
-			Assert(x1 < x2);
-			F32 left   = x1 + RoomSide * 0.5f;
-			F32 right  = x2 - RoomSide * 0.5f;
-			F32 top    = y1 - AisleWidth * 0.5f;
-			F32 bottom = y1 + AisleWidth * 0.5f;
-			DrawRectLRTB(canvas, left, right, top, bottom, aisleColor);
-		}
-	}
-
-	DrawAllWalls(canvas, labState);
+	DrawDungeonMap(canvas, map);
+	DrawDungeonMapWalls(canvas, map);
 
 	F32 playerSide = PlayerSide;
 	V4 playerColor = MakeColor(1.0f, 0.0f, 0.0f);

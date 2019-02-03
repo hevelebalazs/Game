@@ -4,6 +4,7 @@
 
 #include "Lab.hpp"
 
+#include "../DungeonMap.hpp"
 #include "../Geometry.hpp"
 #include "../Item.hpp"
 #include "../String.hpp"
@@ -156,6 +157,8 @@ enum EntityTypeId
 };
 
 #define EntityNameSize 16
+#define EntityRadius 1.0f
+
 struct Entity
 {
 	EntityTypeId typeId;
@@ -163,7 +166,6 @@ struct Entity
 
 	V2 position;
 	V2 velocity;
-	F32 radius;
 
 	I32 health;
 
@@ -207,7 +209,8 @@ struct TextAlert
 	};
 };
 
-#define CombatLabEnemyN 20
+#define CombatLabMaxEnemyN 512
+
 #define MaxTextAlertN 100
 
 #define CombatLogLineN 12
@@ -249,8 +252,12 @@ struct CombatLabState
 	Canvas canvas;
 	B32 running;
 
+	DungeonMap map;
+
 	Entity player;
-	Entity enemies[CombatLabEnemyN];
+
+	Entity enemies[CombatLabMaxEnemyN];
+	I32 enemyN;
 
 	B32 followMouse;
 	I32 useAbilityId;
@@ -651,6 +658,19 @@ static void func SetInventorySlotId(Inventory* inventory, I32 row, I32 col, I32 
 	inventory->slotIds[inventory->colN * row + col] = slotId;
 }
 
+static void func AddEnemyToRoom(CombatLabState* labState, Room* room)
+{
+	Assert(labState->enemyN < CombatLabMaxEnemyN);
+	Entity* enemy = &labState->enemies[labState->enemyN];
+	labState->enemyN++;
+
+	F32 maxDistanceFromSide = RoomSide * 0.5f - EntityRadius;
+	V2 offset = {};
+	offset.x = RandomBetween(-maxDistanceFromSide, +maxDistanceFromSide);
+	offset.y = RandomBetween(-maxDistanceFromSide, +maxDistanceFromSide);
+	enemy->position = room->center + offset;
+}
+
 static void func CombatLabReset(CombatLabState* labState)
 {
 	InitRandom();
@@ -662,7 +682,6 @@ static void func CombatLabReset(CombatLabState* labState)
 	SetLevel(player, 1);
 
 	player->position = MakePoint(0.0f, 0.0f);
-	player->radius = 1.0f;
 
 	player->hasSpecialResource = true;
 	player->specialResource = 0;
@@ -674,10 +693,29 @@ static void func CombatLabReset(CombatLabState* labState)
 
 	player->ability.id = WhiteAbility1Id;
 
-	for (I32 i = 0; i < CombatLabEnemyN; ++i) 
+	DungeonMap* map = &labState->map;
+	RoomIndex playerRoomIndex = GetRandomRoomIndex(map);
+	Room* playerRoom = GetRoomAtIndex(map, playerRoomIndex);
+	labState->player.position = playerRoom->center;
+
+	labState->enemyN = 0;
+	for (I32 row = 0; row < RoomRowN; row++)
+	{
+		for (I32 col = 0; col < RoomColN; col++)
+		{
+			Room* room = GetRoomAtIndex(map, row, col);
+			I32 enemyN = IntAbs(row - playerRoomIndex.row) + IntAbs(col - playerRoomIndex.col);
+			for (I32 i = 0; i < enemyN; i++)
+			{
+				AddEnemyToRoom(labState, room);
+			}
+		}
+	}
+
+	for (I32 i = 0; i < labState->enemyN; ++i) 
 	{
 		Entity* enemy = &labState->enemies[i];
-		if (i < CombatLabEnemyN / 2)
+		if (i < labState->enemyN / 2)
 		{
 			enemy->typeId = RedEntityId;
 			enemy->ability.id = RedAbility1Id;
@@ -689,9 +727,6 @@ static void func CombatLabReset(CombatLabState* labState)
 		}
 
 		SetLevel(enemy, IntRandom(1, 3));
-		enemy->position.x = player->position.x + RandomBetween(-50.0f, +50.0f);
-		enemy->position.y = player->position.y + RandomBetween(-50.0f, +50.0f);
-		enemy->radius = player->radius;
 
 		enemy->health = GetMaxHealth(enemy);
 
@@ -764,13 +799,13 @@ static void func CombatLabResetAtLevel(CombatLabState* labState, I32 level)
 	SetLevel(&labState->player, level);
 }
 
-static Entity* func  GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
+static Entity* func GetFirstEnemyAtPosition(CombatLabState* labState, V2 position)
 {
 	Entity* result = 0;
-	for (I32 i = 0; i < CombatLabEnemyN; ++i)
+	for (I32 i = 0; i < labState->enemyN; ++i)
 	{
 		Entity* enemy = &labState->enemies[i];
-		if (Distance(enemy->position, position) < enemy->radius)
+		if (Distance(enemy->position, position) < EntityRadius)
 		{
 			result = enemy;
 			break;
@@ -782,11 +817,11 @@ static Entity* func  GetFirstEnemyAtPosition(CombatLabState* labState, V2 positi
 static B32 func IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
 {
 	B32 result = false;
-	if (Distance(entity->position, point1) <= entity->radius)
+	if (Distance(entity->position, point1) <= EntityRadius)
 	{
 		result = true;
 	}
-	else if (Distance(entity->position, point2) <= entity->radius)
+	else if (Distance(entity->position, point2) <= EntityRadius)
 	{
 		result = true;
 	}
@@ -795,10 +830,10 @@ static B32 func IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
 		Quad quad = {};
 		V2 lineDirection = PointDirection(point1, point2);
 		V2 crossDirection = TurnVectorToRight(lineDirection);
-		quad.points[0] = point1 + entity->radius * crossDirection;
-		quad.points[1] = point2 + entity->radius * crossDirection;
-		quad.points[2] = point2 - entity->radius * crossDirection;
-		quad.points[3] = point1 - entity->radius * crossDirection;
+		quad.points[0] = point1 + EntityRadius * crossDirection;
+		quad.points[1] = point2 + EntityRadius * crossDirection;
+		quad.points[2] = point2 - EntityRadius * crossDirection;
+		quad.points[3] = point1 - EntityRadius * crossDirection;
 		if (IsPointInQuad(quad, entity->position))
 		{
 			result = true;
@@ -811,7 +846,7 @@ static B32 func IsEntityOnLine(Entity* entity, V2 point1, V2 point2)
 static void func DamageEnemiesOnLine(CombatLabState* labState, V2 point1, V2 point2, I32 damage)
 {
 	Entity* player = &labState->player;
-	for (I32 i = 0; i < CombatLabEnemyN; ++i)
+	for (I32 i = 0; i < labState->enemyN; ++i)
 	{
 		Entity* enemy = &labState->enemies[i];
 		if (IsEntityOnLine(enemy, point1, point2))
@@ -1245,6 +1280,9 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 
 static void func CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowHeight)
 {
+	DungeonMap* map = &labState->map;
+	InitDungeonMap(map);
+
 	CombatLabReset(labState);
 
 	labState->canvas.glyphData = GetGlobalGlyphData();
@@ -1395,7 +1433,7 @@ static void func DrawEntity(Canvas* canvas, Entity* entity)
 {
 	V4 color = GetEntityColor(entity);
 
-	DrawCircle(canvas, entity->position, entity->radius, color);
+	DrawCircle(canvas, entity->position, EntityRadius, color);
 
 	Camera* camera = canvas->camera;
 	Bitmap* bitmap = &canvas->bitmap;
@@ -1407,7 +1445,7 @@ static void func DrawEntity(Canvas* canvas, Entity* entity)
 	I32 healthBarHeight = 10;
 
 	I32 healthBarX = UnitXtoPixel(camera, entity->position.x);
-	I32 healthBarY = UnitYtoPixel(camera, entity->position.y - entity->radius) - healthBarHeight - healthBarHeight / 2;
+	I32 healthBarY = UnitYtoPixel(camera, entity->position.y - EntityRadius) - healthBarHeight - healthBarHeight / 2;
 
 	I32 healthBarLeft   = healthBarX - healthBarWidth / 2;
 	I32 healthBarRight  = healthBarX + healthBarWidth / 2;
@@ -1461,7 +1499,7 @@ static B32 func IsEntityInSlice(Entity* entity, V2 center, F32 radius, F32 minAn
 {
 	F32 distance = Distance(entity->position, center);
 	F32 angle = LineAngle(center, entity->position);
-	B32 result = (distance < radius + entity->radius && IsAngleBetween(minAngle, angle, maxAngle));
+	B32 result = (distance < radius + EntityRadius && IsAngleBetween(minAngle, angle, maxAngle));
 	return result;
 }
 
@@ -1469,7 +1507,7 @@ static B32 func IsEntityInCircle(Entity* entity, V2 center, F32 radius)
 {
 	B32 result = false;
 	F32 distanceFromCenter = Distance(entity->position, center);
-	if (distanceFromCenter < radius + entity->radius)
+	if (distanceFromCenter < radius + EntityRadius)
 	{
 		result = true;
 	}
@@ -1481,11 +1519,11 @@ static void func DrawWhiteAbility1(Canvas* canvas, Entity* entity, Ability* abil
 	Assert(ability == &entity->ability)
 	Assert(ability->id == WhiteAbility1Id);
 	V4 color = MakeColor(0.8f, 0.8f, 0.8f);
-	F32 radius = entity->radius + WhiteAbility1Radius;
+	F32 radius = EntityRadius + WhiteAbility1Radius;
 
 	if (ability->castRatioLeft > 0.0f)
 	{
-		F32 fillRadius = Lerp(radius, ability->castRatioLeft, entity->radius);
+		F32 fillRadius = Lerp(radius, ability->castRatioLeft, EntityRadius);
 
 		F32 minAngle = NormalizeAngle(ability->angle - WhiteAbility1AngleRange * 0.5f);
 		F32 maxAngle = NormalizeAngle(ability->angle + WhiteAbility1AngleRange * 0.5f);
@@ -1499,11 +1537,11 @@ static void func DrawWhiteAbility3(Canvas* canvas, Entity* entity, Ability* abil
 	Assert(ability == &entity->ability);
 	Assert(ability->id == WhiteAbility3Id);
 	V4 color = MakeColor(0.8f, 0.8f, 0.8f);
-	F32 radius = entity->radius + WhiteAbility3Radius;
+	F32 radius = EntityRadius + WhiteAbility3Radius;
 
 	if (ability->castRatioLeft > 0.0f)
 	{
-		F32 fillRadius = Lerp(radius - entity->radius, ability->castRatioLeft, entity->radius);
+		F32 fillRadius = Lerp(radius - EntityRadius, ability->castRatioLeft, EntityRadius);
 		DrawCircleOutline(canvas, entity->position, radius, color);
 		DrawCircle(canvas, entity->position, fillRadius, color);
 	}
@@ -1514,11 +1552,11 @@ static void func DrawRedAbility1(Canvas* canvas, Entity* entity, Ability* abilit
 	Assert(ability == &entity->ability);
 	Assert(ability->id == RedAbility1Id);
 	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
-	F32 radius = entity->radius + RedAbility1Radius;
+	F32 radius = EntityRadius + RedAbility1Radius;
 
 	if (ability->castRatioLeft > 0.0f)
 	{
-		F32 fillRadius = Lerp(radius - entity->radius, ability->castRatioLeft, entity->radius);
+		F32 fillRadius = Lerp(radius - EntityRadius, ability->castRatioLeft, EntityRadius);
 
 		F32 minAngle = NormalizeAngle(ability->angle - RedAbility1AngleRange * 0.5f);
 		F32 maxAngle = NormalizeAngle(ability->angle + RedAbility1AngleRange * 0.5f);
@@ -1534,11 +1572,11 @@ static void func DrawRedAbility3(Canvas* canvas, Entity* entity, Ability* abilit
 
 	Assert(entity->level >= 2);
 	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
-	F32 radius = entity->radius + RedAbility2Radius;
+	F32 radius = EntityRadius + RedAbility2Radius;
 
 	if (ability->castRatioLeft > 0.0f)
 	{
-		F32 fillRadius = Lerp(radius - entity->radius, ability->castRatioLeft, entity->radius);
+		F32 fillRadius = Lerp(radius - EntityRadius, ability->castRatioLeft, EntityRadius);
 
 		F32 minAngle = NormalizeAngle(ability->angle - RedAbility2AngleRange * 0.5f);
 		F32 maxAngle = NormalizeAngle(ability->angle + RedAbility2AngleRange * 0.5f);
@@ -1570,9 +1608,9 @@ static void func DrawBlueAbility2(Canvas* canvas, Entity* entity, Ability* abili
 	V4 color = MakeColor(0.0f, 0.0f, 0.8f);
 	if (ability->castRatioLeft > 0.0f)
 	{
-		F32 fillRadius = Lerp(entity->radius + BlueAbility2Radius, ability->castRatioLeft, entity->radius);
+		F32 fillRadius = Lerp(EntityRadius + BlueAbility2Radius, ability->castRatioLeft, EntityRadius);
 		
-		DrawCircleOutline(canvas, entity->position, entity->radius + BlueAbility2Radius, color);
+		DrawCircleOutline(canvas, entity->position, EntityRadius + BlueAbility2Radius, color);
 		DrawCircle(canvas, entity->position, fillRadius, color);
 	}
 }
@@ -2111,7 +2149,7 @@ static void func DrawAndUpdateTextAlerts(Canvas* canvas, CombatLabState* labStat
 
 static F32 func GetEntityDistance(Entity* entity1, Entity* entity2)
 {
-	F32 distance = Distance(entity1->position, entity2->position) - entity1->radius - entity2->radius;
+	F32 distance = Distance(entity1->position, entity2->position) - EntityRadius - EntityRadius;
 	return distance;
 }
 
@@ -2220,40 +2258,16 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
-	V4 gridColor = MakeColor(0.3f, 0.3f, 0.0f);
-	F32 gridDistance = 10.0f;
+	DungeonMap* map = &labState->map;
+	DrawDungeonMap(canvas, map);
 
 	Camera* camera = &labState->camera;
 	camera->center = player->position;
-	F32 left   = CameraLeftSide(camera);
-	F32 right  = CameraRightSide(camera);
-	F32 top    = CameraTopSide(camera);
-	F32 bottom = CameraBottomSide(camera);
-
-	I32 firstCol = Floor(left / gridDistance);
-	I32 lastCol  = Floor(right / gridDistance);
-	for (I32 col = firstCol; col <= lastCol; ++col)
-	{
-		F32 x = (col * gridDistance);
-		V2 point1 = MakePoint(x, top);
-		V2 point2 = MakePoint(x, bottom);
-		Bresenham(canvas, point1, point2, gridColor);
-	}
-
-	I32 firstRow = Floor(top / gridDistance);
-	I32 lastRow  = Floor(bottom /gridDistance);
-	for (I32 row = firstRow; row <= lastRow; ++row)
-	{
-		F32 y = (row * gridDistance);
-		V2 point1 = MakePoint(left, y);
-		V2 point2 = MakePoint(right, y);
-		Bresenham(canvas, point1, point2, gridColor);
-	}
 
 	DrawAbility(canvas, player, &player->ability);
 
 	V4 enemyAbilityColor = MakeColor(1.0f, 0.5f, 0.0f);
-	for (I32 i = 0; i < CombatLabEnemyN; ++i)
+	for (I32 i = 0; i < labState->enemyN; ++i)
 	{
 		Entity* enemy = &labState->enemies[i];
 		DrawAbility(canvas, enemy, &enemy->ability);
@@ -2276,7 +2290,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 					F32 maxAngle = NormalizeAngle(playerAbility->angle + WhiteAbility1AngleRange * 0.5f);
 
 					F32 hitAnyEnemy = false;
-					for (I32 i = 0; i < CombatLabEnemyN; ++i)
+					for (I32 i = 0; i < labState->enemyN; ++i)
 					{
 						Entity* enemy = &labState->enemies[i];
 						if (IsEntityInSlice(enemy, player->position, WhiteAbility1Radius, minAngle, maxAngle))
@@ -2314,7 +2328,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 			{
 				if (playerAbility->castRatioLeft == 0.0f)
 				{
-					for (I32 i = 0; i < CombatLabEnemyN; ++i)
+					for (I32 i = 0; i < labState->enemyN; ++i)
 					{
 						Entity* enemy = &labState->enemies[i];
 						if (enemy->health == 0)
@@ -2326,7 +2340,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 						if (playerEnemyDistance < WhiteAbility3Radius)
 						{
 							V2 direction = PointDirection(player->position, enemy->position);
-							F32 distance = player->radius + enemy->radius + WhiteAbility3Radius;
+							F32 distance = EntityRadius + EntityRadius + WhiteAbility3Radius;
 							enemy->position = player->position + distance * direction;
 							InterruptAbility(enemy);
 							I32 damage = GetAbilityDamage(player, WhiteAbility3Id);
@@ -2386,10 +2400,10 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 
 	if (player->health > 0)
 	{
-		Entity* attackingEnemies[CombatLabEnemyN];
+		Entity* attackingEnemies[CombatLabMaxEnemyN];
 
 		I32 attackingEnemyN = 0;
-		for (I32 i = 0; i < CombatLabEnemyN; ++i) 
+		for (I32 i = 0; i < labState->enemyN; ++i) 
 		{
 			Entity* enemy = &labState->enemies[i];
 
@@ -2675,7 +2689,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	else
 	{
 		Assert(player->health == 0);
-		for (I32 i = 0; i < CombatLabEnemyN; ++i)
+		for (I32 i = 0; i < labState->enemyN; ++i)
 		{
 			Entity* enemy = &labState->enemies[i];
 			if (enemy->ability.castRatioLeft > 0.0f)
@@ -2688,7 +2702,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	UpdateDroppedItems(canvas, labState, mousePosition, seconds);
 
 	DrawEntity(canvas, &labState->player);
-	for (I32 i = 0; i < CombatLabEnemyN; i++)
+	for (I32 i = 0; i < labState->enemyN; i++)
 	{
 		Entity* enemy = &labState->enemies[i];
 		DrawEntity(canvas, enemy);
