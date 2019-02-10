@@ -86,7 +86,7 @@ static void func DrawPoliceRadius(Canvas* canvas, Human* human, F32 radius)
 	F32 right  = position.x + radius;
 	F32 top    = position.y - radius;
 	F32 bottom = position.y + radius;
-	DrawRectOutline(canvas, top, left, bottom, right, color);
+	DrawRectLRTBOutline(canvas, top, left, bottom, right, color);
 }
 
 static void func MoveHuman(Human* human, V4 point)

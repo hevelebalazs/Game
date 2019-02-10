@@ -20,6 +20,7 @@
 #include "Lab/RoadLab.hpp"
 #include "Lab/TextLab.hpp"
 #include "Lab/ThreadLab.hpp"
+#include "Lab/TurnBasedLab.hpp"
 
 static B32 running;
 
@@ -290,8 +291,6 @@ static void func RunGame(HINSTANCE instance)
 
 I32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	// DungeonLab(instance);
-	CombatLab(instance);
-	// RunGame(instance);
+	TurnBasedLab(instance);
 	return 0;
 }
