@@ -262,6 +262,13 @@ static F32 func GetUnitDistanceInPixel(Camera* camera, F32 unitDistance)
 	return pixelDistance;
 }
 
+static F32 func GetPixelDistanceInUnit(Camera* camera, F32 pixelDistance)
+{
+	Assert(camera->unitInPixels > 0.0f);
+	F32 unitDistance = pixelDistance / camera->unitInPixels;
+	return unitDistance;
+}
+
 static F32 func PixelToUnitX(Camera* camera, F32 pixelX)
 {
 	F32 pixelInUnits = Invert(camera->unitInPixels);
@@ -979,7 +986,7 @@ static void func DrawWorldTextureLine(Canvas* canvas, V2 point1, V2 point2, F32 
 	DrawWorldTextureQuad(canvas, quad, texture);
 }
 
-static void func DrawRectOutline(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
+static void func DrawRectLRTBOutline(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, V4 color)
 {
 	V2 topLeft     = MakePoint(left,  top);
 	V2 topRight    = MakePoint(right, top);
@@ -992,7 +999,11 @@ static void func DrawRectOutline(Canvas* canvas, F32 left, F32 right, F32 top, F
 	Bresenham(canvas, bottomLeft,  topLeft,     color);
 }
 
-// TODO: change the order of parameters to left, right, top, bottom
+static void func DrawRectOutline(Canvas* canvas, Rect rect, V4 color)
+{
+	DrawRectLRTBOutline(canvas, rect.left, rect.right, rect.top, rect.bottom, color);
+}
+
 static void func WorldTextureRect(Canvas* canvas, F32 left, F32 right, F32 top, F32 bottom, Texture texture)
 {
 	Camera* camera = canvas->camera;
@@ -1353,5 +1364,17 @@ static void func DrawTextLineXCentered(Canvas* canvas, I8* text, F32 baseLineY, 
 {
 	Assert(canvas->glyphData != 0);
 	F32 left = centerX - GetTextWidth(canvas, text) * 0.5f;
+	DrawTextLine(canvas, text, baseLineY, left, textColor);
+}
+
+static void func DrawTextLineXYCentered(Canvas* canvas, I8* text, F32 centerY, F32 centerX, V4 textColor)
+{
+	Assert(canvas->glyphData != 0);
+	Camera* camera = canvas->camera;
+
+	F32 left = centerX - GetTextWidth(canvas, text) * 0.5f;
+	F32 textHeight = GetPixelDistanceInUnit(camera, TextHeightInPixels);
+	F32 textTop = centerY - textHeight * 0.5f;
+	F32 baseLineY = textTop + GetPixelDistanceInUnit(camera, TextPixelsAboveBaseLine);
 	DrawTextLine(canvas, text, baseLineY, left, textColor);
 }

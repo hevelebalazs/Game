@@ -145,6 +145,7 @@
     <ClInclude Include="Lab\RoadLab.hpp" />
     <ClInclude Include="Lab\TextLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
+    <ClInclude Include="Lab\TurnBasedLab.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="Map.hpp" />
     <ClInclude Include="Math.hpp" />
