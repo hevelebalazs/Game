@@ -14,7 +14,7 @@ struct TileIndex
 
 #define TurnBasedEntityN 4
 #define TurnBasedTeamN 2
-#define MaxMovePoints 5
+#define MaxActionPoints 5
 
 V4 TeamColors[TurnBasedTeamN] =
 {
@@ -32,8 +32,18 @@ struct TurnBasedEntity
 {
 	TileIndex tileIndex;
 	I32 teamIndex;
-	I32 movePoints;
+	I32 actionPoints;
+	I32 healthPoints;
+	I32 maxHealthPoints;
 };
+
+struct TurnBasedAbility
+{
+	I32 maxDistance;
+	I32 damage;
+	I32 actionPoints;
+};
+TurnBasedAbility gTurnBasedAbilities[2];
 
 struct TurnBasedLabState
 {
@@ -46,7 +56,7 @@ struct TurnBasedLabState
 
 	TurnBasedEntity* selectedEntity;
 	I32 activeTeamIndex;
-	B32 attackMode;
+	TurnBasedAbility* selectedAbility;
 };
 TurnBasedLabState gTurnBasedLabState;
 
@@ -131,7 +141,7 @@ static void func EndTurn(TurnBasedLabState* labState)
 		TurnBasedEntity* entity = &labState->entities[i];
 		if (entity->teamIndex == labState->activeTeamIndex)
 		{
-			entity->movePoints = MaxMovePoints;
+			entity->actionPoints = MaxActionPoints;
 		}
 	}
 
@@ -162,12 +172,27 @@ static void func TurnBasedLabInit(TurnBasedLabState* labState, I32 windowWidth, 
 
 	labState->activeTeamIndex = 0;
 	labState->selectedEntity = 0;
-	labState->attackMode = 0;
+	labState->selectedAbility = 0;
 
 	for (I32 i = 0; i < TurnBasedEntityN; i++)
 	{
-		entities[i].movePoints = MaxMovePoints;
+		TurnBasedEntity* entity = &labState->entities[i];
+
+		entity->actionPoints = MaxActionPoints;
+
+		entity->healthPoints = 10;
+		entity->maxHealthPoints = 10;
 	}
+
+	TurnBasedAbility* ability0 = &gTurnBasedAbilities[0];
+	ability0->actionPoints = 1;
+	ability0->damage = 1;
+	ability0->maxDistance = 1;
+
+	TurnBasedAbility* ability1 = &gTurnBasedAbilities[1];
+	ability1->actionPoints = 3;
+	ability1->damage = 5;
+	ability1->maxDistance = 1;
 }
 
 static TurnBasedEntity* func GetEntityAtTile(TurnBasedLabState* labState, TileIndex index)
@@ -204,12 +229,20 @@ static I32 func GetTileDistance(TileIndex tileIndex1, TileIndex tileIndex2)
 	return distance;
 }
 
+static B32 func IsDead(TurnBasedEntity* entity)
+{
+	Assert(entity != 0);
+	Assert(entity->healthPoints >= 0);
+	B32 isDead = (entity->healthPoints == 0);
+	return isDead;
+}
+
 static B32 func EntityCanMoveTo(TurnBasedLabState* labState, TurnBasedEntity* entity, TileIndex tileIndex)
 {
 	B32 canMove = false;
-	if (entity != 0 && IsValidTileIndex(tileIndex))
+	if (entity != 0 && IsValidTileIndex(tileIndex) && !IsDead(entity))
 	{
-		if (GetTileDistance(entity->tileIndex, tileIndex) <= entity->movePoints)
+		if (GetTileDistance(entity->tileIndex, tileIndex) <= entity->actionPoints)
 		{
 			canMove = (GetEntityAtTile(labState, tileIndex) == 0);
 		}
@@ -224,8 +257,49 @@ static void func MoveEntityTo(TurnBasedLabState* labState, TurnBasedEntity* enti
 	I32 moveDistance = GetTileDistance(entity->tileIndex, tileIndex);
 	entity->tileIndex = tileIndex;
 
-	Assert(entity->movePoints >= moveDistance);
-	entity->movePoints -= moveDistance;
+	Assert(entity->actionPoints >= moveDistance);
+	entity->actionPoints -= moveDistance;
+}
+
+static B32 func CanAttack(TurnBasedEntity* source, TurnBasedEntity* target, TurnBasedAbility* ability)
+{
+	B32 canAttack = false;
+	if (source != 0 && target != 0 && source != target && ability != 0)
+	{
+		I32 distance = GetTileDistance(source->tileIndex, target->tileIndex);
+		canAttack = ((distance <= ability->maxDistance) &&
+					 (source->actionPoints >= ability->actionPoints) &&
+					 !IsDead(source) && !IsDead(target));
+	}
+	return canAttack;
+}
+
+static void func Attack(TurnBasedEntity* source, TurnBasedEntity* target, TurnBasedAbility* ability)
+{
+	Assert(CanAttack(source, target, ability));
+	target->healthPoints = IntMax2(0, target->healthPoints - ability->damage);
+	source->actionPoints -= ability->actionPoints;
+}
+
+static void func ToggleAbility(TurnBasedLabState* labState, TurnBasedAbility* ability)
+{
+	if (labState->selectedEntity != 0)
+	{
+		if (labState->selectedAbility == ability)
+		{
+			labState->selectedAbility = 0;
+		}
+		else
+		{
+			labState->selectedAbility = ability;
+		}
+	}
+}
+
+static void func SelectEntity(TurnBasedLabState* labState, TurnBasedEntity* entity)
+{
+	labState->selectedEntity = entity;
+	labState->selectedAbility = 0;
 }
 
 static LRESULT CALLBACK func TurnBasedLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -270,17 +344,18 @@ static LRESULT CALLBACK func TurnBasedLabCallback(HWND window, UINT message, WPA
 			{
 				case '1':
 				{
-					if (labState->selectedEntity != 0)
-					{
-						labState->attackMode = !labState->attackMode;
-					}
+					ToggleAbility(labState, &gTurnBasedAbilities[0]);
+					break;
+				}
+				case '2':
+				{
+					ToggleAbility(labState, &gTurnBasedAbilities[1]);
 					break;
 				}
 				case 'E':
 				{
 					EndTurn(labState);
-					labState->selectedEntity = 0;
-					labState->attackMode = 0;
+					SelectEntity(labState, 0);
 					break;
 				}
 			}
@@ -290,26 +365,48 @@ static LRESULT CALLBACK func TurnBasedLabCallback(HWND window, UINT message, WPA
 		{
 			if (IsValidTileIndex(labState->hoverTileIndex))
 			{
-				TurnBasedEntity* entity = GetEntityAtTile(labState, labState->hoverTileIndex);
-				if (entity)
+				TurnBasedEntity* hoverEntity = GetEntityAtTile(labState, labState->hoverTileIndex);
+				if (hoverEntity && !IsDead(hoverEntity))
 				{
-					if (entity->teamIndex == labState->activeTeamIndex)
+					if (labState->selectedEntity == hoverEntity)
 					{
-						labState->selectedEntity = entity;
-						labState->attackMode = 0;
+						SelectEntity(labState, 0);
+					}
+					else if (hoverEntity->teamIndex == labState->activeTeamIndex)
+					{
+						SelectEntity(labState, hoverEntity);
+					}
+					if (labState->selectedAbility != 0)
+					{
+						Assert(labState->selectedEntity != 0);
+						if (CanAttack(labState->selectedEntity, hoverEntity, labState->selectedAbility))
+						{
+							Attack(labState->selectedEntity, hoverEntity, labState->selectedAbility);
+						}
+						else
+						{
+							labState->selectedAbility = 0;
+						}
 					}
 				}
 				else if (labState->selectedEntity)
 				{
+					Assert(!IsDead(labState->selectedEntity));
 					Assert(labState->selectedEntity->teamIndex == labState->activeTeamIndex);
-					if (EntityCanMoveTo(labState, labState->selectedEntity, labState->hoverTileIndex))
+					if (labState->selectedAbility == 0)
 					{
-						MoveEntityTo(labState, labState->selectedEntity, labState->hoverTileIndex);
+						if (EntityCanMoveTo(labState, labState->selectedEntity, labState->hoverTileIndex))
+						{
+							MoveEntityTo(labState, labState->selectedEntity, labState->hoverTileIndex);
+						}
+						else
+						{
+							SelectEntity(labState, 0);
+						}
 					}
 					else
 					{
-						labState->selectedEntity = 0;
-						labState->attackMode = 0;
+						labState->selectedAbility = 0;
 					}
 				}
 			}
@@ -347,7 +444,7 @@ static void func DrawStatusBar(TurnBasedLabState* labState)
 
 	I8* text = 0;
 	V4 textColor = {1.0f, 1.0f, 1.0f};
-	if (labState->attackMode)
+	if (labState->selectedAbility != 0)
 	{
 		text = "Click on an enemy to attack it.";
 	}
@@ -362,6 +459,30 @@ static void func DrawStatusBar(TurnBasedLabState* labState)
 
 	Assert(text != 0);
 	DrawBitmapTextLineCentered(bitmap, text, glyphData, left, right, top, bottom, textColor);
+}
+
+static void func DrawHealthBar(Canvas* canvas, TurnBasedEntity* entity)
+{
+	Assert(entity->maxHealthPoints > 0);
+	V2 tileCenter = GetTileCenter(entity->tileIndex);
+
+	F32 left   = tileCenter.x - TileSide * 0.5f;
+	F32 right  = tileCenter.x + TileSide * 0.5f;
+	F32 top    = tileCenter.y - TileSide * 0.5f;
+	F32 bottom = top + TileSide * 0.2f;
+
+	V4 backgroundColor = MakeColor(0.0f, 0.3f, 0.0f);
+	if (IsDead(entity))
+	{
+		backgroundColor = MakeColor(0.3f, 0.3f, 0.3f);
+	}
+
+	DrawRectLRTB(canvas, left, right, top, bottom, backgroundColor);
+
+	F32 healthRatio = F32(entity->healthPoints) / F32(entity->maxHealthPoints);
+	F32 filledX = Lerp(left, healthRatio, right);
+	V4 filledColor = MakeColor(0.0f, 1.0f, 0.0f);
+	DrawRectLRTB(canvas, left, filledX, top, bottom, filledColor);
 }
 
 static void func TurnBasedLabUpdate(TurnBasedLabState* labState, V2 mousePosition, F32 seconds)
@@ -389,13 +510,15 @@ static void func TurnBasedLabUpdate(TurnBasedLabState* labState, V2 mousePositio
 	{
 		for (I32 col = 0; col < TileColN; col++)
 		{
-			TileIndex index = MakeTileIndex(row, col);
-			TurnBasedEntity* entity = GetEntityAtTile(labState, index);
+			TileIndex tileIndex = MakeTileIndex(row, col);
+			TurnBasedEntity* entity = GetEntityAtTile(labState, tileIndex);
+			TurnBasedAbility* ability = labState->selectedAbility;
 
 			B32 isEntity = (entity != 0);
-			B32 isHover = (index == labState->hoverTileIndex);
-			B32 canMove = !labState->attackMode && EntityCanMoveTo(labState, selectedEntity, index);
-			B32 canAttack = labState->attackMode && (GetTileDistance(selectedEntity->tileIndex, index) <= 1);
+			B32 isHover = (tileIndex == labState->hoverTileIndex);
+			B32 canMove = (ability == 0) && EntityCanMoveTo(labState, selectedEntity, tileIndex);
+			B32 canAttack = ((ability != 0) &&
+							 GetTileDistance(selectedEntity->tileIndex, tileIndex) <= ability->maxDistance);
 
 			V4 color = tileColor;
 			if (isEntity)
@@ -419,19 +542,25 @@ static void func TurnBasedLabUpdate(TurnBasedLabState* labState, V2 mousePositio
 				color = (isHover) ? hoverTileColor : tileColor;
 			}
 
-			V2 tileCenter = GetTileCenter(index);
+			V2 tileCenter = GetTileCenter(tileIndex);
 			Rect tileRect = MakeSquareRect(tileCenter, TileSide);
 			DrawRect(canvas, tileRect, color);
+
+			if (entity != 0)
+			{
+				DrawHealthBar(canvas, entity);
+			}
+
 			DrawRectOutline(canvas, tileRect, tileGridColor);
 
-			if (entity != 0 && entity->teamIndex == labState->activeTeamIndex)
+			if (entity != 0 && entity->teamIndex == labState->activeTeamIndex && !IsDead(entity))
 			{
-				I8 movePointsText[8];
-				String movePointsString = StartString(movePointsText, 8);
-				AddInt(&movePointsString, entity->movePoints);
-				V2 tileCenter = GetTileCenter(index);
+				I8 actionPointsText[8];
+				String actionPointsString = StartString(actionPointsText, 8);
+				AddInt(&actionPointsString, entity->actionPoints);
+				V2 tileCenter = GetTileCenter(tileIndex);
 				V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
-				DrawTextLineXYCentered(canvas, movePointsText, tileCenter.y, tileCenter.x, textColor);
+				DrawTextLineXYCentered(canvas, actionPointsText, tileCenter.y, tileCenter.x, textColor);
 			}
 		}
 	}
