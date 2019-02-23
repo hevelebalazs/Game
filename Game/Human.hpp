@@ -51,24 +51,24 @@ static B32 func IsHumanCrossedByLine(Human* human, Line line)
 		return false;
 	}
 
-	V2 topLeft     = MakePoint(left, top);
-	V2 topRight    = MakePoint(right, top);
-	V2 bottomLeft  = MakePoint(left, bottom);
-	V2 bottomRight = MakePoint(right, bottom);
+	V2 topLeft     = MakePoint (left, top);
+	V2 topRight    = MakePoint (right, top);
+	V2 bottomLeft  = MakePoint (left, bottom);
+	V2 bottomRight = MakePoint (right, bottom);
 
-	if (DoLinesCross(line.p1, line.p2, topLeft, topRight))
+	if (DoLinesCross (line.p1, line.p2, topLeft, topRight))
 	{
 		return true;
 	}
-	else if (DoLinesCross(line.p1, line.p2, topRight, bottomRight))
+	else if (DoLinesCross (line.p1, line.p2, topRight, bottomRight))
 	{
 		return true;
 	}
-	else if (DoLinesCross(line.p1, line.p2, bottomRight, bottomLeft))
+	else if (DoLinesCross (line.p1, line.p2, bottomRight, bottomLeft))
 	{
 		return true;
 	}
-	else if (DoLinesCross(line.p1, line.p2, bottomLeft, topLeft))
+	else if (DoLinesCross (line.p1, line.p2, bottomLeft, topLeft))
 	{
 		return true;
 	}
@@ -78,7 +78,7 @@ static B32 func IsHumanCrossedByLine(Human* human, Line line)
 	}
 }
 
-static void func DrawPoliceRadius(Canvas* canvas, Human* human, F32 radius)
+static void func DrawPoliceRadius (Canvas* canvas, Human* human, F32 radius)
 {
 	V4 color = MakeColor(0.0f, 0.0f, 1.0f);
 	V2 position = human->position;
@@ -86,15 +86,15 @@ static void func DrawPoliceRadius(Canvas* canvas, Human* human, F32 radius)
 	F32 right  = position.x + radius;
 	F32 top    = position.y - radius;
 	F32 bottom = position.y + radius;
-	DrawRectLRTBOutline(canvas, top, left, bottom, right, color);
+	DrawRectLRTBOutline (canvas, top, left, bottom, right, color);
 }
 
-static void func MoveHuman(Human* human, V4 point)
+static void func MoveHuman (Human* human, V4 point)
 {
 	human->position = point.position;
 }
 
-static void func DrawHealthPoints(Canvas* canvas, Human* human)
+static void func DrawHealthPoints (Canvas* canvas, Human* human)
 {
 	I32 healthPoints = MaxHealthPoints;
 
@@ -118,13 +118,13 @@ static void func DrawHealthPoints(Canvas* canvas, Human* human)
 			color = EmptyHealthColor;
 		}
 
-		DrawRectLRTB(canvas, left, right, top, bottom, color);
+		DrawRectLRTB (canvas, left, right, top, bottom, color);
 
 		left = right + HealthPointPadding;
 	}
 }
 
-static void func DrawHuman(Canvas* canvas, Human human)
+static void func DrawHuman (Canvas* canvas, Human human)
 {
 	F32 radius = HumanRadius;
 	V2 position = human.position;
@@ -132,18 +132,18 @@ static void func DrawHuman(Canvas* canvas, Human human)
 	V4 color = {};
 	if (human.healthPoints == 0)
 	{
-		color = MakeColor(0.0f, 0.0f, 0.0f);
+		color = MakeColor (0.0f, 0.0f, 0.0f);
 	}
 	else if (human.isPolice)
 	{
-		color = MakeColor(0.0f, 0.0f, 1.0f);
+		color = MakeColor (0.0f, 0.0f, 1.0f);
 	}
 	else
 	{
-		color = MakeColor(1.0f, 1.0f, 1.0f);
+		color = MakeColor (1.0f, 1.0f, 1.0f);
 	}
 
-	DrawRectLRTB(
+	DrawRectLRTB (
 		canvas,
 		position.x - radius, position.x + radius,
 		position.y - radius, position.y + radius,
@@ -152,6 +152,6 @@ static void func DrawHuman(Canvas* canvas, Human human)
 
 	if (human.healthPoints < MaxHealthPoints)
 	{
-		DrawHealthPoints(canvas, &human);
+		DrawHealthPoints (canvas, &human);
 	}
 }

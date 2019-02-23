@@ -8,7 +8,7 @@
 #define JunctionGridDistance			(MinimumJunctionDistance * 1.5f)
 #define MaxJunctionDistanceFromOrigin	(MinimumJunctionDistance * 0.5f)
 
-static void func GenerateGridMapJunctions(Map* map, I32 junctionRowN, I32 junctionColN)
+static void func GenerateGridMapJunctions (Map* map, I32 junctionRowN, I32 junctionColN)
 {
 	F32 left = -(junctionRowN * JunctionGridDistance) / 2;
 	F32 top  = -(junctionColN * JunctionGridDistance) / 2;
@@ -22,22 +22,24 @@ static void func GenerateGridMapJunctions(Map* map, I32 junctionRowN, I32 juncti
 		for (I32 col = 0; col < junctionColN; ++col)
 		{
 			Junction* junction = map->junctions + (row * junctionColN) + col;
-			junction->position.x = junctionX + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
-			junction->position.y = junctionY + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
+			junction->position.x = junctionX + RandomBetween (-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
+			junction->position.y = junctionY + RandomBetween (-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
 			junction->roadN = 0;
 			junctionX += JunctionGridDistance;
 		}
 		junctionY += JunctionGridDistance;
-		junctionX = left + RandomBetween(-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
+		junctionX = left + RandomBetween (-MaxJunctionDistanceFromOrigin, MaxJunctionDistanceFromOrigin);
 	}
 }
 
-struct JunctionGridPosition {
+struct JunctionGridPosition
+{
 	I32 row;
 	I32 col;
 };
 
-enum JunctionGridDirection {
+enum JunctionGridDirection
+{
 	JunctionGridUp,
 	JunctionGridRight,
 	JunctionGridDown,
@@ -45,13 +47,13 @@ enum JunctionGridDirection {
 	JunctionGridDirectionN
 };
 
-static JunctionGridDirection func GetRandomJunctionGridDirection()
+static JunctionGridDirection func GetRandomJunctionGridDirection ()
 {
-	JunctionGridDirection result = (JunctionGridDirection)IntRandom(0, JunctionGridDirectionN - 1);
+	JunctionGridDirection result = (JunctionGridDirection)IntRandom (0, JunctionGridDirectionN - 1);
 	return result;
 }
 
-static JunctionGridPosition func GetNextJunctionGridPosition(JunctionGridPosition startPosition, JunctionGridDirection direction)
+static JunctionGridPosition func GetNextJunctionGridPosition (JunctionGridPosition startPosition, JunctionGridDirection direction)
 {
 	JunctionGridPosition endPosition = startPosition;
 
@@ -76,7 +78,7 @@ static JunctionGridPosition func GetNextJunctionGridPosition(JunctionGridPositio
 	return endPosition;
 }
 
-static B32 func AreJunctionsConnected(Junction* junction1, Junction* junction2)
+static B32 func AreJunctionsConnected (Junction* junction1, Junction* junction2)
 {
 	B32 areConnected = false;
 	for (I32 i = 0; i < junction1->roadN; ++i)
@@ -99,14 +101,14 @@ static B32 func AreJunctionsConnected(Junction* junction1, Junction* junction2)
 	return areConnected;
 }
 
-static void func GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionColN, I32 roadN, MemArena* tmpArena)
+static void func GenerateGridMapRoads (Map* map, I32 junctionRowN, I32 junctionColN, I32 roadN, MemArena* tmpArena)
 {
-	JunctionGridPosition* connectedJunctionPositions = ArenaPushArray(tmpArena, JunctionGridPosition, map->junctionN);
+	JunctionGridPosition* connectedJunctionPositions = ArenaPushArray (tmpArena, JunctionGridPosition, map->junctionN);
 	I32 connectedJunctionN = 0;
 
 	JunctionGridPosition startPosition = {};
-	startPosition.row = IntRandom(0, junctionRowN - 1);
-	startPosition.col = IntRandom(0, junctionColN - 1);
+	startPosition.row = IntRandom (0, junctionRowN - 1);
+	startPosition.col = IntRandom (0, junctionColN - 1);
 	connectedJunctionPositions[connectedJunctionN] = startPosition;
 	connectedJunctionN++;
 
@@ -115,13 +117,13 @@ static void func GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionCo
 	I32 createdRoadN = 0;
 	while (1)
 	{
-		I32 positionIndex = IntRandom(0, connectedJunctionN - 1);
+		I32 positionIndex = IntRandom (0, connectedJunctionN - 1);
 		JunctionGridPosition junctionPosition = connectedJunctionPositions[positionIndex];
-		JunctionGridDirection direction = GetRandomJunctionGridDirection();
+		JunctionGridDirection direction = GetRandomJunctionGridDirection ();
 		while (1)
 		{
 			Junction* junction = map->junctions + (junctionColN * junctionPosition.row) + junctionPosition.col;
-			JunctionGridPosition nextPosition = GetNextJunctionGridPosition(junctionPosition, direction);
+			JunctionGridPosition nextPosition = GetNextJunctionGridPosition (junctionPosition, direction);
 			Assert(junctionPosition.row != nextPosition.row || junctionPosition.col != nextPosition.col);
 			if (nextPosition.row < 0 || nextPosition.row >= junctionRowN)
 			{
@@ -133,7 +135,7 @@ static void func GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionCo
 			}
 
 			Junction* nextJunction = map->junctions + (junctionColN * nextPosition.row) + nextPosition.col;
-			if (AreJunctionsConnected(junction, nextJunction))
+			if (AreJunctionsConnected (junction, nextJunction))
 			{
 				break;
 			}
@@ -145,7 +147,7 @@ static void func GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionCo
 				connectedJunctionN++;
 			}
 
-			ConnectJunctions(junction, nextJunction, map->roads + createdRoadN);
+			ConnectJunctions (junction, nextJunction, map->roads + createdRoadN);
 			createdRoadN++;
 			if (createdRoadN == roadN)
 			{
@@ -157,14 +159,14 @@ static void func GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionCo
 
 			if (isNextJunctionConnected)
 			{
-				if (IntRandom(0, 2) == 0)
+				if (IntRandom (0, 2) == 0)
 				{
 					break;
 				}
 			} 
 			else 
 			{
-				if (IntRandom(0, 5) == 0)
+				if (IntRandom (0, 5) == 0)
 				{
 					break;
 				}
@@ -177,10 +179,10 @@ static void func GenerateGridMapRoads(Map* map, I32 junctionRowN, I32 junctionCo
 		}
 	}
 
-	ArenaPopTo(tmpArena, connectedJunctionPositions);
+	ArenaPopTo (tmpArena, connectedJunctionPositions);
 }
 
-static void func ReindexJunction(Junction* oldJunction, Junction* newJunction)
+static void func ReindexJunction (Junction* oldJunction, Junction* newJunction)
 {
 	for (I32 i = 0; i < oldJunction->roadN; ++i)
 	{
@@ -195,12 +197,12 @@ static void func ReindexJunction(Junction* oldJunction, Junction* newJunction)
 		}
 		else
 		{
-			InvalidCodePath;
+			DebugBreak ();
 		}
 	}
 }
 
-static void func RemoveEmptyJunctions(Map* map)
+static void func RemoveEmptyJunctions (Map* map)
 {
 	I32 newJunctionN = 0;
 	for (I32 i = 0; i < map->junctionN; ++i)
@@ -210,7 +212,7 @@ static void func RemoveEmptyJunctions(Map* map)
 		{
 			Junction* newJunction = map->junctions + newJunctionN;
 			*newJunction = *junction;
-			ReindexJunction(junction, newJunction);
+			ReindexJunction (junction, newJunction);
 			newJunctionN++;
 		}
 	}
@@ -218,47 +220,47 @@ static void func RemoveEmptyJunctions(Map* map)
 	map->junctionN = newJunctionN;
 }
 
-static void func InitJunctions(Map* map)
+static void func InitJunctions (Map* map)
 {
 	for (I32 i = 0; i < map->junctionN; ++i)
 	{
 		Junction* junction = map->junctions + i;
 		if (junction->roadN > 0)
 		{
-			CalculateStopDistances(junction);
-			InitTrafficLights(junction);
+			CalculateStopDistances (junction);
+			InitTrafficLights (junction);
 		}
 	}
 }
 
-static void func GenerateCrossings(Map* map)
+static void func GenerateCrossings (Map* map)
 {
 	for (I32 i = 0; i < map->roadN; ++i)
 	{
 		Road* road = map->roads + i;
-		GenerateCrossing(road);
+		GenerateCrossing (road);
 	}
 }
 
-static void func GenerateGridMap(Map* map, I32 junctionRowN, I32 junctionColN, I32 roadN, MemArena* tmpArena)
+static void func GenerateGridMap (Map* map, I32 junctionRowN, I32 junctionColN, I32 roadN, MemArena* tmpArena)
 {
-	Assert(map->junctions != 0);
-	Assert(map->roads != 0);
+	Assert (map->junctions != 0);
+	Assert (map->roads != 0);
 
 	map->left   = -((junctionColN + 2) * JunctionGridDistance) * 0.5f;
 	map->right  = +((junctionColN + 2) * JunctionGridDistance) * 0.5f;
 	map->top    = -((junctionRowN + 2) * JunctionGridDistance) * 0.5f;
 	map->bottom = +((junctionRowN + 2) * JunctionGridDistance) * 0.5f;
 
-	map->tileRowN = Floor((map->right - map->left) / (MapTileSide));
-	map->tileColN = Floor((map->bottom - map->top) / (MapTileSide));
+	map->tileRowN = Floor ((map->right - map->left) / (MapTileSide));
+	map->tileColN = Floor ((map->bottom - map->top) / (MapTileSide));
 
 	InitRandom();
 
-	GenerateGridMapJunctions(map, junctionRowN, junctionColN);
-	GenerateGridMapRoads(map, junctionRowN, junctionColN, roadN, tmpArena);
+	GenerateGridMapJunctions (map, junctionRowN, junctionColN);
+	GenerateGridMapRoads (map, junctionRowN, junctionColN, roadN, tmpArena);
 
-	RemoveEmptyJunctions(map);
-	InitJunctions(map);
-	GenerateCrossings(map);
+	RemoveEmptyJunctions (map);
+	InitJunctions (map);
+	GenerateCrossings (map);
 }
