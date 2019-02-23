@@ -291,6 +291,6 @@ static void func RunGame(HINSTANCE instance)
 
 I32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
 {
-	TurnBasedLab(instance);
+	CombatLab(instance);
 	return 0;
 }

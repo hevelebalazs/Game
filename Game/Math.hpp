@@ -324,3 +324,17 @@ static B32 func IsPointInRect(V2 point, F32 left, F32 right, F32 top, F32 bottom
 
 	return true;
 }
+
+static B32 func IntSign(I32 i)
+{
+	I32 sign = 0;
+	if (i < 0)
+	{
+		sign = -1;
+	}
+	else if (i > 0)
+	{
+		sign = +1;
+	}
+	return sign;
+}
