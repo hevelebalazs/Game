@@ -116,5 +116,17 @@
     <ClInclude Include="String.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Item.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab\DungeonLab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DungeonMap.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab\TurnBasedLab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

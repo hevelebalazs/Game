@@ -77,16 +77,16 @@ struct CollisionInfo
 #define CarBitmapWidth 140
 #define CarBitmapHeight 300
 
-static Quad func GetCarCorners(Car* car)
+static Quad func GetCarCorners (Car* car)
 {
 	Quad result = {};
 
-	V2 addWidth = ((car->width * 0.5f) * RotationVector(car->angle + PI * 0.5f));
+	V2 addWidth = ((car->width * 0.5f) * RotationVector (car->angle + PI * 0.5f));
 
 	V2 side1 = (car->position + addWidth);
 	V2 side2 = (car->position - addWidth);
 	
-	V2 addLength = ((car->length * 0.5f) * RotationVector(car->angle));
+	V2 addLength = ((car->length * 0.5f) * RotationVector (car->angle));
 	
 	result.points[0] = (side1 + addLength);
 	result.points[1] = (side1 - addLength);
@@ -95,10 +95,10 @@ static Quad func GetCarCorners(Car* car)
 	return result;
 }
 
-static Quad func GetCarStopArea(Car* car)
+static Quad func GetCarStopArea (Car* car)
 {
-	V2 toFrontUnitVector = RotationVector(car->angle);
-	V2 toRightUnitVector = RotationVector(car->angle + PI * 0.5f);
+	V2 toFrontUnitVector = RotationVector (car->angle);
+	V2 toRightUnitVector = RotationVector (car->angle + PI * 0.5f);
 
 	V2 addWidth = (car->width * 0.5f) * toRightUnitVector;
 
@@ -109,7 +109,7 @@ static Quad func GetCarStopArea(Car* car)
 	F32 minStopDistance = car->length * 0.5f;
 	F32 maxStopDistance = minStopDistance + 5.0f;
 
-	F32 stopDistance = Lerp(minStopDistance, car->moveSpeed / car->maxSpeed, maxStopDistance);
+	F32 stopDistance = Lerp (minStopDistance, car->moveSpeed / car->maxSpeed, maxStopDistance);
 
 	V2 addClose = (car->length * 0.5f) * toFrontUnitVector;
 	V2 addFar = (car->length * 0.5f + stopDistance) * toFrontUnitVector;
@@ -123,91 +123,91 @@ static Quad func GetCarStopArea(Car* car)
 	return result;
 }
 
-static B32 func IsCarOnPoint(Car* car, V2 point)
+static B32 func IsCarOnPoint (Car* car, V2 point)
 {
-	Quad carCorners = GetCarCorners(car);
-	B32 result = IsPointInQuad(carCorners, point);
+	Quad carCorners = GetCarCorners (car);
+	B32 result = IsPointInQuad (carCorners, point);
 	return result;
 }
 
-static void func MoveCar(Car* car, V4 point)
+static void func MoveCar (Car* car, V4 point)
 {
 	car->position = point.position;
-	car->angle = VectorAngle(point.direction);
+	car->angle = VectorAngle (point.direction);
 }
 
-static void func DrawCar(Canvas* canvas, Car car)
+static void func DrawCar (Canvas* canvas, Car car)
 {
-	Assert(car.bitmap != 0);
-	DrawScaledRotatedBitmap(canvas, car.bitmap, car.position, car.width, car.length, car.angle);
+	Assert (car.bitmap != 0);
+	DrawScaledRotatedBitmap (canvas, car.bitmap, car.position, car.width, car.length, car.angle);
 }
 
-static V4 func GetRandomCarColor()
+static V4 func GetRandomCarColor ()
 {
-	F32 colorSum = RandomBetween(1.0f, 1.5f);
-	F32 red = RandomBetween(0.0f, colorSum);
-	red = Clip(red, 0.0f, 1.0f);
-	F32 green = RandomBetween(0.0f, colorSum - red);
-	green = Clip(green, 0.0f, 1.0f);
-	F32 blue = RandomBetween(0.0f, colorSum - red - green);
-	blue = Clip(blue, 0.0f, 1.0f);
-	V4 color = MakeColor(red, green, blue);
+	F32 colorSum = RandomBetween (1.0f, 1.5f);
+	F32 red = RandomBetween (0.0f, colorSum);
+	red = Clip (red, 0.0f, 1.0f);
+	F32 green = RandomBetween (0.0f, colorSum - red);
+	green = Clip (green, 0.0f, 1.0f);
+	F32 blue = RandomBetween (0.0f, colorSum - red - green);
+	blue = Clip (blue, 0.0f, 1.0f);
+	V4 color = MakeColor (red, green, blue);
 	return color;
 }
 
-static V4 func GetRandomWindowColor()
+static V4 func GetRandomWindowColor ()
 {
-	F32 red   = RandomBetween(0.0f, 0.05f);
-	F32 green = RandomBetween(0.0f, 0.05f);
-	F32 blue  = RandomBetween(0.0f, 0.25f);
-	V4 color = MakeColor(red, green, blue);
+	F32 red   = RandomBetween (0.0f, 0.05f);
+	F32 green = RandomBetween (0.0f, 0.05f);
+	F32 blue  = RandomBetween (0.0f, 0.25f);
+	V4 color = MakeColor (red, green, blue);
 	return color;
 }
 
-static V4 func GetShadowColor(V4 color)
+static V4 func GetShadowColor (V4 color)
 {
 	F32 shadowRatio = 0.5f;
 	F32 red   = shadowRatio * color.red;
 	F32 green = shadowRatio * color.green;
 	F32 blue  = shadowRatio * color.blue;
-	V4 shadowColor = MakeColor(red, green, blue);
+	V4 shadowColor = MakeColor (red, green, blue);
 	return shadowColor;
 }
 
-static V4 func GetRandomFrontLampColor()
+static V4 func GetRandomFrontLampColor ()
 {
-	F32 redGreenValue = RandomBetween(0.0f, 1.0f);
+	F32 redGreenValue = RandomBetween (0.0f, 1.0f);
 	F32 red   = redGreenValue;
 	F32 green = redGreenValue;
-	F32 blue  = RandomBetween(0.8f, 1.0f);
-	V4 color = MakeColor(red, green, blue);
+	F32 blue  = RandomBetween (0.8f, 1.0f);
+	V4 color = MakeColor (red, green, blue);
 	return color;
 }
 
-static void func AllocateCarBitmap(Bitmap* carBitmap)
+static void func AllocateCarBitmap (Bitmap* carBitmap)
 {
-	ResizeBitmap(carBitmap, CarBitmapWidth, CarBitmapHeight);
+	ResizeBitmap (carBitmap, CarBitmapWidth, CarBitmapHeight);
 }
 
-static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
+static void func GenerateCarBitmap (Bitmap* carBitmap, MemArena* tmpArena)
 {
-	Assert(carBitmap != 0);
+	Assert (carBitmap != 0);
 
-	V4 backgroundColor = MakeAlphaColor(0.2f, 0.2f, 0.2f, 0.0f);
-	FillBitmapWithColor(carBitmap, backgroundColor);
+	V4 backgroundColor = MakeAlphaColor (0.2f, 0.2f, 0.2f, 0.0f);
+	FillBitmapWithColor (carBitmap, backgroundColor);
 
-	V4 carColor = GetRandomCarColor();
-	V4 shadowColor = GetShadowColor(carColor);
+	V4 carColor = GetRandomCarColor ();
+	V4 shadowColor = GetShadowColor (carColor);
 
-	V4 borderColor = MakeColor(0.2f, 0.2f, 0.2f);
+	V4 borderColor = MakeColor (0.2f, 0.2f, 0.2f);
 
 	I32 bitmapLeft   = 0;
 	I32 bitmapRight  = carBitmap->width - 1;
 	I32 bitmapTop    = 0;
 	I32 bitmapBottom = carBitmap->height - 1;
 
-	I32 frontHoodLength    = IntRandom(65, 70);
-	I32 frontHoodWidthDiff = IntRandom(0, 5);
+	I32 frontHoodLength    = IntRandom (65, 70);
+	I32 frontHoodWidthDiff = IntRandom (0, 5);
 
 	I32 frontHoodTopLeft     = bitmapLeft + 20 + frontHoodWidthDiff;
 	I32 frontHoodBottomLeft  = bitmapLeft + 20;
@@ -216,10 +216,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 	I32 frontHoodTop         = bitmapTop + 20;
 	I32 frontHoodBottom      = frontHoodTop + frontHoodLength;
 
-	I32 middlePartLength = IntRandom(135, 150);
+	I32 middlePartLength = IntRandom (135, 150);
 	
-	I32 backHoodLength    = IntRandom(20, 30);
-	I32 backHoodWidthDiff = IntRandom(0, 5);
+	I32 backHoodLength    = IntRandom (20, 30);
+	I32 backHoodWidthDiff = IntRandom (0, 5);
 
 	I32 backHoodTopLeft     = bitmapLeft + 20;
 	I32 backHoodBottomLeft  = bitmapLeft + 20 + backHoodWidthDiff;
@@ -240,16 +240,16 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		frontHoodBottom, frontHoodBottomLeft
 	};
 
-	DrawBitmapPolyOutline(carBitmap, 8, carPoly, carColor);
+	DrawBitmapPolyOutline (carBitmap, 8, carPoly, carColor);
 	I32 carCenterRow = (frontHoodTop + backHoodBottom) / 2;
 	I32 carCenterCol = (frontHoodBottomLeft + frontHoodBottomRight) / 2;
-	FloodfillBitmap(carBitmap, carCenterRow, carCenterCol, carColor, tmpArena);
+	FloodfillBitmap (carBitmap, carCenterRow, carCenterCol, carColor, tmpArena);
 
-	I32 frontWindowLength    = IntRandom(40, 60);
-	I32 windowSeparatorWidth = IntRandom(3, 5);
-	I32 frontWindowWidthDiff = IntRandom(5, 15);
+	I32 frontWindowLength    = IntRandom (40, 60);
+	I32 windowSeparatorWidth = IntRandom (3, 5);
+	I32 frontWindowWidthDiff = IntRandom (5, 15);
 
-	V4 windowColor = GetRandomWindowColor();
+	V4 windowColor = GetRandomWindowColor ();
 	I32 frontWindowTop         = frontHoodBottom;
 	I32 frontWindowBottom      = frontWindowTop + frontWindowLength;
 	I32 frontWindowTopLeft     = frontHoodBottomLeft + windowSeparatorWidth;
@@ -264,13 +264,13 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		frontWindowBottom, frontWindowBottomLeft
 	};
 
-	DrawBitmapPolyOutline(carBitmap, 4, frontWindowPoly, borderColor);
+	DrawBitmapPolyOutline (carBitmap, 4, frontWindowPoly, borderColor);
 	I32 frontWindowCenterRow = (frontWindowTop + frontWindowBottom) / 2;
 	I32 frontWindowCenterCol = (frontWindowTopLeft + frontWindowTopRight) / 2;
-	FloodfillBitmap(carBitmap, frontWindowCenterRow, frontWindowCenterCol, windowColor, tmpArena);
+	FloodfillBitmap (carBitmap, frontWindowCenterRow, frontWindowCenterCol, windowColor, tmpArena);
 
-	I32 backWindowLength = IntRandom(15, 25);
-	I32 backWindowWidthDiff = IntRandom(5, 15);
+	I32 backWindowLength = IntRandom (15, 25);
+	I32 backWindowWidthDiff = IntRandom (5, 15);
 
 	I32 backWindowBottom      = backHoodTop;
 	I32 backWindowTop         = backWindowBottom - backWindowLength;
@@ -285,10 +285,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		backWindowBottom, backWindowBottomRight,
 		backWindowBottom, backWindowBottomLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, backWindowPoly, borderColor);
+	DrawBitmapPolyOutline (carBitmap, 4, backWindowPoly, borderColor);
 	I32 backWindowCenterRow = (backWindowTop + backWindowBottom) / 2;
 	I32 backWindowCenterCol = (backWindowTopLeft + backWindowTopRight) / 2;
-	FloodfillBitmap(carBitmap, backWindowCenterRow, backWindowCenterCol, windowColor, tmpArena);
+	FloodfillBitmap (carBitmap, backWindowCenterRow, backWindowCenterCol, windowColor, tmpArena);
 
 	I32 topLeftWindowLeft     = frontWindowTopLeft - windowSeparatorWidth;
 	I32 topLeftWindowRight    = frontWindowBottomLeft - windowSeparatorWidth;
@@ -302,10 +302,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		topLeftWindowBottom,   topLeftWindowRight,
 		topLeftWindowBottom,   topLeftWindowLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, topLeftWindowPoly, borderColor);
+	DrawBitmapPolyOutline (carBitmap, 4, topLeftWindowPoly, borderColor);
 	I32 topLeftWindowCenterRow = (topLeftWindowLeftTop + topLeftWindowBottom) / 2;
 	I32 topLeftWindowCenterCol = (topLeftWindowLeft + topLeftWindowRight) / 2;
-	FloodfillBitmap(carBitmap, topLeftWindowCenterRow, topLeftWindowCenterCol, windowColor, tmpArena);
+	FloodfillBitmap (carBitmap, topLeftWindowCenterRow, topLeftWindowCenterCol, windowColor, tmpArena);
 
 	I32 bottomLeftWindowLeft        = topLeftWindowLeft;
 	I32 bottomLeftWindowRight       = topLeftWindowRight;
@@ -319,10 +319,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		bottomLeftWindowRightBottom, bottomLeftWindowRight,
 		bottomLeftWindowLeftBottom,  bottomLeftWindowLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, bottomLeftWindowPoly, borderColor);
+	DrawBitmapPolyOutline (carBitmap, 4, bottomLeftWindowPoly, borderColor);
 	I32 bottomLeftWindowCenterRow = (bottomLeftWindowTop + bottomLeftWindowLeftBottom) / 2;
 	I32 bottomLeftWindowCenterCol = (bottomLeftWindowLeft + bottomLeftWindowRight) / 2;
-	FloodfillBitmap(carBitmap, bottomLeftWindowCenterRow, bottomLeftWindowCenterCol, windowColor, tmpArena);
+	FloodfillBitmap (carBitmap, bottomLeftWindowCenterRow, bottomLeftWindowCenterCol, windowColor, tmpArena);
 
 	I32 topRightWindowLeft = frontWindowBottomRight + windowSeparatorWidth;
 	I32 topRightWindowRight = frontWindowTopRight + windowSeparatorWidth;
@@ -336,10 +336,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		topRightWindowBottom,   topRightWindowRight,
 		topRightWindowBottom,   topRightWindowLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, topRightWindowPoly, borderColor);
+	DrawBitmapPolyOutline (carBitmap, 4, topRightWindowPoly, borderColor);
 	I32 topRightWindowCenterRow = (topRightWindowRightTop + topRightWindowBottom) / 2;
 	I32 topRightWindowCenterCol = (topRightWindowLeft + topRightWindowRight) / 2;
-	FloodfillBitmap(carBitmap, topRightWindowCenterRow, topRightWindowCenterCol, windowColor, tmpArena);
+	FloodfillBitmap (carBitmap, topRightWindowCenterRow, topRightWindowCenterCol, windowColor, tmpArena);
 
 	I32 bottomRightWindowLeft        = topRightWindowLeft;
 	I32 bottomRightWindowRight       = topRightWindowRight;
@@ -353,10 +353,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		bottomRightWindowRightBottom, bottomRightWindowRight,
 		bottomRightWindowLeftBottom,  bottomRightWindowLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, bottomRightWindowPoly, borderColor);
+	DrawBitmapPolyOutline (carBitmap, 4, bottomRightWindowPoly, borderColor);
 	I32 bottomRightWindowCenterRow = (bottomRightWindowTop + bottomRightWindowRightBottom) / 2;
 	I32 bottomRightWindowCenterCol = (bottomRightWindowLeft + bottomRightWindowRight) / 2;
-	FloodfillBitmap(carBitmap, bottomRightWindowCenterRow, bottomRightWindowCenterCol, windowColor, tmpArena);
+	FloodfillBitmap (carBitmap, bottomRightWindowCenterRow, bottomRightWindowCenterCol, windowColor, tmpArena);
 
 	I32 leftShadowPoly[] = 
 	{
@@ -371,8 +371,8 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		backHoodTop,       backHoodTopLeft,
 		frontHoodBottom,   frontHoodBottomLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 10, leftShadowPoly, shadowColor);
-	FloodfillBitmap(carBitmap, frontHoodTop + 1, frontHoodTopLeft + 1, shadowColor, tmpArena);
+	DrawBitmapPolyOutline (carBitmap, 10, leftShadowPoly, shadowColor);
+	FloodfillBitmap (carBitmap, frontHoodTop + 1, frontHoodTopLeft + 1, shadowColor, tmpArena);
 
 	I32 rightShadowPoly[] = 
 	{
@@ -387,8 +387,8 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		frontWindowBottom, frontWindowBottomRight,
 		frontWindowTop, frontWindowTopRight
 	};
-	DrawBitmapPolyOutline(carBitmap, 10, rightShadowPoly, shadowColor);
-	FloodfillBitmap(carBitmap, frontHoodTop + 1, frontHoodTopRight - 1, shadowColor, tmpArena);
+	DrawBitmapPolyOutline (carBitmap, 10, rightShadowPoly, shadowColor);
+	FloodfillBitmap (carBitmap, frontHoodTop + 1, frontHoodTopRight - 1, shadowColor, tmpArena);
 
 	I32 frontShadowTopLeft     = frontHoodTopLeft + 10;
 	I32 frontShadowBottomLeft  = frontHoodTopLeft;
@@ -403,10 +403,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		frontShadowBottom, frontShadowBottomRight,
 		frontShadowBottom, frontShadowBottomLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, frontShadowPoly, shadowColor);
+	DrawBitmapPolyOutline (carBitmap, 4, frontShadowPoly, shadowColor);
 	I32 frontShadowCenterRow = (frontShadowTop + frontShadowBottom) / 2;
 	I32 frontShadowCenterCol = (frontShadowTopLeft + frontShadowTopRight) / 2;
-	FloodfillBitmap(carBitmap, frontShadowCenterRow, frontShadowCenterCol, shadowColor, tmpArena);
+	FloodfillBitmap (carBitmap, frontShadowCenterRow, frontShadowCenterCol, shadowColor, tmpArena);
 
 	I32 backShadowTopLeft     = backHoodBottomLeft;
 	I32 backShadowBottomLeft  = backHoodBottomLeft + 10;
@@ -421,14 +421,14 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		backShadowBottom, backShadowBottomRight,
 		backShadowBottom, backShadowBottomLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, backShadowPoly, shadowColor);
+	DrawBitmapPolyOutline (carBitmap, 4, backShadowPoly, shadowColor);
 	I32 backShadowCenterRow = (backShadowTop + backShadowBottom) / 2;
 	I32 backShadowCenterCol = (backShadowTopLeft + backShadowTopRight) / 2;
-	FloodfillBitmap(carBitmap, backShadowCenterRow, backShadowCenterCol, shadowColor, tmpArena);
+	FloodfillBitmap (carBitmap, backShadowCenterRow, backShadowCenterCol, shadowColor, tmpArena);
 
-	I32 mirrorWidth = IntRandom(8, 12);
-	I32 mirrorThickness = IntRandom(2, 4);
-	I32 mirrorRowDiff = IntRandom(3, 6);
+	I32 mirrorWidth = IntRandom (8, 12);
+	I32 mirrorThickness = IntRandom (2, 4);
+	I32 mirrorRowDiff = IntRandom (3, 6);
 
 	I32 leftMirrorRight       = frontHoodBottomLeft;
 	I32 leftMirrorLeft        = leftMirrorRight - mirrorWidth;
@@ -443,10 +443,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		leftMirrorRightBottom, leftMirrorRight,
 		leftMirrorLeftBottom,  leftMirrorLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, leftMirrorPoly, shadowColor);
+	DrawBitmapPolyOutline (carBitmap, 4, leftMirrorPoly, shadowColor);
 	I32 leftMirrorCenterRow = (leftMirrorLeftTop + leftMirrorLeftBottom) / 2;
 	I32 leftMirrorCenterCol = leftMirrorLeft + 2;
-	FloodfillBitmap(carBitmap, leftMirrorCenterRow, leftMirrorCenterCol, shadowColor, tmpArena);
+	FloodfillBitmap (carBitmap, leftMirrorCenterRow, leftMirrorCenterCol, shadowColor, tmpArena);
 
 	I32 rightMirrorLeft        = frontHoodBottomRight;
 	I32 rightMirrorRight       = rightMirrorLeft + mirrorWidth;
@@ -461,15 +461,15 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		rightMirrorRightBottom, rightMirrorRight,
 		rightMirrorLeftBottom,  rightMirrorLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, rightMirrorPoly, shadowColor);
+	DrawBitmapPolyOutline (carBitmap, 4, rightMirrorPoly, shadowColor);
 	I32 rightMirrorCenterRow = (rightMirrorRightTop + rightMirrorRightBottom) / 2;
 	I32 rightMirrorCenterCol = rightMirrorRight - 2;
-	FloodfillBitmap(carBitmap, rightMirrorCenterRow, rightMirrorCenterCol, shadowColor, tmpArena);
+	FloodfillBitmap (carBitmap, rightMirrorCenterRow, rightMirrorCenterCol, shadowColor, tmpArena);
 
-	V4 frontLampColor = GetRandomFrontLampColor();
-	I32 frontLampWidth  = IntRandom(15, 20);
-	I32 frontLampHeight = IntRandom(2, 3);
-	I32 frontLampSideDistance = IntRandom(7, 10);
+	V4 frontLampColor = GetRandomFrontLampColor ();
+	I32 frontLampWidth  = IntRandom (15, 20);
+	I32 frontLampHeight = IntRandom (2, 3);
+	I32 frontLampSideDistance = IntRandom (7, 10);
 
 	I32 frontLeftLampLeft   = frontHoodTopLeft + frontLampSideDistance;
 	I32 frontLeftLampRight  = frontLeftLampLeft + frontLampWidth;
@@ -482,10 +482,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		frontLeftLampBottom, frontLeftLampRight,
 		frontLeftLampBottom, frontLeftLampLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, frontLeftLampPoly, frontLampColor);
+	DrawBitmapPolyOutline (carBitmap, 4, frontLeftLampPoly, frontLampColor);
 	I32 frontLeftLampCenterRow = (frontLeftLampTop + frontLeftLampBottom) / 2;
 	I32 frontLeftLampCenterCol = (frontLeftLampLeft + frontLeftLampRight) / 2;
-	FloodfillBitmap(carBitmap, frontLeftLampCenterRow, frontLeftLampCenterCol, frontLampColor, tmpArena);
+	FloodfillBitmap (carBitmap, frontLeftLampCenterRow, frontLeftLampCenterCol, frontLampColor, tmpArena);
 
 	I32 frontRightLampRight = frontHoodTopRight - frontLampSideDistance;
 	I32 frontRightLampLeft = frontRightLampRight - frontLampWidth;
@@ -498,12 +498,12 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		frontRightLampBottom, frontRightLampRight,
 		frontRightLampBottom, frontRightLampLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, frontRightLampPoly, frontLampColor);
+	DrawBitmapPolyOutline (carBitmap, 4, frontRightLampPoly, frontLampColor);
 	I32 frontRightLampCenterRow = (frontRightLampTop + frontRightLampBottom) / 2;
 	I32 frontRightLampCenterCol = (frontRightLampLeft + frontRightLampRight) / 2;
-	FloodfillBitmap(carBitmap, frontRightLampCenterRow, frontRightLampCenterCol, frontLampColor, tmpArena);
+	FloodfillBitmap (carBitmap, frontRightLampCenterRow, frontRightLampCenterCol, frontLampColor, tmpArena);
 
-	V4 backLampColor = MakeColor(1.0f, 0.0f, 0.0f);
+	V4 backLampColor = MakeColor (1.0f, 0.0f, 0.0f);
 	I32 backLeftLampLeft   = backHoodBottomLeft + 10;
 	I32 backLeftLampRight  = backLeftLampLeft + 7;
 	I32 backLeftLampTop    = backHoodBottom;
@@ -515,10 +515,10 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		backLeftLampBottom, backLeftLampRight,
 		backLeftLampBottom, backLeftLampLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, backLeftLampPoly, backLampColor);
+	DrawBitmapPolyOutline (carBitmap, 4, backLeftLampPoly, backLampColor);
 	I32 backLeftLampCenterRow = (backLeftLampTop + backLeftLampBottom) / 2;
 	I32 backLeftLampCenterCol = (backLeftLampLeft + backLeftLampRight) / 2;
-	FloodfillBitmap(carBitmap, backLeftLampCenterRow, backLeftLampCenterCol, backLampColor, tmpArena);
+	FloodfillBitmap (carBitmap, backLeftLampCenterRow, backLeftLampCenterCol, backLampColor, tmpArena);
 
 	I32 backRightLampRight = backHoodBottomRight - 10;
 	I32 backRightLampLeft = backRightLampRight - 7;
@@ -531,39 +531,39 @@ static void func GenerateCarBitmap(Bitmap* carBitmap, MemArena* tmpArena)
 		backRightLampBottom, backRightLampRight,
 		backRightLampBottom, backRightLampLeft
 	};
-	DrawBitmapPolyOutline(carBitmap, 4, backRightLampPoly, backLampColor);
+	DrawBitmapPolyOutline (carBitmap, 4, backRightLampPoly, backLampColor);
 	I32 backRightLampCenterRow = (backRightLampTop + backRightLampBottom) / 2;
 	I32 backRightLampCenterCol = (backRightLampLeft + backRightLampRight) / 2;
-	FloodfillBitmap(carBitmap, backRightLampCenterRow, backRightLampCenterCol, backLampColor, tmpArena);
+	FloodfillBitmap (carBitmap, backRightLampCenterRow, backRightLampCenterCol, backLampColor, tmpArena);
 }
 
-static void func MoveAutoCarToJunction(AutoCar* autoCar, Junction* junction, MemArena* tmpArena, PathPool* pathPool)
+static void func MoveAutoCarToJunction (AutoCar* autoCar, Junction* junction, MemArena* tmpArena, PathPool* pathPool)
 {
-	MapElem targetElem = GetJunctionElem(autoCar->onJunction);
-	MapElem nextElem = GetJunctionElem(junction);
+	MapElem targetElem = GetJunctionElem (autoCar->onJunction);
+	MapElem nextElem = GetJunctionElem (junction);
 
-	autoCar->moveNode = ConnectElems(autoCar->car.map, targetElem, nextElem, tmpArena, pathPool);
+	autoCar->moveNode = ConnectElems (autoCar->car.map, targetElem, nextElem, tmpArena, pathPool);
 
 	if (autoCar->moveNode) 
 	{
-		autoCar->moveStartPoint = StartNodePoint(autoCar->moveNode);
-		autoCar->moveEndPoint = NextNodePoint(autoCar->moveNode, autoCar->moveStartPoint);
-		autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
+		autoCar->moveStartPoint = StartNodePoint (autoCar->moveNode);
+		autoCar->moveEndPoint = NextNodePoint (autoCar->moveNode, autoCar->moveStartPoint);
+		autoCar->moveBezier4 = TurnBezier4 (autoCar->moveStartPoint, autoCar->moveEndPoint);
 		autoCar->bezierRatio = 0.0f;
 		autoCar->moveTargetJunction = junction;
 
-		V4 point = Bezier4DirectedPoint(autoCar->moveBezier4, autoCar->bezierRatio);
-		MoveCar(&autoCar->car, point);
+		V4 point = Bezier4DirectedPoint (autoCar->moveBezier4, autoCar->bezierRatio);
+		MoveCar (&autoCar->car, point);
 	}
 }
 
-static bool func IsAutoCarBeforeARedLight(AutoCar* autoCar)
+static bool func IsAutoCarBeforeARedLight (AutoCar* autoCar)
 {
 	B32 result = false;
 	PathNode* moveNode = autoCar->moveNode;
 	if (moveNode) 
 	{
-		if (IsNodeEndPoint(moveNode, autoCar->moveEndPoint))
+		if (IsNodeEndPoint (moveNode, autoCar->moveEndPoint))
 		{
 			PathNode* nextNode = moveNode->next;
 			if (nextNode) 
@@ -586,7 +586,7 @@ static bool func IsAutoCarBeforeARedLight(AutoCar* autoCar)
 
 					Assert(trafficLight != 0);
 					if (trafficLight->color == TrafficLightRed || trafficLight->color == TrafficLightYellow) {
-						F32 distanceLeft = Distance(autoCar->car.position, autoCar->moveEndPoint.position);
+						F32 distanceLeft = Distance (autoCar->car.position, autoCar->moveEndPoint.position);
 						if (distanceLeft < autoCar->car.length * 1.5f)
 						{
 							result = true;
@@ -599,17 +599,17 @@ static bool func IsAutoCarBeforeARedLight(AutoCar* autoCar)
 	return result;
 }
 
-static void func UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool)
+static void func UpdateAutoCar (AutoCar* autoCar, F32 seconds, MemArena* tmpArena, PathPool* pathPool)
 {
 	Car* car = &autoCar->car;
 
-	if (IsAutoCarBeforeARedLight(autoCar))
+	if (IsAutoCarBeforeARedLight (autoCar))
 		autoCar->acceleration = -25.0f;
 
 	if (autoCar->moveTargetJunction) 
 	{
 		car->moveSpeed += seconds * autoCar->acceleration;
-		car->moveSpeed = Clip(car->moveSpeed, 0.0f, car->maxSpeed);
+		car->moveSpeed = Clip (car->moveSpeed, 0.0f, car->maxSpeed);
 		F32 distanceToGo = seconds * car->moveSpeed;
 		while (distanceToGo > 0.0f) 
 		{
@@ -621,16 +621,16 @@ static void func UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena
 				break;
 			}
 
-			F32 bezierRatio = MoveOnBezier4(autoCar->moveBezier4, autoCar->bezierRatio, distanceToGo);
+			F32 bezierRatio = MoveOnBezier4 (autoCar->moveBezier4, autoCar->bezierRatio, distanceToGo);
 			if (bezierRatio == 1.0f) 
 			{
 				autoCar->moveStartPoint = autoCar->moveEndPoint;
-				F32 distance = GetBezier4DistanceFromEnd(autoCar->moveBezier4, autoCar->bezierRatio);
+				F32 distance = GetBezier4DistanceFromEnd (autoCar->moveBezier4, autoCar->bezierRatio);
 				distanceToGo -= distance;
-				if (IsNodeEndPoint(moveNode, autoCar->moveStartPoint)) 
+				if (IsNodeEndPoint (moveNode, autoCar->moveStartPoint)) 
 				{
 					moveNode = moveNode->next;
-					FreePathNode(autoCar->moveNode, pathPool);
+					FreePathNode (autoCar->moveNode, pathPool);
 					autoCar->moveNode = moveNode;
 
 					if (!moveNode)
@@ -640,8 +640,8 @@ static void func UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena
 				}
 				
 				autoCar->bezierRatio = 0.0f;
-				autoCar->moveEndPoint = NextNodePoint(moveNode, autoCar->moveStartPoint);
-				autoCar->moveBezier4 = TurnBezier4(autoCar->moveStartPoint, autoCar->moveEndPoint);
+				autoCar->moveEndPoint = NextNodePoint (moveNode, autoCar->moveStartPoint);
+				autoCar->moveBezier4 = TurnBezier4 (autoCar->moveStartPoint, autoCar->moveEndPoint);
 			} 
 			else
 			{
@@ -652,26 +652,26 @@ static void func UpdateAutoCar(AutoCar* autoCar, F32 seconds, MemArena* tmpArena
 	} 
 	else 
 	{
-		Junction* targetJunction = GetRandomJunction(car->map);
-		MoveAutoCarToJunction(autoCar, targetJunction, tmpArena, pathPool);
+		Junction* targetJunction = GetRandomJunction (car->map);
+		MoveAutoCarToJunction (autoCar, targetJunction, tmpArena, pathPool);
 	}
 
-	V4 point = Bezier4DirectedPoint(autoCar->moveBezier4, autoCar->bezierRatio);
-	MoveCar(car, point);
+	V4 point = Bezier4DirectedPoint (autoCar->moveBezier4, autoCar->bezierRatio);
+	MoveCar (car, point);
 
-	Assert(IsBetween(autoCar->bezierRatio, 0.0f, 1.0f));
+	Assert (IsBetween (autoCar->bezierRatio, 0.0f, 1.0f));
 }
 
-static V2 func GetCarCorner(Car* car, I32 cornerIndex)
+static V2 func GetCarCorner (Car* car, I32 cornerIndex)
 {
-	Assert(IsIntBetween(cornerIndex, 0, 3));
+	Assert (IsIntBetween (cornerIndex, 0, 3));
 
 	F32 halfWidth = car->width * 0.5f;
 	F32 halfLength = car->length * 0.5f;
 
 	F32 angle = car->angle;
-	V2 rotationUpDown = RotationVector(angle);
-	V2 rotationLeftRight = RotationVector(angle + PI * 0.5f);
+	V2 rotationUpDown = RotationVector (angle);
+	V2 rotationLeftRight = RotationVector (angle + PI * 0.5f);
 	V2 center = car->position;
 	V2 frontCenter = center + (halfLength * rotationUpDown);
 	V2 backCenter = center - (halfLength * rotationUpDown);
@@ -699,10 +699,10 @@ static V2 func GetCarCorner(Car* car, I32 cornerIndex)
 	return result;
 }
 
-static void func UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
+static void func UpdatePlayerCarWithoutCollision (PlayerCar* car, F32 seconds)
 {
-	F32 speed = VectorLength(car->velocity);
-	V2 carDirection = RotationVector(car->car.angle);
+	F32 speed = VectorLength (car->velocity);
+	V2 carDirection = RotationVector (car->car.angle);
 
 	F32 maxControlSpeed = 10.0f;
 	F32 maxControlTurn = 1.0f;
@@ -716,22 +716,22 @@ static void func UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 	if (car->frontWheelAngle < car->frontWheelAngleTarget) 
 	{
 		car->frontWheelAngle += seconds * maxControlTurn;
-		car->frontWheelAngle = Min2(car->frontWheelAngle, frontWheelTarget);
+		car->frontWheelAngle = Min2 (car->frontWheelAngle, frontWheelTarget);
 	} 
 	else 
 	{
 		car->frontWheelAngle -= seconds * maxControlTurn;
-		car->frontWheelAngle = Max2(car->frontWheelAngle, frontWheelTarget);
+		car->frontWheelAngle = Max2 (car->frontWheelAngle, frontWheelTarget);
 	}
 
 	V2 frontPositionStart = car->car.position + (0.5f * car->car.length * carDirection);
 	F32 frontAngle = car->car.angle + car->frontWheelAngle;
-	V2 frontDirection = RotationVector(frontAngle);
+	V2 frontDirection = RotationVector (frontAngle);
 	V2 frontPositionEnd = frontPositionStart + seconds * speed * frontDirection;
 
 	V2 backPositionStart = car->car.position - (0.5f * car->car.length * carDirection);
 	F32 backAngle = car->car.angle;
-	V2 backDirection = RotationVector(backAngle);
+	V2 backDirection = RotationVector (backAngle);
 	V2 backPositionEnd = backPositionStart + seconds * speed * backDirection;
 
 	// car->car.angle = LineAngle(backPositionEnd, frontPositionEnd);
@@ -752,21 +752,21 @@ static void func UpdatePlayerCarWithoutCollision(PlayerCar* car, F32 seconds)
 	V2 sideResistance = (-sideResistanceConstant) * CarMass * DotProduct(car->velocity, sideVector) * sideVector;
 
 	V2 oldPosition = car->car.position;
-	car->acceleration = Invert(CarMass) *  (tractionForce + drag + sideResistance);
+	car->acceleration = Invert (CarMass) *  (tractionForce + drag + sideResistance);
 	car->velocity = car->velocity + (seconds * car->acceleration);
 	car->car.position = car->car.position + (seconds * car->velocity);
 
 	F32 angularResistanceConstant = 0.5f;
 	F32 angularResistance = ((-angularResistanceConstant) * car->inertia * car->angularVelocity);
 
-	car->angularAcceleration = Invert(car->inertia) * angularResistance;
+	car->angularAcceleration = Invert (car->inertia) * angularResistance;
 
 	F32 oldAngle = car->car.angle;
 	car->angularVelocity = car->angularVelocity + (seconds * car->angularAcceleration);
 	car->car.angle = car->car.angle + (seconds * car->angularVelocity);
 }
 
-static CollisionInfo func operator+(CollisionInfo hit1, CollisionInfo hit2)
+static CollisionInfo func operator+ (CollisionInfo hit1, CollisionInfo hit2)
 {
 	CollisionInfo hit = {};
 
@@ -785,19 +785,19 @@ static CollisionInfo func operator+(CollisionInfo hit1, CollisionInfo hit2)
 	return hit;
 }
 
-static CollisionInfo func GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 point1, V2 point2)
+static CollisionInfo func GetCarLineCollisionInfo (Car* oldCar, Car* newCar, V2 point1, V2 point2)
 {
 	CollisionInfo hit = {};
 
 	for (I32 i = 0; i < 4; ++i) 
 	{
-		V2 oldCorner = GetCarCorner(oldCar, i);
-		V2 newCorner = GetCarCorner(newCar, i);
+		V2 oldCorner = GetCarCorner (oldCar, i);
+		V2 newCorner = GetCarCorner (newCar, i);
 		CollisionInfo hitCorner = {};
-		if (DoLinesCross(point1, point2, oldCorner, newCorner)) 
+		if (DoLinesCross (point1, point2, oldCorner, newCorner)) 
 		{
-			V2 wallAngle = PointDirection(point1, point2);
-			hitCorner.normalVector = TurnVectorToRight(wallAngle);
+			V2 wallAngle = PointDirection (point1, point2);
+			hitCorner.normalVector = TurnVectorToRight (wallAngle);
 			hitCorner.point = oldCorner;
 			hitCorner.count++;
 		}
@@ -807,62 +807,62 @@ static CollisionInfo func GetCarLineCollisionInfo(Car* oldCar, Car* newCar, V2 p
 	return hit;
 }
 
-static V2 func GetCarRelativeCoordinates(Car* car, V2 point)
+static V2 func GetCarRelativeCoordinates (Car* car, V2 point)
 {
 	V2 result = {};
 	V2 pointVector = (point - car->position);
 
-	V2 frontDirection = RotationVector(car->angle);
-	result.x = DotProduct(pointVector, frontDirection);
+	V2 frontDirection = RotationVector (car->angle);
+	result.x = DotProduct (pointVector, frontDirection);
 
-	V2 sideDirection = TurnVectorToRight(frontDirection);
-	result.y = DotProduct(pointVector, sideDirection);
+	V2 sideDirection = TurnVectorToRight (frontDirection);
+	result.y = DotProduct (pointVector, sideDirection);
 	return result;
 }
 
-static CollisionInfo func GetCarPointCollisionInfo(Car* oldCar, Car* newCar, V2 point)
+static CollisionInfo func GetCarPointCollisionInfo (Car* oldCar, Car* newCar, V2 point)
 {
 	CollisionInfo hit = {};
 
 	F32 halfLength = oldCar->length * 0.5f;
 	F32 halfWidth  = oldCar->width * 0.5f;
-	V2 topLeft     = MakePoint(-halfLength, -halfWidth);
-	V2 topRight    = MakePoint(-halfLength, +halfWidth); 
-	V2 bottomLeft  = MakePoint(+halfLength, -halfWidth);
-	V2 bottomRight = MakePoint(+halfLength, +halfWidth);
+	V2 topLeft     = MakePoint (-halfLength, -halfWidth);
+	V2 topRight    = MakePoint (-halfLength, +halfWidth); 
+	V2 bottomLeft  = MakePoint (+halfLength, -halfWidth);
+	V2 bottomRight = MakePoint (+halfLength, +halfWidth);
 
-	V2 oldRelativePoint = GetCarRelativeCoordinates(oldCar, point);
-	V2 newRelativePoint = GetCarRelativeCoordinates(newCar, point);
+	V2 oldRelativePoint = GetCarRelativeCoordinates (oldCar, point);
+	V2 newRelativePoint = GetCarRelativeCoordinates (newCar, point);
 
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, topRight)) 
+	if (DoLinesCross (oldRelativePoint, newRelativePoint, topLeft, topRight)) 
 	{
 		hit.count++;
 		hit.point = point;
 		hit.normalVector = RotationVector(oldCar->angle);
 	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, bottomLeft, bottomRight)) 
+	if (DoLinesCross (oldRelativePoint, newRelativePoint, bottomLeft, bottomRight)) 
 	{
 		hit.count++;
 		hit.point = point;
-		hit.normalVector = RotationVector(oldCar->angle);
+		hit.normalVector = RotationVector (oldCar->angle);
 	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topLeft, bottomLeft)) 
+	if (DoLinesCross (oldRelativePoint, newRelativePoint, topLeft, bottomLeft)) 
 	{
 		hit.count++;
 		hit.point = point;
-		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
+		hit.normalVector = RotationVector (oldCar->angle + PI * 0.5f);
 	}
-	if (DoLinesCross(oldRelativePoint, newRelativePoint, topRight, bottomRight)) 
+	if (DoLinesCross (oldRelativePoint, newRelativePoint, topRight, bottomRight)) 
 	{
 		hit.count++;
 		hit.point = point;
-		hit.normalVector = RotationVector(oldCar->angle + PI * 0.5f);
+		hit.normalVector = RotationVector (oldCar->angle + PI * 0.5f);
 	}
 
 	return hit;
 }
 
-static CollisionInfo func GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* points, I32 pointN)
+static CollisionInfo func GetCarPolyCollisionInfo (Car* oldCar, Car* newCar, V2* points, I32 pointN)
 {
 	CollisionInfo hit = {};
 
@@ -874,30 +874,30 @@ static CollisionInfo func GetCarPolyCollisionInfo(Car* oldCar, Car* newCar, V2* 
 			j = 0;
 		}
 
-		CollisionInfo hitLine = GetCarLineCollisionInfo(oldCar, newCar, points[i], points[j]);
+		CollisionInfo hitLine = GetCarLineCollisionInfo (oldCar, newCar, points[i], points[j]);
 		hit = hit + hitLine;
 
-		CollisionInfo hitPoint = GetCarPointCollisionInfo(oldCar, newCar, points[i]);
+		CollisionInfo hitPoint = GetCarPointCollisionInfo (oldCar, newCar, points[i]);
 		hit = hit + hitPoint;
 	}
 
 	return hit;
 }
 
-static V2 func GetCarPointVelocity(PlayerCar* car, V2 point)
+static V2 func GetCarPointVelocity (PlayerCar* car, V2 point)
 {
 	V2 velocity = car->velocity;
 	V2 pointVector = (point - car->car.position);
-	V2 turnVelocity = car->angularVelocity * TurnVectorToRight(pointVector);
+	V2 turnVelocity = car->angularVelocity * TurnVectorToRight (pointVector);
 	velocity = velocity + turnVelocity;
 	return velocity;
 }
 
-static void func UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32 seconds, CollisionInfo hit)
+static void func UpdatePlayerCarCollision (PlayerCar* car, PlayerCar* oldCar, F32 seconds, CollisionInfo hit)
 {
 	if (hit.count > 1) 
 	{
-		car->velocity = MakeVector(0.0f, 0.0f);
+		car->velocity = MakeVector (0.0f, 0.0f);
 		car->car.position = oldCar->car.position;
 
 		car->angularVelocity = 0.0f;
@@ -906,20 +906,20 @@ static void func UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32
 
 	if (hit.count == 1) 
 	{
-		V2 hitPointVelocity = GetCarPointVelocity(car, hit.point);
+		V2 hitPointVelocity = GetCarPointVelocity (car, hit.point);
 		V2 carCenter = car->car.position;
 
 		F32 reflectionRatio = 0.5f;
-		V2 turnForce = TurnVectorToRight(hit.point - carCenter);
+		V2 turnForce = TurnVectorToRight (hit.point - carCenter);
 
-		F32 up = -(1.0f + reflectionRatio) * DotProduct(hitPointVelocity, hit.normalVector);
-		F32 down = DotProduct(hit.normalVector, hit.normalVector) * Invert(CarMass) +
-			Square(DotProduct(turnForce, hit.normalVector)) * Invert(car->inertia);
+		F32 up = -(1.0f + reflectionRatio) * DotProduct (hitPointVelocity, hit.normalVector);
+		F32 down = DotProduct (hit.normalVector, hit.normalVector) * Invert (CarMass) +
+			Square (DotProduct (turnForce, hit.normalVector)) * Invert (car->inertia);
 		F32 forceRatio = up / down;
 
 		car->velocity = car->velocity + (forceRatio / CarMass) * hit.normalVector;
 		car->angularVelocity = car->angularVelocity + 
-									DotProduct(turnForce, forceRatio * hit.normalVector) / car->inertia;
+									DotProduct (turnForce, forceRatio * hit.normalVector) / car->inertia;
 
 		car->car.position = oldCar->car.position + seconds * car->velocity;
 		car->car.angle = oldCar->car.angle + seconds * car->angularVelocity;
@@ -930,8 +930,8 @@ static void func UpdatePlayerCarCollision(PlayerCar* car, PlayerCar* oldCar, F32
 	for (int i = 0; i < 4; ++i) 
 	{
 		V2 oldCorner = oldP[i];
-		V2 newCorner = GetCorner(labState, i);
-		Assert(!DoLinesCross(wall1, wall2, oldCorner, newCorner));
+		V2 newCorner = GetCorner (labState, i);
+		Assert (!DoLinesCross (wall1, wall2, oldCorner, newCorner));
 	}
 	*/
 }

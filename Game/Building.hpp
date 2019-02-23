@@ -68,7 +68,7 @@ struct Building
 	BuildingInside* inside;
 };
 
-static Line func ConnectingLine(V2 point1, V2 point2)
+static Line func ConnectingLine (V2 point1, V2 point2)
 {
 	Line result = {};
 	result.p1 = point1;
@@ -76,7 +76,7 @@ static Line func ConnectingLine(V2 point1, V2 point2)
 	return result;
 }
 
-static Line func HorizontalWall(F32 left, F32 right, F32 y)
+static Line func HorizontalWall (F32 left, F32 right, F32 y)
 {
 	Line wall = {};
 	wall.x1 = left;
@@ -86,7 +86,7 @@ static Line func HorizontalWall(F32 left, F32 right, F32 y)
 	return wall;
 }
 
-static Line func VerticalWall(F32 top, F32 bottom, F32 x)
+static Line func VerticalWall (F32 top, F32 bottom, F32 x)
 {
 	Line wall = {};
 	wall.x1 = x;
@@ -105,7 +105,7 @@ struct WallHelper
 	Line* doors;
 };
 
-static void func AddHelperWall(WallHelper* helper, Line wall)
+static void func AddHelperWall (WallHelper* helper, Line wall)
 {
 	if (helper->wallCount < helper->maxWallCount) 
 	{
@@ -115,7 +115,7 @@ static void func AddHelperWall(WallHelper* helper, Line wall)
 	}
 }
 
-static void func AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door)
+static void func AddHelperWallWithDoor (WallHelper* helper, Line wall, Line door)
 {
 	if (helper->wallCount < helper->maxWallCount)
 	{
@@ -127,9 +127,10 @@ static void func AddHelperWallWithDoor(WallHelper* helper, Line wall, Line door)
 }
 
 // TODO: rewrite this not using recursion
-static void func GenerateWalls(Building* building, WallHelper* wallHelper,
-						  I32 leftWallIndex, I32 rightWallIndex, I32 topWallIndex, I32 bottomWallIndex,
-						  F32 minRoomSide, F32 maxRoomSide) 
+static void func GenerateWalls (Building* building, WallHelper* wallHelper,
+								I32 leftWallIndex, I32 rightWallIndex,
+								I32 topWallIndex, I32 bottomWallIndex,
+								F32 minRoomSide, F32 maxRoomSide) 
 {
 	F32 left   = wallHelper->walls[leftWallIndex].x1;
 	F32 right  = wallHelper->walls[rightWallIndex].x1;
@@ -139,7 +140,7 @@ static void func GenerateWalls(Building* building, WallHelper* wallHelper,
 	F32 width = (right - left);
 	F32 height = (bottom - top);
 
-	F32 cutDistance = RandomBetween(minRoomSide, maxRoomSide);
+	F32 cutDistance = RandomBetween (minRoomSide, maxRoomSide);
 
 	B32 canCutHorizontally = (cutDistance <= height - minRoomSide);
 	F32 cutY = top + cutDistance;
@@ -343,7 +344,7 @@ static void func GenerateWalls(Building* building, WallHelper* wallHelper,
 
 		Line wall = VerticalWall(top, bottom, cutX);
 
-		F32 centerY = RandomBetween(
+		F32 centerY = RandomBetween (
 			Min2(wall.y1, wall.y2) + DoorWidth * 0.5f,
 			Max2(wall.y1, wall.y2) - DoorWidth * 0.5f
 		);
@@ -354,10 +355,10 @@ static void func GenerateWalls(Building* building, WallHelper* wallHelper,
 		door.x2 = wall.x2;
 		door.y2 = centerY + DoorWidth * 0.5f;
 
-		AddHelperWallWithDoor(wallHelper, wall, door);
+		AddHelperWallWithDoor (wallHelper, wall, door);
 
-		GenerateWalls(building, wallHelper,     wallIndex, rightWallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
-		GenerateWalls(building, wallHelper, leftWallIndex,      wallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
+		GenerateWalls (building, wallHelper,     wallIndex, rightWallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
+		GenerateWalls (building, wallHelper, leftWallIndex,      wallIndex, topWallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
 	}
 	else if (cutHorizontally) 
 	{
@@ -365,7 +366,7 @@ static void func GenerateWalls(Building* building, WallHelper* wallHelper,
 
 		Line wall = HorizontalWall(left, right, cutY);
 
-		F32 centerX = RandomBetween(
+		F32 centerX = RandomBetween (
 			Min2(wall.x1, wall.x2) + DoorWidth * 0.5f,
 			Max2(wall.x1, wall.x2) - DoorWidth * 0.5f
 		);
@@ -375,24 +376,24 @@ static void func GenerateWalls(Building* building, WallHelper* wallHelper,
 		door.y1 = wall.y1;
 		door.x2 = centerX + DoorWidth * 0.5f;
 		door.y2 = wall.y2;
-		AddHelperWallWithDoor(wallHelper, wall, door);
+		AddHelperWallWithDoor (wallHelper, wall, door);
 
-		GenerateWalls(building, wallHelper, leftWallIndex, rightWallIndex,    wallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
-		GenerateWalls(building, wallHelper, leftWallIndex, rightWallIndex, topWallIndex,       wallIndex, minRoomSide, maxRoomSide);
+		GenerateWalls (building, wallHelper, leftWallIndex, rightWallIndex,    wallIndex, bottomWallIndex, minRoomSide, maxRoomSide);
+		GenerateWalls (building, wallHelper, leftWallIndex, rightWallIndex, topWallIndex,       wallIndex, minRoomSide, maxRoomSide);
 	}
 }
 
-static void func GenerateBuildingInside(Building* building, MemArena* arena, MemArena* tmpArena)
+static void func GenerateBuildingInside (Building* building, MemArena* arena, MemArena* tmpArena)
 {
-	BuildingInside* inside = ArenaPushType(arena, BuildingInside);
+	BuildingInside* inside = ArenaPushType (arena, BuildingInside);
 	building->inside = inside;
 
 	WallHelper wallHelper = {};
 	wallHelper.maxWallCount = 100;
 	wallHelper.wallCount = 0;
-	wallHelper.walls = ArenaPushArray(tmpArena, Line, wallHelper.maxWallCount);
-	wallHelper.hasDoor = ArenaPushArray(tmpArena, B32, wallHelper.maxWallCount);
-	wallHelper.doors = ArenaPushArray(tmpArena, Line, wallHelper.maxWallCount);
+	wallHelper.walls = ArenaPushArray (tmpArena, Line, wallHelper.maxWallCount);
+	wallHelper.hasDoor = ArenaPushArray (tmpArena, B32, wallHelper.maxWallCount);
+	wallHelper.doors = ArenaPushArray (tmpArena, Line, wallHelper.maxWallCount);
 
 	F32 buildingWidth = (building->right - building->left);
 	F32 buildingHeight = (building->bottom - building->top);
@@ -405,47 +406,47 @@ static void func GenerateBuildingInside(Building* building, MemArena* arena, Mem
 	entrance.p1 = building->entrancePoint1;
 	entrance.p2 = building->entrancePoint2;
 
-	Line leftWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->left + halfWallWidth);
+	Line leftWall = VerticalWall (building->top + halfWallWidth, building->bottom - halfWallWidth, building->left + halfWallWidth);
 	if (entrance.x1 == building->left && entrance.x2 == building->left)
 	{
-		AddHelperWallWithDoor(&wallHelper, leftWall, entrance);
+		AddHelperWallWithDoor (&wallHelper, leftWall, entrance);
 	}
 	else
 	{
-		AddHelperWall(&wallHelper, leftWall);
+		AddHelperWall (&wallHelper, leftWall);
 	}
 
-	Line rightWall = VerticalWall(building->top + halfWallWidth, building->bottom - halfWallWidth, building->right - halfWallWidth);
+	Line rightWall = VerticalWall (building->top + halfWallWidth, building->bottom - halfWallWidth, building->right - halfWallWidth);
 	if (entrance.x1 == building->right && entrance.x2 == building->right)
 	{
-		AddHelperWallWithDoor(&wallHelper, rightWall, entrance);
+		AddHelperWallWithDoor (&wallHelper, rightWall, entrance);
 	}
 	else
 	{
-		AddHelperWall(&wallHelper, rightWall);
+		AddHelperWall (&wallHelper, rightWall);
 	}
 
-	Line topWall = HorizontalWall(building->left, building->right, building->top + halfWallWidth);
+	Line topWall = HorizontalWall (building->left, building->right, building->top + halfWallWidth);
 	if (entrance.y1 == building->top && entrance.y2 == building->top)
 	{
-		AddHelperWallWithDoor(&wallHelper, topWall, entrance);
+		AddHelperWallWithDoor (&wallHelper, topWall, entrance);
 	}
 	else
 	{
-		AddHelperWall(&wallHelper, topWall);
+		AddHelperWall (&wallHelper, topWall);
 	}
 
-	Line bottomWall = HorizontalWall(building->left, building->right, building->bottom - halfWallWidth);
+	Line bottomWall = HorizontalWall (building->left, building->right, building->bottom - halfWallWidth);
 	if (entrance.y1 == building->bottom && entrance.y2 == building->bottom)
 	{
-		AddHelperWallWithDoor(&wallHelper, bottomWall, entrance);
+		AddHelperWallWithDoor (&wallHelper, bottomWall, entrance);
 	}
 	else
 	{
-		AddHelperWall(&wallHelper, bottomWall);
+		AddHelperWall (&wallHelper, bottomWall);
 	}
 
-	GenerateWalls(building, &wallHelper, 0, 1, 2, 3, MinRoomSide, MaxRoomSide);
+	GenerateWalls (building, &wallHelper, 0, 1, 2, 3, MinRoomSide, MaxRoomSide);
 
 	I32 wallCount = 0;
 	for (I32 i = 0; i < wallHelper.wallCount; ++i) 
@@ -461,7 +462,7 @@ static void func GenerateBuildingInside(Building* building, MemArena* arena, Mem
 	}
 
 	inside->wallCount = 0;
-	inside->walls = ArenaPushArray(arena, Line, wallCount);
+	inside->walls = ArenaPushArray (arena, Line, wallCount);
 
 	for (I32 i = 0; i < wallHelper.wallCount; ++i) 
 	{
@@ -473,12 +474,12 @@ static void func GenerateBuildingInside(Building* building, MemArena* arena, Mem
 
 			if (wall.x1 == wall.x2) 
 			{
-				Line topWall = VerticalWall(
+				Line topWall = VerticalWall (
 					Min2(wall.y1, wall.y2), 
 					Min2(door.y1, door.y2), 
 					wall.x1
 				);
-				Line bottomWall = VerticalWall(
+				Line bottomWall = VerticalWall (
 					Max2(door.y1, door.y2),
 					Max2(wall.y1, wall.y2),
 					wall.x1
@@ -491,12 +492,12 @@ static void func GenerateBuildingInside(Building* building, MemArena* arena, Mem
 			} 
 			else if (wall.y1 == wall.y2) 
 			{
-				Line leftWall = HorizontalWall(
+				Line leftWall = HorizontalWall (
 					Min2(wall.x1, wall.x2),
 					Min2(door.x1, door.x2),
 					wall.y1
 				);
-				Line rightWall = HorizontalWall(
+				Line rightWall = HorizontalWall (
 					Max2(door.x1, door.x2),
 					Max2(wall.x1, wall.x2),
 					wall.y1
@@ -515,15 +516,15 @@ static void func GenerateBuildingInside(Building* building, MemArena* arena, Mem
 		}
 	}
 
-	ArenaPopTo(tmpArena, wallHelper.walls);
+	ArenaPopTo (tmpArena, wallHelper.walls);
 }
 
-static void func ConnectBuildingToRoad(Building* building, Road* road)
+static void func ConnectBuildingToRoad (Building* building, Road* road)
 {
 	// TODO: Update this in a Building project!
 }
 
-static B32 func IsPointInBuilding(V2 point, Building building)
+static B32 func IsPointInBuilding (V2 point, Building building)
 {
 	if (point.x < building.left || point.x > building.right)
 	{
@@ -538,7 +539,7 @@ static B32 func IsPointInBuilding(V2 point, Building building)
 	return true;
 }
 
-static B32 func IsPointInExtBuilding(V2 point, Building building, F32 radius)
+static B32 func IsPointInExtBuilding (V2 point, Building building, F32 radius)
 {
 	if (point.x < building.left - radius || point.x > building.right + radius) 
 	{
@@ -553,7 +554,7 @@ static B32 func IsPointInExtBuilding(V2 point, Building building, F32 radius)
 	return true;
 }
 
-static B32 func IsPointOnEdge(V2 point, Building building)
+static B32 func IsPointOnEdge (V2 point, Building building)
 {
 	if (point.x == building.left)
 	{
@@ -579,39 +580,39 @@ static B32 func IsPointOnEdge(V2 point, Building building)
 }
 
 // TODO: can this be merged with ClosestCrossPoint?
-static B32 func IsBuildingCrossed(Building building, V2 point1, V2 point2)
+static B32 func IsBuildingCrossed (Building building, V2 point1, V2 point2)
 {
-	if (IsPointOnEdge(point1, building))
+	if (IsPointOnEdge (point1, building))
 	{
 		return true;
 	}
 
-	if (IsPointOnEdge(point2, building)) 
+	if (IsPointOnEdge (point2, building)) 
 	{
 		return true;
 	}
 
-	V2 topLeft     = {building.left,  building.top};
-	V2 topRight    = {building.right, building.top};
-	V2 bottomLeft  = {building.left,  building.bottom};
-	V2 bottomRight = {building.right, building.bottom};
+	V2 topLeft     = MakePoint (building.left,  building.top);
+	V2 topRight    = MakePoint (building.right, building.top);
+	V2 bottomLeft  = MakePoint (building.left,  building.bottom);
+	V2 bottomRight = MakePoint (building.right, building.bottom);
 
-	if (DoLinesCross(topLeft, topRight, point1, point2)) 
+	if (DoLinesCross (topLeft, topRight, point1, point2)) 
 	{
 		return true;
 	}
 
-	if (DoLinesCross(topRight, bottomRight, point1, point2)) 
+	if (DoLinesCross (topRight , bottomRight, point1, point2)) 
 	{
 		return true;
 	}
 
-	if (DoLinesCross(bottomRight, bottomLeft, point1, point2)) 
+	if (DoLinesCross (bottomRight, bottomLeft, point1, point2)) 
 	{
 		return true;
 	}
 
-	if (DoLinesCross(bottomLeft, topLeft, point1, point2)) 
+	if (DoLinesCross (bottomLeft, topLeft, point1, point2)) 
 	{
 		return true;
 	}
@@ -619,7 +620,7 @@ static B32 func IsBuildingCrossed(Building building, V2 point1, V2 point2)
 	return false;
 }
 
-static BuildingCrossInfo func ExtBuildingClosestCrossInfo(Building* building, F32 radius, V2 closePoint, V2 farPoint)
+static BuildingCrossInfo func ExtBuildingClosestCrossInfo (Building* building, F32 radius, V2 closePoint, V2 farPoint)
 {
 	BuildingCrossInfo result = {};
 	result.type = CrossNone;
@@ -627,10 +628,10 @@ static BuildingCrossInfo func ExtBuildingClosestCrossInfo(Building* building, F3
 	F32 minDistanceSquare = 0.0f;
 	B32 foundAny = false;
 
-	V2 topLeft =     {building->left  - radius, building->top    - radius};
-	V2 topRight =    {building->right + radius, building->top    - radius};
-	V2 bottomLeft =  {building->left  - radius, building->bottom + radius};
-	V2 bottomRight = {building->right + radius, building->bottom + radius};
+	V2 topLeft     = MakePoint (building->left  - radius, building->top    - radius);
+	V2 topRight    = MakePoint (building->right + radius, building->top    - radius);
+	V2 bottomLeft  = MakePoint (building->left  - radius, building->bottom + radius);
+	V2 bottomRight = MakePoint (building->right + radius, building->bottom + radius);
 	V2 points[5] = {topLeft, topRight, bottomRight, bottomLeft, topLeft};
 
 	for (I32 i = 0; i < 4; ++i) 
@@ -638,10 +639,10 @@ static BuildingCrossInfo func ExtBuildingClosestCrossInfo(Building* building, F3
 		V2 corner1 = points[i];
 		V2 corner2 = points[i + 1];
 
-		if (DoLinesCross(corner1, corner2, closePoint, farPoint)) 
+		if (DoLinesCross (corner1, corner2, closePoint, farPoint)) 
 		{
-			V2 intersection = LineIntersection(corner1, corner2, closePoint, farPoint);
-			F32 distanceSquare = DistanceSquare(closePoint, intersection);
+			V2 intersection = LineIntersection (corner1, corner2, closePoint, farPoint);
+			F32 distanceSquare = DistanceSquare (closePoint, intersection);
 
 			if (foundAny == false || distanceSquare < minDistanceSquare) 
 			{
@@ -704,9 +705,9 @@ static BuildingCrossInfo func ExtBuildingClosestCrossInfo(Building* building, F3
 		entrance2.y += radius;
 	}
 
-	if (DoLinesCross(entrance1, entrance2, closePoint, farPoint)) 
+	if (DoLinesCross (entrance1, entrance2, closePoint, farPoint)) 
 	{
-		V2 intersection = LineIntersection(entrance1, entrance2, closePoint, farPoint);
+		V2 intersection = LineIntersection (entrance1, entrance2, closePoint, farPoint);
 		
 		result.building = building;
 		result.crossPoint = intersection;
@@ -718,7 +719,7 @@ static BuildingCrossInfo func ExtBuildingClosestCrossInfo(Building* building, F3
 	return result;
 }
 
-static BuildingCrossInfo func ExtBuildingInsideClosestCrossInfo(Building* building, F32 radius, V2 closePoint, V2 farPoint)
+static BuildingCrossInfo func ExtBuildingInsideClosestCrossInfo (Building* building, F32 radius, V2 closePoint, V2 farPoint)
 {
 	BuildingCrossInfo result = {};
 	result.type = CrossNone;
@@ -780,10 +781,10 @@ static BuildingCrossInfo func ExtBuildingInsideClosestCrossInfo(Building* buildi
 			V2 corner1 = points[i];
 			V2 corner2 = points[i + 1];
 
-			if (DoLinesCross(corner1, corner2, closePoint, farPoint)) 
+			if (DoLinesCross (corner1, corner2, closePoint, farPoint)) 
 			{
-				V2 intersection = LineIntersection(corner1, corner2, closePoint, farPoint);
-				F32 distanceSquare = DistanceSquare(closePoint, intersection);
+				V2 intersection = LineIntersection (corner1, corner2, closePoint, farPoint);
+				F32 distanceSquare = DistanceSquare (closePoint, intersection);
 
 				if (foundAny == false || distanceSquare < minDistanceSquare) 
 				{
@@ -803,23 +804,23 @@ static BuildingCrossInfo func ExtBuildingInsideClosestCrossInfo(Building* buildi
 	return result;
 }
 
-static V2 func ClosestBuildingCrossPoint(Building building, V2 closePoint, V2 farPoint)
+static V2 func ClosestBuildingCrossPoint (Building building, V2 closePoint, V2 farPoint)
 {
 	V2 result = {};
 	F32 minDistanceSquare = 0.0f;
 	B32 foundAny = false;
 
-	V2 topLeft = {building.left,  building.top};
-	V2 topRight = {building.right, building.top};
-	V2 bottomLeft = {building.left,  building.bottom};
-	V2 bottomRight = {building.right, building.bottom};
+	V2 topLeft     = MakePoint (building.left,  building.top);
+	V2 topRight    = MakePoint (building.right, building.top);
+	V2 bottomLeft  = MakePoint (building.left,  building.bottom);
+	V2 bottomRight = MakePoint (building.right, building.bottom);
 
-	if (DoLinesCross(topLeft, topRight, closePoint, farPoint)) 
+	if (DoLinesCross (topLeft, topRight, closePoint, farPoint)) 
 	{
-		V2 intersection = LineIntersection(topLeft, topRight, closePoint, farPoint);
+		V2 intersection = LineIntersection (topLeft, topRight, closePoint, farPoint);
 		intersection.x = closePoint.x;
 		intersection.y = building.top;
-		F32 distanceSquare = DistanceSquare(closePoint, intersection);
+		F32 distanceSquare = DistanceSquare (closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) 
 		{
@@ -829,12 +830,12 @@ static V2 func ClosestBuildingCrossPoint(Building building, V2 closePoint, V2 fa
 		}
 	}
 
-	if (DoLinesCross(topRight, bottomRight, closePoint, farPoint)) 
+	if (DoLinesCross (topRight, bottomRight, closePoint, farPoint)) 
 	{
-		V2 intersection = LineIntersection(topRight, bottomRight, closePoint, farPoint);
+		V2 intersection = LineIntersection (topRight, bottomRight, closePoint, farPoint);
 		intersection.x = building.right;
 		intersection.y = closePoint.y;
-		F32 distanceSquare = DistanceSquare(closePoint, intersection);
+		F32 distanceSquare = DistanceSquare (closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) 
 		{
@@ -844,12 +845,12 @@ static V2 func ClosestBuildingCrossPoint(Building building, V2 closePoint, V2 fa
 		}
 	}
 
-	if (DoLinesCross(bottomRight, bottomLeft, closePoint, farPoint)) 
+	if (DoLinesCross (bottomRight, bottomLeft, closePoint, farPoint)) 
 	{
-		V2 intersection = LineIntersection(bottomRight, bottomLeft, closePoint, farPoint);
+		V2 intersection = LineIntersection (bottomRight, bottomLeft, closePoint, farPoint);
 		intersection.x = closePoint.x;
 		intersection.y = building.bottom;
-		F32 distanceSquare = DistanceSquare(closePoint, intersection);
+		F32 distanceSquare = DistanceSquare (closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) 
 		{
@@ -859,12 +860,12 @@ static V2 func ClosestBuildingCrossPoint(Building building, V2 closePoint, V2 fa
 		}
 	}
 
-	if (DoLinesCross(bottomLeft, topLeft, closePoint, farPoint)) 
+	if (DoLinesCross (bottomLeft, topLeft, closePoint, farPoint)) 
 	{
-		V2 intersection = LineIntersection(bottomLeft, topLeft, closePoint, farPoint);
+		V2 intersection = LineIntersection (bottomLeft, topLeft, closePoint, farPoint);
 		intersection.x = building.left;
 		intersection.y = closePoint.y;
-		F32 distanceSquare = DistanceSquare(closePoint, intersection);
+		F32 distanceSquare = DistanceSquare (closePoint, intersection);
 
 		if (foundAny == false || distanceSquare < minDistanceSquare) 
 		{
@@ -877,7 +878,7 @@ static V2 func ClosestBuildingCrossPoint(Building building, V2 closePoint, V2 fa
 	return result;
 }
 
-static B32 func IsPointOnBuildingConnector(V2 point, Building building)
+static B32 func IsPointOnBuildingConnector (V2 point, Building building)
 {
 	F32 roadWidth = ConnectRoadWidth;
 
@@ -888,16 +889,16 @@ static B32 func IsPointOnBuildingConnector(V2 point, Building building)
 		F32 top    = building.top    - roadWidth;
 		F32 bottom = building.bottom + roadWidth;
 
-		if (IsPointInRect(point, left, right, top, bottom)) 
+		if (IsPointInRect (point, left, right, top, bottom)) 
 		{
 			return true;
 		}
 	}
 
-	F32 left   = Min2(building.connectPointFarShow.x, building.connectPointClose.x);
-	F32 right  = Max2(building.connectPointFarShow.x, building.connectPointClose.x);
-	F32 top    = Min2(building.connectPointFarShow.y, building.connectPointClose.y);
-	F32 bottom = Max2(building.connectPointFarShow.y, building.connectPointClose.y);
+	F32 left   = Min2 (building.connectPointFarShow.x, building.connectPointClose.x);
+	F32 right  = Max2 (building.connectPointFarShow.x, building.connectPointClose.x);
+	F32 top    = Min2 (building.connectPointFarShow.y, building.connectPointClose.y);
+	F32 bottom = Max2 (building.connectPointFarShow.y, building.connectPointClose.y);
 
 	if (left == right) 
 	{
@@ -910,7 +911,7 @@ static B32 func IsPointOnBuildingConnector(V2 point, Building building)
 		bottom += roadWidth * 0.5f;
 	}
 
-	if (IsPointInRect(point, left, right, top, bottom)) 
+	if (IsPointInRect (point, left, right, top, bottom)) 
 	{
 		return true;
 	}
@@ -920,16 +921,16 @@ static B32 func IsPointOnBuildingConnector(V2 point, Building building)
 	}
 }
 
-static void func HighlightBuilding(Canvas* canvas, Building building, V4 color)
+static void func HighlightBuilding (Canvas* canvas, Building building, V4 color)
 {
-	DrawRect(
+	DrawRectLRTB (
 		canvas,
 		building.left, building.right, building.top, building.bottom,
 		color
 	);
 }
 
-static void func DrawBuildingInside(Canvas* canvas, Building building)
+static void func DrawBuildingInside (Canvas* canvas, Building building)
 {
 	V4 color = {};
 
@@ -968,19 +969,19 @@ static void func DrawBuildingInside(Canvas* canvas, Building building)
 		wallColor.blue -= 0.2f;
 	}
 
-	DrawRect(canvas, building.left, building.right, building.top, building.bottom, color);
+	DrawRectLRTB (canvas, building.left, building.right, building.top, building.bottom, color);
 
 	BuildingInside* inside = building.inside;
 
 	for (I32 i = 0; i < inside->wallCount; ++i) 
 	{
 		Line wall = inside->walls[i];
-		DrawGridLine(canvas, wall.p1, wall.p2, wallColor, WallWidth);
+		DrawGridLine (canvas, wall.p1, wall.p2, wallColor, WallWidth);
 	}
 }
 
 // TODO: move this to Geometry?
-static B32 func IsPointOnGridLine(V2 point, V2 line1, V2 line2)
+static B32 func IsPointOnGridLine (V2 point, V2 line1, V2 line2)
 {
 	B32 result = false;
 
@@ -996,13 +997,13 @@ static B32 func IsPointOnGridLine(V2 point, V2 line1, V2 line2)
 	return result;
 }
 
-static B32 func IsCornerVisible(BuildingInside* inside, V2 center, V2 corner)
+static B32 func IsCornerVisible (BuildingInside* inside, V2 center, V2 corner)
 {
 	for (I32 i = 0; i < inside->wallCount; ++i) 
 	{
 		Line wall = inside->walls[i];
 
-		if (!IsPointOnGridLine(corner, wall.p1, wall.p2) && DoLinesCross(center, corner, wall.p1,wall.p2)) 
+		if (!IsPointOnGridLine (corner, wall.p1, wall.p2) && DoLinesCross (center, corner, wall.p1,wall.p2)) 
 		{
 			return false;
 		}
@@ -1032,17 +1033,17 @@ struct CornerHelper
 	MemArena* arena;
 };
 
-static void func AddCorner(CornerHelper* helper, CornerType type, V2 point)
+static void func AddCorner (CornerHelper* helper, CornerType type, V2 point)
 {
 	Corner corner = {};
 	corner.type = type;
 	corner.point = point;
 
-	ArenaPush(helper->arena, Corner, corner);
+	ArenaPush (helper->arena, Corner, corner);
 	helper->cornerCount++;
 }
 
-static B32 func AreCornersInOrder(V2 center, Corner corner1, Corner corner2)
+static B32 func AreCornersInOrder (V2 center, Corner corner1, Corner corner2)
 {
 	V2 point1 = corner1.point;
 	V2 point2 = corner2.point;
@@ -1055,7 +1056,7 @@ static B32 func AreCornersInOrder(V2 center, Corner corner1, Corner corner2)
 	{
 		return false;
 	}
-	else if (TurnsRight(center, point1, point2))
+	else if (TurnsRight (center, point1, point2))
 	{
 		return true;
 	}
@@ -1065,7 +1066,7 @@ static B32 func AreCornersInOrder(V2 center, Corner corner1, Corner corner2)
 	}
 }
 
-static void func MergeCornerArrays(CornerHelper* helper, V2 center, I32 leftStart, I32 leftEnd, I32 rightStart, I32 rightEnd)
+static void func MergeCornerArrays (CornerHelper* helper, V2 center, I32 leftStart, I32 leftEnd, I32 rightStart, I32 rightEnd)
 {
 	I32 left = leftStart;
 	I32 right = rightStart;
@@ -1083,7 +1084,7 @@ static void func MergeCornerArrays(CornerHelper* helper, V2 center, I32 leftStar
 		{
 			chooseLeft = true;
 		}
-		else if (AreCornersInOrder(center, helper->corners[left], helper->corners[right]))
+		else if (AreCornersInOrder (center, helper->corners[left], helper->corners[right]))
 		{
 			chooseLeft = true;
 		}
@@ -1112,7 +1113,7 @@ static void func MergeCornerArrays(CornerHelper* helper, V2 center, I32 leftStar
 	}
 }
 
-static void func SortCorners(CornerHelper* helper, V2 center)
+static void func SortCorners (CornerHelper* helper, V2 center)
 {
 	I32 length = 1;
 	while (length <= helper->cornerCount) 
@@ -1134,7 +1135,7 @@ static void func SortCorners(CornerHelper* helper, V2 center)
 				rightEnd = helper->cornerCount - 1;
 			}
 
-			MergeCornerArrays(helper, center, leftStart, leftEnd, rightStart, rightEnd);
+			MergeCornerArrays (helper, center, leftStart, leftEnd, rightStart, rightEnd);
 
 			leftStart = rightEnd + 1;
 		}
@@ -1143,14 +1144,14 @@ static void func SortCorners(CornerHelper* helper, V2 center)
 	}
 }
 
-static V2 func NextVisiblePointAlongRay(Building building, V2 closePoint, V2 farPoint, F32 maxDistance)
+static V2 func NextVisiblePointAlongRay (Building building, V2 closePoint, V2 farPoint, F32 maxDistance)
 {
 	BuildingInside* inside = building.inside;
 
 	V2 result = farPoint;
 	F32 minDistanceSquare = maxDistance * maxDistance;
 
-	V2 direction = PointDirection(closePoint, farPoint);
+	V2 direction = PointDirection (closePoint, farPoint);
 	V2 farFarPoint = closePoint + (maxDistance * direction);
 
 	for (I32 i = 0; i < inside->wallCount; ++i) 
@@ -1167,11 +1168,11 @@ static V2 func NextVisiblePointAlongRay(Building building, V2 closePoint, V2 far
 			continue;
 		}
 
-		if (DoLinesCross(closePoint, farFarPoint, wall.p1, wall.p2)) 
+		if (DoLinesCross (closePoint, farFarPoint, wall.p1, wall.p2)) 
 		{
-			V2 crossPoint = LineIntersection(closePoint, farFarPoint, wall.p1, wall.p2);
+			V2 crossPoint = LineIntersection (closePoint, farFarPoint, wall.p1, wall.p2);
 
-			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
+			F32 distanceSquare = DistanceSquare (closePoint, crossPoint);
 			if (distanceSquare < minDistanceSquare) 
 			{
 				minDistanceSquare = distanceSquare;
@@ -1180,18 +1181,18 @@ static V2 func NextVisiblePointAlongRay(Building building, V2 closePoint, V2 far
 		}
 	}
 
-	V2 topLeft     = MakePoint(building.left, building.top);
-	V2 topRight    = MakePoint(building.right, building.top);
-	V2 bottomLeft  = MakePoint(building.left, building.bottom);
-	V2 bottomRight = MakePoint(building.right, building.bottom);
+	V2 topLeft     = MakePoint (building.left, building.top);
+	V2 topRight    = MakePoint (building.right, building.top);
+	V2 bottomLeft  = MakePoint (building.left, building.bottom);
+	V2 bottomRight = MakePoint (building.right, building.bottom);
 
 	if (topLeft != farPoint && topRight != farPoint) 
 	{
-		if (DoLinesCross(closePoint, farFarPoint, topLeft, topRight)) 
+		if (DoLinesCross (closePoint, farFarPoint, topLeft, topRight)) 
 		{
-			V2 crossPoint = LineIntersection(closePoint, farFarPoint, topLeft, topRight);
+			V2 crossPoint = LineIntersection (closePoint, farFarPoint, topLeft, topRight);
 
-			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
+			F32 distanceSquare = DistanceSquare (closePoint, crossPoint);
 			if (distanceSquare < minDistanceSquare) 
 			{
 				minDistanceSquare = distanceSquare;
@@ -1202,11 +1203,11 @@ static V2 func NextVisiblePointAlongRay(Building building, V2 closePoint, V2 far
 
 	if (topRight != farPoint && bottomRight != farPoint) 
 	{
-		if (DoLinesCross(closePoint, farFarPoint, topRight, bottomRight)) 
+		if (DoLinesCross (closePoint, farFarPoint, topRight, bottomRight)) 
 		{
-			V2 crossPoint = LineIntersection(closePoint, farFarPoint, topRight, bottomRight);
+			V2 crossPoint = LineIntersection (closePoint, farFarPoint, topRight, bottomRight);
 
-			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
+			F32 distanceSquare = DistanceSquare (closePoint, crossPoint);
 			if (distanceSquare < minDistanceSquare) 
 			{
 				minDistanceSquare = distanceSquare;
@@ -1217,11 +1218,11 @@ static V2 func NextVisiblePointAlongRay(Building building, V2 closePoint, V2 far
 
 	if (bottomRight != farPoint && bottomLeft != farPoint) 
 	{
-		if (DoLinesCross(closePoint, farFarPoint, bottomRight, bottomLeft)) 
+		if (DoLinesCross (closePoint, farFarPoint, bottomRight, bottomLeft)) 
 		{
-			V2 crossPoint = LineIntersection(closePoint, farFarPoint, bottomRight, bottomLeft);
+			V2 crossPoint = LineIntersection (closePoint, farFarPoint, bottomRight, bottomLeft);
 
-			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
+			F32 distanceSquare = DistanceSquare (closePoint, crossPoint);
 			if (distanceSquare < minDistanceSquare) 
 			{
 				minDistanceSquare = distanceSquare;
@@ -1232,11 +1233,11 @@ static V2 func NextVisiblePointAlongRay(Building building, V2 closePoint, V2 far
 
 	if (bottomLeft != farPoint && topLeft != farPoint) 
 	{
-		if (DoLinesCross(closePoint, farFarPoint, bottomLeft, topLeft)) 
+		if (DoLinesCross (closePoint, farFarPoint, bottomLeft, topLeft)) 
 		{
-			V2 crossPoint = LineIntersection(closePoint, farFarPoint, bottomLeft, topLeft);
+			V2 crossPoint = LineIntersection (closePoint, farFarPoint, bottomLeft, topLeft);
 
-			F32 distanceSquare = DistanceSquare(closePoint, crossPoint);
+			F32 distanceSquare = DistanceSquare (closePoint, crossPoint);
 			if (distanceSquare < minDistanceSquare) 
 			{
 				minDistanceSquare = distanceSquare;
@@ -1252,11 +1253,11 @@ static V2 func NextVisiblePointAlongRay(Building building, V2 closePoint, V2 far
 //       something along the lines of rays on the bitmap?
 //       or something based on rooms and doors?
 //       or should there be a big area and each line would cut down from it if crossed?
-static void func DrawVisibleAreaInBuilding(Canvas* canvas, Building building, V2 center, MemArena* tmpArena)
+static void func DrawVisibleAreaInBuilding (Canvas* canvas, Building building, V2 center, MemArena* tmpArena)
 {
 	BuildingInside* inside = building.inside;
 
-	V4 lineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 lineColor = MakeColor (1.0f, 1.0f, 1.0f);
 
 	F32 maxDistance = (building.bottom - building.top) + (building.right - building.left);
 
@@ -1264,86 +1265,86 @@ static void func DrawVisibleAreaInBuilding(Canvas* canvas, Building building, V2
 
 	helper.arena = tmpArena;
 	helper.cornerCount = 0;
-	helper.corners = ArenaPushArray(tmpArena, Corner, 0);
+	helper.corners = ArenaPushArray (tmpArena, Corner, 0);
 
 	for (I32 i = 0; i < inside->wallCount; ++i) 
 	{
 		Line wall = inside->walls[i];
 
-		if (IsCornerVisible(inside, center, wall.p1)) 
+		if (IsCornerVisible (inside, center, wall.p1)) 
 		{
-			if (TurnsRight(center, wall.p1, wall.p2))
+			if (TurnsRight (center, wall.p1, wall.p2))
 			{
-				AddCorner(&helper, CornerEnter, wall.p1);
+				AddCorner (&helper, CornerEnter, wall.p1);
 			}
 			else 
 			{
-				AddCorner(&helper, CornerLeave, wall.p1);
+				AddCorner (&helper, CornerLeave, wall.p1);
 			}
 		}
-		if (IsCornerVisible(inside, center, wall.p2)) 
+		if (IsCornerVisible (inside, center, wall.p2)) 
 		{
-			if (TurnsRight(center, wall.p2, wall.p1))
+			if (TurnsRight (center, wall.p2, wall.p1))
 			{
-				AddCorner(&helper, CornerEnter, wall.p2);
+				AddCorner (&helper, CornerEnter, wall.p2);
 			}
 			else
 			{
-				AddCorner(&helper, CornerLeave, wall.p2);
+				AddCorner (&helper, CornerLeave, wall.p2);
 			}
 		}
 	}
 
-	V2 topLeft     = MakePoint(building.left, building.top);
-	V2 topRight    = MakePoint(building.right, building.top);
-	V2 bottomLeft  = MakePoint(building.left, building.bottom);
-	V2 bottomRight = MakePoint(building.right, building.bottom);
+	V2 topLeft     = MakePoint (building.left,  building.top);
+	V2 topRight    = MakePoint (building.right, building.top);
+	V2 bottomLeft  = MakePoint (building.left,  building.bottom);
+	V2 bottomRight = MakePoint (building.right, building.bottom);
 
-	if (IsCornerVisible(inside, center, topLeft)) 
+	if (IsCornerVisible (inside, center, topLeft)) 
 	{
-		AddCorner(&helper, CornerEdge, topLeft);
+		AddCorner (&helper, CornerEdge, topLeft);
 	}
 
-	if (IsCornerVisible(inside, center, topRight))
+	if (IsCornerVisible (inside, center, topRight))
 	{
-		AddCorner(&helper, CornerEdge, topRight);
+		AddCorner (&helper, CornerEdge, topRight);
 	}
 
-	if (IsCornerVisible(inside, center, bottomLeft))
+	if (IsCornerVisible (inside, center, bottomLeft))
 	{
-		AddCorner(&helper, CornerEdge, bottomLeft);
+		AddCorner (&helper, CornerEdge, bottomLeft);
 	}
 
-	if (IsCornerVisible(inside, center, bottomRight))
+	if (IsCornerVisible (inside, center, bottomRight))
 	{
-		AddCorner(&helper, CornerEdge, bottomRight);
+		AddCorner (&helper, CornerEdge, bottomRight);
 	}
 
-	helper.tmpCorners = ArenaPushArray(tmpArena, Corner, helper.cornerCount);
+	helper.tmpCorners = ArenaPushArray (tmpArena, Corner, helper.cornerCount);
 
-	SortCorners(&helper, center);
+	SortCorners (&helper, center);
 
-	V2* points = ArenaPushArray(tmpArena, V2, 0);
+	V2* points = ArenaPushArray (tmpArena, V2, 0);
 	I32 pointCount = 0;
 
 	for (I32 i = 0; i < helper.cornerCount; ++i) 
 	{
 		Corner corner = helper.corners[i];
 
-		V2 farPoint = NextVisiblePointAlongRay(building, center, corner.point, maxDistance);
+		V2 farPoint = NextVisiblePointAlongRay (building, center, corner.point, maxDistance);
 
 		if ((corner.type == CornerEnter) && (farPoint != corner.point)) 
 		{
-			ArenaPushVar(tmpArena, farPoint);
+			ArenaPushVar (tmpArena, farPoint);
 			pointCount++;
 		}
 
-		ArenaPushVar(tmpArena, corner.point);
+		ArenaPushVar (tmpArena, corner.point);
 		pointCount++;
 
 		if ((corner.type == CornerLeave) && (farPoint != corner.point)) 
 		{
-			ArenaPushVar(tmpArena, farPoint);
+			ArenaPushVar (tmpArena, farPoint);
 			pointCount++;
 		}
 	}
@@ -1362,21 +1363,21 @@ static void func DrawVisibleAreaInBuilding(Canvas* canvas, Building building, V2
 			nextPoint = points[0];
 		}
 
-		Bresenham(canvas, point, nextPoint, lineColor);
+		Bresenham (canvas, point, nextPoint, lineColor);
 	}
 
-	FloodFill(canvas, center, lineColor, tmpArena);
+	FloodFill (canvas, center, lineColor, tmpArena);
 
-	ArenaPopTo(tmpArena, helper.corners);
+	ArenaPopTo (tmpArena, helper.corners);
 }
 
-static void func HighlightBuildingConnector(Canvas* canvas, Building building, V4 color)
+static void func HighlightBuildingConnector (Canvas* canvas, Building building, V4 color)
 {
 	F32 roadWidth = ConnectRoadWidth;
 
 	if (building.roadAround) 
 	{
-		DrawRect(
+		DrawRectLRTB (
 			canvas,
 			building.left - roadWidth, building.right + roadWidth,
 			building.top - roadWidth, building.bottom + roadWidth,
@@ -1387,16 +1388,16 @@ static void func HighlightBuildingConnector(Canvas* canvas, Building building, V
 		// DrawBuilding(draw, building);
 	}
 
-	DrawLine(canvas, building.connectPointClose, building.connectPointFarShow, color, roadWidth);
+	DrawLine (canvas, building.connectPointClose, building.connectPointFarShow, color, roadWidth);
 }
 
-static void func DrawConnectRoad(Canvas* canvas, Building building, Texture roadTexture)
+static void func DrawConnectRoad (Canvas* canvas, Building building, Texture roadTexture)
 {
 	F32 roadWidth = ConnectRoadWidth;
 
 	if (building.roadAround) 
 	{
-		WorldTextureRect(
+		WorldTextureRect (
 			canvas,
 			building.left - roadWidth, building.right + roadWidth,
 			building.top - roadWidth, building.bottom + roadWidth,
@@ -1404,7 +1405,7 @@ static void func DrawConnectRoad(Canvas* canvas, Building building, Texture road
 		);
 	}
 
-	WorldTextureGridLine(
+	WorldTextureGridLine (
 		canvas, 
 		building.connectPointClose, building.connectPointFarShow, roadWidth, 
 		roadTexture

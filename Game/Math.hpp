@@ -35,94 +35,104 @@ struct V4
 	};
 };
 
-static void func IntSwap(I32* i, I32* j)
+static void func IntSwap (I32* i, I32* j)
 {
 	I32 tmp = *i;
 	*i = *j;
 	*j = tmp;
 }
 
-static I32 func IntAbs(I32 i)
+static I32 func IntAbs (I32 i)
 {
+	I32 result = 0;
 	if (i > 0)
 	{
-		return i;
+		result = i;
 	}
 	else
 	{
-		return -i;
+		result = -i;
 	}
-}
-
-static I32 func IntRandom(I32 min, I32 max)
-{
-	I32 result = min + (rand() % (max - min + 1));
 	return result;
 }
 
-static I32 func IntMin2(I32 i1, I32 i2)
+static I32 func IntRandom (I32 min, I32 max)
 {
+	I32 result = min + (rand () % (max - min + 1));
+	return result;
+}
+
+static I32 func IntMin2 (I32 i1, I32 i2)
+{
+	I32 min = 0;
 	if (i1 < i2) 
 	{
-		return i1;
+		min = i1;
 	}
 	else 
 	{
-		return i2;
+		min = i2;
 	}
+	return min;
 }
 
-static I32 func IntMax2(I32 i1, I32 i2)
+static I32 func IntMax2 (I32 i1, I32 i2)
 {
+	I32 max = 0;
 	if (i1 > i2)
 	{
-		return i1;
+		max = i1;
 	}
 	else
 	{
-		return i2;
+		max = i2;
 	}
+	return max;
 }
 
-static F32 func Sqrt(F32 x)
+static F32 func Sqrt (F32 x)
 {
 	return sqrtf(x);
 }
 
-static F32 func Abs(F32 x)
+static F32 func Abs (F32 x)
 {
+	F32 result = 0;
 	if (x > 0.0f)
 	{
-		return x;
+		result = x;
 	}
 	else
 	{
-		return -x;
+		result = -x;
 	}
+	return result;
 }
 
-static I32 func Floor(F32 x)
+static I32 func Floor (F32 x)
 {
-	return (I32)floorf(x);
+	I32 result = (I32)floorf (x);
+	return result;
 }
 
-static F32 func Fraction(F32 x)
+static F32 func Fraction (F32 x)
 {
     F32 fraction = x - (I32)x;
 	return fraction;
 }
 
-static I32 func RandMod(I32 mod)
+static I32 func RandMod (I32 mod)
 {
-	return (rand() % mod);
+	I32 result = (rand () % mod);
+	return result;
 }
 
-static void func SeedRandom(I32 seed)
+static void func SeedRandom (I32 seed)
 {
 	srand((U32)seed);
 }
 
-static V2 func operator+(V2 point1, V2 point2)
+static V2 func operator+ (V2 point1, V2 point2)
 {
 	V2 result = {};
 	result.x = (point1.x + point2.x);
@@ -130,7 +140,7 @@ static V2 func operator+(V2 point1, V2 point2)
 	return result;
 }
 
-static V2 func operator-(V2 point1, V2 point2)
+static V2 func operator- (V2 point1, V2 point2)
 {
 	V2 result = {};
 	result.x = (point1.x - point2.x);
@@ -138,7 +148,7 @@ static V2 func operator-(V2 point1, V2 point2)
 	return result;
 }
 
-static V2 func operator*(F32 times, V2 point)
+static V2 func operator* (F32 times, V2 point)
 {
 	V2 result = {};
 	result.x = (times * point.x);
@@ -146,29 +156,33 @@ static V2 func operator*(F32 times, V2 point)
 	return result;
 }
 
-static B32 func operator==(V2 point1, V2 point2)
+static B32 func operator== (V2 point1, V2 point2)
 {
-	return ((point1.x == point2.x) && (point1.y == point2.y));
+	B32 result = ((point1.x == point2.x) && (point1.y == point2.y));
+	return result;
 }
 
-static B32 func operator!=(V2 point1, V2 point2)
+static B32 func operator!= (V2 point1, V2 point2)
 {
-	return ((point1.x != point2.x) || (point1.y != point2.y));
+	B32 result = ((point1.x != point2.x) || (point1.y != point2.y));
+	return result;
 }
 
-static F32 func Min2(F32 x, F32 y)
+static F32 func Min2 (F32 x, F32 y)
 {
+	F32 min = 0.0f;
 	if (x < y)
 	{
-		return x;
+		min = x;
 	}
 	else
 	{
-		return y;
+		min = y;
 	}
+	return min;
 }
 
-static F32 func Min4(F32 x, F32 y, F32 z, F32 w)
+static F32 func Min4 (F32 x, F32 y, F32 z, F32 w)
 {
 	F32 min = x;
 	if (y < min)
@@ -186,19 +200,21 @@ static F32 func Min4(F32 x, F32 y, F32 z, F32 w)
 	return min;
 }
 
-static F32 func Max2(F32 x, F32 y)
+static F32 func Max2 (F32 x, F32 y)
 {
+	F32 max = 0.0f;
 	if (x > y)
 	{
-		return x;
+		max = x;
 	}
 	else
 	{
-		return y;
+		max = y;
 	}
+	return max;
 }
 
-static F32 func Max3(F32 x, F32 y, F32 z) 
+static F32 func Max3 (F32 x, F32 y, F32 z) 
 {
 	F32 max = x;
 	if (y > max) 
@@ -212,7 +228,7 @@ static F32 func Max3(F32 x, F32 y, F32 z)
 	return max;
 }
 
-static F32 func Max4(F32 x, F32 y, F32 z, F32 w)
+static F32 func Max4 (F32 x, F32 y, F32 z, F32 w)
 {
 	F32 max = x;
 	if (y > max)
@@ -230,9 +246,9 @@ static F32 func Max4(F32 x, F32 y, F32 z, F32 w)
 	return max;
 }
 
-static F32 func Clip(F32 value, F32 min, F32 max)
+static F32 func Clip (F32 value, F32 min, F32 max)
 {
-	Assert(min < max);
+	Assert (min < max);
 	F32 result = value;
 	if (result < min)
 	{
@@ -245,9 +261,9 @@ static F32 func Clip(F32 value, F32 min, F32 max)
 	return result;
 }
 
-static I32 func ClipInt(I32 value, I32 min, I32 max)
+static I32 func ClipInt (I32 value, I32 min, I32 max)
 {
-	Assert(min < max);
+	Assert (min < max);
 	I32 result = value;
 	if (result < min)
 	{
@@ -260,62 +276,75 @@ static I32 func ClipInt(I32 value, I32 min, I32 max)
 	return result;
 }
 
-static F32 func Invert(F32 value)
+static F32 func Invert (F32 value)
 {
-	Assert(value != 0.0f);
-	F32 inverseValue = 1.0f / value;
+	Assert (value != 0.0f);
+	F32 inverseValue = (1.0f / value);
 	return inverseValue;
 }
 
-static F32 func Square(F32 x)
+static F32 func Square (F32 x)
 {
-	F32 result = x * x;
+	F32 result = (x * x);
 	return result;
 }
 
-static I32 func IntSquare(I32 x)
+static I32 func IntSquare (I32 x)
 {
-	I32 result = x * x;
+	I32 result = (x * x);
 	return result;
 }
 
-static void func InitRandom()
+static void func InitRandom ()
 {
-	srand((U32)time(0));
+	srand ((U32)time (0));
 }
 
-static F32 func RandomBetween(F32 min, F32 max)
+static F32 func RandomBetween (F32 min, F32 max)
 {
-	return (min) + (max - min) * ((F32)rand() / (F32)RAND_MAX);
+	F32 result = (min) + (max - min) * ((F32)rand () / (F32)RAND_MAX);
+	return result;
 }
 
-static B32 func IsBetween(F32 test, F32 min, F32 max)
+static B32 func IsBetween (F32 test, F32 value1, F32 value2)
 {
-	return (min <= test && test <= max);
+	F32 min = Min2 (value1, value2);
+	F32 max = Max2 (value1, value2);
+	B32 result = (min <= test && test <= max);
+	return result;
 }
 
-static F32 func Lerp(F32 value1, F32 ratio, F32 value2)
+static F32 func Lerp (F32 value1, F32 ratio, F32 value2)
 {
-	Assert(IsBetween(ratio, 0.0f, 1.0f));
+	Assert (IsBetween (ratio, 0.0f, 1.0f));
 	return ((1.0f - ratio) * value1) + ((ratio) * value2);
 }
 
-static B32 func IsIntBetween(I32 test, I32 min, I32 max)
+static V2 func PointLerp (V2 point1, F32 ratio, V2 point2)
+{
+	Assert (IsBetween (ratio, 0.0f, 1.0f));
+	V2 result = {};
+	result.x = Lerp (point1.x, ratio, point2.x);
+	result.y = Lerp (point1.y, ratio, point2.y);
+	return result;
+}
+
+static B32 func IsIntBetween (I32 test, I32 min, I32 max)
 {
 	B32 isBetween = (min <= test && test <= max);
 	return isBetween;
 }
 
-static B32 func IsPointInRect(V2 point, F32 left, F32 right, F32 top, F32 bottom)
+static B32 func IsPointInRect (V2 point, F32 left, F32 right, F32 top, F32 bottom)
 {
+	B32 result = true;
 	if (point.x < left || point.x > right)
 	{
-		return false;
+		result = false;
 	}
 	if (point.y < top || point.y > bottom)
 	{
-		return false;
+		result = false;
 	}
-
-	return true;
+	return result;
 }
