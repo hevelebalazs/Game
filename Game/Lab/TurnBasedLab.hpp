@@ -92,6 +92,8 @@ struct TurnBasedLabState
 	I32 activeTeamIndex;
 	TurnBasedAbility* selectedAbility;
 
+	TurnBasedAbility* hoverAbility;
+
 	TurnBasedCooldown cooldowns[TurnBasedCooldownN];
 	I32 cooldownN;
 
@@ -213,6 +215,8 @@ static void func TurnBasedLabInit (TurnBasedLabState* labState, I32 windowWidth,
 	labState->activeTeamIndex = 0;
 	labState->selectedEntity = 0;
 	labState->selectedAbility = 0;
+
+	labState->hoverAbility = 0;
 
 	for (I32 i = 0; i < TurnBasedEntityN; i++)
 	{
@@ -543,11 +547,14 @@ static void func UseAbility (TurnBasedLabState* labState, TurnBasedEntity* entit
 				for (I32 col = center.col - 1; col <= center.col + 1; col++)
 				{
 					TileIndex tileIndex = MakeTileIndex (row, col);
-					TurnBasedEntity* target = GetEntityAtTile (labState, tileIndex);
-					if (entity->teamIndex != target->teamIndex &&
-						CanDamage (labState, target))
+					if (IsValidTileIndex (tileIndex))
 					{
-						DoDamage (labState, target, ability->damage);
+						TurnBasedEntity* target = GetEntityAtTile (labState, tileIndex);
+						if (target && entity->teamIndex != target->teamIndex &&
+							CanDamage (labState, target))
+						{
+							DoDamage (labState, target, ability->damage);
+						}
 					}
 				}
 			}
@@ -653,7 +660,8 @@ static void func UseAbilityOnTile (TurnBasedLabState* labState,
 				TileIndex damagedTileIndex = MakeTileIndex (rollTileIndex.row + rollDirectionRow,
 															rollTileIndex.col + rollDirectionCol);
 				TurnBasedEntity* damagedEntity = GetEntityAtTile (labState, damagedTileIndex);
-				if (damagedEntity)
+				if (damagedEntity && entity->teamIndex != damagedEntity->teamIndex &&
+					CanDamage (labState, damagedEntity))
 				{
 					DoDamage (labState, damagedEntity, ability->damage);
 				}
@@ -887,8 +895,13 @@ static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WP
 			V2 mousePosition = GetMousePosition (&labState->camera, window);
 			TurnBasedEntity* entity = labState->selectedEntity;
 			TurnBasedAbility* ability = labState->selectedAbility;
+			TurnBasedAbility* hoverAbility = labState->hoverAbility;
 			TileIndex tileIndex = GetContainingTileIndex (mousePosition);
-			if (entity)
+			if (hoverAbility)
+			{
+				ToggleAbility (labState, hoverAbility->id);
+			}
+			else if (entity)
 			{
 				if (ability)
 				{
@@ -939,6 +952,45 @@ static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WP
 	return result;
 }
 
+static I8* func GetStatusText (TurnBasedLabState* labState)
+{
+	I8* text = 0;
+
+	if (labState->selectedEntity == 0)
+	{
+		TurnBasedEntity* hoverEntity = GetEntityAtTile (labState, labState->hoverTileIndex);
+		if (hoverEntity)
+		{
+			if (hoverEntity->teamIndex == labState->activeTeamIndex)
+			{
+				if (IsDead (hoverEntity))
+				{
+					text = "Entity is dead.";
+				}
+				else
+				{
+					text = "Click to select entity.";
+				}
+			}
+			else
+			{
+				text = "It's not this entity's turn.";
+			}
+		}
+		else
+		{
+			text = "Click on an entity to select it or press E to end turn.";
+		}
+	}
+	else
+	{
+		text = "An entity is selected. Not yet implemented.";
+	}
+
+	Assert (text != 0);
+	return text;
+}
+
 static void func DrawStatusBar (TurnBasedLabState* labState)
 {
 	Bitmap* bitmap = &labState->canvas.bitmap;
@@ -954,21 +1006,8 @@ static void func DrawStatusBar (TurnBasedLabState* labState)
 	GlyphData* glyphData = labState->canvas.glyphData;
 	Assert (glyphData != 0);
 
-	I8* text = 0;
 	V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
-	if (labState->selectedAbility != 0)
-	{
-		text = "Click on an enemy to attack it.";
-	}
-	else if (labState->selectedEntity != 0)
-	{
-		text = "Click on the tile to move to.";
-	}
-	else
-	{
-		text = "Press 'E' to end turn.";
-	}
-
+	I8* text = GetStatusText (labState);
 	Assert (text != 0);
 	DrawBitmapTextLineCentered (bitmap, text, glyphData, left, right, top, bottom, textColor);
 }
@@ -1003,11 +1042,34 @@ static void func DrawHealthBar (TurnBasedLabState* labState, TurnBasedEntity* en
 	DrawRectLRTB (canvas, left, filledX, top, bottom, filledColor);
 }
 
-static void func DrawEffectsBar (TurnBasedLabState* labState)
+static String func GetEffectTooltipText (I32 effectId, I8* buffer, I32 bufferSize)
+{
+	String text = StartString (buffer, bufferSize);
+	switch (effectId)
+	{
+		case InvulnerableEffectId:
+		{
+			AddLine (text, "Invulnerable");
+			AddLine (text, "Cannot be damaged.");
+			break;
+		}
+		default:
+		{
+			DebugBreak ();
+		}
+	}
+	return text;
+}
+
+static void func DrawEffectsBar (TurnBasedLabState* labState, V2 mousePosition)
 {
 	Bitmap* bitmap = &labState->canvas.bitmap;
 	GlyphData* glyphData = labState->canvas.glyphData;
 	Assert (glyphData != 0);
+
+	Camera* camera = &labState->camera;
+	I32 mouseX = UnitXtoPixel (camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel (camera, mousePosition.y);
 
 	TurnBasedEntity* entity = labState->selectedEntity;
 	I32 effectN = 0;
@@ -1033,17 +1095,120 @@ static void func DrawEffectsBar (TurnBasedLabState* labState)
 		I32 right = (bitmap->width - 1);
 		I32 left = right - barWidth;
 
-		V4 barBackground = MakeColor (1.0f, 1.0f, 1.0f);
-		DrawBitmapRect (bitmap, left, right, top, bottom, barBackground);
+		V4 backgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
+		V4 outlineColor = MakeColor (1.0f, 1.0f, 1.0f);
+		V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
+
+		I32 boxLeft   = left + padding;
+		I32 boxTop    = top + padding;
+		I32 boxBottom = boxTop + boxSide;
+		for (I32 i = 0; i < labState->effectN; i++)
+		{
+			TurnBasedEffect* effect = &labState->effects[i];
+			if (effect->entity == entity)
+			{
+				I32 boxRight = boxLeft + boxSide;
+				DrawBitmapRect (bitmap, boxLeft, boxRight, boxTop, boxBottom, backgroundColor);
+				DrawBitmapRectOutline (bitmap, boxLeft, boxRight, boxTop, boxBottom, outlineColor);
+
+				I8 textBuffer[8] = {};
+				OneLineString (textBuffer, 8, effect->turns);
+				DrawBitmapTextLineCentered (bitmap, textBuffer, glyphData,
+											boxLeft, boxRight, boxTop, boxBottom, textColor);
+
+				if (IsIntBetween (mouseX, boxLeft, boxRight) && IsIntBetween (mouseY, boxTop, boxBottom))
+				{
+					I32 tooltipTop = boxBottom + padding;
+					I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
+					tooltipLeft = IntMin2 (tooltipLeft, (bitmap->width - 1) - padding - TooltipWidth);
+
+					I8 tooltipBuffer[256] = {};
+					String tooltipText = GetEffectTooltipText (effect->id, tooltipBuffer, 256);
+
+					DrawBitmapStringTooltip (bitmap, tooltipText, glyphData, tooltipTop, tooltipLeft);
+				}
+
+				boxLeft = boxRight + padding;
+			}
+		}
 	}
 }
 
-static void func DrawAbilityBar (TurnBasedLabState* labState)
+static String func GetAbilityTooltipText (I32 abilityId, I8* buffer, I32 bufferSize)
+{
+	String text = StartString (buffer, bufferSize);
+	switch (abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			AddLine (text, "Small Punch");
+			AddLine (text, "Uses 1 Action Point");
+			AddLine (text, "Punch an adjacent enemy lightly,");
+			AddLine (text, "dealing 1 damage.");
+			AddLine (text, "Can be used multiple times per turn.");
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			AddLine (text, "Big Punch");
+			AddLine (text, "Uses 3 Action Points");
+			AddLine (text, "1 Turn cooldown");
+			AddLine (text, "Forcefully punch an adjacent enemy,");
+			AddLine (text, "dealing 5 damage.");
+			break;
+		}
+		case KickAbilityId:
+		{
+			AddLine (text, "Kick");
+			AddLine (text, "Uses 3 Action Points");
+			AddLine (text, "3 Turns cooldown");
+			AddLine (text, "Kick an adjacent enemy, dealing 2 damage");
+			AddLine (text, "and knocking them away by up to 5 tiles.");
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			AddLine (text, "Spinning kick");
+			AddLine (text, "Uses 2 Action Points");
+			AddLine (text, "Deal 1 damage to all adjacent enemies.");
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			AddLine (text, "Avoidance");
+			AddLine (text, "Uses 5 Action Points");
+			AddLine (text, "5 Turns cooldown");
+			AddLine (text, "Become invulnerable until your next turn.");
+			break;
+		}
+		case RollAbilityId:
+		{
+			AddLine (text, "Roll");
+			AddLine (text, "Uses 3 Action Points");
+			AddLine (text, "3 Turns cooldown");
+			AddLine (text, "Roll up to 5 tiles in a direction.");
+			AddLine (text, "Deal 1 damage to an enemy on hit.");
+			break;
+		}
+		default:
+		{
+			DebugBreak ();
+		}
+	}
+	return text;
+}
+
+static void func DrawAbilityBar (TurnBasedLabState* labState, V2 mousePosition)
 {
 	Bitmap* bitmap = &labState->canvas.bitmap;
 	GlyphData* glyphData = labState->canvas.glyphData;
 	Assert (glyphData != 0);
 
+	Camera* camera = &labState->camera;
+	I32 mouseX = UnitXtoPixel (camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel (camera, mousePosition.y);
+
+	labState->hoverAbility = 0;
 	TurnBasedEntity* entity = labState->selectedEntity;
 	if (entity)
 	{
@@ -1126,6 +1291,19 @@ static void func DrawAbilityBar (TurnBasedLabState* labState)
 										textColor);
 
 			DrawBitmapRectOutline (bitmap, boxLeft, boxRight, boxTop, boxBottom, boxOutlineColor);
+
+			if (IsIntBetween (mouseX, boxLeft, boxRight) && IsIntBetween (mouseY, boxTop, boxBottom))
+			{
+				labState->hoverAbility = ability;
+
+				I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
+				I32 tooltipBottom = infoTop - 5;
+
+				static I8 tooltipBuffer[256] = {};
+				String tooltipText = GetAbilityTooltipText (ability->id, tooltipBuffer, 256);
+
+				DrawBitmapStringTooltipBottom (bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
+			}
 
 			boxLeft = boxRight + padding;
 		}
@@ -1216,8 +1394,8 @@ static void func TurnBasedLabUpdate (TurnBasedLabState* labState, V2 mousePositi
 	camera->center = MakePoint (TileColN * TileSide * 0.5f, TileRowN * TileSide * 0.5f);
 
 	DrawStatusBar(labState);
-	DrawAbilityBar(labState);
-	DrawEffectsBar(labState);
+	DrawAbilityBar(labState, mousePosition);
+	DrawEffectsBar(labState, mousePosition);
 }
 
 static void func TurnBasedLab (HINSTANCE instance)
@@ -1287,11 +1465,8 @@ static void func TurnBasedLab (HINSTANCE instance)
 	}
 }
 
-// TODO: Ability boxes!
-	// TODO: Tooltips!
-	// TODO: Work with clicky!
-// TODO: Effects!
-	// TODO: Draw boxes!
-	// TODO: Tooltips!
 // TODO: Better status texts!
+	// TODO: When an entity is selected
+// TODO: Disable selection of dead entities!
 // TODO: Better ability outcome visualization!
+// TODO: Remove ability structure, use only ids?
