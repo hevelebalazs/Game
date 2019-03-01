@@ -223,7 +223,7 @@ static void func TurnBasedLabInit (TurnBasedLabState* labState, I32 windowWidth,
 	labState->cooldownN = 0;
 }
 
-I32 GetAbilityActionPoints (I32 abilityId)
+static I32 func GetAbilityActionPoints (I32 abilityId)
 {
 	I32 actionPoints = 0;
 	switch (abilityId)
@@ -266,7 +266,7 @@ I32 GetAbilityActionPoints (I32 abilityId)
 	return actionPoints;
 }
 
-I32 GetAbilityDamage (I32 abilityId)
+static I32 func GetAbilityDamage (I32 abilityId)
 {
 	I32 damage = 0;
 	switch (abilityId)
@@ -304,7 +304,7 @@ I32 GetAbilityDamage (I32 abilityId)
 	return damage;
 }
 
-I32 GetMaxAbilityDistance (I32 abilityId)
+static I32 func GetMaxAbilityDistance (I32 abilityId)
 {
 	I32 maxDistance = 0;
 	switch (abilityId)
@@ -326,7 +326,7 @@ I32 GetMaxAbilityDistance (I32 abilityId)
 		}
 		case RollAbilityId:
 		{
-			maxDistance = 3;
+			maxDistance = 1;
 			break;
 		}
 		default:
@@ -337,7 +337,7 @@ I32 GetMaxAbilityDistance (I32 abilityId)
 	return maxDistance;
 }
 
-I32 GetAbilityCooldown (I32 abilityId)
+static I32 GetAbilityCooldown (I32 abilityId)
 {
 	I32 cooldown = 0;
 	switch (abilityId)
@@ -699,14 +699,15 @@ static B32 func CanUseAbilityOnTile (TurnBasedLabState* labState,
 			case BigPunchAbilityId:
 			case KickAbilityId:
 			{
-				canUse = (targetEntity->teamIndex != entity->teamIndex &&
+				canUse = (targetEntity != 0 && targetEntity->teamIndex != entity->teamIndex &&
 						  CanDamage (labState, targetEntity) &&
 						  (GetTileDistance (entity->tileIndex, tileIndex) <= GetMaxAbilityDistance (abilityId)));
 				break;
 			}
 			case RollAbilityId:
 			{
-				canUse = (GetTileDistance (entity->tileIndex, tileIndex) == 1);
+				canUse = (IsValidTileIndex(tileIndex) && 
+						  GetTileDistance (entity->tileIndex, tileIndex) == 1);
 				break;
 			}
 			default:
@@ -1080,13 +1081,71 @@ static I8* func GetStatusText (TurnBasedLabState* labState)
 	else
 	{
 		TurnBasedEntity* selectedEntity = labState->selectedEntity;
-		if (labState->selectedAbilityId == NoTurnBasedAbilityId)
+		I32 selectedAbilityId = labState->selectedAbilityId;
+		if (selectedAbilityId == NoTurnBasedAbilityId)
 		{
-			text = "Hey";
+			TurnBasedEntity* hoverEntity = GetEntityAtTile (labState, labState->hoverTileIndex);
+			if (hoverEntity)
+			{
+				if (hoverEntity == selectedEntity)
+				{
+					text = "Click to unselect entity.";
+				}
+				else
+				{
+					text = "Click on a tile to move to or click on an ability to use it.";
+				}
+			}
+			else
+			{
+				if (EntityCanMoveTo (labState, selectedEntity, labState->hoverTileIndex))
+				{
+					text = "Click to move here.";
+				}
+				else if (labState->hoverAbilityId != NoAbilityId)
+				{
+					I32 abilityId = labState->hoverAbilityId;
+					if (IsOnCooldown (labState, selectedEntity, abilityId))
+					{
+						text = "Ability is on cooldown.";
+					}
+					else if (selectedEntity->actionPoints < GetAbilityActionPoints (abilityId))
+					{
+						text = "Not enough action points to use ability.";
+					}
+					else if (AbilityRequiresTileSelection (abilityId))
+					{
+						text = "Click to select ability.";
+					}
+					else
+					{
+						text = "Click to use ability.";
+					}
+				}
+				else
+				{
+					text = "Click on a tile to move to or click on an ability to use it.";
+				}
+			}
 		}
 		else
 		{
-			text = "An ability is selected. Not yet implemented.";
+			Assert (AbilityRequiresTileSelection (selectedAbilityId));
+			if (CanUseAbilityOnTile (labState, selectedEntity, selectedAbilityId, labState->hoverTileIndex))
+			{
+				text = "Click to use ability.";
+			}
+			else
+			{
+				if (selectedAbilityId == RollAbilityId)
+				{
+					text = "Click on a nearby tile to select direction.";
+				}
+				else
+				{
+					text = "Click on a nearby enemy.";
+				}
+			}
 		}
 	}
 
@@ -1571,7 +1630,5 @@ static void func TurnBasedLab (HINSTANCE instance)
 	}
 }
 
-// TODO: Better status texts!
-	// TODO: When an entity is selected
 // TODO: Disable selection of dead entities!
 // TODO: Better ability outcome visualization!
