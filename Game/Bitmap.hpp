@@ -771,7 +771,7 @@ static void func DrawBitmapStringTooltipBottom (Bitmap* bitmap, String string, G
 	DrawBitmapStringTooltip (bitmap, string, glyphData, top, left);
 }
 
-static void func DrawBitmapTooltip (Bitmap* bitmap, char** lines, I32 lineN, GlyphData* glyphData, I32 top, I32 left)
+static void func DrawBitmapTooltip (Bitmap* bitmap, I8** lines, I32 lineN, GlyphData* glyphData, I32 top, I32 left)
 {
 	Assert (glyphData != 0);
 
@@ -793,13 +793,13 @@ static void func DrawBitmapTooltip (Bitmap* bitmap, char** lines, I32 lineN, Gly
 	for (I32 i = 0; i < lineN; ++i)
 	{
 		V4 color = (i == 0) ? titleColor : normalColor;
-		char* line = lines[i];
+		I8* line = lines[i];
 		DrawBitmapTextLine (bitmap, line, glyphData, textLeft, baseLineY, color);
 		baseLineY += TextHeightInPixels;
 	}
 }
 
-static void func DrawBitmapTooltipBottom (Bitmap* bitmap, char** lines, I32 lineN, GlyphData* glyphData, I32 bottom, I32 left)
+static void func DrawBitmapTooltipBottom (Bitmap* bitmap, I8** lines, I32 lineN, GlyphData* glyphData, I32 bottom, I32 left)
 {
 	I32 top = bottom - GetTooltipHeight (lineN);
 	DrawBitmapTooltip (bitmap, lines, lineN, glyphData, top, left);

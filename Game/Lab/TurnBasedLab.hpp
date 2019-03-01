@@ -37,13 +37,39 @@ struct TurnBasedEntity
 	I32 maxHealthPoints;
 };
 
-struct TurnBasedAbility
+enum TurnBasedAbilityId
 {
-	I32 maxDistance;
-	I32 damage;
-	I32 actionPoints;
+	NoTurnBasedAbilityId,
+	SmallPunchAbilityId,
+	BigPunchAbilityId,
+	KickAbilityId,
+	SpinningKickAbilityId,
+	AvoidanceAbilityId,
+	RollAbilityId,
+	TurnBasedAbilityN
 };
-TurnBasedAbility gTurnBasedAbilities[2];
+
+enum TurnBasedEffectId
+{
+	NoEffectId,
+	InvulnerableEffectId,
+};
+
+struct TurnBasedEffect
+{
+	TurnBasedEntity* entity;
+	I32 id;
+	I32 turns;
+};
+#define TurnBasedEffectN 64
+
+struct TurnBasedCooldown
+{
+	TurnBasedEntity* entity;
+	I32 abilityId;
+	I32 turns;
+};
+#define TurnBasedCooldownN 64
 
 struct TurnBasedLabState
 {
@@ -56,7 +82,15 @@ struct TurnBasedLabState
 
 	TurnBasedEntity* selectedEntity;
 	I32 activeTeamIndex;
-	TurnBasedAbility* selectedAbility;
+	I32 selectedAbilityId;
+
+	I32 hoverAbilityId;
+
+	TurnBasedCooldown cooldowns[TurnBasedCooldownN];
+	I32 cooldownN;
+
+	TurnBasedEffect effects[TurnBasedEffectN];
+	I32 effectN;
 };
 TurnBasedLabState gTurnBasedLabState;
 
@@ -172,7 +206,9 @@ static void func TurnBasedLabInit (TurnBasedLabState* labState, I32 windowWidth,
 
 	labState->activeTeamIndex = 0;
 	labState->selectedEntity = 0;
-	labState->selectedAbility = 0;
+	labState->selectedAbilityId = 0;
+
+	labState->hoverAbilityId = 0;
 
 	for (I32 i = 0; i < TurnBasedEntityN; i++)
 	{
@@ -184,15 +220,193 @@ static void func TurnBasedLabInit (TurnBasedLabState* labState, I32 windowWidth,
 		entity->maxHealthPoints = 10;
 	}
 
-	TurnBasedAbility* ability0 = &gTurnBasedAbilities[0];
-	ability0->actionPoints = 1;
-	ability0->damage = 1;
-	ability0->maxDistance = 1;
+	labState->cooldownN = 0;
+}
 
-	TurnBasedAbility* ability1 = &gTurnBasedAbilities[1];
-	ability1->actionPoints = 3;
-	ability1->damage = 5;
-	ability1->maxDistance = 1;
+static I32 func GetAbilityActionPoints (I32 abilityId)
+{
+	I32 actionPoints = 0;
+	switch (abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			actionPoints = 1;
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			actionPoints = 3;
+			break;
+		}
+		case KickAbilityId:
+		{
+			actionPoints = 3;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			actionPoints = 2;
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			actionPoints = 5;
+			break;
+		}
+		case RollAbilityId:
+		{
+			actionPoints = 3;
+			break;
+		}
+		default:
+		{
+			DebugBreak ();
+		}
+	}
+	return actionPoints;
+}
+
+static I32 func GetAbilityDamage (I32 abilityId)
+{
+	I32 damage = 0;
+	switch (abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			damage = 1;
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			damage = 5;
+			break;
+		}
+		case KickAbilityId:
+		{
+			damage = 2;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			damage = 1;
+			break;
+		}
+		case RollAbilityId:
+		{
+			damage = 1;
+			break;
+		}
+		default:
+		{
+			damage = 0;
+		}
+	}
+	return damage;
+}
+
+static I32 func GetMaxAbilityDistance (I32 abilityId)
+{
+	I32 maxDistance = 0;
+	switch (abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			maxDistance = 1;
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			maxDistance = 1;
+			break;
+		}
+		case KickAbilityId:
+		{
+			maxDistance = 1;
+			break;
+		}
+		case RollAbilityId:
+		{
+			maxDistance = 1;
+			break;
+		}
+		default:
+		{
+			maxDistance = 0;
+		}
+	}
+	return maxDistance;
+}
+
+static I32 GetAbilityCooldown (I32 abilityId)
+{
+	I32 cooldown = 0;
+	switch (abilityId)
+	{
+		case BigPunchAbilityId:
+		{
+			cooldown = 1;
+			break;
+		}
+		case KickAbilityId:
+		{
+			cooldown = 3;
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			cooldown = 5;
+			break;
+		}
+		case RollAbilityId:
+		{
+			cooldown = 3;
+			break;
+		}
+		default:
+		{
+			cooldown = 0;
+		}
+	}
+	return cooldown;
+}
+
+static I32 func GetEffectTurns (I32 effectId)
+{
+	I32 turns = 0;
+	switch (effectId)
+	{
+		case InvulnerableEffectId:
+		{
+			turns = 1;
+			break;
+		}
+		default:
+		{
+			DebugBreak ();
+		}
+	}
+	return turns;
+}
+
+static B32 func IsDead (TurnBasedEntity* entity)
+{
+	Assert (entity != 0);
+	Assert (entity->healthPoints >= 0);
+	B32 isDead = (entity->healthPoints == 0);
+	return isDead;
+}
+
+static void func AddEffect (TurnBasedLabState* labState, TurnBasedEntity* entity, I32 effectId)
+{
+	Assert (!IsDead (entity));
+	TurnBasedEffect effect = {};
+	effect.entity = entity;
+	effect.id = effectId;
+	effect.turns = GetEffectTurns (effectId);
+	
+	Assert (labState->effectN < TurnBasedEffectN);
+	labState->effects[labState->effectN] = effect;
+	labState->effectN++;
 }
 
 static TurnBasedEntity* func GetEntityAtTile (TurnBasedLabState* labState, TileIndex index)
@@ -229,14 +443,6 @@ static I32 func GetTileDistance (TileIndex tileIndex1, TileIndex tileIndex2)
 	return distance;
 }
 
-static B32 func IsDead (TurnBasedEntity* entity)
-{
-	Assert (entity != 0);
-	Assert (entity->healthPoints >= 0);
-	B32 isDead = (entity->healthPoints == 0);
-	return isDead;
-}
-
 static B32 func EntityCanMoveTo (TurnBasedLabState* labState, TurnBasedEntity* entity, TileIndex tileIndex)
 {
 	B32 canMove = false;
@@ -261,45 +467,461 @@ static void func MoveEntityTo (TurnBasedLabState* labState, TurnBasedEntity* ent
 	entity->actionPoints -= moveDistance;
 }
 
-static B32 func CanAttack (TurnBasedEntity* source, TurnBasedEntity* target, TurnBasedAbility* ability)
+static B32 func IsOnCooldown (TurnBasedLabState* labState, TurnBasedEntity* entity, I32 abilityId)
 {
-	B32 canAttack = false;
-	if (source != 0 && target != 0 && source != target && ability != 0)
+	B32 isOnCooldown = false;
+	for (I32 i = 0; i < labState->cooldownN; i++)
 	{
-		I32 distance = GetTileDistance (source->tileIndex, target->tileIndex);
-		canAttack = ((distance <= ability->maxDistance) &&
-					 (source->actionPoints >= ability->actionPoints) &&
-					 !IsDead (source) && !IsDead (target));
-	}
-	return canAttack;
-}
-
-static void func Attack (TurnBasedEntity* source, TurnBasedEntity* target, TurnBasedAbility* ability)
-{
-	Assert (CanAttack(source, target, ability));
-	target->healthPoints = IntMax2 (0, target->healthPoints - ability->damage);
-	source->actionPoints -= ability->actionPoints;
-}
-
-static void func ToggleAbility (TurnBasedLabState* labState, TurnBasedAbility* ability)
-{
-	if (labState->selectedEntity != 0)
-	{
-		if (labState->selectedAbility == ability)
+		TurnBasedCooldown* cooldown = &labState->cooldowns[i];
+		if (cooldown->entity == entity && cooldown->abilityId == abilityId)
 		{
-			labState->selectedAbility = 0;
+			isOnCooldown = true;
+			break;
+		}
+	}
+	return isOnCooldown;
+}
+
+static B32 func CanRepeatAbility (I32 abilityId)
+{
+	Assert (abilityId != NoTurnBasedAbilityId);
+	B32 canRepeat = (abilityId == SmallPunchAbilityId);
+	return canRepeat;
+}
+
+static void func AddCooldown (TurnBasedLabState* labState, TurnBasedEntity* entity, I32 abilityId)
+{
+	Assert (!IsOnCooldown(labState, entity, abilityId));
+	Assert (!CanRepeatAbility(abilityId));
+
+	Assert (labState->cooldownN < TurnBasedCooldownN);
+	TurnBasedCooldown cooldown = {};
+	cooldown.entity = entity;
+	cooldown.abilityId = abilityId;
+	cooldown.turns = GetAbilityCooldown (abilityId);
+	labState->cooldowns[labState->cooldownN] = cooldown;
+	labState->cooldownN++;
+}
+
+static TileIndex func GetLastEmptyTileAtMaxDistance (TurnBasedLabState* labState,
+													 TileIndex startIndex, 
+													 I32 directionRow, I32 directionCol, 
+													 I32 maxDistance)
+{
+	Assert (IsIntBetween (directionRow, -1, +1));
+	Assert (IsIntBetween (directionCol, -1, +1));
+
+	TileIndex tileIndex = startIndex;
+	for (I32 i = 0; i < maxDistance; i++)
+	{
+		TileIndex nextIndex = MakeTileIndex (tileIndex.row + directionRow, tileIndex.col + directionCol);
+		if (!IsValidTileIndex (nextIndex))
+		{
+			continue;
+		}
+		if (GetEntityAtTile (labState, nextIndex) != 0)
+		{
+			continue;
+		}
+		tileIndex = nextIndex;
+	}
+	return tileIndex;
+}
+
+static B32 func AbilityRequiresTileSelection (I32 abilityId)
+{
+	B32 requiresTileSelection = false;
+
+	Assert (abilityId != NoTurnBasedAbilityId);
+	switch (abilityId)
+	{
+		case SmallPunchAbilityId:
+		case BigPunchAbilityId:
+		case KickAbilityId:
+		case RollAbilityId:
+		{
+			requiresTileSelection = true;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			requiresTileSelection = false;
+			break;
+		}
+	}
+
+	return requiresTileSelection;
+}
+
+static B32 func CanUseAbility (TurnBasedLabState* labState, TurnBasedEntity* entity, I32 abilityId)
+{
+	Assert (entity != 0);
+	Assert (abilityId != NoTurnBasedAbilityId);
+	Assert (!AbilityRequiresTileSelection(abilityId));
+
+	B32 canUse = false;
+	if (IsOnCooldown (labState, entity, abilityId) ||
+		entity->actionPoints < GetAbilityActionPoints (abilityId) ||
+		IsDead (entity))
+	{
+		canUse = false;
+	}
+	else
+	{
+		switch (abilityId)
+		{
+			case SpinningKickAbilityId:
+			case AvoidanceAbilityId:
+			{
+				canUse = true;
+				break;
+			}
+			default:
+			{
+				DebugBreak ();
+			}
+		}
+	}
+	return canUse;
+}
+
+static B32 func IsInvulnerable (TurnBasedLabState* labState, TurnBasedEntity* entity)
+{
+	B32 isInvulnerable = false;
+	for (I32 i = 0; i < labState->effectN; i++)
+	{
+		TurnBasedEffect* effect = &labState->effects[i];
+		Assert (effect->turns >= 0);
+		if (effect->entity == entity && effect->id == InvulnerableEffectId)
+		{
+			isInvulnerable = true;
+			break;
+		}
+	}
+	return isInvulnerable;
+}
+
+static B32 func CanDamage (TurnBasedLabState* labState, TurnBasedEntity* target)
+{
+	B32 canDamage = false;
+
+	if (target == 0 || IsDead (target))
+	{
+		canDamage = false;
+	}
+	else if (IsInvulnerable (labState, target))
+	{
+		canDamage = false;
+	}
+	else
+	{
+		canDamage = true;
+	}
+	return canDamage;
+}
+
+static void func DoDamage (TurnBasedLabState* labState, TurnBasedEntity* entity, I32 damage)
+{
+	Assert (CanDamage(labState, entity));
+	Assert (damage > 0);
+	entity->healthPoints = IntMax2 (0, entity->healthPoints - damage);
+}
+
+static void func UseAbility (TurnBasedLabState* labState, TurnBasedEntity* entity, I32 abilityId)
+{
+	Assert (CanUseAbility (labState, entity, abilityId));
+
+	switch (abilityId)
+	{
+		case SpinningKickAbilityId:
+		{
+			TileIndex center = entity->tileIndex;
+			for (I32 row = center.row - 1; row <= center.row + 1; row++)
+			{
+				for (I32 col = center.col - 1; col <= center.col + 1; col++)
+				{
+					TileIndex tileIndex = MakeTileIndex (row, col);
+					if (IsValidTileIndex (tileIndex))
+					{
+						TurnBasedEntity* target = GetEntityAtTile (labState, tileIndex);
+						if (target && entity->teamIndex != target->teamIndex &&
+							CanDamage (labState, target))
+						{
+							I32 damage = GetAbilityDamage (abilityId);
+							DoDamage (labState, target, damage);
+						}
+					}
+				}
+			}
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			AddEffect (labState, entity, InvulnerableEffectId);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	entity->actionPoints -= GetAbilityActionPoints (abilityId);
+	Assert (entity->actionPoints >= 0);
+	
+	if (!CanRepeatAbility (abilityId))
+	{
+		AddCooldown (labState, entity, abilityId);
+	}
+}
+
+static B32 func CanUseAbilityOnTile (TurnBasedLabState* labState,
+									 TurnBasedEntity* entity, I32 abilityId,
+									 TileIndex tileIndex)
+{
+	Assert (entity != 0);
+	Assert (abilityId != NoTurnBasedAbilityId);
+	Assert (AbilityRequiresTileSelection(abilityId));
+
+	B32 canUse = false;
+	if (IsOnCooldown (labState, entity, abilityId) ||
+		entity->actionPoints < GetAbilityActionPoints (abilityId) ||
+		IsDead (entity))
+	{
+		canUse = false;
+	}
+	else
+	{
+		TurnBasedEntity* targetEntity = GetEntityAtTile (labState, tileIndex);
+		switch (abilityId)
+		{
+			case SmallPunchAbilityId:
+			case BigPunchAbilityId:
+			case KickAbilityId:
+			{
+				canUse = (targetEntity != 0 && targetEntity->teamIndex != entity->teamIndex &&
+						  CanDamage (labState, targetEntity) &&
+						  (GetTileDistance (entity->tileIndex, tileIndex) <= GetMaxAbilityDistance (abilityId)));
+				break;
+			}
+			case RollAbilityId:
+			{
+				canUse = (IsValidTileIndex(tileIndex) && 
+						  GetTileDistance (entity->tileIndex, tileIndex) == 1);
+				break;
+			}
+			default:
+			{
+				DebugBreak ();
+			}
+		}
+	}
+	return canUse;
+}
+
+static void func UseAbilityOnTile (TurnBasedLabState* labState,
+								   TurnBasedEntity* entity, I32 abilityId,
+								   TileIndex tileIndex)
+{
+	Assert (CanUseAbilityOnTile (labState, entity, abilityId, tileIndex));
+	TurnBasedEntity* targetEntity = GetEntityAtTile (labState, tileIndex);
+	I32 abilityDamage = GetAbilityDamage (abilityId);
+	switch (abilityId)
+	{
+		case SmallPunchAbilityId:
+		case BigPunchAbilityId:
+		{
+			DoDamage (labState, targetEntity, abilityDamage);
+			break;
+		}
+		case KickAbilityId:
+		{
+			DoDamage (labState, targetEntity, abilityDamage);
+			I32 knockDirectionRow = IntSign (tileIndex.row - entity->tileIndex.row);
+			I32 knockDirectionCol = IntSign (tileIndex.col - entity->tileIndex.col);
+			targetEntity->tileIndex = 
+				GetLastEmptyTileAtMaxDistance (labState, tileIndex, 
+											   knockDirectionRow, knockDirectionCol, 5);
+			break;
+		}
+		case RollAbilityId:
+		{
+			I32 rollDirectionRow = IntSign (tileIndex.row - entity->tileIndex.row);
+			I32 rollDirectionCol = IntSign (tileIndex.col - entity->tileIndex.col);
+			TileIndex rollTileIndex =
+				GetLastEmptyTileAtMaxDistance (labState, entity->tileIndex,
+											   rollDirectionRow, rollDirectionCol, 5);
+			I32 distanceRolled = GetTileDistance (entity->tileIndex, rollTileIndex);
+			if (distanceRolled < 5)
+			{
+				TileIndex damagedTileIndex = MakeTileIndex (rollTileIndex.row + rollDirectionRow,
+															rollTileIndex.col + rollDirectionCol);
+				TurnBasedEntity* damagedEntity = GetEntityAtTile (labState, damagedTileIndex);
+				if (damagedEntity && entity->teamIndex != damagedEntity->teamIndex &&
+					CanDamage (labState, damagedEntity))
+				{
+					DoDamage (labState, damagedEntity, abilityDamage);
+				}
+			}
+
+			entity->tileIndex = rollTileIndex;
+			break;
+		}
+	}
+
+	entity->actionPoints -= GetAbilityActionPoints (abilityId);
+	Assert (entity->actionPoints >= 0);
+	
+	if (!CanRepeatAbility (abilityId))
+	{
+		AddCooldown (labState, entity, abilityId);
+	}
+}
+
+static void func RemoveExpiredEffects (TurnBasedLabState* labState)
+{
+	I32 remainingN = 0;
+	for (I32 i = 0; i < labState->effectN; i++)
+	{
+		TurnBasedEffect* effect = &labState->effects[i];
+		Assert (effect->turns >= 0);
+		if (effect->turns > 0)
+		{
+			labState->effects[remainingN] = *effect;
+			remainingN++;
+		}
+	}
+	labState->effectN = remainingN;
+}
+
+static void func UpdateTeamEffectTurns (TurnBasedLabState* labState, I32 teamIndex)
+{
+	for (I32 i = 0; i < labState->effectN; i++)
+	{
+		TurnBasedEffect* effect = &labState->effects[i];
+		if (effect->entity->teamIndex == teamIndex)
+		{
+			effect->turns--;
+			Assert(effect->turns >= 0);
+		}
+	}
+	RemoveExpiredEffects (labState);
+}
+
+static void func RemoveExpiredCooldowns (TurnBasedLabState* labState)
+{
+	I32 remainingN = 0;
+	for (I32 i = 0; i < labState->cooldownN; i++)
+	{
+		TurnBasedCooldown* cooldown = &labState->cooldowns[i];
+		Assert (cooldown->turns >= 0);
+		if (cooldown->turns > 0)
+		{
+			labState->cooldowns[remainingN] = *cooldown;
+			remainingN++;
+		}
+	}
+	labState->cooldownN = remainingN;
+}
+
+static void func UpdateTeamCooldowns (TurnBasedLabState* labState, I32 teamIndex)
+{
+	RemoveExpiredCooldowns (labState);
+
+	for (I32 i = 0; i < labState->cooldownN; i++)
+	{
+		TurnBasedCooldown* cooldown = &labState->cooldowns[i];
+		if (cooldown->entity->teamIndex == teamIndex)
+		{
+			cooldown->turns--;
+			Assert (cooldown->turns >= 0);
+		}
+	}
+}
+
+static I32 func GetCooldownTurns (TurnBasedLabState* labState, TurnBasedEntity* entity, I32 abilityId)
+{
+	TurnBasedCooldown* cooldown = 0;
+	for (I32 i = 0; i < labState->cooldownN; i++)
+	{
+		TurnBasedCooldown* testCooldown = &labState->cooldowns[i];
+		if (testCooldown->entity == entity && testCooldown->abilityId == abilityId)
+		{
+			cooldown = testCooldown;
+			break;
+		}
+	}
+
+	Assert (cooldown != 0);
+	I32 turns = cooldown->turns;
+	return turns;
+}
+
+static B32 func CanSelectAbility (TurnBasedLabState* labState, I32 abilityId)
+{
+	Assert (AbilityRequiresTileSelection (abilityId));
+	Assert (abilityId != NoTurnBasedAbilityId);
+	B32 canSelect = false;
+	TurnBasedEntity* entity = labState->selectedEntity;
+	if (entity)
+	{
+		B32 hasEnoughActionPoints = (entity->actionPoints >= GetAbilityActionPoints (abilityId));
+		B32 isOnCooldown = IsOnCooldown (labState, entity, abilityId);
+		canSelect = (hasEnoughActionPoints && !isOnCooldown);
+	}
+	return canSelect;
+}
+
+static void func ToggleAbility (TurnBasedLabState* labState, I32 abilityId)
+{
+	Assert (IsIntBetween (abilityId, 0, TurnBasedAbilityN - 1));
+	TurnBasedEntity* entity = labState->selectedEntity;
+	if (entity != 0)
+	{
+		if (AbilityRequiresTileSelection (abilityId))
+		{
+			if (labState->selectedAbilityId == abilityId)
+			{
+				labState->selectedAbilityId = NoTurnBasedAbilityId;
+			}
+			else if (CanSelectAbility (labState, abilityId))
+			{
+				labState->selectedAbilityId = abilityId;
+			}
 		}
 		else
 		{
-			labState->selectedAbility = ability;
+			if (CanUseAbility (labState, entity, abilityId))
+			{
+				UseAbility(labState, entity, abilityId);
+			}
 		}
 	}
+}
+
+static B32 func CanSelectEntity (TurnBasedLabState* labState, TurnBasedEntity* entity)
+{
+	B32 canSelect = false;
+	if (entity == 0)
+	{
+		canSelect = true;
+	}
+	else if (!IsDead (entity) && entity->teamIndex == labState->activeTeamIndex)
+	{
+		canSelect = true;
+	}
+	else
+	{
+		canSelect = false;
+	}
+	return canSelect;
 }
 
 static void func SelectEntity (TurnBasedLabState* labState, TurnBasedEntity* entity)
 {
+	Assert (CanSelectEntity (labState, entity));
 	labState->selectedEntity = entity;
-	labState->selectedAbility = 0;
+	labState->selectedAbilityId = NoTurnBasedAbilityId;
 }
 
 static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -312,7 +934,7 @@ static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WP
 		case WM_SIZE:
 		{
 			RECT clientRect = {};
-			GetClientRect(window, &clientRect);
+			GetClientRect (window, &clientRect);
 			I32 width  = clientRect.right - clientRect.left;
 			I32 height = clientRect.bottom - clientRect.top;
 			TurnBasedLabResize (labState, width, height);
@@ -344,18 +966,40 @@ static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WP
 			{
 				case '1':
 				{
-					ToggleAbility (labState, &gTurnBasedAbilities[0]);
+					ToggleAbility (labState, SmallPunchAbilityId);
 					break;
 				}
 				case '2':
 				{
-					ToggleAbility (labState, &gTurnBasedAbilities[1]);
+					ToggleAbility (labState, BigPunchAbilityId);
+					break;
+				}
+				case '3':
+				{
+					ToggleAbility (labState, KickAbilityId);
+					break;
+				}
+				case '4':
+				{
+					ToggleAbility (labState, SpinningKickAbilityId);
+					break;
+				}
+				case '5':
+				{
+					ToggleAbility (labState, AvoidanceAbilityId);
+					break;
+				}
+				case '6':
+				{
+					ToggleAbility (labState, RollAbilityId);
 					break;
 				}
 				case 'E':
 				{
 					EndTurn (labState);
 					SelectEntity (labState, 0);
+					UpdateTeamCooldowns (labState, labState->activeTeamIndex);
+					UpdateTeamEffectTurns (labState, labState->activeTeamIndex);
 					break;
 				}
 			}
@@ -363,51 +1007,47 @@ static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WP
 		}
 		case WM_LBUTTONUP:
 		{
-			if (IsValidTileIndex (labState->hoverTileIndex))
+			V2 mousePosition = GetMousePosition (&labState->camera, window);
+			TurnBasedEntity* entity = labState->selectedEntity;
+			I32 abilityId = labState->selectedAbilityId;
+			I32 hoverAbilityId = labState->hoverAbilityId;
+			TileIndex tileIndex = GetContainingTileIndex (mousePosition);
+			if (hoverAbilityId != NoTurnBasedAbilityId)
 			{
-				TurnBasedEntity* hoverEntity = GetEntityAtTile (labState, labState->hoverTileIndex);
-				if (hoverEntity && !IsDead (hoverEntity))
+				ToggleAbility (labState, hoverAbilityId);
+			}
+			else if (entity)
+			{
+				if (abilityId != NoTurnBasedAbilityId)
 				{
-					if (labState->selectedEntity == hoverEntity)
+					if (CanUseAbilityOnTile (labState, entity, abilityId, tileIndex))
 					{
-						SelectEntity(labState, 0);
-					}
-					else if (hoverEntity->teamIndex == labState->activeTeamIndex)
-					{
-						SelectEntity (labState, hoverEntity);
-					}
-					if (labState->selectedAbility != 0)
-					{
-						Assert (labState->selectedEntity != 0);
-						if (CanAttack (labState->selectedEntity, hoverEntity, labState->selectedAbility))
+						UseAbilityOnTile (labState, entity, abilityId, tileIndex);
+						if (!CanUseAbilityOnTile (labState, entity, abilityId, tileIndex))
 						{
-							Attack (labState->selectedEntity, hoverEntity, labState->selectedAbility);
-						}
-						else
-						{
-							labState->selectedAbility = 0;
-						}
-					}
-				}
-				else if (labState->selectedEntity)
-				{
-					Assert (!IsDead (labState->selectedEntity));
-					Assert (labState->selectedEntity->teamIndex == labState->activeTeamIndex);
-					if (labState->selectedAbility == 0)
-					{
-						if (EntityCanMoveTo (labState, labState->selectedEntity, labState->hoverTileIndex))
-						{
-							MoveEntityTo (labState, labState->selectedEntity, labState->hoverTileIndex);
-						}
-						else
-						{
-							SelectEntity (labState, 0);
+							labState->selectedAbilityId = NoTurnBasedAbilityId;
 						}
 					}
 					else
 					{
-						labState->selectedAbility = 0;
+						labState->selectedAbilityId = NoTurnBasedAbilityId;
 					}
+				}
+				else if (EntityCanMoveTo (labState, entity, tileIndex))
+				{
+					MoveEntityTo(labState, entity, tileIndex);
+				}
+				else
+				{
+					SelectEntity (labState, 0);
+				}
+			}
+			else
+			{
+				TurnBasedEntity* hoverEntity = GetEntityAtTile (labState, tileIndex);
+				if (hoverEntity && CanSelectEntity (labState, hoverEntity))
+				{
+					SelectEntity (labState, hoverEntity);
 				}
 			}
 			break;
@@ -427,6 +1067,111 @@ static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WP
 	return result;
 }
 
+static I8* func GetStatusText (TurnBasedLabState* labState)
+{
+	I8* text = 0;
+
+	if (labState->selectedEntity == 0)
+	{
+		TurnBasedEntity* hoverEntity = GetEntityAtTile (labState, labState->hoverTileIndex);
+		if (hoverEntity)
+		{
+			if (hoverEntity->teamIndex == labState->activeTeamIndex)
+			{
+				if (IsDead (hoverEntity))
+				{
+					text = "Entity is dead.";
+				}
+				else
+				{
+					text = "Click to select entity.";
+				}
+			}
+			else
+			{
+				text = "It's not this entity's turn.";
+			}
+		}
+		else
+		{
+			text = "Click on an entity to select it or press E to end turn.";
+		}
+	}
+	else
+	{
+		TurnBasedEntity* selectedEntity = labState->selectedEntity;
+		I32 selectedAbilityId = labState->selectedAbilityId;
+		if (selectedAbilityId == NoTurnBasedAbilityId)
+		{
+			TurnBasedEntity* hoverEntity = GetEntityAtTile (labState, labState->hoverTileIndex);
+			if (hoverEntity)
+			{
+				if (hoverEntity == selectedEntity)
+				{
+					text = "Click to unselect entity.";
+				}
+				else
+				{
+					text = "Click on a tile to move to or click on an ability to use it.";
+				}
+			}
+			else
+			{
+				if (EntityCanMoveTo (labState, selectedEntity, labState->hoverTileIndex))
+				{
+					text = "Click to move here.";
+				}
+				else if (labState->hoverAbilityId != NoAbilityId)
+				{
+					I32 abilityId = labState->hoverAbilityId;
+					if (IsOnCooldown (labState, selectedEntity, abilityId))
+					{
+						text = "Ability is on cooldown.";
+					}
+					else if (selectedEntity->actionPoints < GetAbilityActionPoints (abilityId))
+					{
+						text = "Not enough action points to use ability.";
+					}
+					else if (AbilityRequiresTileSelection (abilityId))
+					{
+						text = "Click to select ability.";
+					}
+					else
+					{
+						text = "Click to use ability.";
+					}
+				}
+				else
+				{
+					text = "Click on a tile to move to or click on an ability to use it.";
+				}
+			}
+		}
+		else
+		{
+			Assert (AbilityRequiresTileSelection (selectedAbilityId));
+			if (CanUseAbilityOnTile (labState, selectedEntity, selectedAbilityId, labState->hoverTileIndex))
+			{
+				text = "Click to use ability.";
+			}
+			else
+			{
+				if (selectedAbilityId == RollAbilityId)
+				{
+					text = "Click on a nearby tile to select direction.";
+				}
+				else
+				{
+					text = "Click on a nearby enemy.";
+				}
+			}
+		}
+	}
+
+	Assert (text != 0);
+	return text;
+}
+
 static void func DrawStatusBar (TurnBasedLabState* labState)
 {
 	Bitmap* bitmap = &labState->canvas.bitmap;
@@ -442,27 +1187,15 @@ static void func DrawStatusBar (TurnBasedLabState* labState)
 	GlyphData* glyphData = labState->canvas.glyphData;
 	Assert (glyphData != 0);
 
-	I8* text = 0;
 	V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
-	if (labState->selectedAbility != 0)
-	{
-		text = "Click on an enemy to attack it.";
-	}
-	else if (labState->selectedEntity != 0)
-	{
-		text = "Click on the tile to move to.";
-	}
-	else
-	{
-		text = "Press 'E' to end turn.";
-	}
-
+	I8* text = GetStatusText (labState);
 	Assert (text != 0);
 	DrawBitmapTextLineCentered (bitmap, text, glyphData, left, right, top, bottom, textColor);
 }
 
-static void func DrawHealthBar (Canvas* canvas, TurnBasedEntity* entity)
+static void func DrawHealthBar (TurnBasedLabState* labState, TurnBasedEntity* entity)
 {
+	Canvas* canvas = &labState->canvas;
 	Assert (entity->maxHealthPoints > 0);
 	V2 tileCenter = GetTileCenter (entity->tileIndex);
 
@@ -472,17 +1205,290 @@ static void func DrawHealthBar (Canvas* canvas, TurnBasedEntity* entity)
 	F32 bottom = top + TileSide * 0.2f;
 
 	V4 backgroundColor = MakeColor (0.0f, 0.3f, 0.0f);
-	if (IsDead (entity))
+	V4 filledColor = MakeColor (0.0f, 1.0f, 0.0f);
+	if (IsDead(entity))
 	{
 		backgroundColor = MakeColor (0.3f, 0.3f, 0.3f);
+	}
+	else if (IsInvulnerable(labState, entity))
+	{
+		backgroundColor = MakeColor (0.5f, 0.5f, 0.5f);
+		filledColor = MakeColor (0.8f, 0.8f, 0.8f);
 	}
 
 	DrawRectLRTB (canvas, left, right, top, bottom, backgroundColor);
 
 	F32 healthRatio = F32 (entity->healthPoints) / F32 (entity->maxHealthPoints);
-	F32 filledX = Lerp (left, healthRatio, right);
-	V4 filledColor = MakeColor (0.0f, 1.0f, 0.0f);
+	F32 filledX = Lerp(left, healthRatio, right);
 	DrawRectLRTB (canvas, left, filledX, top, bottom, filledColor);
+}
+
+static String func GetEffectTooltipText (I32 effectId, I8* buffer, I32 bufferSize)
+{
+	String text = StartString (buffer, bufferSize);
+	switch (effectId)
+	{
+		case InvulnerableEffectId:
+		{
+			AddLine (text, "Invulnerable");
+			AddLine (text, "Cannot be damaged.");
+			break;
+		}
+		default:
+		{
+			DebugBreak ();
+		}
+	}
+	return text;
+}
+
+static void func DrawEffectsBar (TurnBasedLabState* labState, V2 mousePosition)
+{
+	Bitmap* bitmap = &labState->canvas.bitmap;
+	GlyphData* glyphData = labState->canvas.glyphData;
+	Assert (glyphData != 0);
+
+	Camera* camera = &labState->camera;
+	I32 mouseX = UnitXtoPixel (camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel (camera, mousePosition.y);
+
+	TurnBasedEntity* entity = labState->selectedEntity;
+	I32 effectN = 0;
+	for (I32 i = 0; i < labState->effectN; i++)
+	{
+		TurnBasedEffect* effect = &labState->effects[i];
+		if (effect->entity == entity)
+		{
+			effectN++;
+		}
+	}
+
+	if (effectN > 0)
+	{
+		I32 boxSide = 40;
+		I32 padding = 5;
+	
+		I32 barWidth = padding + effectN * boxSide + (effectN - 1) * padding + padding;
+		I32 barHeight = padding + boxSide + padding;
+
+		I32 top = 0;
+		I32 bottom = top + barHeight;
+		I32 right = (bitmap->width - 1);
+		I32 left = right - barWidth;
+
+		V4 backgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
+		V4 outlineColor = MakeColor (1.0f, 1.0f, 1.0f);
+		V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
+
+		I32 boxLeft   = left + padding;
+		I32 boxTop    = top + padding;
+		I32 boxBottom = boxTop + boxSide;
+		for (I32 i = 0; i < labState->effectN; i++)
+		{
+			TurnBasedEffect* effect = &labState->effects[i];
+			if (effect->entity == entity)
+			{
+				I32 boxRight = boxLeft + boxSide;
+				DrawBitmapRect (bitmap, boxLeft, boxRight, boxTop, boxBottom, backgroundColor);
+				DrawBitmapRectOutline (bitmap, boxLeft, boxRight, boxTop, boxBottom, outlineColor);
+
+				I8 textBuffer[8] = {};
+				OneLineString (textBuffer, 8, effect->turns);
+				DrawBitmapTextLineCentered (bitmap, textBuffer, glyphData,
+											boxLeft, boxRight, boxTop, boxBottom, textColor);
+
+				if (IsIntBetween (mouseX, boxLeft, boxRight) && IsIntBetween (mouseY, boxTop, boxBottom))
+				{
+					I32 tooltipTop = boxBottom + padding;
+					I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
+					tooltipLeft = IntMin2 (tooltipLeft, (bitmap->width - 1) - padding - TooltipWidth);
+
+					I8 tooltipBuffer[256] = {};
+					String tooltipText = GetEffectTooltipText (effect->id, tooltipBuffer, 256);
+
+					DrawBitmapStringTooltip (bitmap, tooltipText, glyphData, tooltipTop, tooltipLeft);
+				}
+
+				boxLeft = boxRight + padding;
+			}
+		}
+	}
+}
+
+static String func GetAbilityTooltipText (I32 abilityId, I8* buffer, I32 bufferSize)
+{
+	String text = StartString (buffer, bufferSize);
+	switch (abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			AddLine (text, "Small Punch");
+			AddLine (text, "Uses 1 Action Point");
+			AddLine (text, "Punch an adjacent enemy lightly,");
+			AddLine (text, "dealing 1 damage.");
+			AddLine (text, "Can be used multiple times per turn.");
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			AddLine (text, "Big Punch");
+			AddLine (text, "Uses 3 Action Points");
+			AddLine (text, "1 Turn cooldown");
+			AddLine (text, "Forcefully punch an adjacent enemy,");
+			AddLine (text, "dealing 5 damage.");
+			break;
+		}
+		case KickAbilityId:
+		{
+			AddLine (text, "Kick");
+			AddLine (text, "Uses 3 Action Points");
+			AddLine (text, "3 Turns cooldown");
+			AddLine (text, "Kick an adjacent enemy, dealing 2 damage");
+			AddLine (text, "and knocking them away by up to 5 tiles.");
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			AddLine (text, "Spinning kick");
+			AddLine (text, "Uses 2 Action Points");
+			AddLine (text, "Deal 1 damage to all adjacent enemies.");
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			AddLine (text, "Avoidance");
+			AddLine (text, "Uses 5 Action Points");
+			AddLine (text, "5 Turns cooldown");
+			AddLine (text, "Become invulnerable until your next turn.");
+			break;
+		}
+		case RollAbilityId:
+		{
+			AddLine (text, "Roll");
+			AddLine (text, "Uses 3 Action Points");
+			AddLine (text, "3 Turns cooldown");
+			AddLine (text, "Roll up to 5 tiles in a direction.");
+			AddLine (text, "Deal 1 damage to an enemy on hit.");
+			break;
+		}
+		default:
+		{
+			DebugBreak ();
+		}
+	}
+	return text;
+}
+
+static void func DrawAbilityBar (TurnBasedLabState* labState, V2 mousePosition)
+{
+	Bitmap* bitmap = &labState->canvas.bitmap;
+	GlyphData* glyphData = labState->canvas.glyphData;
+	Assert (glyphData != 0);
+
+	Camera* camera = &labState->camera;
+	I32 mouseX = UnitXtoPixel (camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel (camera, mousePosition.y);
+
+	labState->hoverAbilityId = NoTurnBasedAbilityId;
+	TurnBasedEntity* entity = labState->selectedEntity;
+	if (entity)
+	{
+		I32 boxSide = 40;
+		I32 padding = 5;
+
+		I32 abilityN = TurnBasedAbilityN;
+		I32 centerX = (bitmap->width - 1) / 2;
+		I32 width = boxSide * abilityN + padding * (abilityN - 1);
+
+		I32 left = centerX - width / 2;
+		I32 right = centerX + width / 2;
+		I32 bottom = (bitmap->height - 1) - 30;
+		I32 top = bottom - boxSide;
+
+		I32 boxLeft = left;
+		for (I32 i = 1; i < abilityN; i++)
+		{
+			I32 abilityId = i;
+
+			I32 boxRight  = boxLeft + boxSide;
+			I32 boxTop    = top;
+			I32 boxBottom = bottom;
+
+			V4 boxOutlineColor = MakeColor (1.0f, 1.0f, 1.0f);
+
+			I32 infoBoxSide = TextHeightInPixels + 4;
+			I32 infoBottom = boxTop;
+			I32 infoTop    = infoBottom - infoBoxSide;
+			I32 infoLeft   = boxLeft;
+			I32 infoRight  = boxRight;
+
+			I8 infoText[8] = {};
+			V4 infoTextColor = {};
+
+			if (IsOnCooldown (labState, entity, abilityId))
+			{
+				V4 infoBackgroundColor = MakeColor (0.0f, 0.0f, 0.6f);
+				V4 infoOutlineColor = MakeColor (0.0f, 0.0f, 1.0f);
+				DrawBitmapRect (bitmap, infoLeft, infoRight, infoTop, infoBottom, infoBackgroundColor);
+				DrawBitmapRectOutline (bitmap, infoLeft, infoRight, infoTop, infoBottom, infoOutlineColor);
+
+				I32 cooldownTurns = GetCooldownTurns (labState, entity, abilityId);
+				OneLineString (infoText, 8, "CD+" + (cooldownTurns + 1));
+				infoTextColor = MakeColor (0.0f, 0.8f, 0.8f);
+
+				boxOutlineColor = infoOutlineColor;
+			}
+			else if (entity->actionPoints < GetAbilityActionPoints (abilityId))
+			{
+				OneLineString (infoText, 8, GetAbilityActionPoints (abilityId) + " AP");
+				infoTextColor = MakeColor (1.0f, 0.0f, 0.0f);
+				boxOutlineColor = MakeColor (1.0f, 0.0f, 0.0f);
+			}
+			else
+			{
+				OneLineString (infoText, 8, GetAbilityActionPoints (abilityId) + " AP");
+				infoTextColor = MakeColor (1.0f, 1.0f, 1.0f);
+			}
+
+			DrawBitmapTextLineCentered (bitmap, infoText, glyphData, 
+										infoLeft, infoRight, infoTop, infoBottom,
+										infoTextColor);
+
+			V4 boxBackgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
+			V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
+
+			if (labState->selectedAbilityId == abilityId)
+			{
+				boxOutlineColor = MakeColor (1.0f, 0.5f, 0.0f);
+				textColor = MakeColor (1.0f, 0.5f, 0.0f);
+			}
+
+			DrawBitmapRect (bitmap, boxLeft, boxRight, boxTop, boxBottom, boxBackgroundColor);
+
+			char name[8];
+			OneLineString (name, 8, i);
+			DrawBitmapTextLineCentered (bitmap, name, glyphData, 
+										boxLeft, boxRight, boxTop, boxBottom, 
+										textColor);
+
+			DrawBitmapRectOutline (bitmap, boxLeft, boxRight, boxTop, boxBottom, boxOutlineColor);
+
+			if (IsIntBetween (mouseX, boxLeft, boxRight) && IsIntBetween (mouseY, boxTop, boxBottom))
+			{
+				labState->hoverAbilityId = abilityId;
+
+				I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
+				I32 tooltipBottom = infoTop - 5;
+
+				static I8 tooltipBuffer[256] = {};
+				String tooltipText = GetAbilityTooltipText (abilityId, tooltipBuffer, 256);
+
+				DrawBitmapStringTooltipBottom (bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
+			}
+
+			boxLeft = boxRight + padding;
+		}
+	}
 }
 
 static void func TurnBasedLabUpdate (TurnBasedLabState* labState, V2 mousePosition, F32 seconds)
@@ -512,13 +1518,16 @@ static void func TurnBasedLabUpdate (TurnBasedLabState* labState, V2 mousePositi
 		{
 			TileIndex tileIndex = MakeTileIndex (row, col);
 			TurnBasedEntity* entity = GetEntityAtTile (labState, tileIndex);
-			TurnBasedAbility* ability = labState->selectedAbility;
+			I32 abilityId = labState->selectedAbilityId;
 
 			B32 isEntity = (entity != 0);
 			B32 isHover = (tileIndex == labState->hoverTileIndex);
-			B32 canMove = (ability == 0) && EntityCanMoveTo (labState, selectedEntity, tileIndex);
-			B32 canAttack = ((ability != 0) &&
-							 GetTileDistance (selectedEntity->tileIndex, tileIndex) <= ability->maxDistance);
+			B32 canMove = ((abilityId == NoTurnBasedAbilityId) && 
+						   EntityCanMoveTo (labState, selectedEntity, tileIndex));
+
+			I32 maxAbilityDistance = GetMaxAbilityDistance (abilityId);
+			B32 canAttack = ((abilityId != NoTurnBasedAbilityId) && 
+							 (GetTileDistance (selectedEntity->tileIndex, tileIndex) <= maxAbilityDistance));
 
 			V4 color = tileColor;
 			if (isEntity)
@@ -548,7 +1557,7 @@ static void func TurnBasedLabUpdate (TurnBasedLabState* labState, V2 mousePositi
 
 			if (entity != 0)
 			{
-				DrawHealthBar (canvas, entity);
+				DrawHealthBar(labState, entity);
 			}
 
 			DrawRectOutline (canvas, tileRect, tileGridColor);
@@ -568,7 +1577,9 @@ static void func TurnBasedLabUpdate (TurnBasedLabState* labState, V2 mousePositi
 	Camera* camera = &labState->camera;
 	camera->center = MakePoint (TileColN * TileSide * 0.5f, TileRowN * TileSide * 0.5f);
 
-	DrawStatusBar (labState);
+	DrawStatusBar(labState);
+	DrawAbilityBar(labState, mousePosition);
+	DrawEffectsBar(labState, mousePosition);
 }
 
 static void func TurnBasedLab (HINSTANCE instance)
@@ -637,3 +1648,5 @@ static void func TurnBasedLab (HINSTANCE instance)
 		ReleaseDC (window, context);
 	}
 }
+
+// TODO: Better ability outcome visualization!
