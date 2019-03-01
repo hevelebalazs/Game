@@ -899,8 +899,27 @@ static void func ToggleAbility (TurnBasedLabState* labState, I32 abilityId)
 	}
 }
 
+static B32 func CanSelectEntity (TurnBasedLabState* labState, TurnBasedEntity* entity)
+{
+	B32 canSelect = false;
+	if (entity == 0)
+	{
+		canSelect = true;
+	}
+	else if (!IsDead (entity) && entity->teamIndex == labState->activeTeamIndex)
+	{
+		canSelect = true;
+	}
+	else
+	{
+		canSelect = false;
+	}
+	return canSelect;
+}
+
 static void func SelectEntity (TurnBasedLabState* labState, TurnBasedEntity* entity)
 {
+	Assert (CanSelectEntity (labState, entity));
 	labState->selectedEntity = entity;
 	labState->selectedAbilityId = NoTurnBasedAbilityId;
 }
@@ -1020,15 +1039,15 @@ static LRESULT CALLBACK func TurnBasedLabCallback (HWND window, UINT message, WP
 				}
 				else
 				{
-					labState->selectedEntity = 0;
+					SelectEntity (labState, 0);
 				}
 			}
 			else
 			{
 				TurnBasedEntity* hoverEntity = GetEntityAtTile (labState, tileIndex);
-				if (hoverEntity && hoverEntity->teamIndex == labState->activeTeamIndex)
+				if (hoverEntity && CanSelectEntity (labState, hoverEntity))
 				{
-					labState->selectedEntity = hoverEntity;
+					SelectEntity (labState, hoverEntity);
 				}
 			}
 			break;
@@ -1447,7 +1466,7 @@ static void func DrawAbilityBar (TurnBasedLabState* labState, V2 mousePosition)
 			DrawBitmapRect (bitmap, boxLeft, boxRight, boxTop, boxBottom, boxBackgroundColor);
 
 			char name[8];
-			OneLineString (name, 8, (i + 1));
+			OneLineString (name, 8, i);
 			DrawBitmapTextLineCentered (bitmap, name, glyphData, 
 										boxLeft, boxRight, boxTop, boxBottom, 
 										textColor);
@@ -1630,5 +1649,4 @@ static void func TurnBasedLab (HINSTANCE instance)
 	}
 }
 
-// TODO: Disable selection of dead entities!
 // TODO: Better ability outcome visualization!
