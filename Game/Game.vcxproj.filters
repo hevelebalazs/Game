@@ -122,8 +122,5 @@
     <ClInclude Include="DungeonMap.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Lab\TurnBasedLab.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
