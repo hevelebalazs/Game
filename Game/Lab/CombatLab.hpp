@@ -49,6 +49,9 @@ enum AbilityId
 	AbilityN
 };
 
+#define MaxRollDistance 5
+#define MaxKickDistance 5
+
 enum EffectId
 {
 	NoEffectId,
@@ -128,6 +131,12 @@ B32 operator== (TileIndex index1, TileIndex index2)
 {
 	B32 result = (index1.row == index2.row && 
 				  index1.col == index2.col);
+	return result;
+}
+
+B32 operator!= (TileIndex index1, TileIndex index2)
+{
+	B32 result = !(index1 == index2);
 	return result;
 }
 
@@ -505,8 +514,7 @@ static void func AddCooldown (CombatLabState* labState, Entity* entity, I32 abil
 }
 
 static TileIndex func GetLastEmptyTileAtMaxDistance (CombatLabState* labState,
-													 TileIndex startIndex, 
-													 I32 directionRow, I32 directionCol, 
+													 TileIndex startIndex, I32 directionRow, I32 directionCol, 
 													 I32 maxDistance)
 {
 	Assert (IsIntBetween (directionRow, -1, +1));
@@ -527,6 +535,34 @@ static TileIndex func GetLastEmptyTileAtMaxDistance (CombatLabState* labState,
 		tileIndex = nextIndex;
 	}
 	return tileIndex;
+}
+
+#define TileGridColor MakeColor (0.2f, 0.2f, 0.2f)
+
+static void func HighlightEmptyTilesAtMaxDistance (CombatLabState* labState,
+												   TileIndex startIndex, I32 rowDirection, I32 colDirection,
+												   I32 maxDistance, V4 color)
+{
+	Canvas* canvas = &labState->canvas;
+	TileIndex lastTileIndex = GetLastEmptyTileAtMaxDistance (labState, 
+															 startIndex, rowDirection, colDirection, 
+															 maxDistance);
+	TileIndex tileIndex = startIndex;
+	while (1)
+	{
+		V2 tileCenter = GetTileCenter (tileIndex);
+		Rect tileRect = MakeSquareRect (tileCenter, TileSide);
+		DrawRect (canvas, tileRect, color);
+		DrawRectOutline (canvas, tileRect, TileGridColor);
+
+		if (tileIndex == lastTileIndex)
+		{
+			break;
+		}
+
+		tileIndex.row += rowDirection;
+		tileIndex.col += colDirection;
+	}
 }
 
 static B32 func AbilityRequiresTileSelection (I32 abilityId)
@@ -742,7 +778,7 @@ static void func UseAbilityOnTile (CombatLabState* labState,
 			I32 knockDirectionCol = IntSign (tileIndex.col - entity->tileIndex.col);
 			targetEntity->tileIndex = 
 				GetLastEmptyTileAtMaxDistance (labState, tileIndex, 
-											   knockDirectionRow, knockDirectionCol, 5);
+											   knockDirectionRow, knockDirectionCol, MaxKickDistance);
 			break;
 		}
 		case RollAbilityId:
@@ -751,9 +787,9 @@ static void func UseAbilityOnTile (CombatLabState* labState,
 			I32 rollDirectionCol = IntSign (tileIndex.col - entity->tileIndex.col);
 			TileIndex rollTileIndex =
 				GetLastEmptyTileAtMaxDistance (labState, entity->tileIndex,
-											   rollDirectionRow, rollDirectionCol, 5);
+											   rollDirectionRow, rollDirectionCol, MaxRollDistance);
 			I32 distanceRolled = GetTileDistance (entity->tileIndex, rollTileIndex);
-			if (distanceRolled < 5)
+			if (distanceRolled < MaxRollDistance)
 			{
 				TileIndex damagedTileIndex = MakeTileIndex (rollTileIndex.row + rollDirectionRow,
 															rollTileIndex.col + rollDirectionCol);
@@ -1498,8 +1534,6 @@ static void func CombatLabUpdate (CombatLabState* labState, V2 mousePosition, F3
 	V4 backgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
 	ClearScreen (canvas, backgroundColor);
 
-	V4 tileGridColor = MakeColor (0.2f, 0.2f, 0.2f);
-
 	V4 tileColor = MakeColor (0.5f, 0.5f, 0.5f);
 	V4 hoverTileColor = MakeColor (0.6f, 0.6f, 0.6f);
 
@@ -1561,7 +1595,7 @@ static void func CombatLabUpdate (CombatLabState* labState, V2 mousePosition, F3
 				DrawHealthBar(labState, entity);
 			}
 
-			DrawRectOutline (canvas, tileRect, tileGridColor);
+			DrawRectOutline (canvas, tileRect, TileGridColor);
 
 			if (entity != 0 && entity->teamIndex == labState->activeTeamIndex && !IsDead(entity))
 			{
@@ -1572,6 +1606,37 @@ static void func CombatLabUpdate (CombatLabState* labState, V2 mousePosition, F3
 				V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
 				DrawTextLineXYCentered (canvas, actionPointsText, tileCenter.y, tileCenter.x, textColor);
 			}
+		}
+	}
+
+	if (labState->selectedAbilityId == RollAbilityId)
+	{
+		Assert (labState->selectedEntity != 0);
+		TileIndex entityTileIndex = labState->selectedEntity->tileIndex;
+		TileIndex hoverTileIndex = labState->hoverTileIndex;
+		if (IsValidTileIndex (hoverTileIndex) && GetTileDistance (entityTileIndex, hoverTileIndex) == 1)
+		{
+			I32 rowDirection = IntSign (hoverTileIndex.row - entityTileIndex.row);
+			I32 colDirection = IntSign (hoverTileIndex.col - entityTileIndex.col);
+			HighlightEmptyTilesAtMaxDistance (labState, hoverTileIndex, rowDirection, colDirection, 
+											  MaxRollDistance, attackTileColor);
+		}
+	}
+	else if (labState->selectedAbilityId == KickAbilityId)
+	{
+		Assert (labState->selectedEntity != 0);
+		TileIndex entityTileIndex = labState->selectedEntity->tileIndex;
+		TileIndex hoverTileIndex = labState->hoverTileIndex;
+		if (CanUseAbilityOnTile (labState, labState->selectedEntity, KickAbilityId, hoverTileIndex))
+		{
+			I32 rowDirection = IntSign (hoverTileIndex.row - entityTileIndex.row);
+			I32 colDirection = IntSign (hoverTileIndex.col - entityTileIndex.col);
+			TileIndex startTileIndex = MakeTileIndex (
+				hoverTileIndex.row + rowDirection,
+				hoverTileIndex.col + colDirection
+			);
+			HighlightEmptyTilesAtMaxDistance (labState, startTileIndex, rowDirection, colDirection, 
+											  MaxKickDistance, attackTileColor);
 		}
 	}
 
@@ -1649,5 +1714,3 @@ static void func CombatLab (HINSTANCE instance)
 		ReleaseDC (window, context);
 	}
 }
-
-// TODO: Better ability outcome visualization!
