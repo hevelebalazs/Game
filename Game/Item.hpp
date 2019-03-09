@@ -15,97 +15,97 @@ enum ItemId
 	TestPotionId
 };
 
-String func GetItemShortName (I32 itemId, I8* buffer, I32 bufferSize)
+String func GetItemShortName(I32 itemId, I8* buffer, I32 bufferSize)
 {
-	String string = StartString (buffer, bufferSize);
-	switch (itemId)
+	String string = StartString(buffer, bufferSize);
+	switch(itemId)
 	{
 		case TestItemId:
 		{
-			AddText (&string, "Test");
+			AddText(&string, "Test");
 			break;
 		}
 		case TestHelmId:
 		{
-			AddText (&string, "Helm");
+			AddText(&string, "Helm");
 			break;
 		}
 		case TestChestId:
 		{
-			AddText (&string, "Chest");
+			AddText(&string, "Chest");
 			break;
 		}
 		case TestPantsId:
 		{
-			AddText (&string, "Pants");
+			AddText(&string, "Pants");
 			break;
 		}
 		case TestBootsId:
 		{
-			AddText (&string, "Boots");
+			AddText(&string, "Boots");
 			break;
 		}
 		case TestGlovesId:
 		{
-			AddText (&string, "Gloves");
+			AddText(&string, "Gloves");
 			break;
 		}
 		case TestPotionId:
 		{
-			AddText (&string, "Potion");
+			AddText(&string, "Potion");
 			break;
 		}
 		default:
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	}
 	return string;
 }
 
-String func GetItemName (I32 itemId, I8* buffer, I32 bufferSize)
+String func GetItemName(I32 itemId, I8* buffer, I32 bufferSize)
 {
-	String string = StartString (buffer, bufferSize);
-	switch (itemId)
+	String string = StartString(buffer, bufferSize);
+	switch(itemId)
 	{
 		case TestItemId:
 		{
-			AddText (&string, "Test Item");
+			AddText(&string, "Test Item");
 			break;
 		}
 		case TestHelmId:
 		{
-			AddText (&string, "Test Helm");
+			AddText(&string, "Test Helm");
 			break;
 		}
 		case TestChestId:
 		{
-			AddText (&string, "Test Chest");
+			AddText(&string, "Test Chest");
 			break;
 		}
 		case TestPantsId:
 		{
-			AddText (&string, "Test Pants");
+			AddText(&string, "Test Pants");
 			break;
 		}
 		case TestBootsId:
 		{
-			AddText (&string, "Test Boots");
+			AddText(&string, "Test Boots");
 			break;
 		}
 		case TestGlovesId:
 		{
-			AddText (&string, "Test Gloves");
+			AddText(&string, "Test Gloves");
 			break;
 		}
 		case TestPotionId:
 		{
-			AddText (&string, "Test Potion");
+			AddText(&string, "Test Potion");
 			break;
 		}
 		default:
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	}
 	return string;
@@ -119,10 +119,10 @@ struct ItemAttributes
 	I32 dexterity;
 };
 
-ItemAttributes GetItemAttributes (I32 itemId)
+ItemAttributes GetItemAttributes(I32 itemId)
 {
 	ItemAttributes attributes = {};
-	switch (itemId)
+	switch(itemId)
 	{
 		case TestPotionId:
 		case TestItemId:
@@ -164,42 +164,42 @@ ItemAttributes GetItemAttributes (I32 itemId)
 		}
 		default:
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	}
 	return attributes;
 }
 
-String func GetItemTooltipText (I32 itemId, I8* buffer, I32 bufferSize)
+String func GetItemTooltipText(I32 itemId, I8* buffer, I32 bufferSize)
 {
-	String string = StartString (buffer, bufferSize);
+	String string = StartString(buffer, bufferSize);
 
 	I8 itemName[32];
-	GetItemName (itemId, itemName, 32);
-	AddLine (string, itemName);
+	GetItemName(itemId, itemName, 32);
+	AddLine(string, itemName);
 
-	ItemAttributes attributes = GetItemAttributes (itemId);
+	ItemAttributes attributes = GetItemAttributes(itemId);
 
-	if (attributes.constitution > 0)
+	if(attributes.constitution > 0)
 	{
-		AddLine (string, "+" + attributes.constitution + " Constitution");
+		AddLine(string, "+" + attributes.constitution + " Constitution");
 	}
-	if (attributes.strength > 0)
+	if(attributes.strength > 0)
 	{
-		AddLine (string, "+" + attributes.strength + " Strength");
+		AddLine(string, "+" + attributes.strength + " Strength");
 	}
-	if (attributes.intellect > 0)
+	if(attributes.intellect > 0)
 	{
-		AddLine (string, "+" + attributes.intellect + " Intellect");
+		AddLine(string, "+" + attributes.intellect + " Intellect");
 	}
-	if (attributes.dexterity > 0)
+	if(attributes.dexterity > 0)
 	{
-		AddLine (string, "+" + attributes.dexterity + " Dexterity");
+		AddLine(string, "+" + attributes.dexterity + " Dexterity");
 	}
 
-	if (itemId == TestPotionId)
+	if(itemId == TestPotionId)
 	{
-		AddLine (string, "Consume: Heal yourself for 30.");
+		AddLine(string, "Consume: Heal yourself for 30.");
 	}
 
 	return string;
@@ -217,73 +217,73 @@ enum SlotId
 	WaistSlotId
 };
 
-static B32 func IsValidSlotId (I32 id)
+static B32 func IsValidSlotId(I32 id)
 {
 	B32 result = (id >= AnySlotId) && (id <= WaistSlotId);
 	return result;
 }
 
-static String func GetSlotName (I32 id, I8* buffer, I32 bufferSize)
+static String func GetSlotName(I32 id, I8* buffer, I32 bufferSize)
 {
-	String string = StartString (buffer, bufferSize);
-	switch (id)
+	String string = StartString(buffer, bufferSize);
+	switch(id)
 	{
 		case HeadSlotId:
 		{
-			AddText (&string, "Head");
+			AddText(&string, "Head");
 			break;
 		}
 		case ChestSlotId:
 		{
-			AddText (&string, "Chest");
+			AddText(&string, "Chest");
 			break;
 		}
 		case ArmsSlotId:
 		{
-			AddText (&string, "Arms");
+			AddText(&string, "Arms");
 			break;
 		}
 		case LegsSlotId:
 		{
-			AddText (&string, "Legs");
+			AddText(&string, "Legs");
 			break;
 		}
 		case FeetSlotId:
 		{
-			AddText (&string, "Feet");
+			AddText(&string, "Feet");
 			break;
 		}
 		case HandSlotId:
 		{
-			AddText (&string, "Hand");
+			AddText(&string, "Hand");
 			break;
 		}
 		case WaistSlotId:
 		{
-			AddText (&string, "Waist");
+			AddText(&string, "Waist");
 			break;
 		}
 		default:
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	}
 	return string;
 }
 
-B32 ItemGoesIntoSlot (I32 itemId, I32 slotId)
+B32 ItemGoesIntoSlot(I32 itemId, I32 slotId)
 {
-	Assert (IsValidSlotId (slotId));
+	Assert(IsValidSlotId(slotId));
 
 	B32 result = false;
 
-	if (itemId == NoItemId)
+	if(itemId == NoItemId)
 	{
 		result = true;
 	}
 	else
 	{
-		switch (slotId)
+		switch(slotId)
 		{
 			case AnySlotId:
 			{
@@ -327,7 +327,7 @@ B32 ItemGoesIntoSlot (I32 itemId, I32 slotId)
 			}
 			default:
 			{
-				DebugBreak ();
+				DebugBreak();
 			}
 		}
 	}

@@ -14,11 +14,11 @@
 #include "../Type.hpp"
 
 #define PathLineWidth  (0.25f * LaneWidth)
-#define ValidColor     MakeColor (0.0f, 0.8f, 0.0f)
-#define InvalidColor   MakeColor (0.8f, 0.0f, 0.0f)
-#define HighlightColor MakeColor (0.8f, 1.0f, 1.0f)
-#define PathColor      MakeColor (0.0f, 0.8f, 0.8f)
-#define PathColor2     MakeColor (0.0f, 1.0f, 1.0f)
+#define ValidColor     MakeColor(0.0f, 0.8f, 0.0f)
+#define InvalidColor   MakeColor(0.8f, 0.0f, 0.0f)
+#define HighlightColor MakeColor(0.8f, 1.0f, 1.0f)
+#define PathColor      MakeColor(0.0f, 0.8f, 0.8f)
+#define PathColor2     MakeColor(0.0f, 1.0f, 1.0f)
 
 enum RoadLabMode 
 {
@@ -66,42 +66,42 @@ struct RoadLabState
 };
 static RoadLabState gRoadLabState;
 
-static void func RoadLabResize (RoadLabState* labState, I32 width, I32 height)
+static void func RoadLabResize(RoadLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
-	ResizeCamera (camera, width, height);
+	ResizeCamera(camera, width, height);
 
 	Canvas* canvas = &labState->canvas;
-	ResizeBitmap (&canvas->bitmap, width, height);
+	ResizeBitmap(&canvas->bitmap, width, height);
 	canvas->camera = camera;
 	camera->unitInPixels = 50.0f;
 }
 
-static void func RoadLabBlit (Canvas* canvas, HDC context, RECT rect)
+static void func RoadLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
 	Bitmap bitmap = canvas->bitmap;
-	BITMAPINFO bitmapInfo = GetBitmapInfo (&bitmap);
-	StretchDIBits (context,
-				   0, 0, bitmap.width, bitmap.height,
-				   0, 0, width, height,
-				   bitmap.memory,
-				   &bitmapInfo,
-				   DIB_RGB_COLORS,
-				   SRCCOPY
+	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
+	StretchDIBits(context,
+				  0, 0, bitmap.width, bitmap.height,
+				  0, 0, width, height,
+				  bitmap.memory,
+				  &bitmapInfo,
+				  DIB_RGB_COLORS,
+				  SRCCOPY
 	);
 }
 
-static B32 func CanJunctionBePlacedAtPoint (Map* map, V2 point)
+static B32 func CanJunctionBePlacedAtPoint(Map* map, V2 point)
 {
 	B32 valid = true;
-	for (I32 i = 0; i < map->junctionN; ++i) 
+	for(I32 i = 0; i < map->junctionN; i++) 
 	{
-		Junction* junction = map->junctions + i;
-		F32 distance = Distance (point, junction->position);
-		if (distance < MinimumJunctionDistance) 
+		Junction* junction = &map->junctions[i];
+		F32 distance = Distance(point, junction->position);
+		if(distance < MinimumJunctionDistance) 
 		{
 			valid = false;
 			break;
@@ -110,20 +110,20 @@ static B32 func CanJunctionBePlacedAtPoint (Map* map, V2 point)
 	return valid;
 }
 
-static void func HighlightJunctionCorner (Canvas* canvas, Junction* junction, I32 cornerIndex, V4 color)
+static void func HighlightJunctionCorner(Canvas* canvas, Junction* junction, I32 cornerIndex, V4 color)
 {
 	F32 radius = LaneWidth * 0.25f;
-	V2 corner = GetJunctionCorner (junction, cornerIndex);
+	V2 corner = GetJunctionCorner(junction, cornerIndex);
 	F32 left   = corner.x - radius;
 	F32 right  = corner.x + radius;
 	F32 top    = corner.y - radius;
 	F32 bottom = corner.y + radius;
-	DrawRectLRTB (canvas, left, right, top, bottom, color);
+	DrawRectLRTB(canvas, left, right, top, bottom, color);
 }
 
-static void func RoadLabUpdate (RoadLabState* labState, V2 mouse)
+static void func RoadLabUpdate(RoadLabState* labState, V2 mouse)
 {
-	if (labState->isCameraMoved) 
+	if(labState->isCameraMoved) 
 	{
 		V2 mousePositionDifference = (labState->cameraMoveDragPoint - mouse);
 		Camera* camera = &labState->camera;
@@ -132,100 +132,100 @@ static void func RoadLabUpdate (RoadLabState* labState, V2 mouse)
 
 	Map* map = &labState->map;
 	Canvas* canvas = &labState->canvas;
-	V4 black = MakeColor (0.0f, 0.0f, 0.0f);
-	ClearScreen (canvas, black);
+	V4 black = MakeColor(0.0f, 0.0f, 0.0f);
+	ClearScreen(canvas, black);
 
 	F32 seconds = 0.1f;
-	for (I32 i = 0; i < map->junctionN; ++i)
+	for(I32 i = 0; i < map->junctionN; i++)
 	{
-		UpdateTrafficLights (&map->junctions[i], seconds);
+		UpdateTrafficLights(&map->junctions[i], seconds);
 	}
 
-	for (I32 i = 0; i < map->roadN; ++i)
+	for(I32 i = 0; i < map->roadN; i++)
 	{
-		DrawRoadSidewalk (canvas, &map->roads[i]);
+		DrawRoadSidewalk(canvas, &map->roads[i]);
 	}
-	for (I32 i = 0; i < map->junctionN; ++i)
+	for(I32 i = 0; i < map->junctionN; i++)
 	{
-		DrawJunctionSidewalk (canvas, &map->junctions[i]);
-	}
-
-	for (I32 i = 0; i < map->roadN; ++i)
-	{
-		DrawRoad (canvas, &map->roads[i]);
+		DrawJunctionSidewalk(canvas, &map->junctions[i]);
 	}
 
-	for (I32 i = 0; i < map->junctionN; ++i)
+	for(I32 i = 0; i < map->roadN; i++)
 	{
-		DrawJunction (canvas, &map->junctions[i]);
+		DrawRoad(canvas, &map->roads[i]);
 	}
 
-	if (labState->labMode == RoadPlacingMode) 
+	for(I32 i = 0; i < map->junctionN; i++)
 	{
-		Junction* junctionAtMouse = GetJunctionAtPoint (map, mouse);
-		if (junctionAtMouse)
+		DrawJunction(canvas, &map->junctions[i]);
+	}
+
+	if(labState->labMode == RoadPlacingMode) 
+	{
+		Junction* junctionAtMouse = GetJunctionAtPoint(map, mouse);
+		if(junctionAtMouse)
 		{
-			HighlightJunction (canvas, junctionAtMouse, HighlightColor);
+			HighlightJunction(canvas, junctionAtMouse, HighlightColor);
 		}
 
-		if (labState->isPreviewOn) 
+		if(labState->isPreviewOn) 
 		{
 			Road* roadPreview = &labState->roadPreview;
 			Junction* junction2 = junctionAtMouse;
-			if (junction2 && junction2 != roadPreview->junction1) 
+			if(junction2 && junction2 != roadPreview->junction1) 
 			{
 				roadPreview->endPoint2 = junction2->position;
-				HighlightRoad (canvas, roadPreview, ValidColor);
+				HighlightRoad(canvas, roadPreview, ValidColor);
 			} 
 			else 
 			{
 				roadPreview->endPoint2 = mouse;
-				HighlightRoad (canvas, roadPreview, InvalidColor);
+				HighlightRoad(canvas, roadPreview, InvalidColor);
 			}
 		}
 	} 
-	else if (labState->labMode == JunctionPlacingMode) 
+	else if(labState->labMode == JunctionPlacingMode) 
 	{
 		Junction* junctionPreview = &labState->junctionPreview;
-		B32 valid = CanJunctionBePlacedAtPoint (map, mouse);
+		B32 valid = CanJunctionBePlacedAtPoint(map, mouse);
 		junctionPreview->position = mouse;
-		if (valid)
+		if(valid)
 		{
-			DrawJunctionPlaceholder (canvas, junctionPreview, ValidColor);
+			DrawJunctionPlaceholder(canvas, junctionPreview, ValidColor);
 		}
 		else
 		{
-			DrawJunctionPlaceholder (canvas, junctionPreview, InvalidColor);
+			DrawJunctionPlaceholder(canvas, junctionPreview, InvalidColor);
 		}
 	} 
-	else if (labState->labMode == RoadPathBuildingMode) 
+	else if(labState->labMode == RoadPathBuildingMode) 
 	{
-		Junction* junctionAtMouse = GetJunctionAtPoint (&labState->map, mouse);
-		if (junctionAtMouse)
+		Junction* junctionAtMouse = GetJunctionAtPoint(&labState->map, mouse);
+		if(junctionAtMouse)
 		{
-			HighlightJunction (canvas, junctionAtMouse, HighlightColor);
+			HighlightJunction(canvas, junctionAtMouse, HighlightColor);
 		}
 
-		if (labState->pathJunction1) 
+		if(labState->pathJunction1) 
 		{
-			HighlightJunction (canvas, labState->pathJunction1, PathColor2);
-			if (junctionAtMouse) 
+			HighlightJunction(canvas, labState->pathJunction1, PathColor2);
+			if(junctionAtMouse) 
 			{
-				if (junctionAtMouse == labState->pathJunction1) 
+				if(junctionAtMouse == labState->pathJunction1) 
 				{
 					labState->firstPathNode = 0;
 				} 
-				else if (junctionAtMouse == labState->pathJunction2) 
+				else if(junctionAtMouse == labState->pathJunction2) 
 				{
 				} 
 				else 
 				{
 					labState->pathJunction2 = junctionAtMouse;
-					ResetPathPool (&labState->pathPool);
-					labState->firstPathNode = ConnectElems (
+					ResetPathPool(&labState->pathPool);
+					labState->firstPathNode = ConnectElems(
 						&labState->map,
-						GetJunctionElem (labState->pathJunction1),
-						GetJunctionElem (labState->pathJunction2),
+						GetJunctionElem(labState->pathJunction1),
+						GetJunctionElem(labState->pathJunction2),
 						&labState->memArena,
 						&labState->pathPool
 					);
@@ -237,40 +237,40 @@ static void func RoadLabUpdate (RoadLabState* labState, V2 mouse)
 				labState->firstPathNode = 0;
 			}
 
-			if (labState->pathJunction2 && labState->pathJunction2 != labState->pathJunction1) 
+			if(labState->pathJunction2 && labState->pathJunction2 != labState->pathJunction1) 
 			{
-				HighlightJunction (canvas, labState->pathJunction2, PathColor2);
-				if (labState->firstPathNode)
+				HighlightJunction(canvas, labState->pathJunction2, PathColor2);
+				if(labState->firstPathNode)
 				{
-					DrawBezierPath (canvas, labState->firstPathNode, PathColor, PathLineWidth);
+					DrawBezierPath(canvas, labState->firstPathNode, PathColor, PathLineWidth);
 				}
 			}
 		}
 	} 
-	else if (labState->labMode == SidewalkPathBuildingMode) 
+	else if(labState->labMode == SidewalkPathBuildingMode) 
 	{
-		Junction* junctionAtMouse = GetJunctionAtPoint (map, mouse);
-		if (junctionAtMouse && junctionAtMouse->roadN > 0) 
+		Junction* junctionAtMouse = GetJunctionAtPoint(map, mouse);
+		if(junctionAtMouse && junctionAtMouse->roadN > 0) 
 		{
-			I32 cornerIndex = GetClosestJunctionCornerIndex (junctionAtMouse, mouse);
-			HighlightJunctionCorner (canvas, junctionAtMouse, cornerIndex, HighlightColor);
+			I32 cornerIndex = GetClosestJunctionCornerIndex(junctionAtMouse, mouse);
+			HighlightJunctionCorner(canvas, junctionAtMouse, cornerIndex, HighlightColor);
 		}
 
 		Junction* junction1 = labState->pathJunction1;
-		if (junction1 && junction1->roadN > 0) 
+		if(junction1 && junction1->roadN > 0) 
 		{
 			I32 corner1 = labState->pathJunctionCorner1;
-			HighlightJunctionCorner (canvas, junction1, corner1, PathColor);
-			if (junctionAtMouse) 
+			HighlightJunctionCorner(canvas, junction1, corner1, PathColor);
+			if(junctionAtMouse) 
 			{
 				labState->pathJunction2 = junctionAtMouse;
-				I32 cornerAtMouse = GetClosestJunctionCornerIndex (junctionAtMouse, mouse);
+				I32 cornerAtMouse = GetClosestJunctionCornerIndex(junctionAtMouse, mouse);
 				ResetPathPool(&labState->pathPool);
-				labState->firstPathNode = ConnectPedestrianElems (
+				labState->firstPathNode = ConnectPedestrianElems(
 					&labState->map,
-					GetJunctionSidewalkElem (junction1),
+					GetJunctionSidewalkElem(junction1),
 					corner1,
-					GetJunctionSidewalkElem (junctionAtMouse),
+					GetJunctionSidewalkElem(junctionAtMouse),
 					cornerAtMouse,
 					&labState->memArena,
 					&labState->pathPool
@@ -288,54 +288,54 @@ static void func RoadLabUpdate (RoadLabState* labState, V2 mouse)
 			labState->firstPathNode = 0;
 		}
 		
-		if (labState->firstPathNode)
+		if(labState->firstPathNode)
 		{
-			DrawPath (canvas, labState->firstPathNode, PathColor, PathLineWidth);
+			DrawPath(canvas, labState->firstPathNode, PathColor, PathLineWidth);
 		}
 	}
 
-	for (I32 i = 0; i < map->junctionN; ++i)
+	for(I32 i = 0; i < map->junctionN; i++)
 	{
-		DrawTrafficLights (canvas, &map->junctions[i]);
+		DrawTrafficLights(canvas, &map->junctions[i]);
 	}
 }
 
-static void func UpdateJunction (Junction* junction)
+static void func UpdateJunction(Junction* junction)
 {
-	CalculateStopDistances (junction);
-	InitTrafficLights (junction);
-	for (I32 i = 0; i < junction->roadN; ++i)
+	CalculateStopDistances(junction);
+	InitTrafficLights(junction);
+	for(I32 i = 0; i < junction->roadN; i++)
 	{
-		GenerateCrossing (junction->roads[i]);
+		GenerateCrossing(junction->roads[i]);
 	}
 }
 
-static void func RoadLabClick (RoadLabState* labState, V2 mouse)
+static void func RoadLabClick(RoadLabState* labState, V2 mouse)
 {
 	Map* map = &labState->map;
-	if (labState->labMode == RoadPlacingMode) 
+	if(labState->labMode == RoadPlacingMode) 
 	{
 		Road* roadPreview = &labState->roadPreview;
-		if (labState->isPreviewOn) 
+		if(labState->isPreviewOn) 
 		{
 			Junction* junction1 = roadPreview->junction1;
-			Junction* junction2 = GetJunctionAtPoint (map, mouse);
-			if (junction2 && junction1 != junction2) 
+			Junction* junction2 = GetJunctionAtPoint(map, mouse);
+			if(junction2 && junction1 != junction2) 
 			{
-				Assert (map->roadN < RoadLabMaxRoadN);
+				Assert(map->roadN < RoadLabMaxRoadN);
 				Road* road = map->roads + map->roadN;
-				ConnectJunctions (junction1, junction2, road);
+				ConnectJunctions(junction1, junction2, road);
 				map->roadN++;
 				labState->isPreviewOn = false;
-				UpdateJunction (junction1);
-				UpdateJunction (junction2);
-				GenerateCrossing (road);
+				UpdateJunction(junction1);
+				UpdateJunction(junction2);
+				GenerateCrossing(road);
 			}
 		} 
 		else 
 		{
-			Junction* junction1 = GetJunctionAtPoint (map, mouse);
-			if (junction1) 
+			Junction* junction1 = GetJunctionAtPoint(map, mouse);
+			if(junction1) 
 			{
 				roadPreview->junction1 = junction1;
 				roadPreview->endPoint1 = junction1->position;
@@ -345,46 +345,46 @@ static void func RoadLabClick (RoadLabState* labState, V2 mouse)
 			}
 		}
 	} 
-	else if (labState->labMode == JunctionPlacingMode) 
+	else if(labState->labMode == JunctionPlacingMode) 
 	{
 		Junction junctionPreview = labState->junctionPreview;
-		B32 valid = CanJunctionBePlacedAtPoint (map, junctionPreview.position);
-		if (valid) 
+		B32 valid = CanJunctionBePlacedAtPoint(map, junctionPreview.position);
+		if(valid) 
 		{
-			Assert (map->junctionN < RoadLabMaxJunctionN);
+			Assert(map->junctionN < RoadLabMaxJunctionN);
 			map->junctions[map->junctionN] = junctionPreview;
 			map->junctionN++;
 		}
 	} 
-	else if (labState->labMode == RoadPathBuildingMode) 
+	else if(labState->labMode == RoadPathBuildingMode) 
 	{
-		labState->pathJunction1 = GetJunctionAtPoint (&labState->map, mouse);
+		labState->pathJunction1 = GetJunctionAtPoint(&labState->map, mouse);
 		labState->firstPathNode = 0;
 		ResetPathPool(&labState->pathPool);
 	} 
-	else if (labState->labMode == SidewalkPathBuildingMode) 
+	else if(labState->labMode == SidewalkPathBuildingMode) 
 	{
-		Junction* junction = GetJunctionAtPoint (&labState->map, mouse);
+		Junction* junction = GetJunctionAtPoint(&labState->map, mouse);
 		labState->pathJunction1 = junction;
-		if (junction && junction->roadN > 0)
+		if(junction && junction->roadN > 0)
 		{
-			labState->pathJunctionCorner1 = GetClosestJunctionCornerIndex (junction, mouse);
+			labState->pathJunctionCorner1 = GetClosestJunctionCornerIndex(junction, mouse);
 		}
 		labState->pathJunction2 = 0;
 	}
 }
 
-static LRESULT CALLBACK func RoadLabCallback (HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK func RoadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	RoadLabState* labState = &gRoadLabState;
 	LRESULT result = 0;
 
-	switch (message) 
+	switch(message) 
 	{
 		case WM_SIZE: 
 		{
 			RECT clientRect;
-			GetClientRect (window, &clientRect);
+			GetClientRect(window, &clientRect);
 			I32 width = clientRect.right - clientRect.left;
 			I32 height = clientRect.bottom - clientRect.top;
 			RoadLabResize(labState, width, height);
@@ -393,57 +393,67 @@ static LRESULT CALLBACK func RoadLabCallback (HWND window, UINT message, WPARAM 
 		case WM_PAINT: 
 		{
 			PAINTSTRUCT paint;
-			HDC context = BeginPaint (window, &paint);
+			HDC context = BeginPaint(window, &paint);
 
 			RECT clientRect;
-			GetClientRect (window, &clientRect);
+			GetClientRect(window, &clientRect);
 
-			RoadLabBlit (&labState->canvas, context, clientRect);
+			RoadLabBlit(&labState->canvas, context, clientRect);
 
-			EndPaint (window, &paint);
+			EndPaint(window, &paint);
 			break;
 		}
 		case WM_KEYUP: 
 		{
 			WPARAM keyCode = wparam;
-			switch (keyCode) 
+			switch(keyCode) 
 			{
 				case '1':
+				{
 					labState->labMode = RoadPlacingMode;
 					labState->isPreviewOn = false;
 					break;
+				}
 				case '2':
+				{
 					labState->labMode = JunctionPlacingMode;
 					break;
+				}
 				case 'P':
+				{
 					labState->labMode = RoadPathBuildingMode;
-					ResetPathPool (&labState->pathPool);
+					ResetPathPool(&labState->pathPool);
 					break; 
+				}
 				case 'O':
+				{
 					labState->labMode = SidewalkPathBuildingMode;
-					ResetPathPool (&labState->pathPool);
+					ResetPathPool(&labState->pathPool);
 					break;
+				}
 				case 'G':
+				{
 					Map* map = &labState->map;
 					I32 junctionRowN = RoadLabMaxJunctionRowN;
 					I32 junctionColN = RoadLabMaxJunctionColN;
 					I32 roadN = RoadLabMaxRoadN;
 					MemArena* tmpArena = &labState->memArena;
-					GenerateGridMap (map, junctionRowN, junctionColN, roadN, tmpArena);
+					GenerateGridMap(map, junctionRowN, junctionColN, roadN, tmpArena);
 					break;
+				}
 			}
 			break;
 		}
 		case WM_LBUTTONDOWN: 
 		{
-			V2 mouse = GetMousePosition (&labState->camera, window);
-			RoadLabClick (labState, mouse);
+			V2 mouse = GetMousePosition(&labState->camera, window);
+			RoadLabClick(labState, mouse);
 			break;
 		}
 		case WM_RBUTTONDOWN: 
 		{
 			labState->isCameraMoved = true;
-			labState->cameraMoveDragPoint = GetMousePosition (&labState->camera, window);
+			labState->cameraMoveDragPoint = GetMousePosition(&labState->camera, window);
 			break;
 		}
 		case WM_RBUTTONUP: 
@@ -453,12 +463,12 @@ static LRESULT CALLBACK func RoadLabCallback (HWND window, UINT message, WPARAM 
 		}
 		case WM_MOUSEWHEEL: 
 		{
-			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM (wparam);
-			if (wheelDeltaParam > 0)
+			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
+			if(wheelDeltaParam > 0)
 			{
 				labState->camera.unitInPixels *= 1.10f;
 			}
-			else if (wheelDeltaParam < 0)
+			else if(wheelDeltaParam < 0)
 			{
 				labState->camera.unitInPixels /= 1.10f;
 			}
@@ -466,8 +476,8 @@ static LRESULT CALLBACK func RoadLabCallback (HWND window, UINT message, WPARAM 
 		}
 		case WM_SETCURSOR: 
 		{
-			HCURSOR cursor = LoadCursor (0, IDC_ARROW);
-			SetCursor (cursor);
+			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
+			SetCursor(cursor);
 			break;
 		}
 		case WM_DESTROY: 
@@ -482,7 +492,7 @@ static LRESULT CALLBACK func RoadLabCallback (HWND window, UINT message, WPARAM 
 		}
 		default: 
 		{
-			result = DefWindowProc (window, message, wparam, lparam);
+			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
 	}
@@ -490,9 +500,9 @@ static LRESULT CALLBACK func RoadLabCallback (HWND window, UINT message, WPARAM 
 	return result;
 }
 
-static void func RoadLabInit (RoadLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func RoadLabInit(RoadLabState* labState, I32 windowWidth, I32 windowHeight)
 {
-	RoadLabResize (labState, windowWidth, windowHeight);
+	RoadLabResize(labState, windowWidth, windowHeight);
 	labState->labMode = JunctionPlacingMode;
 	Map* map = &labState->map;
 	map->roads = labState->roads;
@@ -512,10 +522,10 @@ static void func RoadLabInit (RoadLabState* labState, I32 windowWidth, I32 windo
 	Camera* camera = &labState->camera;
 	camera->unitInPixels = 10.0f;
 
-	labState->memArena = CreateMemArena (RoadLabMemArenaSize);
+	labState->memArena = CreateMemArena(RoadLabMemArenaSize);
 }
 
-static void func RoadLab (HINSTANCE instance)
+static void func RoadLab(HINSTANCE instance)
 {
 	RoadLabState* labState = &gRoadLabState;
 
@@ -525,8 +535,8 @@ static void func RoadLab (HINSTANCE instance)
 	winClass.hInstance = instance;
 	winClass.lpszClassName = "RoadLabWindowClass";
 
-	Verify (RegisterClass (&winClass));
-	HWND window = CreateWindowEx (
+	Verify(RegisterClass(&winClass));
+	HWND window = CreateWindowEx(
 		0,
 		winClass.lpszClassName,
 		"RoadLab",
@@ -540,33 +550,33 @@ static void func RoadLab (HINSTANCE instance)
 		instance,
 		0
 	);
-	Assert (window != 0);
+	Assert(window != 0);
 
 	RECT rect = {};
-	GetClientRect (window, &rect);
+	GetClientRect(window, &rect);
 	I32 width = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
-	RoadLabInit (labState, width, height);
+	RoadLabInit(labState, width, height);
 
 	MSG message = {};
 
 	labState->running = true;
-	while (labState->running) 
+	while(labState->running) 
 	{
-		while (PeekMessage (&message, 0, 0, 0, PM_REMOVE)) 
+		while(PeekMessage(&message, 0, 0, 0, PM_REMOVE)) 
 		{
-			TranslateMessage (&message);
-			DispatchMessageA (&message);
+			TranslateMessage(&message);
+			DispatchMessageA(&message);
 		}
 		
-		V2 mouse = GetMousePosition (&labState->camera, window);
-		RoadLabUpdate (labState, mouse);
+		V2 mouse = GetMousePosition(&labState->camera, window);
+		RoadLabUpdate(labState, mouse);
   
 		RECT rect;
-		GetClientRect (window, &rect);
+		GetClientRect(window, &rect);
 
-		HDC context = GetDC (window);
-		RoadLabBlit (&labState->canvas, context, rect);
-		ReleaseDC (window, context);
+		HDC context = GetDC(window);
+		RoadLabBlit(&labState->canvas, context, rect);
+		ReleaseDC(window, context);
 	}
 }

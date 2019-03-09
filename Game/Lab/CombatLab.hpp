@@ -1,250 +1,79 @@
 #pragma once
 
-#include <Windows.h>
-
 #include "Lab.hpp"
 
-#include "../DungeonMap.hpp"
-#include "../Geometry.hpp"
-#include "../Item.hpp"
-#include "../String.hpp"
+#define TileSide 10.0f
+#define TileRowN 10
+#define TileColN 10
 
-#define WhiteColor MakeColor (1.0f, 1.0f, 1.0f)
-#define BlueColor  MakeColor (0.0f, 0.0f, 1.0f)
-#define RedColor   MakeColor (1.0f, 0.0f, 0.0f)
-#define GreenColor MakeColor (0.0f, 1.0f, 0.0f)
-
-#define WhiteAbility1Radius 5.0f
-#define WhiteAbility1TotalCastTime 0.5f
-#define WhiteAbility1AngleRange (0.25f * PI)
-#define WhiteAbility1Damage 20
-
-#define WhiteAbility2TotalCastTime 0.3f
-#define WhiteAbility2MoveSpeed 30.0f
-#define WhiteAbility2ResourceCost 30
-#define WhiteAbility2Damage 10
-
-#define WhiteAbility3TotalCastTime 0.3f
-#define WhiteAbility3Radius 5.0f
-#define WhiteAbility3ResourceCost 60 
-#define WhiteAbility3Damage 50
-
-#define RedAbility1Radius 5.0f
-#define RedAbility1TotalCastTime 0.8f
-#define RedAbility1AngleRange (0.5f * PI)
-#define RedAbility1Damage 10
-
-#define RedAbility2Radius 5.0f
-#define RedAbility2TotalCastTime 0.5f
-#define RedAbility2AngleRange (0.25f * PI)
-#define RedAbility2Damage 30
-
-#define BlueAbility1Radius 3.0f
-#define BlueAbility1TotalCastTime 1.0f
-#define BlueAbility1Damage 10
-
-#define BlueAbility2Radius 3.0f
-#define BlueAbility2TotalCastTime 1.0f
-#define BlueAbility2Damage 15
-#define BlueAbility2SlowTime 3.0f
-#define BlueAbility2ResourceCost 50
-
-#define BlueAbility3Radius 2.0f
-#define BlueAbility3TotalCastTime 1.0f
-#define BlueAbility3Damage 30
-#define BlueAbility3SlowTime 6.0f
-#define BlueAbility3ResourceCost 100
-
-#define MaxLevel 5
-
-static I32 ExperienceNeededForNextLevel[] = 
+struct TileIndex
 {
-	0,
-	100,
-	150,
-	250,
-	500
+	I32 row;
+	I32 col;
 };
 
-static I32 ConstitutionOnLevel[] =
+#define EntityN 4
+#define TeamN 2
+#define MaxActionPoints 5
+
+V4 TeamColors[TeamN] =
 {
-	0,
-	10,
-	20,
-	35,
-	55,
-	80
+	MakeColor(0.8f, 0.0f, 0.0f),
+	MakeColor(0.0f, 0.0f, 0.8f)
 };
 
-static I32 RedStrengthOnLevel[] =
+V4 HoverTeamColors[TeamN] = 
 {
-	0,
-	10,
-	15,
-	25,
-	40,
-	65
+	MakeColor(0.9f, 0.1f, 0.1f),
+	MakeColor(0.1f, 0.0f, 0.9f)
 };
 
-static I32 WhiteStrengthOnLevel[] =
+struct Entity
 {
-	0,
-	5,
-	10,
-	15,
-	20,
-	25,
-	30
-};
-
-static I32 BlueIntellectOnLevel[] =
-{
-	0,
-	10,
-	15,
-	25,
-	40,
-	65
-};
-
-static I32 WhiteDexterityOnLevel[] =
-{
-	0,
-	5,
-	10,
-	15,
-	20,
-	25
-};
-
-static I32 BlueDexterityOnLevel[] =
-{
-	0,
-	5,
-	10,
-	15,
-	20,
-	25
+	TileIndex tileIndex;
+	I32 teamIndex;
+	I32 actionPoints;
+	I32 healthPoints;
+	I32 maxHealthPoints;
 };
 
 enum AbilityId
 {
 	NoAbilityId,
-	WhiteAbility1Id,
-	WhiteAbility2Id,
-	WhiteAbility3Id,
-	RedAbility1Id,
-	RedAbility2Id,
-	BlueAbility1Id,
-	BlueAbility2Id,
-	BlueAbility3Id
+	SmallPunchAbilityId,
+	BigPunchAbilityId,
+	KickAbilityId,
+	SpinningKickAbilityId,
+	AvoidanceAbilityId,
+	RollAbilityId,
+	AbilityN
 };
 
-struct Ability
+#define MaxRollDistance 5
+#define MaxKickDistance 5
+
+enum EffectId
 {
+	NoEffectId,
+	InvulnerableEffectId,
+	EffectN
+};
+
+struct Effect
+{
+	Entity* entity;
 	I32 id;
-	F32 castRatioLeft;
-
-	V2 position;
-	F32 angle;
+	I32 turns;
 };
+#define MaxEffectN 64
 
-enum EntityTypeId
+struct Cooldown
 {
-	WhiteEntityId,
-	RedEntityId,
-	BlueEntityId
+	Entity* entity;
+	I32 abilityId;
+	I32 turns;
 };
-
-#define EntityNameSize 16
-#define EntityRadius 1.0f
-
-struct Entity
-{
-	EntityTypeId typeId;
-	I32 level;
-
-	V2 position;
-	V2 velocity;
-
-	I32 health;
-
-	Ability ability;
-
-	B32 isAttacking;
-	F32 attackFromAngle;
-
-	B32 hasSpecialResource;
-	I32 maxSpecialResource;
-	I32 specialResource;
-
-	F32 slowTimeLeft;
-
-	I32 strength;
-	I32 intellect;
-	I32 constitution;
-	I32 dexterity;
-
-	I8 name[EntityNameSize];
-};
-
-enum TextAlertId
-{
-	DamageTextAlertId,
-	HealTextAlertId
-};
-
-struct TextAlert
-{
-	I32 id;
-	V4 color;
-	F32 centerX;
-	F32 baseLineY;
-	F32 timeRemaining;
-
-	union
-	{
-		I32 damage;
-		I32 heal;
-	};
-};
-
-#define CombatLabMaxEnemyN 512
-
-#define MaxTextAlertN 100
-
-#define CombatLogLineN 12
-#define CombatLogLineSize 64
-
-struct Inventory
-{
-	I32 top;
-	I32 left;
-
-	I32 rowN;
-	I32 colN;
-	I32* itemIds;
-	I32* slotIds;
-};
-
-struct InventoryItem
-{
-	Inventory* inventory;
-	I32 itemId;
-	I32 slotId;
-	I32 row;
-	I32 col;
-};
-
-#define MaxDroppedItemN 32
-#define DroppedItemDuration 10.0f
-
-struct DroppedItem
-{
-	V2 position;
-	I32 itemId;
-	F32 timeLeft;
-};
+#define MaxCooldownN 64
 
 struct CombatLabState
 {
@@ -252,785 +81,898 @@ struct CombatLabState
 	Canvas canvas;
 	B32 running;
 
-	DungeonMap map;
+	Entity entities[EntityN];
+	TileIndex hoverTileIndex;
 
-	Entity player;
+	Entity* selectedEntity;
+	I32 activeTeamIndex;
+	I32 selectedAbilityId;
 
-	Entity enemies[CombatLabMaxEnemyN];
-	I32 enemyN;
+	I32 hoverAbilityId;
 
-	B32 followMouse;
-	I32 useAbilityId;
+	Cooldown cooldowns[MaxCooldownN];
+	I32 cooldownN;
 
-	I32 experienceGainedThisLevel;
-
-	F32 secondsFraction;
-
-	B32 moveLeft;
-	B32 moveRight;
-	B32 moveUp;
-	B32 moveDown;
-
-	TextAlert textAlerts[MaxTextAlertN];
-	I32 textAlertN;
-
-	B32 showCharacterInfo;
-
-	I8 combatLogLines[CombatLogLineN][CombatLogLineSize];
-
-	DroppedItem droppedItems[MaxDroppedItemN];
-	I32 droppedItemN;
-
-	DroppedItem* hoverDroppedItem;
-
-	I32 inventoryItemIds[5][8];
-	I32 inventorySlotIds[5][8];
-	Inventory inventory;
-
-	I32 equipInventoryItemIds[1][8];
-	I32 equipInventorySlotIds[1][8];
-	Inventory equipInventory;
-	
-	InventoryItem hoverItem; 
-	InventoryItem dragItem;
+	Effect effects[MaxEffectN];
+	I32 effectN;
 };
-static CombatLabState gCombatLabState;
+CombatLabState gCombatLabState;
 
-static void func CombatLabResize (CombatLabState* labState, I32 width, I32 height)
+static void func CombatLabResize(CombatLabState* labState, I32 width, I32 height)
 {
 	Camera* camera = &labState->camera;
-	ResizeCamera (camera, width, height);
+	ResizeCamera(camera, width, height);
 
 	Canvas* canvas = &labState->canvas;
-	ResizeBitmap (&canvas->bitmap, width, height);
+	ResizeBitmap(&canvas->bitmap, width, height);
 	canvas->camera = camera;
-	camera->unitInPixels = 20.0f;
+	camera->unitInPixels = 5.0f;
+	camera->center = MakePoint(0.0f, 0.0f);
 }
 
-static void func CombatLabBlit (Canvas* canvas, HDC context, RECT rect)
+static void func CombatLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
-	I32 width = rect.right - rect.left;
+	I32 width  = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
 
 	Bitmap* bitmap = &canvas->bitmap;
-	BITMAPINFO bitmapInfo = GetBitmapInfo (bitmap);
-	StretchDIBits (context,
-				   0, 0, bitmap->width, bitmap->height,
-				   0, 0, width, height,
-				   bitmap->memory,
-				   &bitmapInfo,
-				   DIB_RGB_COLORS,
-				   SRCCOPY
+	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
+	StretchDIBits(context,
+				  0, 0, bitmap->width, bitmap->height,
+				  0, 0, width, height,
+				  bitmap->memory,
+				  &bitmapInfo,
+				  DIB_RGB_COLORS,
+				  SRCCOPY
 	);
 }
 
-static void func GainSpecialResource (Entity* entity, I32 amount)
+B32 operator==(TileIndex index1, TileIndex index2)
 {
-	Assert (entity->hasSpecialResource);
-	Assert (amount >= 0);
-	entity->specialResource = IntMin2 (entity->specialResource + amount, entity->maxSpecialResource);
+	B32 result = (index1.row == index2.row && 
+				  index1.col == index2.col);
+	return result;
 }
 
-static F32 func GetAbilityCastTime (Entity* entity, I32 abilityId)
+B32 operator!=(TileIndex index1, TileIndex index2)
 {
-	Assert (entity->dexterity >= 0);
-	F32 castTimeRatio = 100.0f / (100.0f + F32 (entity->dexterity));
-	F32 castTime = 0.0f;
-	switch (abilityId)
+	B32 result = !(index1 == index2);
+	return result;
+}
+
+static TileIndex func MakeTileIndex(I32 row, I32 col)
+{
+	TileIndex index = {};
+	index.row = row;
+	index.col = col;
+	return index;
+}
+
+static B32 func IsValidTileIndex(TileIndex index)
+{
+	B32 result = (IsIntBetween(index.row, 0, TileRowN - 1) &&
+				  IsIntBetween(index.col, 0, TileColN - 1));
+	return result;
+}
+
+static V2 func GetTileCenter(TileIndex index)
+{
+	Assert(IsValidTileIndex (index));
+	F32 x = F32 (index.col) * TileSide + TileSide * 0.5f;
+	F32 y = F32 (index.row) * TileSide + TileSide * 0.5f;
+	V2 position = MakePoint(x, y);
+	return position;
+}
+
+static TileIndex func GetContainingTileIndex(V2 point)
+{
+	I32 row = Floor(point.y / TileSide);
+	I32 col = Floor(point.x / TileSide);
+	TileIndex index = MakeTileIndex(row, col);
+	return index;
+}
+
+static B32 func IsValidTeamIndex(I32 index)
+{
+	B32 isValid = IsIntBetween(index, 0, TeamN - 1);
+	return isValid;
+}
+
+static void func EndTurn(CombatLabState* labState)
+{
+	for (I32 i = 0; i < EntityN; i++)
 	{
-		case WhiteAbility1Id:
+		Entity* entity = &labState->entities[i];
+		if(entity->teamIndex == labState->activeTeamIndex)
 		{
-			castTime = castTimeRatio * WhiteAbility1TotalCastTime;
-			break;
-		}
-		case WhiteAbility2Id:
-		{
-			castTime = WhiteAbility2TotalCastTime;
-			break;
-		}
-		case WhiteAbility3Id:
-		{
-			castTime = castTimeRatio * WhiteAbility3TotalCastTime;
-			break;
-		}
-		case RedAbility1Id:
-		{
-			castTime = castTimeRatio * RedAbility1TotalCastTime;
-			break;
-		}
-		case RedAbility2Id:
-		{
-			castTime = castTimeRatio * RedAbility2TotalCastTime;
-			break;
-		}
-		case BlueAbility1Id:
-		{
-			castTime = castTimeRatio * BlueAbility1TotalCastTime;
-			break;
-		}
-		case BlueAbility2Id:
-		{
-			castTime = castTimeRatio * BlueAbility2TotalCastTime;
-			break;
-		}
-		case BlueAbility3Id:
-		{
-			castTime = castTimeRatio * BlueAbility3TotalCastTime;
-			break;
-		}
-		default:
-		{
-			DebugBreak ();
+			entity->actionPoints = MaxActionPoints;
 		}
 	}
 
-	Assert (castTime > 0.0f);
-	return castTime;
+	labState->activeTeamIndex++;
+	if(labState->activeTeamIndex == TeamN)
+	{
+		labState->activeTeamIndex = 0;
+	}
+	Assert(IsValidTeamIndex(labState->activeTeamIndex));
 }
 
-static I32 func GetAbilityDamage (Entity* entity, AbilityId abilityId)
+static void func CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowHeight)
 {
-	I32 damage = 0;
-	switch (abilityId)
+	labState->running = true;
+	labState->canvas.glyphData = GetGlobalGlyphData ();
+	CombatLabResize(labState, windowWidth, windowHeight);
+
+	Entity* entities = labState->entities;
+	entities[0].tileIndex = MakeTileIndex(0, 0);
+	entities[1].tileIndex = MakeTileIndex(0, TileColN - 1);
+	entities[2].tileIndex = MakeTileIndex(TileRowN - 1, 0);
+	entities[3].tileIndex = MakeTileIndex(TileRowN - 1, TileColN - 1);
+
+	entities[0].teamIndex = 0;
+	entities[1].teamIndex = 0;
+	entities[2].teamIndex = 1;
+	entities[3].teamIndex = 1;
+
+	labState->activeTeamIndex = 0;
+	labState->selectedEntity = 0;
+	labState->selectedAbilityId = 0;
+
+	labState->hoverAbilityId = 0;
+
+	for(I32 i = 0; i < EntityN; i++)
 	{
-		case WhiteAbility1Id:
+		Entity* entity = &labState->entities[i];
+
+		entity->actionPoints = MaxActionPoints;
+
+		entity->healthPoints = 10;
+		entity->maxHealthPoints = 10;
+	}
+
+	labState->cooldownN = 0;
+}
+
+static I32 func GetAbilityActionPoints(I32 abilityId)
+{
+	I32 actionPoints = 0;
+	switch(abilityId)
+	{
+		case SmallPunchAbilityId:
 		{
-			damage = WhiteAbility1Damage + entity->strength;
+			actionPoints = 1;
 			break;
 		}
-		case WhiteAbility2Id:
+		case BigPunchAbilityId:
 		{
-			damage = WhiteAbility2Damage + entity->strength;
+			actionPoints = 3;
 			break;
 		}
-		case WhiteAbility3Id:
+		case KickAbilityId:
 		{
-			damage = WhiteAbility3Damage + entity->strength;
+			actionPoints = 3;
 			break;
 		}
-		case RedAbility1Id:
+		case SpinningKickAbilityId:
 		{
-			damage = RedAbility1Damage + entity->strength;
+			actionPoints = 2;
 			break;
 		}
-		case RedAbility2Id:
+		case AvoidanceAbilityId:
 		{
-			damage = RedAbility2Damage + entity->strength;
+			actionPoints = 5;
 			break;
 		}
-		case BlueAbility1Id:
+		case RollAbilityId:
 		{
-			damage = BlueAbility1Damage + entity->intellect;
-			break;
-		}
-		case BlueAbility2Id:
-		{
-			damage = BlueAbility1Damage + entity->intellect;
-			break;
-		}
-		case BlueAbility3Id:
-		{
-			damage = BlueAbility3Damage + entity->intellect;
+			actionPoints = 3;
 			break;
 		}
 		default:
 		{
-			DebugBreak ();
+			DebugBreak();
+		}
+	}
+	return actionPoints;
+}
+
+static I32 func GetAbilityDamage(I32 abilityId)
+{
+	I32 damage = 0;
+	switch(abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			damage = 1;
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			damage = 5;
+			break;
+		}
+		case KickAbilityId:
+		{
+			damage = 2;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			damage = 1;
+			break;
+		}
+		case RollAbilityId:
+		{
+			damage = 1;
+			break;
+		}
+		default:
+		{
+			damage = 0;
 		}
 	}
 	return damage;
 }
 
-static void func AddCombatLogLine (CombatLabState* labState, I8* line)
+static I32 func GetMaxAbilityDistance(I32 abilityId)
 {
-	for (I32 i = 1; i < CombatLogLineN; i++)
+	I32 maxDistance = 0;
+	switch(abilityId)
 	{
-		StringCopy (labState->combatLogLines[i], labState->combatLogLines[i - 1], CombatLogLineSize);
-	}
-	StringCopy (line, labState->combatLogLines[CombatLogLineN - 1], CombatLogLineSize);
-}
-
-static I8 gCombatLogLine[CombatLogLineSize];
-#define CombatLog(labState, line) {OneLineString (gCombatLogLine, CombatLogLineSize, line); AddCombatLogLine (labState, gCombatLogLine);}
-
-static I32 func GetMaxHealth (Entity* entity)
-{
-	I32 maxHealth = 10 * entity->constitution;
-	Assert (maxHealth > 0);
-	return maxHealth;
-}
-
-static void func SetLevel (Entity* entity, I32 level)
-{
-	Assert(IsIntBetween (level, 1, MaxLevel));
-	entity->level = level;
-
-	if (entity->typeId == WhiteEntityId)
-	{
-		entity->constitution = ConstitutionOnLevel[level];
-		entity->strength = WhiteStrengthOnLevel[level];
-		entity->intellect = 0;
-		entity->dexterity = WhiteDexterityOnLevel[level];
-	}
-	else if (entity->typeId == RedEntityId)
-	{
-		entity->constitution = ConstitutionOnLevel[level];
-		entity->strength = RedStrengthOnLevel[level];
-		entity->intellect = 0;
-		entity->dexterity = 0;
-	}
-	else if (entity->typeId == BlueEntityId)
-	{
-		entity->constitution = ConstitutionOnLevel[level];
-		entity->strength = 0;
-		entity->intellect = BlueIntellectOnLevel[level];
-		entity->dexterity = BlueDexterityOnLevel[level];
-	}
-	else
-	{
-		DebugBreak();
-	}
-
-	entity->health = GetMaxHealth (entity);
-}
-
-static void func GainExperience (CombatLabState* labState, I32 experience)
-{
-	Entity* player = &labState->player;
-	if (player->level < MaxLevel)
-	{
-		labState->experienceGainedThisLevel += experience;
-
-		CombatLog (labState, player->name + " Gains " + experience + " experience.");
-
-		if (labState->experienceGainedThisLevel >= ExperienceNeededForNextLevel[player->level])
+		case SmallPunchAbilityId:
 		{
-			I32 level = player->level + 1;
-			SetLevel (player, level);
-
-			CombatLog (labState, player->name + " reaches level " + player->level + ".");
-
-			labState->experienceGainedThisLevel -= ExperienceNeededForNextLevel[player->level];
-		}
-	}
-}
-
-static void func DropItem (CombatLabState* labState, Entity* entity, I32 itemId, V2 position)
-{
-	Assert (itemId != NoItemId);
-	Assert (labState->droppedItemN + 1 < MaxDroppedItemN);
-	DroppedItem* item = &labState->droppedItems[labState->droppedItemN];
-	labState->droppedItemN++;
-	item->itemId   = itemId;
-	item->position = position;
-	item->timeLeft = DroppedItemDuration;
-
-	I8 itemName[32];
-	GetItemName (itemId, itemName, 32);
-	CombatLog (labState, entity->name + " drops " + itemName + ".");
-}
-
-static void func AddTextAlert (CombatLabState* labState, TextAlert textAlert)
-{
-	Assert (labState->textAlertN < MaxTextAlertN);
-	labState->textAlerts[labState->textAlertN] = textAlert;
-	labState->textAlertN++;
-}
-
-static V4 func GetEntityColor (Entity* entity)
-{
-	V4 color = {};
-	switch (entity->typeId)
-	{
-		case WhiteEntityId:
-		{
-			color = WhiteColor;
+			maxDistance = 1;
 			break;
 		}
-		case RedEntityId:
+		case BigPunchAbilityId:
 		{
-			color = RedColor;
+			maxDistance = 1;
 			break;
 		}
-		case BlueEntityId:
+		case KickAbilityId:
 		{
-			color = BlueColor;
+			maxDistance = 1;
+			break;
+		}
+		case RollAbilityId:
+		{
+			maxDistance = 1;
 			break;
 		}
 		default:
 		{
-			DebugBreak ();
+			maxDistance = 0;
 		}
 	}
-	return color;
+	return maxDistance;
 }
 
-static void func DoDamage (CombatLabState* labState, Entity* source, Entity* target, I32 damage)
+static I32 GetAbilityCooldown(I32 abilityId)
 {
-	if (target->health > 0)
+	I32 cooldown = 0;
+	switch(abilityId)
 	{
-		static I8 combatLogLine[CombatLogLineSize];
-
-		target->health = IntMax2 (target->health - damage, 0);
-
-		TextAlert alert;
-		alert.id            = DamageTextAlertId;
-		alert.color         = GetEntityColor(source);
-		alert.damage        = damage;
-		alert.centerX       = target->position.x;
-		alert.baseLineY     = target->position.y;
-		alert.timeRemaining = 1.0f;
-		AddTextAlert (labState, alert);
-
-		CombatLog (labState, source->name + " damages " + target->name + " for " + damage + ".");
-
-		if (target->health == 0)
+		case BigPunchAbilityId:
 		{
-			Ability* ability = &target->ability;
-			ability->castRatioLeft = 0.0f;
-
-			CombatLog (labState, source->name + " kills " + target->name + ".");
-
-			if (source == &labState->player)
-			{
-				GainExperience (labState, 20);
-			}
-
-			if (target->typeId == RedEntityId)
-			{
-				V2 dropPosition = target->position + MakeVector(0.0f, 2.0f);
-				DropItem (labState, target, TestPotionId, dropPosition);
-			}
+			cooldown = 1;
+			break;
+		}
+		case KickAbilityId:
+		{
+			cooldown = 3;
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			cooldown = 5;
+			break;
+		}
+		case RollAbilityId:
+		{
+			cooldown = 3;
+			break;
+		}
+		default:
+		{
+			cooldown = 0;
 		}
 	}
+	return cooldown;
 }
 
-static void func HealWithoutLog (CombatLabState* labState, Entity* entity, I32 healAmount)
+static I32 func GetEffectTurns(I32 effectId)
 {
-	Assert (entity->health > 0);
-	entity->health = IntMin2 (entity->health + healAmount, GetMaxHealth(entity));
-
-	TextAlert alert;
-	alert.id            = HealTextAlertId;
-	alert.color         = GreenColor;
-	alert.heal          = healAmount;
-	alert.centerX       = entity->position.x;
-	alert.baseLineY     = entity->position.y;
-	alert.timeRemaining = 1.0f;
-	AddTextAlert (labState, alert);
-}
-
-static void func HealFromItem (CombatLabState* labState, I32 itemId, Entity* target, I32 healAmount)
-{
-	HealWithoutLog (labState, target, healAmount);
-
-	I8 itemName[32];
-	GetItemName (itemId, itemName, 32);
-	CombatLog (labState, itemName + " heals " + target->name + " for " + healAmount + ".");
-}
-
-static void func SlowEntity (CombatLabState* labState, Entity* source, Entity* target, F32 seconds)
-{
-	target->slowTimeLeft += seconds;
-	CombatLog (labState, source->name + " slows " + target->name + " for " + seconds + " sec.");
-}
-
-static void func InterruptAbility (Entity* entity)
-{
-	Ability* ability = &entity->ability;
-	ability->id = NoAbilityId;
-	ability->castRatioLeft = 0.0f;
-}
-
-static void func SetInventoryItemId (Inventory* inventory, I32 row, I32 col, I32 itemId)
-{
-	Assert (IsIntBetween (row, 0, inventory->rowN - 1));
-	Assert (IsIntBetween (col, 0, inventory->colN - 1));
-	Assert (ItemGoesIntoSlot (itemId, inventory->slotIds[inventory->colN * row + col]));
-	inventory->itemIds[inventory->colN * row + col] = itemId;
-}
-
-static void func SetInventorySlotId (Inventory* inventory, I32 row, I32 col, I32 slotId)
-{
-	Assert (IsIntBetween (row, 0, inventory->rowN - 1));
-	Assert(IsIntBetween(col, 0, inventory->colN - 1));
-	Assert(IsValidSlotId(slotId));
-	inventory->slotIds[inventory->colN * row + col] = slotId;
-}
-
-static void func AddEnemyToRoom(CombatLabState* labState, Room* room)
-{
-	Assert (labState->enemyN < CombatLabMaxEnemyN);
-	Entity* enemy = &labState->enemies[labState->enemyN];
-	labState->enemyN++;
-
-	F32 maxDistanceFromSide = RoomSide * 0.5f - EntityRadius;
-	V2 offset = {};
-	offset.x = RandomBetween (-maxDistanceFromSide, +maxDistanceFromSide);
-	offset.y = RandomBetween (-maxDistanceFromSide, +maxDistanceFromSide);
-	enemy->position = room->center + offset;
-}
-
-static void func CombatLabReset (CombatLabState* labState)
-{
-	InitRandom ();
-
-	labState->running = true;
-
-	Entity* player = &labState->player;
-	player->typeId = WhiteEntityId;
-	SetLevel (player, 1);
-
-	player->position = MakePoint (0.0f, 0.0f);
-
-	player->hasSpecialResource = true;
-	player->specialResource = 0;
-	player->maxSpecialResource = 100;
-
-	player->slowTimeLeft = 0.0f;
-
-	OneLineString (player->name, EntityNameSize, "Player");
-
-	player->ability.id = WhiteAbility1Id;
-
-	DungeonMap* map = &labState->map;
-	RoomIndex playerRoomIndex = GetRandomRoomIndex (map);
-	Room* playerRoom = GetRoomAtIndex (map, playerRoomIndex);
-	labState->player.position = playerRoom->center;
-
-	labState->enemyN = 0;
-	for (I32 row = 0; row < RoomRowN; row++)
+	I32 turns = 0;
+	switch(effectId)
 	{
-		for (I32 col = 0; col < RoomColN; col++)
+		case InvulnerableEffectId:
 		{
-			Room* room = GetRoomAtIndex (map, row, col);
-			I32 enemyN = IntAbs (row - playerRoomIndex.row) + IntAbs (col - playerRoomIndex.col);
-			for (I32 i = 0; i < enemyN; i++)
-			{
-				AddEnemyToRoom (labState, room);
-			}
+			turns = 1;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
 		}
 	}
+	return turns;
+}
 
-	for (I32 i = 0; i < labState->enemyN; ++i) 
+static B32 func IsDead(Entity* entity)
+{
+	Assert(entity != 0);
+	Assert(entity->healthPoints >= 0);
+	B32 isDead = (entity->healthPoints == 0);
+	return isDead;
+}
+
+static void func AddEffect(CombatLabState* labState, Entity* entity, I32 effectId)
+{
+	Assert(!IsDead(entity));
+	Effect effect = {};
+	effect.entity = entity;
+	effect.id = effectId;
+	effect.turns = GetEffectTurns(effectId);
+	
+	Assert(labState->effectN < MaxEffectN);
+	labState->effects[labState->effectN] = effect;
+	labState->effectN++;
+}
+
+static Entity* func GetEntityAtTile(CombatLabState* labState, TileIndex index)
+{
+	Entity* result = 0;
+	if(IsValidTileIndex(index))
 	{
-		Entity* enemy = &labState->enemies[i];
-		if (i < labState->enemyN / 2)
+		for(I32 i = 0; i < EntityN; i++)
 		{
-			enemy->typeId = RedEntityId;
-			enemy->ability.id = RedAbility1Id;
-		}
-		else
-		{
-			enemy->typeId = BlueEntityId;
-			enemy->ability.id = BlueAbility1Id;
-		}
-
-		SetLevel (enemy, IntRandom (1, 3));
-
-		enemy->health = GetMaxHealth (enemy);
-
-		enemy->hasSpecialResource = false;
-		enemy->isAttacking = false;
-
-		if (enemy->level >= 2)
-		{
-			enemy->hasSpecialResource = true;
-			enemy->maxSpecialResource = 100;
-			enemy->specialResource = 0;
-		}
-
-		switch (enemy->typeId)
-		{
-			case RedEntityId:
+			Entity* entity = &labState->entities[i];
+			if(entity->tileIndex == index)
 			{
-				OneLineString (enemy->name, EntityNameSize, "Red " + enemy->level);
+				result = entity;
 				break;
 			}
-			case BlueEntityId:
+		}
+	}
+	return result;
+}
+
+static B32 func IsValidEntityIndex(I32 index)
+{
+	B32 isValid = IsIntBetween(index, 0, EntityN - 1);
+	return isValid;
+}
+
+static I32 func GetTileDistance(TileIndex tileIndex1, TileIndex tileIndex2)
+{
+	Assert(IsValidTileIndex(tileIndex1));
+	Assert (IsValidTileIndex (tileIndex2));
+	I32 rowDistance = IntAbs (tileIndex1.row - tileIndex2.row);
+	I32 colDistance = IntAbs (tileIndex1.col - tileIndex2.col);
+	I32 distance = IntMax2 (rowDistance, colDistance);
+	return distance;
+}
+
+static B32 func EntityCanMoveTo (CombatLabState* labState, Entity* entity, TileIndex tileIndex)
+{
+	B32 canMove = false;
+	if(entity != 0 && IsValidTileIndex(tileIndex) && !IsDead(entity))
+	{
+		if(GetTileDistance(entity->tileIndex, tileIndex) <= entity->actionPoints)
+		{
+			canMove = (GetEntityAtTile(labState, tileIndex) == 0);
+		}
+	}
+	return canMove;
+}
+
+static void func MoveEntityTo(CombatLabState* labState, Entity* entity, TileIndex tileIndex)
+{
+	Assert(EntityCanMoveTo(labState, entity, tileIndex));
+
+	I32 moveDistance = GetTileDistance(entity->tileIndex, tileIndex);
+	entity->tileIndex = tileIndex;
+
+	Assert(entity->actionPoints >= moveDistance);
+	entity->actionPoints -= moveDistance;
+}
+
+static B32 func IsOnCooldown(CombatLabState* labState, Entity* entity, I32 abilityId)
+{
+	B32 isOnCooldown = false;
+	for(I32 i = 0; i < labState->cooldownN; i++)
+	{
+		Cooldown* cooldown = &labState->cooldowns[i];
+		if(cooldown->entity == entity && cooldown->abilityId == abilityId)
+		{
+			isOnCooldown = true;
+			break;
+		}
+	}
+	return isOnCooldown;
+}
+
+static B32 func CanRepeatAbility(I32 abilityId)
+{
+	Assert(abilityId != NoAbilityId);
+	B32 canRepeat = (abilityId == SmallPunchAbilityId);
+	return canRepeat;
+}
+
+static void func AddCooldown(CombatLabState* labState, Entity* entity, I32 abilityId)
+{
+	Assert(!IsOnCooldown(labState, entity, abilityId));
+	Assert(!CanRepeatAbility(abilityId));
+
+	Assert(labState->cooldownN < MaxCooldownN);
+	Cooldown cooldown = {};
+	cooldown.entity = entity;
+	cooldown.abilityId = abilityId;
+	cooldown.turns = GetAbilityCooldown(abilityId);
+	labState->cooldowns[labState->cooldownN] = cooldown;
+	labState->cooldownN++;
+}
+
+static TileIndex func GetLastEmptyTileAtMaxDistance(CombatLabState* labState,
+													TileIndex startIndex, I32 directionRow, I32 directionCol, 
+													I32 maxDistance)
+{
+	Assert(IsIntBetween(directionRow, -1, +1));
+	Assert(IsIntBetween(directionCol, -1, +1));
+
+	TileIndex tileIndex = startIndex;
+	for(I32 i = 0; i < maxDistance; i++)
+	{
+		TileIndex nextIndex = MakeTileIndex(tileIndex.row + directionRow, tileIndex.col + directionCol);
+		if(!IsValidTileIndex(nextIndex))
+		{
+			continue;
+		}
+		if(GetEntityAtTile(labState, nextIndex) != 0)
+		{
+			continue;
+		}
+		tileIndex = nextIndex;
+	}
+	return tileIndex;
+}
+
+#define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
+
+static void func HighlightEmptyTilesAtMaxDistance(CombatLabState* labState,
+												  TileIndex startIndex, I32 rowDirection, I32 colDirection,
+												  I32 maxDistance, V4 color)
+{
+	Canvas* canvas = &labState->canvas;
+	TileIndex lastTileIndex = GetLastEmptyTileAtMaxDistance(labState, 
+															startIndex, rowDirection, colDirection, 
+															maxDistance);
+	TileIndex tileIndex = startIndex;
+	while(1)
+	{
+		V2 tileCenter = GetTileCenter(tileIndex);
+		Rect tileRect = MakeSquareRect(tileCenter, TileSide);
+		DrawRect(canvas, tileRect, color);
+		DrawRectOutline(canvas, tileRect, TileGridColor);
+
+		if(tileIndex == lastTileIndex)
+		{
+			break;
+		}
+
+		tileIndex.row += rowDirection;
+		tileIndex.col += colDirection;
+	}
+}
+
+static B32 func AbilityRequiresTileSelection(I32 abilityId)
+{
+	B32 requiresTileSelection = false;
+
+	Assert(abilityId != NoAbilityId);
+	switch(abilityId)
+	{
+		case SmallPunchAbilityId:
+		case BigPunchAbilityId:
+		case KickAbilityId:
+		case RollAbilityId:
+		{
+			requiresTileSelection = true;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			requiresTileSelection = false;
+			break;
+		}
+	}
+
+	return requiresTileSelection;
+}
+
+static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+{
+	Assert(entity != 0);
+	Assert(abilityId != NoAbilityId);
+	Assert(!AbilityRequiresTileSelection(abilityId));
+
+	B32 canUse = false;
+	if(IsOnCooldown(labState, entity, abilityId) ||
+	   entity->actionPoints < GetAbilityActionPoints(abilityId) ||
+	   IsDead(entity))
+	{
+		canUse = false;
+	}
+	else
+	{
+		switch(abilityId)
+		{
+			case SpinningKickAbilityId:
+			case AvoidanceAbilityId:
 			{
-				OneLineString (enemy->name, EntityNameSize, "Blue " + enemy->level);
+				canUse = true;
 				break;
 			}
 			default:
 			{
-				DebugBreak ();
+				DebugBreak();
 			}
 		}
 	}
-
-	labState->experienceGainedThisLevel = 0;
-
-	labState->textAlertN = 0;
-
-	Inventory* inventory = &labState->inventory;
-	inventory->rowN = 5;
-	inventory->colN = 8;
-	inventory->itemIds = (I32*)labState->inventoryItemIds;
-	inventory->slotIds = (I32*)labState->inventorySlotIds;
-
-	SetInventoryItemId (inventory, 0, 0, TestItemId);
-	SetInventoryItemId (inventory, 0, 1, TestHelmId);
-	SetInventoryItemId (inventory, 0, 2, TestChestId);
-	SetInventoryItemId (inventory, 0, 3, TestPantsId);
-	SetInventoryItemId (inventory, 0, 4, TestBootsId);
-	SetInventoryItemId (inventory, 0, 5, TestGlovesId);
-	SetInventoryItemId (inventory, 1, 0, TestPotionId);
-
-	Inventory* equipInventory = &labState->equipInventory;
-	equipInventory->rowN = 1;
-	equipInventory->colN = 8;
-	equipInventory->itemIds = (I32*)labState->equipInventoryItemIds;
-	equipInventory->slotIds = (I32*)labState->equipInventorySlotIds;
-
-	SetInventorySlotId (equipInventory, 0, 0, HeadSlotId);
-	SetInventorySlotId (equipInventory, 0, 1, ChestSlotId);
-	SetInventorySlotId (equipInventory, 0, 2, ArmsSlotId);
-	SetInventorySlotId (equipInventory, 0, 3, LegsSlotId);
-	SetInventorySlotId (equipInventory, 0, 4, FeetSlotId);
-	SetInventorySlotId (equipInventory, 0, 5, HandSlotId);
-	SetInventorySlotId (equipInventory, 0, 6, HandSlotId);
-	SetInventorySlotId (equipInventory, 0, 7, WaistSlotId);
+	return canUse;
 }
 
-static void func CombatLabResetAtLevel (CombatLabState* labState, I32 level)
+static B32 func IsInvulnerable(CombatLabState* labState, Entity* entity)
 {
-	CombatLabReset (labState);
-	SetLevel (&labState->player, level);
-}
-
-static Entity* func GetFirstEnemyAtPosition (CombatLabState* labState, V2 position)
-{
-	Entity* result = 0;
-	for (I32 i = 0; i < labState->enemyN; ++i)
+	B32 isInvulnerable = false;
+	for(I32 i = 0; i < labState->effectN; i++)
 	{
-		Entity* enemy = &labState->enemies[i];
-		if (Distance (enemy->position, position) < EntityRadius)
+		Effect* effect = &labState->effects[i];
+		Assert(effect->turns >= 0);
+		if(effect->entity == entity && effect->id == InvulnerableEffectId)
 		{
-			result = enemy;
+			isInvulnerable = true;
 			break;
 		}
 	}
-	return result;
+	return isInvulnerable;
 }
 
-static B32 func IsEntityOnLine (Entity* entity, V2 point1, V2 point2)
+static B32 func CanDamage(CombatLabState* labState, Entity* target)
 {
-	B32 result = false;
-	if (Distance (entity->position, point1) <= EntityRadius)
+	B32 canDamage = false;
+
+	if(target == 0 || IsDead(target))
 	{
-		result = true;
+		canDamage = false;
 	}
-	else if (Distance (entity->position, point2) <= EntityRadius)
+	else if(IsInvulnerable(labState, target))
 	{
-		result = true;
+		canDamage = false;
 	}
 	else
 	{
-		Quad quad = {};
-		V2 lineDirection = PointDirection (point1, point2);
-		V2 crossDirection = TurnVectorToRight (lineDirection);
-		quad.points[0] = point1 + EntityRadius * crossDirection;
-		quad.points[1] = point2 + EntityRadius * crossDirection;
-		quad.points[2] = point2 - EntityRadius * crossDirection;
-		quad.points[3] = point1 - EntityRadius * crossDirection;
-		if (IsPointInQuad (quad, entity->position))
-		{
-			result = true;
-		}
+		canDamage = true;
 	}
-
-	return result;
+	return canDamage;
 }
 
-static void func DamageEnemiesOnLine (CombatLabState* labState, V2 point1, V2 point2, I32 damage)
+static void func DoDamage(CombatLabState* labState, Entity* entity, I32 damage)
 {
-	Entity* player = &labState->player;
-	for (I32 i = 0; i < labState->enemyN; ++i)
+	Assert(CanDamage(labState, entity));
+	Assert(damage > 0);
+	entity->healthPoints = IntMax2(0, entity->healthPoints - damage);
+}
+
+static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+{
+	Assert(CanUseAbility(labState, entity, abilityId));
+
+	switch(abilityId)
 	{
-		Entity* enemy = &labState->enemies[i];
-		if (IsEntityOnLine (enemy, point1, point2))
+		case SpinningKickAbilityId:
 		{
-			DoDamage (labState, player, enemy, damage);
-		}
-	}
-}
-
-#define InventorySlotSize 50
-
-static B32 func IsMouseInCharacterInfo (Canvas* canvas, CombatLabState* labState, V2 mousePosition)
-{
-	Bitmap* bitmap = &canvas->bitmap;
-
-	I32 padding = 5;
-	I32 width = 400;
-	I32 height = InventorySlotSize + 190 + InventorySlotSize * labState->inventory.rowN;
-
-	I32 right  = (bitmap->width - 1) - padding;
-	I32 left   = right - width;
-	I32 top    = (bitmap->height - 1) / 2 - height / 2;
-	I32 bottom = top + height;
-
-	I32 mouseX = UnitXtoPixel (canvas->camera, mousePosition.x);
-	I32 mouseY = UnitYtoPixel (canvas->camera, mousePosition.y);
-
-	B32 result = IsIntBetween (mouseX, left, right) && IsIntBetween (mouseY, top, bottom);
-	return result;
-}
-
-static B32 func IsValidInventoryItem (InventoryItem item)
-{
-	B32 result = (item.inventory != 0) && 
-				 IsIntBetween (item.row, 0, item.inventory->rowN - 1) &&
-				 IsIntBetween (item.col, 0, item.inventory->colN - 1);
-	return result;
-}
-
-static B32 func CanSwapInventoryItems (InventoryItem item1, InventoryItem item2)
-{
-	Assert (IsValidInventoryItem (item1));
-	Assert (IsValidInventoryItem (item2));
-
-	B32 result = ItemGoesIntoSlot (item1.itemId, item2.slotId) && ItemGoesIntoSlot (item2.itemId, item1.slotId);
-	return result;
-}
-
-static void func SwapInventoryItems (InventoryItem item1, InventoryItem item2)
-{
-	Assert (CanSwapInventoryItems (item1, item2));
-	SetInventoryItemId (item1.inventory, item1.row, item1.col, item2.itemId);
-	SetInventoryItemId (item2.inventory, item2.row, item2.col, item1.itemId);
-}
-
-static I32 func GetInventoryItemId (Inventory* inventory, I32 row, I32 col)
-{
-	Assert (IsIntBetween (row, 0, inventory->rowN - 1));
-	Assert (IsIntBetween (col, 0, inventory->colN - 1));
-
-	I32 itemId = inventory->itemIds[row * inventory->colN + col];
-	return itemId;
-}
-
-static void func RecalculatePlayerAttributes (CombatLabState* labState)
-{
-	Entity* player = &labState->player;
-	Assert(IsIntBetween (player->level, 1, MaxLevel));
-
-	player->constitution = ConstitutionOnLevel[player->level];
-	player->strength     = WhiteStrengthOnLevel[player->level];
-	player->intellect    = 0;
-	player->dexterity    = WhiteDexterityOnLevel[player->level];
-
-	Inventory* equipInventory = &labState->equipInventory;
-	for (I32 row = 0; row < equipInventory->rowN; row++)
-	{
-		for (I32 col = 0; col < equipInventory->colN; col++)
-		{
-			I32 itemId = GetInventoryItemId (equipInventory, row, col);
-			if (itemId != NoItemId)
+			TileIndex center = entity->tileIndex;
+			for(I32 row = center.row - 1; row <= center.row + 1; row++)
 			{
-				ItemAttributes itemAttributes = GetItemAttributes (itemId);
-				player->constitution += itemAttributes.constitution;
-				player->strength     += itemAttributes.strength;
-				player->intellect    += itemAttributes.intellect;
-				player->dexterity    += itemAttributes.dexterity;
+				for(I32 col = center.col - 1; col <= center.col + 1; col++)
+				{
+					TileIndex tileIndex = MakeTileIndex(row, col);
+					if(IsValidTileIndex(tileIndex))
+					{
+						Entity* target = GetEntityAtTile(labState, tileIndex);
+						if(target && entity->teamIndex != target->teamIndex &&
+						   CanDamage(labState, target))
+						{
+							I32 damage = GetAbilityDamage(abilityId);
+							DoDamage(labState, target, damage);
+						}
+					}
+				}
 			}
+			break;
 		}
+		case AvoidanceAbilityId:
+		{
+			AddEffect(labState, entity, InvulnerableEffectId);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	entity->actionPoints -= GetAbilityActionPoints(abilityId);
+	Assert(entity->actionPoints >= 0);
+	
+	if(!CanRepeatAbility(abilityId))
+	{
+		AddCooldown(labState, entity, abilityId);
 	}
 }
 
-static B32 CanPickUpItem (CombatLabState* labState, DroppedItem* item)
+static B32 func CanUseAbilityOnTile(CombatLabState* labState,
+									Entity* entity, I32 abilityId,
+									TileIndex tileIndex)
 {
-	B32 result = false;
+	Assert(entity != 0);
+	Assert(abilityId != NoAbilityId);
+	Assert(AbilityRequiresTileSelection(abilityId));
 
-	Inventory* inventory = &labState->inventory;
-	for (I32 row = 0; row < inventory->rowN; row++)
+	B32 canUse = false;
+	if(IsOnCooldown(labState, entity, abilityId) ||
+	   entity->actionPoints < GetAbilityActionPoints(abilityId) ||
+	   IsDead(entity))
 	{
-		for (I32 col = 0; col < inventory->colN; col++)
+		canUse = false;
+	}
+	else
+	{
+		Entity* targetEntity = GetEntityAtTile(labState, tileIndex);
+		switch(abilityId)
 		{
-			I32 itemId = GetInventoryItemId (inventory, row, col);
-			if (itemId == NoItemId)
+			case SmallPunchAbilityId:
+			case BigPunchAbilityId:
+			case KickAbilityId:
 			{
-				result = true;
+				canUse = (targetEntity != 0 && targetEntity->teamIndex != entity->teamIndex &&
+						  CanDamage(labState, targetEntity) &&
+						  (GetTileDistance(entity->tileIndex, tileIndex) <= GetMaxAbilityDistance(abilityId)));
 				break;
 			}
-		}
-
-		if (result)
-		{
-			break;
-		}
-	}
-
-	return result;
-}
-
-static void func PickUpItem (CombatLabState* labState, DroppedItem* item)
-{
-	Assert (item != 0);
-	Assert (CanPickUpItem (labState, item));
-
-	I32 itemIndex = 0;
-	B32 itemFound = false;
-
-	for (I32 i = 0; i < labState->droppedItemN; i++)
-	{
-		if (item == &labState->droppedItems[i])
-		{
-			itemFound = true;
-			itemIndex = i;
-			break;
-		}
-	}
-
-	Assert (itemFound);
-	labState->droppedItemN--;
-	for (I32 i = itemIndex; i < labState->droppedItemN; i++)
-	{
-		labState->droppedItems[i] = labState->droppedItems[i + 1];
-	}
-
-	B32 itemPickedUp = false;
-	Inventory* inventory = &labState->inventory;
-	for (I32 row = 0; row < inventory->rowN; row++)
-	{
-		for (I32 col = 0; col < inventory->colN; col++)
-		{
-			I32 itemId = GetInventoryItemId (inventory, row, col);
-			if (itemId == NoItemId)
+			case RollAbilityId:
 			{
-				SetInventoryItemId (inventory, row, col, item->itemId);
-				itemPickedUp = true;
+				canUse = (IsValidTileIndex(tileIndex) && 
+						  GetTileDistance(entity->tileIndex, tileIndex) == 1);
 				break;
 			}
+			default:
+			{
+				DebugBreak();
+			}
 		}
+	}
+	return canUse;
+}
 
-		if (itemPickedUp)
+static void func UseAbilityOnTile(CombatLabState* labState,
+								  Entity* entity, I32 abilityId,
+								  TileIndex tileIndex)
+{
+	Assert(CanUseAbilityOnTile(labState, entity, abilityId, tileIndex));
+	Entity* targetEntity = GetEntityAtTile(labState, tileIndex);
+	I32 abilityDamage = GetAbilityDamage(abilityId);
+	switch(abilityId)
+	{
+		case SmallPunchAbilityId:
+		case BigPunchAbilityId:
 		{
+			DoDamage(labState, targetEntity, abilityDamage);
+			break;
+		}
+		case KickAbilityId:
+		{
+			DoDamage(labState, targetEntity, abilityDamage);
+			I32 knockDirectionRow = IntSign(tileIndex.row - entity->tileIndex.row);
+			I32 knockDirectionCol = IntSign(tileIndex.col - entity->tileIndex.col);
+			targetEntity->tileIndex = 
+				GetLastEmptyTileAtMaxDistance(labState, tileIndex, 
+											  knockDirectionRow, knockDirectionCol, MaxKickDistance);
+			break;
+		}
+		case RollAbilityId:
+		{
+			I32 rollDirectionRow = IntSign(tileIndex.row - entity->tileIndex.row);
+			I32 rollDirectionCol = IntSign(tileIndex.col - entity->tileIndex.col);
+			TileIndex rollTileIndex =
+				GetLastEmptyTileAtMaxDistance(labState, entity->tileIndex,
+											  rollDirectionRow, rollDirectionCol, MaxRollDistance);
+			I32 distanceRolled = GetTileDistance(entity->tileIndex, rollTileIndex);
+			if(distanceRolled < MaxRollDistance)
+			{
+				TileIndex damagedTileIndex = MakeTileIndex(rollTileIndex.row + rollDirectionRow,
+														   rollTileIndex.col + rollDirectionCol);
+				Entity* damagedEntity = GetEntityAtTile(labState, damagedTileIndex);
+				if(damagedEntity && entity->teamIndex != damagedEntity->teamIndex &&
+					CanDamage(labState, damagedEntity))
+				{
+					DoDamage(labState, damagedEntity, abilityDamage);
+				}
+			}
+
+			entity->tileIndex = rollTileIndex;
 			break;
 		}
 	}
-	Assert (itemPickedUp);
 
-	I8 itemName[32];
-	GetItemName (item->itemId, itemName, 32);
-	CombatLog (labState, labState->player.name + " picks up " + itemName + ".");
+	entity->actionPoints -= GetAbilityActionPoints(abilityId);
+	Assert(entity->actionPoints >= 0);
+	
+	if(!CanRepeatAbility(abilityId))
+	{
+		AddCooldown(labState, entity, abilityId);
+	}
 }
 
-static LRESULT CALLBACK func CombatLabCallback (HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static void func RemoveExpiredEffects(CombatLabState* labState)
+{
+	I32 remainingN = 0;
+	for(I32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		Assert(effect->turns >= 0);
+		if(effect->turns > 0)
+		{
+			labState->effects[remainingN] = *effect;
+			remainingN++;
+		}
+	}
+	labState->effectN = remainingN;
+}
+
+static void func UpdateTeamEffectTurns(CombatLabState* labState, I32 teamIndex)
+{
+	for(I32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		if(effect->entity->teamIndex == teamIndex)
+		{
+			effect->turns--;
+			Assert(effect->turns >= 0);
+		}
+	}
+	RemoveExpiredEffects(labState);
+}
+
+static void func RemoveExpiredCooldowns(CombatLabState* labState)
+{
+	I32 remainingN = 0;
+	for(I32 i = 0; i < labState->cooldownN; i++)
+	{
+		Cooldown* cooldown = &labState->cooldowns[i];
+		Assert(cooldown->turns >= 0);
+		if(cooldown->turns > 0)
+		{
+			labState->cooldowns[remainingN] = *cooldown;
+			remainingN++;
+		}
+	}
+	labState->cooldownN = remainingN;
+}
+
+static void func UpdateTeamCooldowns(CombatLabState* labState, I32 teamIndex)
+{
+	RemoveExpiredCooldowns(labState);
+
+	for(I32 i = 0; i < labState->cooldownN; i++)
+	{
+		Cooldown* cooldown = &labState->cooldowns[i];
+		if(cooldown->entity->teamIndex == teamIndex)
+		{
+			cooldown->turns--;
+			Assert(cooldown->turns >= 0);
+		}
+	}
+}
+
+static I32 func GetCooldownTurns(CombatLabState* labState, Entity* entity, I32 abilityId)
+{
+	Cooldown* cooldown = 0;
+	for(I32 i = 0; i < labState->cooldownN; i++)
+	{
+		Cooldown* testCooldown = &labState->cooldowns[i];
+		if(testCooldown->entity == entity && testCooldown->abilityId == abilityId)
+		{
+			cooldown = testCooldown;
+			break;
+		}
+	}
+
+	Assert(cooldown != 0);
+	I32 turns = cooldown->turns;
+	return turns;
+}
+
+static B32 func CanSelectAbility(CombatLabState* labState, I32 abilityId)
+{
+	Assert(AbilityRequiresTileSelection(abilityId));
+	Assert(abilityId != NoAbilityId);
+	B32 canSelect = false;
+	Entity* entity = labState->selectedEntity;
+	if(entity)
+	{
+		B32 hasEnoughActionPoints = (entity->actionPoints >= GetAbilityActionPoints(abilityId));
+		B32 isOnCooldown = IsOnCooldown(labState, entity, abilityId);
+		canSelect = (hasEnoughActionPoints && !isOnCooldown);
+	}
+	return canSelect;
+}
+
+static void func ToggleAbility(CombatLabState* labState, I32 abilityId)
+{
+	Assert(IsIntBetween(abilityId, 0, AbilityN - 1));
+	Entity* entity = labState->selectedEntity;
+	if(entity != 0)
+	{
+		if(AbilityRequiresTileSelection(abilityId))
+		{
+			if(labState->selectedAbilityId == abilityId)
+			{
+				labState->selectedAbilityId = NoAbilityId;
+			}
+			else if(CanSelectAbility(labState, abilityId))
+			{
+				labState->selectedAbilityId = abilityId;
+			}
+		}
+		else
+		{
+			if(CanUseAbility(labState, entity, abilityId))
+			{
+				UseAbility(labState, entity, abilityId);
+			}
+		}
+	}
+}
+
+static B32 func CanSelectEntity(CombatLabState* labState, Entity* entity)
+{
+	B32 canSelect = false;
+	if(entity == 0)
+	{
+		canSelect = true;
+	}
+	else if(!IsDead(entity) && entity->teamIndex == labState->activeTeamIndex)
+	{
+		canSelect = true;
+	}
+	else
+	{
+		canSelect = false;
+	}
+	return canSelect;
+}
+
+static void func SelectEntity(CombatLabState* labState, Entity* entity)
+{
+	Assert(CanSelectEntity(labState, entity));
+	labState->selectedEntity = entity;
+	labState->selectedAbilityId = NoAbilityId;
+}
+
+static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
-
+	
 	CombatLabState* labState = &gCombatLabState;
-	Entity* player = &labState->player;
-
-	switch (message)
+	switch(message)
 	{
 		case WM_SIZE:
 		{
 			RECT clientRect = {};
-			GetClientRect (window, &clientRect);
-			I32 width = clientRect.right - clientRect.left;
+			GetClientRect(window, &clientRect);
+			I32 width  = clientRect.right - clientRect.left;
 			I32 height = clientRect.bottom - clientRect.top;
 			CombatLabResize(labState, width, height);
 			break;
@@ -1038,231 +980,115 @@ static LRESULT CALLBACK func CombatLabCallback (HWND window, UINT message, WPARA
 		case WM_PAINT:
 		{
 			PAINTSTRUCT paint = {};
-			HDC context = BeginPaint (window, &paint);
+			HDC context = BeginPaint(window, &paint);
 
 			RECT clientRect = {};
-			GetClientRect (window, &clientRect);
+			GetClientRect(window, &clientRect);
 
-			CombatLabBlit (&labState->canvas, context, clientRect);
+			CombatLabBlit(&labState->canvas, context, clientRect);
 
-			EndPaint (window, &paint);
+			EndPaint(window, &paint);
 			break;
 		}
 		case WM_SETCURSOR:
 		{
 			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
-			SetCursor (cursor);
+			SetCursor(cursor);
 			break;
 		}
-		case WM_LBUTTONDOWN:
+		case WM_KEYUP:
 		{
-			Inventory* inventory = &labState->inventory;
-			V2 mousePosition = GetMousePosition (labState->canvas.camera, window);
-			if (labState->showCharacterInfo && IsMouseInCharacterInfo (&labState->canvas, labState, mousePosition))
+			WPARAM keyCode = wparam;
+			switch(keyCode)
 			{
-				InventoryItem* hoverItem = &labState->hoverItem;
-				if (hoverItem->inventory != 0 && hoverItem->itemId != NoItemId)
+				case '1':
 				{
-					labState->dragItem = *hoverItem;
+					ToggleAbility(labState, SmallPunchAbilityId);
+					break;
 				}
-			}
-			else
-			{
-				labState->useAbilityId = WhiteAbility1Id;
+				case '2':
+				{
+					ToggleAbility(labState, BigPunchAbilityId);
+					break;
+				}
+				case '3':
+				{
+					ToggleAbility(labState, KickAbilityId);
+					break;
+				}
+				case '4':
+				{
+					ToggleAbility(labState, SpinningKickAbilityId);
+					break;
+				}
+				case '5':
+				{
+					ToggleAbility(labState, AvoidanceAbilityId);
+					break;
+				}
+				case '6':
+				{
+					ToggleAbility(labState, RollAbilityId);
+					break;
+				}
+				case 'E':
+				{
+					EndTurn(labState);
+					SelectEntity(labState, 0);
+					UpdateTeamCooldowns(labState, labState->activeTeamIndex);
+					UpdateTeamEffectTurns(labState, labState->activeTeamIndex);
+					break;
+				}
 			}
 			break;
 		}
 		case WM_LBUTTONUP:
 		{
-			Inventory* inventory = &labState->inventory;
-			InventoryItem* dragItem = &labState->dragItem;
-
-			V2 mousePosition = GetMousePosition (labState->canvas.camera, window);
-			if (labState->showCharacterInfo)
+			V2 mousePosition = GetMousePosition(&labState->camera, window);
+			Entity* entity = labState->selectedEntity;
+			I32 abilityId = labState->selectedAbilityId;
+			I32 hoverAbilityId = labState->hoverAbilityId;
+			TileIndex tileIndex = GetContainingTileIndex(mousePosition);
+			if(hoverAbilityId != NoAbilityId)
 			{
-				InventoryItem* hoverItem = &labState->hoverItem;
-				if (dragItem->inventory != 0 && hoverItem->inventory != 0)
+				ToggleAbility(labState, hoverAbilityId);
+			}
+			else if(entity)
+			{
+				if(abilityId != NoAbilityId)
 				{
-					Assert (dragItem->itemId != NoItemId);
-
-					if (CanSwapInventoryItems (*hoverItem, *dragItem))
+					if(CanUseAbilityOnTile(labState, entity, abilityId, tileIndex))
 					{
-						SwapInventoryItems (*hoverItem, *dragItem);
-						RecalculatePlayerAttributes (labState);
+						UseAbilityOnTile(labState, entity, abilityId, tileIndex);
+						if(!CanUseAbilityOnTile(labState, entity, abilityId, tileIndex))
+						{
+							labState->selectedAbilityId = NoAbilityId;
+						}
+					}
+					else
+					{
+						labState->selectedAbilityId = NoAbilityId;
 					}
 				}
-				else if (!IsMouseInCharacterInfo (&labState->canvas, labState, mousePosition))
+				else if(EntityCanMoveTo(labState, entity, tileIndex))
 				{
-					if (dragItem->itemId != NoItemId)
-					{
-						DropItem (labState, player, dragItem->itemId, mousePosition);
-						SetInventoryItemId (dragItem->inventory, dragItem->row, dragItem->col, NoItemId);
-					}
+					MoveEntityTo(labState, entity, tileIndex);
+				}
+				else
+				{
+					SelectEntity(labState, 0);
 				}
 			}
-
-			labState->useAbilityId = NoAbilityId;
-			
-			dragItem->inventory = 0;
-			dragItem->itemId = NoItemId;
-
-			break;
-		}
-		case WM_RBUTTONDOWN:
-		{
-			labState->followMouse = true;
-			break;
-		}
-		case WM_RBUTTONUP:
-		{
-			if (labState->showCharacterInfo)
+			else
 			{
-				InventoryItem* hoverItem = &labState->hoverItem;
-				if (hoverItem->itemId == TestPotionId)
+				Entity* hoverEntity = GetEntityAtTile(labState, tileIndex);
+				if(hoverEntity && CanSelectEntity(labState, hoverEntity))
 				{
-					Entity* player = &labState->player;
-					if (player->health > 0)
-					{
-						HealFromItem (labState, TestPotionId, &labState->player, 30);
-						SetInventoryItemId (hoverItem->inventory, hoverItem->row, hoverItem->col, NoItemId);
-					}
-				}
-			}
-
-			labState->followMouse = false;
-			break;
-		}
-		case WM_MOUSEWHEEL: 
-		{
-			I16 wheelDeltaParam = GET_WHEEL_DELTA_WPARAM(wparam);
-			if (wheelDeltaParam > 0)
-				labState->camera.unitInPixels *= 1.10f;
-			else if (wheelDeltaParam < 0)
-				labState->camera.unitInPixels /= 1.10f;
-			break;
-		}
-		case WM_KEYDOWN:
-		{
-			WPARAM keyCode = wparam;
-			switch (keyCode)
-			{
-				case 'Q':
-				{
-					labState->useAbilityId = WhiteAbility2Id;
-					break;
-				}
-				case 'E':
-				{
-					labState->useAbilityId = WhiteAbility3Id;
-					break;
-				}
-				case 'A':
-				{
-					labState->moveLeft = true;
-					break;
-				}
-				case 'D':
-				{
-					labState->moveRight = true;
-					break;
-				}
-				case 'W':
-				{
-					labState->moveUp = true;
-					break;
-				}
-				case 'S':
-				{
-					labState->moveDown = true;
-					break;
-				}
-				case ' ':
-				{
-					if (labState->hoverDroppedItem)
-					{
-						PickUpItem (labState, labState->hoverDroppedItem);
-					}
-					break;
+					SelectEntity(labState, hoverEntity);
 				}
 			}
 			break;
 		}
-		case WM_KEYUP: 
-		{
-			WPARAM keyCode = wparam;
-			switch (keyCode) 
-			{
-				case '1':
-				{
-					CombatLabResetAtLevel (labState, 1);
-					break;
-				}
-				case '2':
-				{
-					CombatLabResetAtLevel (labState, 2);
-					break;
-				}
-				case '3':
-				{
-					CombatLabResetAtLevel (labState, 3);
-					break;
-				}
-				case '4':
-				{
-					CombatLabResetAtLevel (labState, 4);
-					break;
-				}
-				case '5':
-				{
-					CombatLabResetAtLevel (labState, 5);
-					break;
-				}
-				case 'Q':
-				{
-					labState->useAbilityId = NoAbilityId;
-					break;
-				}
-				case 'E':
-				{
-					labState->useAbilityId = NoAbilityId;
-					break;
-				}
-				case 'B':
-				{
-					Entity* player = &labState->player;
-					Assert (player->hasSpecialResource);
-					player->specialResource = player->maxSpecialResource;
-					break;
-				}
-				case 'A':
-				{
-					labState->moveLeft = false;
-					break;
-				}
-				case 'D':
-				{
-					labState->moveRight = false;
-					break;
-				}
-				case 'W':
-				{
-					labState->moveUp = false;
-					break;
-				}
-				case 'S':
-				{
-					labState->moveDown = false;
-					break;
-				}
-				case 'C':
-				{
-					labState->showCharacterInfo = !labState->showCharacterInfo;
-					break;
-				}
-			}
-			break;
-		}
-
 		case WM_DESTROY:
 		case WM_CLOSE:
 		{
@@ -1271,1449 +1097,558 @@ static LRESULT CALLBACK func CombatLabCallback (HWND window, UINT message, WPARA
 		}
 		default:
 		{
-			result = DefWindowProc (window, message, wparam, lparam);
+			result = DefWindowProc(window, message, wparam, lparam);
 			break;
 		}
 	}
 	return result;
 }
 
-static void func CombatLabInit (CombatLabState* labState, I32 windowWidth, I32 windowHeight)
+static I8* func GetStatusText(CombatLabState* labState)
 {
-	DungeonMap* map = &labState->map;
-	InitDungeonMap (map);
+	I8* text = 0;
 
-	CombatLabReset (labState);
-
-	labState->canvas.glyphData = GetGlobalGlyphData ();
-	CombatLabResize (labState, windowWidth, windowHeight);
-}
-
-static void func DrawSlice (Canvas* canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
-{
-	U32 colorCode = GetColorCode (color);
-
-	Camera *camera = canvas->camera;
-	I32 centerXPixel = UnitXtoPixel (camera, center.x);
-	I32 centerYPixel = UnitYtoPixel (camera, center.y);
-	V2 pixelCenter = MakeVector (F32 (centerXPixel), F32 (centerYPixel));
-
-	I32 leftPixel   = UnitXtoPixel (camera, center.x - radius);
-	I32 rightPixel  = UnitXtoPixel (camera, center.x + radius);
-	I32 topPixel    = UnitYtoPixel (camera, center.y - radius);
-	I32 bottomPixel = UnitYtoPixel (camera, center.y + radius);
-
-	if (topPixel > bottomPixel)
+	if(labState->selectedEntity == 0)
 	{
-		IntSwap (&topPixel, &bottomPixel);
-	}
-
-	if (leftPixel > rightPixel)
-	{
-		IntSwap (&leftPixel, &rightPixel);
-	}
-
-	I32 pixelRadius = I32 (radius * camera->unitInPixels);
-	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
-
-	Bitmap bitmap = canvas->bitmap;
-	topPixel    = IntMax2 (topPixel, 0);
-	bottomPixel = IntMin2 (bottomPixel, bitmap.height - 1);
-	leftPixel   = IntMax2 (leftPixel, 0);
-	rightPixel  = IntMin2 (rightPixel, bitmap.width - 1);
-
-	for (I32 row = topPixel; row < bottomPixel; ++row)
-	{
-		for (I32 col = leftPixel; col < rightPixel; ++col)
+		Entity* hoverEntity = GetEntityAtTile(labState, labState->hoverTileIndex);
+		if(hoverEntity)
 		{
-			U32* pixel = bitmap.memory + row * bitmap.width + col;
-			I32 pixelDistanceSquare = IntSquare (row - centerYPixel) + IntSquare (col - centerXPixel);
-
-			V2 pixelPosition = MakeVector (F32 (col), F32 (row));
-			F32 angle = LineAngle (pixelCenter, pixelPosition);
-			angle = NormalizeAngle (angle);
-
-			if (pixelDistanceSquare <= pixelRadiusSquare && IsAngleBetween (minAngle, angle, maxAngle))
+			if(hoverEntity->teamIndex == labState->activeTeamIndex)
 			{
-				*pixel = colorCode;
+				if(IsDead(hoverEntity))
+				{
+					text = "Entity is dead.";
+				}
+				else
+				{
+					text = "Click to select entity.";
+				}
+			}
+			else
+			{
+				text = "It's not this entity's turn.";
 			}
 		}
-	}
-}
-
-static void func DrawSliceOutline (Canvas* canvas, V2 center, F32 radius, F32 minAngle, F32 maxAngle, V4 color)
-{
-	if (minAngle > maxAngle)
-	{
-		minAngle -= TAU;
-	}
-	Assert (minAngle <= maxAngle);
-
-	V2 startPoint = center + radius * RotationVector (minAngle);
-	V2 endPoint = center + radius * RotationVector (maxAngle);
-	Bresenham (canvas, center, startPoint, color);
-	Bresenham (canvas, center, endPoint, color);
-
-	I32 lineN = 20;
-	for (I32 i = 0; i < lineN; ++i) 
-	{
-		F32 angle1 = minAngle + (F32 (i) / F32 (lineN)) * (maxAngle - minAngle);
-		F32 angle2 = minAngle + (F32 (i + 1) / F32 (lineN)) * (maxAngle - minAngle);
-		V2 point1 = center + radius * RotationVector (angle1);
-		V2 point2 = center + radius * RotationVector (angle2);
-		Bresenham (canvas, point1, point2, color);
-	}
-}
-
-static void func DrawCircle (Canvas* canvas, V2 center, F32 radius, V4 color)
-{
-	U32 colorCode = GetColorCode (color);
-
-	Camera *camera = canvas->camera;
-
-	I32 centerXPixel = UnitXtoPixel (camera, center.x);
-	I32 centerYPixel = UnitYtoPixel (camera, center.y);
-
-	I32 leftPixel   = UnitXtoPixel (camera, center.x - radius);
-	I32 rightPixel  = UnitXtoPixel (camera, center.x + radius);
-	I32 topPixel    = UnitYtoPixel (camera, center.y - radius);
-	I32 bottomPixel = UnitYtoPixel (camera, center.y + radius);
-
-	if (topPixel > bottomPixel)
-	{
-		IntSwap (&topPixel, &bottomPixel);
-	}
-
-	if (leftPixel > rightPixel)
-	{
-		IntSwap (&leftPixel, &rightPixel);
-	}
-
-	I32 pixelRadius = I32 (radius * camera->unitInPixels);
-	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
-
-	Bitmap bitmap = canvas->bitmap;
-	topPixel    = IntMax2 (topPixel, 0);
-	bottomPixel = IntMin2 (bottomPixel, bitmap.height - 1);
-	leftPixel   = IntMax2 (leftPixel, 0);
-	rightPixel  = IntMin2 (rightPixel, bitmap.width - 1);
-
-	for (I32 row = topPixel; row < bottomPixel; ++row)
-	{
-		for (I32 col = leftPixel; col < rightPixel; ++col)
+		else
 		{
-			U32* pixel = bitmap.memory + row * bitmap.width + col;
-			I32 pixelDistanceSquare = IntSquare (row - centerYPixel) + IntSquare (col - centerXPixel);
-			if (pixelDistanceSquare <= pixelRadiusSquare)
-			{
-				*pixel = colorCode;
-			}
+			text = "Click on an entity to select it or press E to end turn.";
 		}
-	}
-}
-
-static void func DrawCircleOutline (Canvas* canvas, V2 center, F32 radius, V4 color)
-{
-	I32 lineN = 20;
-	F32 angleAdvance = (2.0f * PI) / F32 (lineN);
-	F32 angle = 0.0f;
-	for (I32 i = 0; i < lineN; ++i)
-	{
-		F32 angle1 = angle;
-		F32 angle2 = angle + angleAdvance;
-		V2 point1 = center + radius * RotationVector (angle1);
-		V2 point2 = center + radius * RotationVector (angle2);
-		Bresenham (canvas, point1, point2, color);
-		
-		angle += angleAdvance;
-	}
-}
-
-static void func DrawEntity (Canvas* canvas, Entity* entity)
-{
-	V4 color = GetEntityColor (entity);
-
-	DrawCircle (canvas, entity->position, EntityRadius, color);
-
-	Camera* camera = canvas->camera;
-	Bitmap* bitmap = &canvas->bitmap;
-
-	V4 healthBarBackgroundColor = (entity->health > 0.0f) ? MakeColor (0.5f, 0.0f, 0.0f) : MakeColor (0.5f, 0.5f, 0.5f);
-	V4 healthBarColor = MakeColor (1.0f, 0.0f, 0.0f);
-
-	I32 healthBarWidth = 40;
-	I32 healthBarHeight = 10;
-
-	I32 healthBarX = UnitXtoPixel (camera, entity->position.x);
-	I32 healthBarY = UnitYtoPixel (camera, entity->position.y - EntityRadius) - healthBarHeight - healthBarHeight / 2;
-
-	I32 healthBarLeft   = healthBarX - healthBarWidth / 2;
-	I32 healthBarRight  = healthBarX + healthBarWidth / 2;
-	I32 healthBarTop    = healthBarY - healthBarHeight / 2;
-	I32 healthBarBottom = healthBarY + healthBarHeight / 2;
-	DrawBitmapRect (bitmap, healthBarLeft, healthBarRight, healthBarTop, healthBarBottom, healthBarBackgroundColor);
-
-	F32 healthRatio = F32 (entity->health) / GetMaxHealth (entity);
-	Assert (IsBetween (healthRatio, 0.0f, 1.0f));
-	if (healthRatio > 0.0f)
-	{
-		I32 healthBarFilledX = healthBarLeft + I32 (healthRatio * F32 (healthBarWidth));
-		DrawBitmapRect (bitmap, healthBarLeft, healthBarFilledX, healthBarTop, healthBarBottom, healthBarColor);
-	}
-
-	if (entity->health > 0)
-	{
-		for (I32 health = 50; health < entity->health; health += 50)
-		{
-			F32 ratio = F32 (health) / GetMaxHealth (entity);
-			I32 x = I32 (Lerp (F32 (healthBarLeft), ratio, F32 (healthBarRight)));
-			DrawBitmapBresenhamLine (bitmap, healthBarTop, x, healthBarBottom, x, healthBarBackgroundColor);
-		}
-	}
-
-	if (entity->hasSpecialResource)
-	{
-		V4 filledColor = MakeColor (1.0f, 1.0f, 0.0f);
-		V4 emptyColor = MakeColor (0.3f, 0.3f, 0.3f);
-		I32 barTop = healthBarBottom + 2;
-		I32 barBottom = barTop + 3;
-		I32 barLeft = healthBarLeft;
-		I32 barRight = healthBarRight;
-		DrawBitmapRect (bitmap, barLeft, barRight, barTop, barBottom, emptyColor);
-		
-		Assert (entity->maxSpecialResource > 0);
-		Assert (IsIntBetween (entity->specialResource, 0, entity->maxSpecialResource));
-		F32 filledRatio = F32 (entity->specialResource) / F32 (entity->maxSpecialResource);
-		I32 barFilledX = barLeft + I32 (F32 (barRight - barLeft) * filledRatio);
-		DrawBitmapRect (bitmap, barLeft, barFilledX, barTop, barBottom, filledColor);
-	}
-
-	Assert (StringIsTerminated (entity->name, EntityNameSize));
-	I32 nameX = healthBarLeft;
-	I32 nameLineY = healthBarTop - 2 - TextPixelsBelowBaseLine;
-	V4 nameColor = MakeColor (1.0f, 1.0f, 1.0f);
-	DrawBitmapTextLine (bitmap, entity->name, canvas->glyphData, nameX, nameLineY, nameColor);
-}
-
-static B32 func IsEntityInSlice (Entity* entity, V2 center, F32 radius, F32 minAngle, F32 maxAngle)
-{
-	F32 distance = Distance (entity->position, center);
-	F32 angle = LineAngle (center, entity->position);
-	B32 result = (distance < radius + EntityRadius && IsAngleBetween (minAngle, angle, maxAngle));
-	return result;
-}
-
-static B32 func IsEntityInCircle (Entity* entity, V2 center, F32 radius)
-{
-	B32 result = false;
-	F32 distanceFromCenter = Distance (entity->position, center);
-	if (distanceFromCenter < radius + EntityRadius)
-	{
-		result = true;
-	}
-	return result;
-}
-
-static void func DrawWhiteAbility1 (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability)
-	Assert (ability->id == WhiteAbility1Id);
-	V4 color = MakeColor (0.8f, 0.8f, 0.8f);
-	F32 radius = EntityRadius + WhiteAbility1Radius;
-
-	if (ability->castRatioLeft > 0.0f)
-	{
-		F32 fillRadius = Lerp (radius, ability->castRatioLeft, EntityRadius);
-
-		F32 minAngle = NormalizeAngle (ability->angle - WhiteAbility1AngleRange * 0.5f);
-		F32 maxAngle = NormalizeAngle (ability->angle + WhiteAbility1AngleRange * 0.5f);
-		DrawSliceOutline (canvas, entity->position, radius, minAngle, maxAngle, color);
-		DrawSlice (canvas, entity->position, fillRadius, minAngle, maxAngle, color);
-	}
-}
-
-static void func DrawWhiteAbility3 (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability);
-	Assert (ability->id == WhiteAbility3Id);
-	V4 color = MakeColor (0.8f, 0.8f, 0.8f);
-	F32 radius = EntityRadius + WhiteAbility3Radius;
-
-	if (ability->castRatioLeft > 0.0f)
-	{
-		F32 fillRadius = Lerp (radius - EntityRadius, ability->castRatioLeft, EntityRadius);
-		DrawCircleOutline (canvas, entity->position, radius, color);
-		DrawCircle (canvas, entity->position, fillRadius, color);
-	}
-}
-
-static void func DrawRedAbility1 (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability);
-	Assert (ability->id == RedAbility1Id);
-	V4 color = MakeColor (0.8f, 0.0f, 0.0f);
-	F32 radius = EntityRadius + RedAbility1Radius;
-
-	if (ability->castRatioLeft > 0.0f)
-	{
-		F32 fillRadius = Lerp (radius - EntityRadius, ability->castRatioLeft, EntityRadius);
-
-		F32 minAngle = NormalizeAngle (ability->angle - RedAbility1AngleRange * 0.5f);
-		F32 maxAngle = NormalizeAngle (ability->angle + RedAbility1AngleRange * 0.5f);
-		DrawSliceOutline (canvas, entity->position, radius, minAngle, maxAngle, color);
-		DrawSlice (canvas, entity->position, fillRadius, minAngle, maxAngle, color);
-	}
-}
-
-static void func DrawRedAbility3 (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability);
-	Assert (ability->id == RedAbility2Id);
-
-	Assert (entity->level >= 2);
-	V4 color = MakeColor(0.8f, 0.0f, 0.0f);
-	F32 radius = EntityRadius + RedAbility2Radius;
-
-	if (ability->castRatioLeft > 0.0f)
-	{
-		F32 fillRadius = Lerp (radius - EntityRadius, ability->castRatioLeft, EntityRadius);
-
-		F32 minAngle = NormalizeAngle (ability->angle - RedAbility2AngleRange * 0.5f);
-		F32 maxAngle = NormalizeAngle (ability->angle + RedAbility2AngleRange * 0.5f);
-		DrawSliceOutline (canvas, entity->position, radius, minAngle, maxAngle, color);
-		DrawSlice (canvas, entity->position, fillRadius, minAngle, maxAngle, color);
-	}
-}
-
-static void func DrawBlueAbility1 (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability)
-	Assert (ability->id == BlueAbility1Id);
-
-	V4 color = MakeColor (0.0f, 0.0f, 0.8f);
-	if (ability->castRatioLeft > 0.0f)
-	{
-		F32 fillRadius = Lerp (BlueAbility1Radius, ability->castRatioLeft, 0.0f);
-
-		DrawCircleOutline (canvas, ability->position, BlueAbility1Radius, color);
-		DrawCircle (canvas, ability->position, fillRadius, color);
-	}
-}
-
-static void func DrawBlueAbility2 (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability);
-	Assert (ability->id == BlueAbility2Id);
-
-	V4 color = MakeColor (0.0f, 0.0f, 0.8f);
-	if (ability->castRatioLeft > 0.0f)
-	{
-		F32 fillRadius = Lerp (EntityRadius + BlueAbility2Radius, ability->castRatioLeft, EntityRadius);
-		
-		DrawCircleOutline (canvas, entity->position, EntityRadius + BlueAbility2Radius, color);
-		DrawCircle (canvas, entity->position, fillRadius, color);
-	}
-}
-
-static void func DrawBlueAbility3 (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability);
-	Assert (ability->id == BlueAbility3Id);
-
-	V4 color = MakeColor (0.0f, 0.0f, 0.8f);
-	if (ability->castRatioLeft > 0.0f)
-	{
-		F32 fillRadius = Lerp (BlueAbility3Radius, ability->castRatioLeft, 0.0f);
-		
-		Bresenham (canvas, entity->position, ability->position, color);
-		DrawCircleOutline (canvas, ability->position, BlueAbility3Radius, color);
-		DrawCircle (canvas, ability->position, fillRadius, color);
-	}
-}
-
-static void func DrawAbility (Canvas* canvas, Entity* entity, Ability* ability)
-{
-	Assert (ability == &entity->ability);
-	if (ability->id == WhiteAbility1Id)
-	{
-		DrawWhiteAbility1 (canvas, entity, ability);
-	}
-	else if (ability->id == WhiteAbility2Id)
-	{
-	}
-	else if (ability->id == WhiteAbility3Id)
-	{
-		DrawWhiteAbility3 (canvas, entity, ability);
-	}
-	else if (ability->id == BlueAbility1Id)
-	{
-		DrawBlueAbility1 (canvas, entity, ability);
-	}
-	else if (ability->id == BlueAbility2Id)
-	{
-		DrawBlueAbility2 (canvas, entity, ability);
-	}
-	else if (ability->id == BlueAbility3Id)
-	{
-		DrawBlueAbility3 (canvas, entity, ability);
-	}
-	else if (ability->id == RedAbility1Id)
-	{
-		DrawRedAbility1 (canvas, entity, ability);
-	}
-	else if (ability->id == RedAbility2Id)
-	{
-		DrawRedAbility3 (canvas, entity, ability);
-	}
-	else if (ability->id == NoAbilityId)
-	{
 	}
 	else
 	{
-		DebugBreak();
-	}
-}
-
-static void func DrawExperienceBar (Canvas* canvas, CombatLabState* labState)
-{
-	I32 level = labState->player.level;
-	if (level < MaxLevel)
-	{
-		Bitmap* bitmap = &canvas->bitmap;
-		I32 left = 0;
-		I32 right = bitmap->width - 1;
-		I32 bottom = bitmap->height - 1;
-		I32 top = bottom - 10;
-		V4 unfilledColor = MakeColor (0.3f, 0.3f, 0.3f);
-		V4 filledColor = MakeColor (0.6f, 0.6f, 0.6f);
-		DrawBitmapRect (bitmap, left, right, top, bottom, unfilledColor);
-
-		I32 experienceGained = labState->experienceGainedThisLevel;
-		Assert (IsIntBetween (level, 1, MaxLevel - 1));
-		I32 experienceNeeded = ExperienceNeededForNextLevel[level];
-		I32 rightFilled = left + Floor (F32 (right - left) * F32 (experienceGained) / F32 (experienceNeeded));
-		DrawBitmapRect (bitmap, left, rightFilled, top, bottom, filledColor);
-	}
-}
-
-static void func DrawUIBox (Bitmap* bitmap, I32 centerX, I32 centerY, I32 size, I8* text, GlyphData* glyphData)
-{
-	I32 left   = centerX - size / 2;
-	I32 right  = centerX + size / 2;
-	I32 top    = centerY - size / 2;
-	I32 bottom = centerY + size / 2;
-
-	V4 backgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
-	DrawBitmapRect (bitmap, left, right, top, bottom, backgroundColor);
-
-	V4 outlineColor = MakeColor (1.0f, 1.0f, 1.0f);
-	DrawBitmapRectOutline (bitmap, left, right, top, bottom, outlineColor);
-
-	I32 textBaseLineY = bottom - (size - TextHeightInPixels) / 2 - TextPixelsBelowBaseLine;
-	F32 textWidth = GetTextPixelWidth (text, glyphData);
-	I32 textLeft = centerX - I32 (textWidth * 0.5f);
-
-	V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
-	DrawBitmapTextLine (bitmap, text, glyphData, textLeft, textBaseLineY, textColor);
-}
-
-static void func DrawUIBoxBottom (Bitmap* bitmap, I32 centerX, I32 bottom, I32 size, I8* text, GlyphData* glyphData)
-{
-	I32 centerY = bottom - size / 2;
-	DrawUIBox (bitmap, centerX, centerY, size, text, glyphData);
-}
-
-static void func DrawTextAlert (Canvas* canvas, TextAlert* alert)
-{
-	Assert (alert->timeRemaining > 0.0f);
-	I8 text[32] = {};
-	String string = StartString (text, 32);
-
-	switch (alert->id)
-	{
-		case DamageTextAlertId:
+		Entity* selectedEntity = labState->selectedEntity;
+		I32 selectedAbilityId = labState->selectedAbilityId;
+		if(selectedAbilityId == NoAbilityId)
 		{
-			string = string + alert->damage + " Damage";
-			break;
+			Entity* hoverEntity = GetEntityAtTile(labState, labState->hoverTileIndex);
+			if(hoverEntity)
+			{
+				if(hoverEntity == selectedEntity)
+				{
+					text = "Click to unselect entity.";
+				}
+				else
+				{
+					text = "Click on a tile to move to or click on an ability to use it.";
+				}
+			}
+			else
+			{
+				if(EntityCanMoveTo(labState, selectedEntity, labState->hoverTileIndex))
+				{
+					text = "Click to move here.";
+				}
+				else if(labState->hoverAbilityId != NoAbilityId)
+				{
+					I32 abilityId = labState->hoverAbilityId;
+					if(IsOnCooldown(labState, selectedEntity, abilityId))
+					{
+						text = "Ability is on cooldown.";
+					}
+					else if(selectedEntity->actionPoints < GetAbilityActionPoints(abilityId))
+					{
+						text = "Not enough action points to use ability.";
+					}
+					else if(AbilityRequiresTileSelection(abilityId))
+					{
+						text = "Click to select ability.";
+					}
+					else
+					{
+						text = "Click to use ability.";
+					}
+				}
+				else
+				{
+					text = "Click on a tile to move to or click on an ability to use it.";
+				}
+			}
 		}
-		case HealTextAlertId:
+		else
 		{
-			string = string + alert->heal + " Heal";
+			Assert(AbilityRequiresTileSelection(selectedAbilityId));
+			if(CanUseAbilityOnTile(labState, selectedEntity, selectedAbilityId, labState->hoverTileIndex))
+			{
+				text = "Click to use ability.";
+			}
+			else
+			{
+				if(selectedAbilityId == RollAbilityId)
+				{
+					text = "Click on a nearby tile to select direction.";
+				}
+				else
+				{
+					text = "Click on a nearby enemy.";
+				}
+			}
+		}
+	}
+
+	Assert(text != 0);
+	return text;
+}
+
+static void func DrawStatusBar(CombatLabState* labState)
+{
+	Bitmap* bitmap = &labState->canvas.bitmap;
+	I32 height = 10 + TextHeightInPixels;
+
+	I32 left = 0;
+	I32 right = bitmap->width - 1;
+	I32 bottom = bitmap->height - 1;
+	I32 top = bottom - height;
+	V4 backgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	GlyphData* glyphData = labState->canvas.glyphData;
+	Assert(glyphData != 0);
+
+	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	I8* text = GetStatusText(labState);
+	Assert(text != 0);
+	DrawBitmapTextLineCentered(bitmap, text, glyphData, left, right, top, bottom, textColor);
+}
+
+static void func DrawHealthBar(CombatLabState* labState, Entity* entity)
+{
+	Canvas* canvas = &labState->canvas;
+	Assert(entity->maxHealthPoints > 0);
+	V2 tileCenter = GetTileCenter(entity->tileIndex);
+
+	F32 left   = tileCenter.x - TileSide * 0.5f;
+	F32 right  = tileCenter.x + TileSide * 0.5f;
+	F32 top    = tileCenter.y - TileSide * 0.5f;
+	F32 bottom = top + TileSide * 0.2f;
+
+	V4 backgroundColor = MakeColor(0.0f, 0.3f, 0.0f);
+	V4 filledColor = MakeColor(0.0f, 1.0f, 0.0f);
+	if(IsDead(entity))
+	{
+		backgroundColor = MakeColor(0.3f, 0.3f, 0.3f);
+	}
+	else if(IsInvulnerable(labState, entity))
+	{
+		backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+		filledColor = MakeColor(0.8f, 0.8f, 0.8f);
+	}
+
+	DrawRectLRTB(canvas, left, right, top, bottom, backgroundColor);
+
+	F32 healthRatio = F32(entity->healthPoints) / F32(entity->maxHealthPoints);
+	F32 filledX = Lerp(left, healthRatio, right);
+	DrawRectLRTB(canvas, left, filledX, top, bottom, filledColor);
+}
+
+static String func GetEffectTooltipText(I32 effectId, I8* buffer, I32 bufferSize)
+{
+	String text = StartString(buffer, bufferSize);
+	switch(effectId)
+	{
+		case InvulnerableEffectId:
+		{
+			AddLine(text, "Invulnerable");
+			AddLine(text, "Cannot be damaged.");
 			break;
 		}
 		default:
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	}
-
-	DrawTextLineXCentered (canvas, text, alert->baseLineY, alert->centerX, alert->color);
+	return text;
 }
 
-static void func DrawInventorySlotBackground (Bitmap* bitmap, I32 top, I32 left, V4 color)
+static void func DrawEffectsBar(CombatLabState* labState, V2 mousePosition)
 {
-	I32 right  = left + InventorySlotSize;
-	I32 bottom = top + InventorySlotSize;
-	DrawBitmapRect (bitmap, left, right, top, bottom, color);
-}
-
-static void func DrawInventorySlotOutline (Bitmap* bitmap, I32 top, I32 left, V4 color)
-{
-	I32 right  = left + InventorySlotSize;
-	I32 bottom = top + InventorySlotSize;
-	DrawBitmapRectOutline (bitmap, left, right, top, bottom, color);
-}
-
-static void func DrawInventorySlotText (Bitmap* bitmap, GlyphData* glyphData, I8* text, I32 top, I32 left, V4 color)
-{
-	I32 right  = left + InventorySlotSize;
-	I32 bottom = top + InventorySlotSize;
-	DrawBitmapTextLineCentered (bitmap, text, glyphData, left, right, top, bottom, color);
-}
-
-static void func DrawInventorySlot (Bitmap* bitmap, GlyphData* glyphData, I32 top, I32 left, I32 itemId, I32 slotId)
-{
-	V4 outlineColor  = MakeColor (0.5f, 0.5f, 0.5f);
-	V4 itemNameColor = WhiteColor;
-	V4 slotNameColor = MakeColor (0.5f, 0.5f, 0.5f);
-	V4 backgroundColor = MakeColor (0.1f, 0.1f, 0.1f);
-
-	DrawInventorySlotBackground (bitmap, top, left, backgroundColor);
-
-	if (itemId != NoItemId)
-	{
-		I8 itemName[32];
-		GetItemShortName (itemId, itemName, 32);
-		DrawInventorySlotText (bitmap, glyphData, itemName, top, left, itemNameColor);
-	}
-	else if (slotId != AnySlotId)
-	{
-		I8 slotName[32];
-		GetSlotName (slotId, slotName, 32);
-		DrawInventorySlotText (bitmap, glyphData, slotName, top, left, slotNameColor);
-	}
-
-	DrawInventorySlotOutline (bitmap, top, left, outlineColor);
-}
-
-static void func DrawInventory (Canvas* canvas, Inventory* inventory, CombatLabState* labState, V2 mousePosition)
-{
-	Bitmap* bitmap = &canvas->bitmap;
-	GlyphData* glyphData = canvas->glyphData;
-	Assert (glyphData != 0);
-
-	V4 slotBackgroundColor   = MakeColor (0.1f, 0.1f, 0.1f);
-	V4 slotOutlineColor      = MakeColor (0.5f, 0.5f, 0.5f);
-	V4 itemNameColor         = WhiteColor;
-
-	I32 mouseX = UnitXtoPixel (canvas->camera, mousePosition.x);
-	I32 mouseY = UnitYtoPixel (canvas->camera, mousePosition.y);
-
-	I32 left   = inventory->left;
-	I32 right  = inventory->left + inventory->colN * InventorySlotSize;
-	I32 top    = inventory->top;
-	I32 bottom = inventory->top + inventory->rowN * InventorySlotSize;
-
-	I32 slotLeft = left;
-	I32 slotTop  = top;
-
-	InventoryItem* hoverItem = &labState->hoverItem;
-	InventoryItem* dragItem = &labState->dragItem;
-
-	for (I32 row = 0; row < inventory->rowN; row++)
-	{
-		for (I32 col = 0; col < inventory->colN; col++)
-		{
-			I32 itemId = inventory->itemIds[inventory->colN * row + col];
-			I32 slotId = inventory->slotIds[inventory->colN * row + col];
-			if (dragItem->inventory != inventory || dragItem->itemId == NoItemId || 
-				row != dragItem->row || col != dragItem->col)
-			{
-				DrawInventorySlot (bitmap, glyphData, slotTop, slotLeft, itemId, slotId);
-			}
-			else
-			{
-				DrawInventorySlot (bitmap, glyphData, slotTop, slotLeft, NoItemId, slotId);
-			}
-
-			I32 slotRight = slotLeft + InventorySlotSize;
-			I32 slotBottom = slotTop + InventorySlotSize;
-			if (IsIntBetween (mouseX, slotLeft, slotRight) && IsIntBetween (mouseY, slotTop, slotBottom))
-			{
-				hoverItem->inventory = inventory;
-				hoverItem->itemId = itemId;
-				hoverItem->slotId = slotId;
-				hoverItem->row = row;
-				hoverItem->col = col;
-			}
-
-			slotLeft += InventorySlotSize;
-		}
-
-		slotTop += InventorySlotSize;
-		slotLeft = left;
-	}
-
-	V4 outlineColor = MakeColor (1.0f, 1.0f, 1.0f);
-	DrawBitmapRectOutline (bitmap, left, right, top, bottom, outlineColor);
-
-	if (hoverItem->inventory == inventory)
-	{
-		Assert (IsValidInventoryItem (*hoverItem));
-		I32 slotLeft = left + hoverItem->col * InventorySlotSize;
-		I32 slotTop  = top + hoverItem->row * InventorySlotSize;
-
-		V4 slotHoverOutlineColor    = MakeColor (1.0f, 1.0f, 0.0f);	
-		V4 slotHoverBadOutlineColor = MakeColor (1.0f, 0.0f, 0.0f);
-
-		V4 color = slotHoverOutlineColor;
-		InventoryItem* dragItem = &labState->dragItem;
-		if (dragItem->inventory != 0 && !ItemGoesIntoSlot (dragItem->itemId, hoverItem->slotId))
-		{
-			color = slotHoverBadOutlineColor;
-		}
-
-		DrawInventorySlotOutline (bitmap, slotTop, slotLeft, color);
-	}
-
-	if (hoverItem->inventory == inventory && hoverItem->itemId != NoItemId)
-	{
-
-		static I8 tooltipBuffer[256] = {};
-		String tooltipString = GetItemTooltipText (hoverItem->itemId, tooltipBuffer, 256);
-
-		I32 slotLeft = left + hoverItem->col * InventorySlotSize;
-		I32 slotTop  = top  + hoverItem->row * InventorySlotSize;
-
-		I32 tooltipLeft   = IntMin2 (slotLeft - TooltipWidth / 2, (bitmap->width - 1) - TooltipWidth - 5);
-		I32 tooltipBottom = slotTop - 5;
-		DrawBitmapStringTooltipBottom (bitmap, tooltipString, glyphData, tooltipBottom, tooltipLeft);
-	}
-}
-
-static void func DrawCharacterInfo (Canvas* canvas, CombatLabState* labState, V2 mousePosition)
-{
-	Bitmap* bitmap = &canvas->bitmap;
-	Entity* entity = &labState->player;
-
-	V4 backgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
-	V4 outlineColor = MakeColor (1.0f, 1.0f, 1.0f);
-
-	I32 padding = 5;
-	I32 width = 400;
-	I32 height = InventorySlotSize + 190 + InventorySlotSize * labState->inventory.rowN;
-
-	I32 right  = (bitmap->width - 1) - padding;
-	I32 left   = right - width;
-	I32 top    = (bitmap->height - 1) / 2 - height / 2;
-	I32 bottom = top + height;
-
-	DrawBitmapRect (bitmap, left, right, top, bottom, backgroundColor);
-
-	GlyphData* glyphData = canvas->glyphData;
+	Bitmap* bitmap = &labState->canvas.bitmap;
+	GlyphData* glyphData = labState->canvas.glyphData;
 	Assert(glyphData != 0);
 
-	V4 textColor  = MakeColor (1.0f, 1.0f, 1.0f);
-	V4 titleColor = MakeColor (1.0f, 1.0f, 0.0f);
-	V4 infoColor  = MakeColor (0.3f, 0.3f, 0.3f);
+	Camera* camera = &labState->camera;
+	I32 mouseX = UnitXtoPixel(camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel(camera, mousePosition.y);
 
-	I32 textLeft = left + padding;
-	I32 textY = top + InventorySlotSize + padding + TextPixelsAboveBaseLine;
-
-	DrawBitmapTextLine (bitmap, "Character Info", glyphData, textLeft, textY, titleColor);
-
-	I8 lineBuffer[128] = {};
-	textY += TextHeightInPixels;
-	String string = StartString (lineBuffer, 128);
-	AddLine (string, "Level " + entity->level);
-	DrawBitmapTextLine (bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
-
-	textY += TextHeightInPixels;
-	textY += TextHeightInPixels;
-	DrawBitmapTextLine (bitmap, "Attributes", glyphData, textLeft, textY, titleColor);
-
-	textY += TextHeightInPixels;
-	string = StartString (lineBuffer, 128);
-	AddLine (string, "Constitution: " + entity->constitution);
-	DrawBitmapTextLine (bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
-
-	textY += TextHeightInPixels;
-	DrawBitmapTextLine (bitmap, "Increases maximum health.", glyphData, textLeft, textY, infoColor);
-
-	textY += TextHeightInPixels;
-	string = StartString (lineBuffer, 128);
-	AddLine (string, "Strength: " + entity->strength);
-	DrawBitmapTextLine (bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
-
-	textY += TextHeightInPixels;
-	DrawBitmapTextLine(bitmap, "Increases damage of physical attacks.", glyphData, textLeft, textY, infoColor);
-
-	textY += TextHeightInPixels;
-	string = StartString (lineBuffer, 128);
-	AddLine (string, "Intellect: " + entity->intellect);
-	DrawBitmapTextLine (bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
-
-	textY += TextHeightInPixels;
-	DrawBitmapTextLine (bitmap, "Increases damage of magical attacks.", glyphData, textLeft, textY, infoColor);
-
-	textY += TextHeightInPixels;
-	string = StartString(lineBuffer, 128);
-	AddLine (string, "Dexterity: " + entity->dexterity);
-	DrawBitmapTextLine (bitmap, lineBuffer, glyphData, textLeft, textY, textColor);
-
-	textY += TextHeightInPixels;
-	DrawBitmapTextLine (bitmap, "Reduces use time of abilities.", glyphData, textLeft, textY, infoColor);
-
-	DrawBitmapRectOutline (bitmap, left, right, top, bottom, outlineColor);
-
-	labState->hoverItem.inventory = 0;
-
-	labState->equipInventory.left = left;
-	labState->equipInventory.top  = top;
-	DrawInventory (canvas, &labState->equipInventory, labState, mousePosition);
-
-	labState->inventory.left = left;
-	labState->inventory.top = bottom - labState->inventory.rowN * InventorySlotSize;
-	DrawInventory (canvas, &labState->inventory, labState, mousePosition);
-
-	InventoryItem* dragItem = &labState->dragItem;
-	if (dragItem->inventory != 0)
+	Entity* entity = labState->selectedEntity;
+	I32 effectN = 0;
+	for(I32 i = 0; i < labState->effectN; i++)
 	{
-		I32 slotLeft = dragItem->inventory->left + dragItem->col * InventorySlotSize;
-		I32 slotTop  = dragItem->inventory->top  + dragItem->row * InventorySlotSize;
-
-		V4 slotDragOutlineColor  = MakeColor (1.0f, 0.5f, 0.0f);
-		DrawInventorySlotOutline (bitmap, slotTop, slotLeft, slotDragOutlineColor);
-
-		I32 mouseX = UnitXtoPixel (canvas->camera, mousePosition.x);
-		I32 mouseY = UnitYtoPixel (canvas->camera, mousePosition.y);
-
-		I32 centerX = mouseX - InventorySlotSize / 2;
-		I32 centerY = mouseY - InventorySlotSize / 2;
-		DrawInventorySlot (bitmap, glyphData, centerY, centerX, dragItem->itemId, AnySlotId);
-	}
-}
-
-static void func DrawCombatLog (Canvas* canvas, CombatLabState* labState)
-{
-	Bitmap* bitmap = &canvas->bitmap;
-
-	I32 padding = 5;
-	I32 height = padding + CombatLogLineN * TextHeightInPixels + padding;
-	I32 width  = 300;
-
-	I32 bottom = (bitmap->height - 1) - 10 - padding;
-	I32 top    = bottom - height;
-	I32 left   = padding;
-	I32 right  = left + width;
-
-	V4 backgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
-	V4 outlineColor = MakeColor (1.0f, 1.0f, 1.0f);
-	DrawBitmapRect (bitmap, left, right, top, bottom, backgroundColor);
-	DrawBitmapRectOutline (bitmap, left, right, top, bottom, outlineColor);
-
-	I32 textX = left + padding;
-	I32 textY = top + padding + TextPixelsAboveBaseLine;
-	V4 textColor = MakeColor (1.0f, 1.0f, 1.0f);
-	for (I32 i = 0; i < CombatLogLineN; ++i)
-	{
-		DrawBitmapTextLine (bitmap, labState->combatLogLines[i], canvas->glyphData, textX, textY, textColor);
-		textY += TextHeightInPixels;
-	}
-}
-
-static void func DrawUI (Canvas* canvas, CombatLabState* labState, V2 mousePosition)
-{
-	DrawExperienceBar (canvas, labState);
-
-	Bitmap* bitmap = &canvas->bitmap;
-	GlyphData* glyphData = canvas->glyphData;
-	Assert (glyphData != 0);
-
-	I32 mouseX = UnitXtoPixel (canvas->camera, mousePosition.x);
-	I32 mouseY = UnitYtoPixel (canvas->camera, mousePosition.y);
-
-	I32 boxSize = 40;
-	I32 boxPadding = 5;
-	I32 boxCount = 3;
-	I32 boxBarWidth = boxCount * boxSize + (boxCount - 1) * boxPadding;
-
-	I32 boxCenterX = (bitmap->width - 1) / 2 - boxBarWidth / 2 + boxSize / 2;
-	I32 boxCenterY = (bitmap->height - 1) - 10 - boxPadding - boxSize / 2;
-	DrawUIBox(bitmap, boxCenterX, boxCenterY, boxSize, "LMB", glyphData);
-
-	static I8 tooltipBuffer[256] = {};
-	String tooltipText = StartString (tooltipBuffer, 256);
-
-	if (IsIntBetween (mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
-		IsIntBetween (mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
-	{
-		I32 damage = GetAbilityDamage (&labState->player, WhiteAbility1Id);
-		F32 castTime = GetAbilityCastTime (&labState->player, WhiteAbility1Id);
-
-		AddLine (tooltipText, "Ability 1");
-		AddLine (tooltipText, "Use time: " + castTime + " sec");
-		AddLine (tooltipText, "Hit in a direction, dealing " + damage + " damage");
-		AddLine (tooltipText, "to enemies closer than " + WhiteAbility1Radius + " meters.");
-		AddLine (tooltipText, "Generates 20 energy if it hits anything");
-
-		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
-		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
-		DrawBitmapStringTooltipBottom (bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
-	}
-
-	boxCenterX += boxSize + boxPadding;
-	DrawUIBox (bitmap, boxCenterX, boxCenterY, boxSize, "Q", glyphData);
-	if (IsIntBetween (mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
-		IsIntBetween (mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
-	{
-		I32 damage = GetAbilityDamage (&labState->player, WhiteAbility2Id);
-
-		AddLine (tooltipText, "Ability 2");
-		AddLine (tooltipText, "Energy cost: " + WhiteAbility2ResourceCost);
-		AddLine (tooltipText, "Charge in a direction, dealing " + damage + " damage");
-		AddLine (tooltipText, "to enemies in your way.");
-		AddLine (tooltipText, "Requires level 2");
-
-		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
-		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
-		DrawBitmapStringTooltipBottom (bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
-	}
-
-	boxCenterX += boxSize + boxPadding;
-	DrawUIBox (bitmap, boxCenterX, boxCenterY, boxSize, "E", glyphData);
-	if (IsIntBetween (mouseX, boxCenterX - boxSize / 2, boxCenterX + boxSize / 2) &&
-		IsIntBetween (mouseY, boxCenterY - boxSize / 2, boxCenterY + boxSize / 2))
-	{
-		I32 damage = GetAbilityDamage (&labState->player, WhiteAbility3Id);
-		F32 castTime = GetAbilityCastTime (&labState->player, WhiteAbility3Id);
-
-		AddLine (tooltipText, "Ability 3");
-		AddLine (tooltipText, "Energy cost: " + WhiteAbility3ResourceCost);
-		AddLine (tooltipText, "Use time: " + castTime + " sec");
-		AddLine (tooltipText, "Spin around, kicking enemies closer than");
-		AddLine (tooltipText, WhiteAbility3Radius + " meters, knocking them away, dealing");
-		AddLine (tooltipText, damage + " damage and interrupting their abilities.");
-		AddLine (tooltipText, "Requires level 3.");
-
-		I32 tooltipLeft = boxCenterX - TooltipWidth / 2;
-		I32 tooltipBottom = boxCenterY - boxSize / 2 - boxPadding;
-		DrawBitmapStringTooltipBottom (bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
-	}
-
-	I32 smallBoxSize = 30;
-	I32 smallBoxCenterX = (bitmap->width - 1) - boxPadding - smallBoxSize / 2;
-	I32 smallBoxCenterY = (bitmap->height - 1) - 10 - boxPadding - smallBoxSize / 2;
-	DrawUIBox(bitmap, smallBoxCenterX, smallBoxCenterY, smallBoxSize, "C", glyphData);
-
-	DrawCombatLog (canvas, labState);
-
-	if (labState->showCharacterInfo)
-	{
-		DrawCharacterInfo (canvas, labState, mousePosition);
-	}
-}
-
-static void func DrawAndUpdateTextAlerts (Canvas* canvas, CombatLabState* labState, F32 seconds)
-{
-	for (I32 i = 0; i < labState->textAlertN; ++i)
-	{
-		TextAlert* alert = &labState->textAlerts[i];
-		if (alert->timeRemaining > 0.0f)
+		Effect* effect = &labState->effects[i];
+		if(effect->entity == entity)
 		{
-			F32 scrollUpSpeed = 1.0f;
-			alert->baseLineY -= scrollUpSpeed * seconds;
+			effectN++;
+		}
+	}
 
-			DrawTextAlert (canvas, alert);
-			alert->timeRemaining -= seconds;
-			if (alert->timeRemaining <= 0.0f)
+	if(effectN > 0)
+	{
+		I32 boxSide = 40;
+		I32 padding = 5;
+	
+		I32 barWidth = padding + effectN * boxSide + (effectN - 1) * padding + padding;
+		I32 barHeight = padding + boxSide + padding;
+
+		I32 top = 0;
+		I32 bottom = top + barHeight;
+		I32 right = (bitmap->width - 1);
+		I32 left = right - barWidth;
+
+		V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+		V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+		V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+		I32 boxLeft   = left + padding;
+		I32 boxTop    = top + padding;
+		I32 boxBottom = boxTop + boxSide;
+		for(I32 i = 0; i < labState->effectN; i++)
+		{
+			Effect* effect = &labState->effects[i];
+			if(effect->entity == entity)
 			{
-				alert->timeRemaining = 0.0f;
+				I32 boxRight = boxLeft + boxSide;
+				DrawBitmapRect(bitmap, boxLeft, boxRight, boxTop, boxBottom, backgroundColor);
+				DrawBitmapRectOutline(bitmap, boxLeft, boxRight, boxTop, boxBottom, outlineColor);
+
+				I8 textBuffer[8] = {};
+				OneLineString(textBuffer, 8, effect->turns);
+				DrawBitmapTextLineCentered(bitmap, textBuffer, glyphData,
+										   boxLeft, boxRight, boxTop, boxBottom, textColor);
+
+				if(IsIntBetween(mouseX, boxLeft, boxRight) && IsIntBetween(mouseY, boxTop, boxBottom))
+				{
+					I32 tooltipTop = boxBottom + padding;
+					I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
+					tooltipLeft = IntMin2(tooltipLeft, (bitmap->width - 1) - padding - TooltipWidth);
+
+					I8 tooltipBuffer[256] = {};
+					String tooltipText = GetEffectTooltipText(effect->id, tooltipBuffer, 256);
+
+					DrawBitmapStringTooltip(bitmap, tooltipText, glyphData, tooltipTop, tooltipLeft);
+				}
+
+				boxLeft = boxRight + padding;
 			}
 		}
 	}
-
-	I32 remainingN = 0;
-	for (I32 i = 0; i < labState->textAlertN; ++i)
-	{
-		TextAlert* alert = &labState->textAlerts[i];
-		if (alert->timeRemaining > 0.0f)
-		{
-			labState->textAlerts[remainingN] = *alert;
-			remainingN++;
-		}
-	}
-
-	labState->textAlertN = remainingN;
 }
 
-static F32 func GetEntityDistance (Entity* entity1, Entity* entity2)
+static String func GetAbilityTooltipText(I32 abilityId, I8* buffer, I32 bufferSize)
 {
-	F32 distance = Distance (entity1->position, entity2->position) - EntityRadius - EntityRadius;
-	return distance;
+	String text = StartString(buffer, bufferSize);
+	switch(abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			AddLine(text, "Small Punch");
+			AddLine(text, "Uses 1 Action Point");
+			AddLine(text, "Punch an adjacent enemy lightly,");
+			AddLine(text, "dealing 1 damage.");
+			AddLine(text, "Can be used multiple times per turn.");
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			AddLine(text, "Big Punch");
+			AddLine(text, "Uses 3 Action Points");
+			AddLine(text, "1 Turn cooldown");
+			AddLine(text, "Forcefully punch an adjacent enemy,");
+			AddLine(text, "dealing 5 damage.");
+			break;
+		}
+		case KickAbilityId:
+		{
+			AddLine(text, "Kick");
+			AddLine(text, "Uses 3 Action Points");
+			AddLine(text, "3 Turns cooldown");
+			AddLine(text, "Kick an adjacent enemy, dealing 2 damage");
+			AddLine(text, "and knocking them away by up to 5 tiles.");
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			AddLine(text, "Spinning kick");
+			AddLine(text, "Uses 2 Action Points");
+			AddLine(text, "Deal 1 damage to all adjacent enemies.");
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			AddLine(text, "Avoidance");
+			AddLine(text, "Uses 5 Action Points");
+			AddLine(text, "5 Turns cooldown");
+			AddLine(text, "Become invulnerable until your next turn.");
+			break;
+		}
+		case RollAbilityId:
+		{
+			AddLine(text, "Roll");
+			AddLine(text, "Uses 3 Action Points");
+			AddLine(text, "3 Turns cooldown");
+			AddLine(text, "Roll up to 5 tiles in a direction.");
+			AddLine(text, "Deal 1 damage to an enemy on hit.");
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return text;
 }
 
-static void func UpdateDroppedItems (Canvas* canvas, CombatLabState* labState, V2 mousePosition, F32 seconds)
+static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 {
-	labState->hoverDroppedItem = 0;
-
-	I32 itemIndex = 0;
-	for (I32 i = 0; i < labState->droppedItemN; i++)
-	{
-		DroppedItem* item = &labState->droppedItems[i];
-		item->timeLeft -= seconds;
-		if (item->timeLeft > 0.0f)
-		{
-			labState->droppedItems[itemIndex] = *item;
-			itemIndex++;
-		}
-	}
-	labState->droppedItemN = itemIndex;
-
-	for (I32 i = 0; i < labState->droppedItemN; i++)
-	{
-		DroppedItem* item = &labState->droppedItems[i];
-		I8 itemName[32];
-		GetItemName (item->itemId, itemName, 32);
-		V4 normalBackgroundColor = MakeColor (0.5f, 0.5f, 0.5f);
-		V4 hoverBackgroundColor  = MakeColor (0.7f, 0.5f, 0.5f);
-		V4 color = MakeColor(1.0f, 1.0f, 1.0f);
-
-		F32 textWidth  = GetTextWidth (canvas, itemName);
-		F32 textHeight = GetTextHeight (canvas, itemName);
-
-		Camera* camera = canvas->camera;
-		Assert (camera->unitInPixels > 0.0f);
-		F32 left   = item->position.x - textWidth * 0.5f;
-		F32 right  = item->position.x + textWidth * 0.5f;
-		F32 top    = item->position.y - TextPixelsAboveBaseLine / camera->unitInPixels;
-		F32 bottom = item->position.y + TextPixelsBelowBaseLine / camera->unitInPixels;
-
-		V4 backgroundColor = normalBackgroundColor;
-		if (IsPointInRect (mousePosition, left, right, top, bottom))
-		{
-			backgroundColor = hoverBackgroundColor;
-			labState->hoverDroppedItem = item;
-		}
-
-		DrawRectLRTB (canvas, left, right, top, bottom, backgroundColor);
-		DrawTextLineXCentered (canvas, itemName, item->position.y, item->position.x, color);
-	}
-}
-
-static void func CombatLabUpdate (CombatLabState* labState, V2 mousePosition, F32 seconds)
-{
-	I32 secondsPassed = 0;
-	labState->secondsFraction += seconds;
-	while (labState->secondsFraction > 1.0f)
-	{
-		secondsPassed++;
-		labState->secondsFraction -= 1.0f;
-	}
-
-	Entity* player = &labState->player;
-	Ability* playerAbility = &player->ability;
-
-	F32 playerMoveSpeed = 10.0f;
-	if (player->slowTimeLeft > 0.0f)
-	{
-		playerMoveSpeed *= 0.5f;
-		player->slowTimeLeft = Max2(0.0f, player->slowTimeLeft - seconds);
-		if (player->slowTimeLeft == 0.0f)
-		{
-			CombatLog (labState, player->name + " is no longer slowed.");
-		}
-	}
-	Assert (player->slowTimeLeft >= 0.0f);
-
-	V2 targetPosition = mousePosition;
-	// V2 moveDirection = PointDirection (player->position, targetPosition);
-	V2 moveDirection = MakeVector(0.0f, 0.0f);
-	if (labState->moveLeft)
-	{
-		moveDirection.x -= 1.0f;
-	}
-	if (labState->moveRight)
-	{
-		moveDirection.x += 1.0f;
-	}
-
-	if (labState->moveUp)
-	{
-		moveDirection.y -= 1.0f;
-	}
-	if (labState->moveDown)
-	{
-		moveDirection.y += 1.0f;
-	}
-
-	player->velocity = playerMoveSpeed * NormalVector(moveDirection);
-
-	if (player->health > 0.0f && playerAbility->castRatioLeft == 0.0f)
-	{
-		player->position = player->position + seconds * player->velocity;
-	}
-
-	Canvas* canvas = &labState->canvas;
-	V4 backgroundColor = MakeColor (0.0f, 0.0f, 0.0f);
-	ClearScreen (canvas, backgroundColor);
-
-	DungeonMap* map = &labState->map;
-	DrawDungeonMap (canvas, map);
+	Bitmap* bitmap = &labState->canvas.bitmap;
+	GlyphData* glyphData = labState->canvas.glyphData;
+	Assert(glyphData != 0);
 
 	Camera* camera = &labState->camera;
-	camera->center = player->position;
+	I32 mouseX = UnitXtoPixel(camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel(camera, mousePosition.y);
 
-	DrawAbility (canvas, player, &player->ability);
-
-	V4 enemyAbilityColor = MakeColor (1.0f, 0.5f, 0.0f);
-	for (I32 i = 0; i < labState->enemyN; ++i)
+	labState->hoverAbilityId = NoAbilityId;
+	Entity* entity = labState->selectedEntity;
+	if(entity)
 	{
-		Entity* enemy = &labState->enemies[i];
-		DrawAbility (canvas, enemy, &enemy->ability);
-	}
+		I32 boxSide = 40;
+		I32 padding = 5;
 
-	if (player->health > 0)
-	{
-		if (playerAbility->castRatioLeft > 0.0f)
+		I32 abilityN = AbilityN;
+		I32 centerX = (bitmap->width - 1) / 2;
+		I32 width = boxSide * abilityN + padding * (abilityN - 1);
+
+		I32 left = centerX - width / 2;
+		I32 right = centerX + width / 2;
+		I32 bottom = (bitmap->height - 1) - 30;
+		I32 top = bottom - boxSide;
+
+		I32 boxLeft = left;
+		for(I32 i = 1; i < abilityN; i++)
 		{
-			F32 totalCastTime = GetAbilityCastTime(player, playerAbility->id);
-			F32 castTimeLeft = playerAbility->castRatioLeft * totalCastTime;
-			castTimeLeft = Max2 (0.0f, castTimeLeft - seconds);
-			playerAbility->castRatioLeft = castTimeLeft / totalCastTime;
+			I32 abilityId = i;
 
-			if (playerAbility->id == WhiteAbility1Id)
+			I32 boxRight  = boxLeft + boxSide;
+			I32 boxTop    = top;
+			I32 boxBottom = bottom;
+
+			V4 boxOutlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+			I32 infoBoxSide = TextHeightInPixels + 4;
+			I32 infoBottom = boxTop;
+			I32 infoTop    = infoBottom - infoBoxSide;
+			I32 infoLeft   = boxLeft;
+			I32 infoRight  = boxRight;
+
+			I8 infoText[8] = {};
+			V4 infoTextColor = {};
+
+			if(IsOnCooldown(labState, entity, abilityId))
 			{
-				if (playerAbility->castRatioLeft == 0.0f)
-				{
-					F32 minAngle = NormalizeAngle (playerAbility->angle - WhiteAbility1AngleRange * 0.5f);
-					F32 maxAngle = NormalizeAngle (playerAbility->angle + WhiteAbility1AngleRange * 0.5f);
+				V4 infoBackgroundColor = MakeColor(0.0f, 0.0f, 0.6f);
+				V4 infoOutlineColor = MakeColor(0.0f, 0.0f, 1.0f);
+				DrawBitmapRect(bitmap, infoLeft, infoRight, infoTop, infoBottom, infoBackgroundColor);
+				DrawBitmapRectOutline(bitmap, infoLeft, infoRight, infoTop, infoBottom, infoOutlineColor);
 
-					F32 hitAnyEnemy = false;
-					for (I32 i = 0; i < labState->enemyN; ++i)
-					{
-						Entity* enemy = &labState->enemies[i];
-						if (IsEntityInSlice (enemy, player->position, WhiteAbility1Radius, minAngle, maxAngle))
-						{
-							B32 enemyWasAlive = (enemy->health > 0);
-							I32 damage = GetAbilityDamage (player, WhiteAbility1Id);
-							DoDamage (labState, player, enemy, damage);
-							B32 enemyIsDead = (enemy->health == 0);
+				I32 cooldownTurns = GetCooldownTurns(labState, entity, abilityId);
+				OneLineString(infoText, 8, "CD+" + (cooldownTurns + 1));
+				infoTextColor = MakeColor(0.0f, 0.8f, 0.8f);
 
-							if (enemyWasAlive)
-							{
-								hitAnyEnemy = true;
-							}
-						}
-					}
-
-					if (hitAnyEnemy)
-					{
-						GainSpecialResource(player, 20);
-					}
-				}
+				boxOutlineColor = infoOutlineColor;
 			}
-			else if (playerAbility->id == WhiteAbility2Id)
+			else if(entity->actionPoints < GetAbilityActionPoints(abilityId))
 			{
-				V2 moveDirection = RotationVector(playerAbility->angle);
-				player->position = player->position + seconds * WhiteAbility2MoveSpeed * moveDirection;
-				if (playerAbility->castRatioLeft == 0.0f)
-				{
-					V2 oldPosition = player->position - WhiteAbility2TotalCastTime * WhiteAbility2MoveSpeed * moveDirection;
-					I32 damage = GetAbilityDamage (player, WhiteAbility2Id);
-					DamageEnemiesOnLine (labState, oldPosition, player->position, damage);
-				}
-			}
-			else if (playerAbility->id == WhiteAbility3Id)
-			{
-				if (playerAbility->castRatioLeft == 0.0f)
-				{
-					for (I32 i = 0; i < labState->enemyN; ++i)
-					{
-						Entity* enemy = &labState->enemies[i];
-						if (enemy->health == 0)
-						{
-							continue;
-						}
-
-						F32 playerEnemyDistance = GetEntityDistance (player, enemy);
-						if (playerEnemyDistance < WhiteAbility3Radius)
-						{
-							V2 direction = PointDirection (player->position, enemy->position);
-							F32 distance = EntityRadius + EntityRadius + WhiteAbility3Radius;
-							enemy->position = player->position + distance * direction;
-							InterruptAbility(enemy);
-							I32 damage = GetAbilityDamage (player, WhiteAbility3Id);
-							DoDamage (labState, player, enemy, damage);
-						}
-					}
-				}
+				OneLineString(infoText, 8, GetAbilityActionPoints(abilityId) + " AP");
+				infoTextColor = MakeColor(1.0f, 0.0f, 0.0f);
+				boxOutlineColor = MakeColor(1.0f, 0.0f, 0.0f);
 			}
 			else
 			{
-				DebugBreak ();
+				OneLineString(infoText, 8, GetAbilityActionPoints(abilityId) + " AP");
+				infoTextColor = MakeColor(1.0f, 1.0f, 1.0f);
 			}
-		}
-	
-		Assert (playerAbility->castRatioLeft >= 0.0f);
-		if (playerAbility->castRatioLeft == 0.0f)
-		{
-			if (labState->useAbilityId == WhiteAbility1Id)
+
+			DrawBitmapTextLineCentered(bitmap, infoText, glyphData, 
+									   infoLeft, infoRight, infoTop, infoBottom,
+									   infoTextColor);
+
+			V4 boxBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+			V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+			if(labState->selectedAbilityId == abilityId)
 			{
-				playerAbility->id = WhiteAbility1Id;
-				playerAbility->angle = LineAngle (player->position, mousePosition);
-				playerAbility->castRatioLeft = 1.0f;
+				boxOutlineColor = MakeColor(1.0f, 0.5f, 0.0f);
+				textColor = MakeColor(1.0f, 0.5f, 0.0f);
 			}
-			else if (labState->useAbilityId == WhiteAbility2Id)
+
+			DrawBitmapRect(bitmap, boxLeft, boxRight, boxTop, boxBottom, boxBackgroundColor);
+
+			char name[8];
+			OneLineString(name, 8, i);
+			DrawBitmapTextLineCentered(bitmap, name, glyphData, 
+									   boxLeft, boxRight, boxTop, boxBottom, 
+									   textColor);
+
+			DrawBitmapRectOutline(bitmap, boxLeft, boxRight, boxTop, boxBottom, boxOutlineColor);
+
+			if(IsIntBetween(mouseX, boxLeft, boxRight) && IsIntBetween(mouseY, boxTop, boxBottom))
 			{
-				if (player->level >= 2)
-				{
-					Assert (player->hasSpecialResource);
-					if (player->specialResource >= WhiteAbility2ResourceCost)
-					{
-						player->specialResource -= WhiteAbility2ResourceCost;
-						playerAbility->id = WhiteAbility2Id;
-						playerAbility->angle = LineAngle (player->position, mousePosition);
-						playerAbility->castRatioLeft = 1.0f;
-					}
-				}
+				labState->hoverAbilityId = abilityId;
+
+				I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
+				I32 tooltipBottom = infoTop - 5;
+
+				static I8 tooltipBuffer[256] = {};
+				String tooltipText = GetAbilityTooltipText(abilityId, tooltipBuffer, 256);
+
+				DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
 			}
-			else if (labState->useAbilityId == WhiteAbility3Id)
-			{
-				if (player->level >= 3)
-				{
-					Assert(player->hasSpecialResource);
-					if (player->specialResource >= WhiteAbility3ResourceCost)
-					{
-						player->specialResource -= WhiteAbility3ResourceCost;
-						playerAbility->id = WhiteAbility3Id;
-						playerAbility->castRatioLeft = 1.0f;
-					}
-				}
-			}
-			else
-			{
-				Assert(labState->useAbilityId == NoAbilityId);
-			}
+
+			boxLeft = boxRight + padding;
 		}
 	}
-
-	if (player->health > 0)
-	{
-		Entity* attackingEnemies[CombatLabMaxEnemyN];
-
-		I32 attackingEnemyN = 0;
-		for (I32 i = 0; i < labState->enemyN; ++i) 
-		{
-			Entity* enemy = &labState->enemies[i];
-
-			F32 followDistance = 10.0f;
-
-			if (enemy->health > 0)
-			{
-				F32 distanceFromPlayer = GetEntityDistance (enemy, player);
-				if (distanceFromPlayer <= followDistance)
-				{
-					enemy->isAttacking = true;
-				}
-
-				if (enemy->isAttacking)
-				{
-					enemy->attackFromAngle = LineAngle (player->position, enemy->position);
-					attackingEnemies[attackingEnemyN] = enemy;
-					attackingEnemyN++;
-				}
-				else
-				{
-					Ability* ability = &enemy->ability;
-					ability->castRatioLeft = 0.0f;
-				}
-			}
-		}
-
-		for (I32 i = 0; i < attackingEnemyN; ++i)
-		{
-			for (I32 j = i + 1; j < attackingEnemyN; ++j)
-			{
-				if (attackingEnemies[i]->attackFromAngle > attackingEnemies[j]->attackFromAngle)
-				{
-					Entity* enemy = attackingEnemies[j];
-					attackingEnemies[j] = attackingEnemies[i];
-					attackingEnemies[i] = enemy;
-				}
-			}
-		}
-
-		if (attackingEnemyN >= 2)
-		{
-			F32 minAngleBetweenEnemies = (1.0f / F32 (attackingEnemyN)) * TAU;
-			minAngleBetweenEnemies = Min2 (minAngleBetweenEnemies, 0.125f * TAU);
-			F32 lastAngle = 0.0f;
-			for (I32 i = 0; i < attackingEnemyN; ++i)
-			{
-				I32 prev = (i > 0) ? (i - 1) : (attackingEnemyN - 1);
-				Entity* leftEnemy = attackingEnemies[prev];
-				Entity* rightEnemy = attackingEnemies[i];
-				F32 leftAngle = LineAngle (player->position, leftEnemy->position);
-				F32 rightAngle = LineAngle (player->position, rightEnemy->position);
-				F32 angleDifference = AngleDifference (leftAngle, rightAngle);
-				if (angleDifference < minAngleBetweenEnemies)
-				{
-					F32 angleToAdd = minAngleBetweenEnemies - angleDifference;
-					leftEnemy->attackFromAngle = NormalizeAngle (leftEnemy->attackFromAngle - 0.5f * angleToAdd);
-					rightEnemy->attackFromAngle = NormalizeAngle (rightEnemy->attackFromAngle + 0.5f * angleToAdd);
-				}
-			}
-		}
-
-		for (I32 i = 0; i < attackingEnemyN; ++i)
-		{
-			Entity* enemy = attackingEnemies[i];
-			Assert (enemy->health >= 0.0f);
-
-			if (enemy->typeId == RedEntityId && enemy->level >= 2)
-			{
-				GainSpecialResource (enemy, 10 * secondsPassed);
-			}
-
-			if (enemy->typeId == BlueEntityId)
-			{
-				if (enemy->level >= 2)
-				{
-					GainSpecialResource (enemy, 10 * secondsPassed);
-				}
-
-				if (enemy->level >= 3)
-				{
-					Assert (enemy->hasSpecialResource);
-					if (enemy->specialResource >= 50)
-					{
-						F32 distanceFromPlayer = GetEntityDistance (enemy, player);
-						if (distanceFromPlayer <= 1.0f && player->slowTimeLeft < 1.0f)
-						{
-							player->slowTimeLeft = 1.0f;
-						}
-					}
-				}
-			}
-
-			F32 enemyMoveSpeed = 5.0f;
-			F32 attackDistance = 0.0f;
-			if (enemy->typeId == RedEntityId)
-			{
-				enemyMoveSpeed = 7.5f;
-				attackDistance = 4.0f;
-				if (enemy->level >= 3)
-				{
-					Assert (enemy->hasSpecialResource);
-					if (enemy->specialResource >= 50)
-					{
-						enemyMoveSpeed *= 2.0f;
-					}
-				}
-			}
-			else if (enemy->typeId == BlueEntityId)
-			{
-				attackDistance = 10.0f;
-			}
-			else
-			{
-				DebugBreak ();
-			}
-
-			V2 targetPosition = player->position + attackDistance * RotationVector (enemy->attackFromAngle);
-			F32 distanceFromTarget = Distance (enemy->position, targetPosition);
-
-			Ability* ability = &enemy->ability;
-			if (ability->castRatioLeft > 0.0f)
-			{
-				F32 totalCastTime = GetAbilityCastTime (enemy, ability->id);
-				F32 castTimeLeft = ability->castRatioLeft * totalCastTime;
-				castTimeLeft = Max2 (0.0f, castTimeLeft - seconds);
-				ability->castRatioLeft = castTimeLeft / totalCastTime;
-
-				if (ability->id == RedAbility2Id)
-				{
-					Assert (enemy->level >= 2);
-					ability->angle = LineAngle (enemy->position, player->position);
-				}
-				else if (ability->id == BlueAbility3Id)
-				{
-					Assert (enemy->level >= 3);
-					ability->position = player->position;
-				}
-
-				if (ability->castRatioLeft == 0.0f)
-				{
-					if (ability->id == RedAbility1Id)
-					{
-						F32 minAngle = NormalizeAngle (ability->angle - RedAbility1AngleRange * 0.5f);
-						F32 maxAngle = NormalizeAngle (ability->angle + RedAbility1AngleRange * 0.5f);
-						if (IsEntityInSlice (player, enemy->position, RedAbility1Radius, minAngle, maxAngle))
-						{
-							I32 damage = GetAbilityDamage (enemy, RedAbility1Id);
-							DoDamage (labState, enemy, player, damage);
-						}
-					}
-					else if (ability->id == RedAbility2Id)
-					{
-						F32 minAngle = NormalizeAngle (ability->angle - RedAbility2AngleRange * 0.5f);
-						F32 maxAngle = NormalizeAngle (ability->angle + RedAbility2AngleRange * 0.5f);
-						if (IsEntityInSlice (player, enemy->position, RedAbility2Radius, minAngle, maxAngle))
-						{
-							I32 damage = GetAbilityDamage (enemy, RedAbility2Id);
-							DoDamage (labState, enemy, player, damage);
-						}
-					}
-					else if (ability->id == BlueAbility1Id)
-					{
-						Assert (enemy->typeId == BlueEntityId);
-						if (IsEntityInCircle(player, ability->position, BlueAbility1Radius))
-						{
-							I32 damage = GetAbilityDamage (enemy, BlueAbility1Id);
-							DoDamage (labState, enemy, player, damage);
-						}
-					}
-					else if (ability->id == BlueAbility2Id)
-					{
-						Assert(enemy->typeId == BlueEntityId);
-						F32 distanceFromPlayer = GetEntityDistance (enemy, player);
-						if (distanceFromPlayer <= BlueAbility2Radius)
-						{
-							I32 damage = GetAbilityDamage (enemy, BlueAbility2Id);
-							DoDamage (labState, enemy, player, damage);
-							SlowEntity (labState, enemy, player, BlueAbility2SlowTime);
-						}
-					}
-					else if (ability->id == BlueAbility3Id)
-					{
-						Assert(enemy->typeId == BlueEntityId);
-						if (IsEntityInCircle (player, ability->position, BlueAbility3Radius))
-						{
-							I32 damage = GetAbilityDamage (enemy, BlueAbility3Id);
-							DoDamage (labState, enemy, player, damage);
-							SlowEntity (labState, enemy, player, BlueAbility3SlowTime);
-						}
-					}
-					else
-					{
-						DebugBreak();
-					}
-				}
-			}
-
-			B32 canMove = false;
-			if (ability->castRatioLeft == 0.0f)
-			{
-				canMove = true;
-			}
-			else if (ability->id == RedAbility2Id && enemy->level >= 3)
-			{
-				canMove = true;
-			}
-			else
-			{
-				canMove = false;
-			}
-
-			if (canMove)
-			{
-				V2 moveDirection = PointDirection (enemy->position, targetPosition);
-				enemy->position = enemy->position + seconds * enemyMoveSpeed * moveDirection;
-			}
-	
-			if (ability->castRatioLeft == 0.0f)
-			{
-				if (enemy->typeId == BlueEntityId && enemy->level == 2)
-				{
-					F32 distanceFromPlayer = GetEntityDistance (enemy, player);
-					Assert (enemy->hasSpecialResource);
-					if (distanceFromPlayer <= BlueAbility2Radius && enemy->specialResource >= BlueAbility2ResourceCost)
-					{
-						ability->id = BlueAbility2Id;
-						ability->castRatioLeft = 1.0f;
-						enemy->specialResource -= BlueAbility2ResourceCost;
-					}
-				}
-				else if (enemy->typeId == BlueEntityId && enemy->level == 3)
-				{	
-					Assert (enemy->hasSpecialResource);
-					if (enemy->specialResource >= BlueAbility3ResourceCost)
-					{
-						ability->id = BlueAbility3Id;
-						ability->position = player->position;
-						ability->castRatioLeft = 1.0f;
-						enemy->specialResource -= BlueAbility3ResourceCost;
-					}
-				}
-
-				if (ability->castRatioLeft == 0.0f && distanceFromTarget < 0.1f)
-				{
-					if (enemy->typeId == RedEntityId)
-					{
-						bool useRedAbility = true;
-						if (enemy->level >= 2)
-						{
-							Assert (enemy->hasSpecialResource);
-							if (enemy->specialResource >= 100)
-							{
-								ability->id = RedAbility2Id;
-								ability->angle = LineAngle (enemy->position, player->position);
-								ability->castRatioLeft = 1.0f;
-								enemy->specialResource -= 100;
-								useRedAbility = false;
-							}
-						}
-
-						if (useRedAbility)
-						{
-							ability->id = RedAbility1Id;
-							ability->angle = LineAngle (enemy->position, player->position);
-							ability->castRatioLeft = 1.0f;
-						}
-					}
-					else if (enemy->typeId == BlueEntityId)
-					{
-						ability->id = BlueAbility1Id;
-						ability->position = player->position;
-						ability->castRatioLeft = 1.0f;
-					}
-					else
-					{
-						DebugBreak ();
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		Assert (player->health == 0);
-		for (I32 i = 0; i < labState->enemyN; ++i)
-		{
-			Entity* enemy = &labState->enemies[i];
-			if (enemy->ability.castRatioLeft > 0.0f)
-			{
-				InterruptAbility (enemy);
-			}
-		}
-	}
-
-	UpdateDroppedItems (canvas, labState, mousePosition, seconds);
-
-	DrawEntity (canvas, &labState->player);
-	for (I32 i = 0; i < labState->enemyN; i++)
-	{
-		Entity* enemy = &labState->enemies[i];
-		DrawEntity (canvas, enemy);
-	}
-
-	DrawAndUpdateTextAlerts (canvas, labState, seconds);
-
-	DrawUI (canvas, labState, mousePosition);
 }
 
-static void func CombatLab (HINSTANCE instance)
+static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seconds)
+{
+	Canvas* canvas = &labState->canvas;
+	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	ClearScreen(canvas, backgroundColor);
+
+	V4 tileColor = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 hoverTileColor = MakeColor(0.6f, 0.6f, 0.6f);
+
+	V4 moveTileColor = MakeColor(0.8f, 0.8f, 0.8f);
+	V4 hoverMoveTileColor = MakeColor(0.9f, 0.9f, 0.9f);
+
+	V4 attackTileColor = MakeColor(0.8f, 0.5f, 0.5f);
+	V4 hoverAttackTileColor = MakeColor(0.9f, 0.6f, 0.6f);
+
+	labState->hoverTileIndex = GetContainingTileIndex(mousePosition);
+
+	Entity* selectedEntity = labState->selectedEntity;
+
+	for(I32 row = 0; row < TileRowN; row++)
+	{
+		for(I32 col = 0; col < TileColN; col++)
+		{
+			TileIndex tileIndex = MakeTileIndex(row, col);
+			Entity* entity = GetEntityAtTile(labState, tileIndex);
+			I32 abilityId = labState->selectedAbilityId;
+
+			B32 isEntity = (entity != 0);
+			B32 isHover = (tileIndex == labState->hoverTileIndex);
+			B32 canMove = ((abilityId == NoAbilityId) && 
+						   EntityCanMoveTo(labState, selectedEntity, tileIndex));
+
+			I32 maxAbilityDistance = GetMaxAbilityDistance(abilityId);
+			B32 canAttack = ((abilityId != NoAbilityId) && 
+							 (GetTileDistance(selectedEntity->tileIndex, tileIndex) <= maxAbilityDistance));
+
+			V4 color = tileColor;
+			if(isEntity)
+			{
+				Assert(entity != 0);
+				I32 teamIndex = entity->teamIndex;
+				Assert(IsValidTeamIndex(teamIndex));
+
+				color = (isHover) ? HoverTeamColors[teamIndex] : TeamColors[teamIndex];
+			}
+			else if(canMove)
+			{
+				color = (isHover) ? hoverMoveTileColor : moveTileColor;
+			}
+			else if(canAttack)
+			{
+				color = (isHover) ? hoverAttackTileColor : attackTileColor;
+			}
+			else
+			{
+				color = (isHover) ? hoverTileColor : tileColor;
+			}
+
+			V2 tileCenter = GetTileCenter(tileIndex);
+			Rect tileRect = MakeSquareRect(tileCenter, TileSide);
+			DrawRect(canvas, tileRect, color);
+
+			if(entity != 0)
+			{
+				DrawHealthBar(labState, entity);
+			}
+
+			DrawRectOutline(canvas, tileRect, TileGridColor);
+
+			if(entity != 0 && entity->teamIndex == labState->activeTeamIndex && !IsDead(entity))
+			{
+				I8 actionPointsText[8];
+				String actionPointsString = StartString(actionPointsText, 8);
+				AddInt(&actionPointsString, entity->actionPoints);
+				V2 tileCenter = GetTileCenter(tileIndex);
+				V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+				DrawTextLineXYCentered(canvas, actionPointsText, tileCenter.y, tileCenter.x, textColor);
+			}
+		}
+	}
+
+	if(labState->selectedAbilityId == RollAbilityId)
+	{
+		Assert(labState->selectedEntity != 0);
+		TileIndex entityTileIndex = labState->selectedEntity->tileIndex;
+		TileIndex hoverTileIndex = labState->hoverTileIndex;
+		if(IsValidTileIndex(hoverTileIndex) && GetTileDistance(entityTileIndex, hoverTileIndex) == 1)
+		{
+			I32 rowDirection = IntSign(hoverTileIndex.row - entityTileIndex.row);
+			I32 colDirection = IntSign(hoverTileIndex.col - entityTileIndex.col);
+			HighlightEmptyTilesAtMaxDistance(labState, hoverTileIndex, rowDirection, colDirection, 
+											 MaxRollDistance, attackTileColor);
+		}
+	}
+	else if(labState->selectedAbilityId == KickAbilityId)
+	{
+		Assert(labState->selectedEntity != 0);
+		TileIndex entityTileIndex = labState->selectedEntity->tileIndex;
+		TileIndex hoverTileIndex = labState->hoverTileIndex;
+		if(CanUseAbilityOnTile(labState, labState->selectedEntity, KickAbilityId, hoverTileIndex))
+		{
+			I32 rowDirection = IntSign(hoverTileIndex.row - entityTileIndex.row);
+			I32 colDirection = IntSign(hoverTileIndex.col - entityTileIndex.col);
+			TileIndex startTileIndex = MakeTileIndex(
+				hoverTileIndex.row + rowDirection,
+				hoverTileIndex.col + colDirection
+			);
+			HighlightEmptyTilesAtMaxDistance(labState, startTileIndex, rowDirection, colDirection, 
+											 MaxKickDistance, attackTileColor);
+		}
+	}
+
+	Camera* camera = &labState->camera;
+	camera->center = MakePoint(TileColN * TileSide * 0.5f, TileRowN * TileSide * 0.5f);
+
+	DrawStatusBar(labState);
+	DrawAbilityBar(labState, mousePosition);
+	DrawEffectsBar(labState, mousePosition);
+}
+
+static void func CombatLab(HINSTANCE instance)
 {
 	WNDCLASS winClass = {};
 	winClass.style = CS_OWNDC;
@@ -2721,8 +1656,8 @@ static void func CombatLab (HINSTANCE instance)
 	winClass.hInstance = instance;
 	winClass.lpszClassName = "CombatLabWindowClass";
 
-	Verify (RegisterClass (&winClass));
-	HWND window = CreateWindowEx (
+	Verify(RegisterClass(&winClass));
+	HWND window = CreateWindowEx(
 		0,
 		winClass.lpszClassName,
 		"CombatLab",
@@ -2736,46 +1671,46 @@ static void func CombatLab (HINSTANCE instance)
 		instance,
 		0
 	);
-	Assert (window != 0);
+	Assert(window != 0);
 
 	CombatLabState* labState = &gCombatLabState;
 
 	RECT rect = {};
-	GetClientRect (window, &rect);
-	I32 width = rect.right - rect.left;
+	GetClientRect(window, &rect);
+	I32 width  = rect.right - rect.left;
 	I32 height = rect.bottom - rect.top;
-	CombatLabInit (labState, width, height);
+	CombatLabInit(labState, width, height);
 
 	LARGE_INTEGER counterFrequency;
-	QueryPerformanceFrequency (&counterFrequency);
+	QueryPerformanceFrequency(&counterFrequency);
 
 	LARGE_INTEGER lastCounter;
-	QueryPerformanceCounter (&lastCounter);
+	QueryPerformanceCounter(&lastCounter);
 
 	MSG message = {};
-	while (labState->running) 
+	while(labState->running)
 	{
-		while (PeekMessage (&message, 0, 0, 0, PM_REMOVE))
+		while(PeekMessage(&message, 0, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage (&message);
-			DispatchMessage (&message);
+			TranslateMessage(&message);
+			DispatchMessage(&message);
 		}
 
 		LARGE_INTEGER counter;
-		QueryPerformanceCounter (&counter);
+		QueryPerformanceCounter(&counter);
 		I64 microSeconds = counter.QuadPart - lastCounter.QuadPart;
-		F32 milliSeconds = ((F32)microSeconds * 1000.0f) / F32 (counterFrequency.QuadPart);
+		F32 milliSeconds = (F32(microSeconds) * 1000.0f) / F32(counterFrequency.QuadPart);
 		F32 seconds = 0.001f * milliSeconds;
 		lastCounter = counter;
 
-		V2 mousePosition = GetMousePosition (&labState->camera, window);
-		CombatLabUpdate (labState, mousePosition, seconds);
+		V2 mousePosition = GetMousePosition(&labState->camera, window);
+		CombatLabUpdate(labState, mousePosition, seconds);
 
 		RECT rect = {};
-		GetClientRect (window, &rect);
+		GetClientRect(window, &rect);
 
-		HDC context = GetDC (window);
-		CombatLabBlit (&labState->canvas, context, rect);
-		ReleaseDC (window, context);
+		HDC context = GetDC(window);
+		CombatLabBlit(&labState->canvas, context, rect);
+		ReleaseDC(window, context);
 	}
 }
