@@ -7,13 +7,13 @@
 
 #define JunctionMaxRoadN			4
 
-#define RoadColor					MakeColor (0.5f, 0.5f, 0.5f)
+#define RoadColor					MakeColor(0.5f, 0.5f, 0.5f)
 #define LaneWidth					4.0f
 
-#define RoadStripeColor				MakeColor (1.0f, 1.0f, 1.0f)
+#define RoadStripeColor				MakeColor(1.0f, 1.0f, 1.0f)
 #define RoadStripeWidth				0.25f
 
-#define SidewalkColor				MakeColor (0.4f, 0.4f, 0.4f)
+#define SidewalkColor				MakeColor(0.4f, 0.4f, 0.4f)
 #define SidewalkWidth				2.0f
 #define CrossingWidth				5.0f
 #define CrossingStepLength			(0.2f * LaneWidth)
@@ -69,35 +69,35 @@ struct Junction
 	F32 stopDistances[JunctionMaxRoadN];
 };
 
-static B32 func IsValidJunctionCornerIndex (Junction* junction, I32 cornerIndex)
+static B32 func IsValidJunctionCornerIndex(Junction* junction, I32 cornerIndex)
 {
-	Assert (junction->roadN > 0);
+	Assert(junction->roadN > 0);
 	B32 result = false;
-	if (junction->roadN == 1)
+	if(junction->roadN == 1)
 	{
 		result = (cornerIndex == 0 || cornerIndex == 1);
 	}
-	else if (junction->roadN >= 2)
+	else if(junction->roadN >= 2)
 	{
 		result = (cornerIndex >= 0 && cornerIndex < junction->roadN);
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return result;
 }
 
-static I32 func GetClockwiseJunctionCornerIndexDistance (Junction* junction, I32 startCornerIndex, I32 endCornerIndex)
+static I32 func GetClockwiseJunctionCornerIndexDistance(Junction* junction, I32 startCornerIndex, I32 endCornerIndex)
 {
-	Assert (IsValidJunctionCornerIndex (junction, startCornerIndex));
-	Assert (IsValidJunctionCornerIndex (junction, endCornerIndex));
-	Assert (junction->roadN >= 1);
+	Assert(IsValidJunctionCornerIndex(junction, startCornerIndex));
+	Assert(IsValidJunctionCornerIndex(junction, endCornerIndex));
+	Assert(junction->roadN >= 1);
 
 	I32 distance = 0;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		if (startCornerIndex == endCornerIndex)
+		if(startCornerIndex == endCornerIndex)
 		{
 			distance = 0;
 		}
@@ -106,33 +106,33 @@ static I32 func GetClockwiseJunctionCornerIndexDistance (Junction* junction, I32
 			distance = 1;
 		}
 	}
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
 		distance = endCornerIndex - startCornerIndex;
-		if (distance < 0)
+		if(distance < 0)
 		{
 			distance += junction->roadN;
 		}
 	} 
 	else 
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 
 	Assert(distance >= 0 || distance <= junction->roadN);
 	return distance;
 }
 
-static I32 func GetCounterClockwiseJunctionCornerIndexDistance (Junction* junction, I32 startCornerIndex, I32 endCornerIndex)
+static I32 func GetCounterClockwiseJunctionCornerIndexDistance(Junction* junction, I32 startCornerIndex, I32 endCornerIndex)
 {
-	Assert (IsValidJunctionCornerIndex (junction, startCornerIndex));
-	Assert (IsValidJunctionCornerIndex (junction, endCornerIndex));
-	Assert (junction->roadN >= 1);
+	Assert(IsValidJunctionCornerIndex(junction, startCornerIndex));
+	Assert(IsValidJunctionCornerIndex(junction, endCornerIndex));
+	Assert(junction->roadN >= 1);
 
 	I32 distance = 0;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		if (startCornerIndex == endCornerIndex)
+		if(startCornerIndex == endCornerIndex)
 		{
 			distance = 0;
 		}
@@ -141,30 +141,30 @@ static I32 func GetCounterClockwiseJunctionCornerIndexDistance (Junction* juncti
 			distance = 1;
 		}
 	} 
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
 		distance = startCornerIndex - endCornerIndex;
-		if (distance < 0)
+		if(distance < 0)
 		{
 			distance += junction->roadN;
 		}
 	} 
 	else 
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 
-	Assert (distance >= 0 || distance <= junction->roadN);
+	Assert(distance >= 0 || distance <= junction->roadN);
 	return distance;
 }
 
-static I32 func GetJunctionRoadIndex (Junction* junction, Road* road)
+static I32 func GetJunctionRoadIndex(Junction* junction, Road* road)
 {
 	I32 index = 0;
 	B32 found = false;
-	for (I32 i = 0; i < junction->roadN; ++i) 
+	for(I32 i = 0; i < junction->roadN; i++) 
 	{
-		if (junction->roads[i] == road) 
+		if(junction->roads[i] == road) 
 		{
 			index = i;
 			found = true;
@@ -174,54 +174,54 @@ static I32 func GetJunctionRoadIndex (Junction* junction, Road* road)
 	return index;
 }
 
-static I32 func GetRoadOutLeftJunctionCornerIndex (Junction* junction, Road* road)
+static I32 func GetRoadOutLeftJunctionCornerIndex(Junction* junction, Road* road)
 {
 	Assert(junction->roadN >= 1);
 	I32 leftCornerIndex = 0;
-	if (junction->roadN == 1)
+	if(junction->roadN == 1)
 	{
 		leftCornerIndex = 0;
 	}
-	else if (junction->roadN >= 2)
+	else if(junction->roadN >= 2)
 	{
-		leftCornerIndex = GetJunctionRoadIndex (junction, road);
+		leftCornerIndex = GetJunctionRoadIndex(junction, road);
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return leftCornerIndex;
 }
 
-static B32 func IsValidJunctionRoadIndex (Junction* junction, I32 index)
+static B32 func IsValidJunctionRoadIndex(Junction* junction, I32 index)
 {
 	B32 isValid = (index >= 0 && index < junction->roadN);
 	return isValid;
 }
 
-static I32 func GetNextJunctionCornerIndex (Junction* junction, I32 cornerIndex)
+static I32 func GetNextJunctionCornerIndex(Junction* junction, I32 cornerIndex)
 {
-	Assert (junction->roadN >= 1);
+	Assert(junction->roadN >= 1);
 	I32 nextIndex = 0;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		if (cornerIndex == 1)
+		if(cornerIndex == 1)
 		{
 			nextIndex = 0;
 		}
-		else if (cornerIndex == 0)
+		else if(cornerIndex == 0)
 		{
 			nextIndex = 1;
 		}
 		else
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	} 
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
-		Assert(IsValidJunctionRoadIndex (junction, cornerIndex))
-		if (cornerIndex == junction->roadN - 1)
+		Assert(IsValidJunctionRoadIndex(junction, cornerIndex))
+		if(cornerIndex == junction->roadN - 1)
 		{
 			nextIndex = 0;
 		}
@@ -233,162 +233,162 @@ static I32 func GetNextJunctionCornerIndex (Junction* junction, I32 cornerIndex)
 	return nextIndex;
 }
 
-static I32 func GetRoadOutRightJunctionCornerIndex (Junction* junction, Road* road)
+static I32 func GetRoadOutRightJunctionCornerIndex(Junction* junction, Road* road)
 {
-	I32 leftCornerIndex = GetRoadOutLeftJunctionCornerIndex (junction, road);
-	I32 rightCornerIndex = GetNextJunctionCornerIndex (junction, leftCornerIndex);
+	I32 leftCornerIndex = GetRoadOutLeftJunctionCornerIndex(junction, road);
+	I32 rightCornerIndex = GetNextJunctionCornerIndex(junction, leftCornerIndex);
 	return rightCornerIndex;
 }
 
-static I32 func GetRoadLeftSidewalkJunctionCornerIndex (Junction* junction, Road* road)
+static I32 func GetRoadLeftSidewalkJunctionCornerIndex(Junction* junction, Road* road)
 {
-	Assert (junction->roadN >= 1);
+	Assert(junction->roadN >= 1);
 	I32 cornerIndex = 0;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		Assert (junction->roads[0] == road);
-		if (road->junction1 == junction)
+		Assert(junction->roads[0] == road);
+		if(road->junction1 == junction)
 		{
 			cornerIndex = 0;
 		}
-		else if (road->junction2 == junction)
+		else if(road->junction2 == junction)
 		{
 			cornerIndex = 1;
 		}
 		else
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	} 
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
-		I32 roadIndex = GetJunctionRoadIndex (junction, road);
-		if (road->junction1 == junction)
+		I32 roadIndex = GetJunctionRoadIndex(junction, road);
+		if(road->junction1 == junction)
 		{
 			cornerIndex = roadIndex;
 		}
-		else if (road->junction2 == junction)
+		else if(road->junction2 == junction)
 		{
-			cornerIndex = GetNextJunctionCornerIndex (junction, roadIndex);
+			cornerIndex = GetNextJunctionCornerIndex(junction, roadIndex);
 		}
 		else
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	}
 	else 
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return cornerIndex;
 }
 
-static I32 func GetRoadRightSidewalkJunctionCornerIndex (Junction* junction, Road* road)
+static I32 func GetRoadRightSidewalkJunctionCornerIndex(Junction* junction, Road* road)
 {
-	Assert (junction->roadN >= 1);
+	Assert(junction->roadN >= 1);
 	I32 cornerIndex = 0;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		Assert (junction->roads[0] == road);
-		if (road->junction1 == junction)
+		Assert(junction->roads[0] == road);
+		if(road->junction1 == junction)
 		{
 			cornerIndex = 1;
 		}
-		else if (road->junction2 == junction)
+		else if(road->junction2 == junction)
 		{
 			cornerIndex = 0;
 		}
 		else
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	} 
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
-		I32 roadIndex = GetJunctionRoadIndex (junction, road);
-		if (road->junction1 == junction)
+		I32 roadIndex = GetJunctionRoadIndex(junction, road);
+		if(road->junction1 == junction)
 		{
-			cornerIndex = GetNextJunctionCornerIndex (junction, roadIndex);
+			cornerIndex = GetNextJunctionCornerIndex(junction, roadIndex);
 		}
-		else if (road->junction2 == junction)
+		else if(road->junction2 == junction)
 		{
 			cornerIndex = roadIndex;
 		}
 		else
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	} 
 	else 
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return cornerIndex;
 }
 
-static I32 func GetRoadSidewalkJunctionCornerIndex (Junction* junction, Road* road, I32 sidewalkIndex)
+static I32 func GetRoadSidewalkJunctionCornerIndex(Junction* junction, Road* road, I32 sidewalkIndex)
 {
 	I32 cornerIndex = 0;
-	if (sidewalkIndex == LeftRoadSidewalkIndex)
+	if(sidewalkIndex == LeftRoadSidewalkIndex)
 	{
-		cornerIndex = GetRoadLeftSidewalkJunctionCornerIndex (junction, road);
+		cornerIndex = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
 	}
-	else if (sidewalkIndex == RightRoadSidewalkIndex)
+	else if(sidewalkIndex == RightRoadSidewalkIndex)
 	{
-		cornerIndex = GetRoadRightSidewalkJunctionCornerIndex (junction, road);
+		cornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return cornerIndex;
 }
 
-static V2 func FromRoadCoord1 (Road* road, F32 along, F32 side)
+static V2 func FromRoadCoord1(Road* road, F32 along, F32 side)
 {
-	V2 roadDirection = PointDirection (road->endPoint1, road->endPoint2);
-	V2 sideDirection = TurnVectorToRight (roadDirection);
+	V2 roadDirection = PointDirection(road->endPoint1, road->endPoint2);
+	V2 sideDirection = TurnVectorToRight(roadDirection);
 
 	V2 addPoint = (along * roadDirection) + (side * sideDirection);
 	V2 result = (road->endPoint1 + addPoint);
 	return result;
 }
 
-static V2 func FromRoadCoord2 (Road* road, F32 along, F32 side)
+static V2 func FromRoadCoord2(Road* road, F32 along, F32 side)
 {
-	V2 roadDirection = PointDirection (road->endPoint1, road->endPoint2);
-	V2 sideDirection = TurnVectorToRight (roadDirection);
+	V2 roadDirection = PointDirection(road->endPoint1, road->endPoint2);
+	V2 sideDirection = TurnVectorToRight(roadDirection);
 
 	V2 addPoint = (along * roadDirection) + (side * sideDirection);
 	V2 result = (road->endPoint2 + addPoint);
 	return result;
 }
 
-static V2 func FromLeaveJunctionRoadCoord (Junction* junction, I32 roadIndex, F32 distanceAlong, F32 distanceSide)
+static V2 func FromLeaveJunctionRoadCoord(Junction* junction, I32 roadIndex, F32 distanceAlong, F32 distanceSide)
 {
-	Assert (IsValidJunctionRoadIndex (junction, roadIndex));
+	Assert(IsValidJunctionRoadIndex(junction, roadIndex));
 	Road* road = junction->roads[roadIndex];
 	V2 result = {};
-	if (road->junction1 == junction)
+	if(road->junction1 == junction)
 	{
-		result = FromRoadCoord1 (road, +distanceAlong, +distanceSide);
+		result = FromRoadCoord1(road, +distanceAlong, +distanceSide);
 	}
-	else if (road->junction2 == junction)
+	else if(road->junction2 == junction)
 	{
-		result = FromRoadCoord2 (road, -distanceAlong, -distanceSide);
+		result = FromRoadCoord2(road, -distanceAlong, -distanceSide);
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return result;
 }
 
-static I32 func GetPreviousJunctionRoadIndex (Junction* junction, I32 roadIndex)
+static I32 func GetPreviousJunctionRoadIndex(Junction* junction, I32 roadIndex)
 {
-	Assert (junction->roadN >= 2);
+	Assert(junction->roadN >= 2);
 	I32 result = 0;
-	if (roadIndex == 0)
+	if(roadIndex == 0)
 	{
 		result = junction->roadN - 1;
 	}
@@ -399,11 +399,11 @@ static I32 func GetPreviousJunctionRoadIndex (Junction* junction, I32 roadIndex)
 	return result;
 }
 
-static I32 func GetNextJunctionRoadIndex (Junction* junction, I32 roadIndex)
+static I32 func GetNextJunctionRoadIndex(Junction* junction, I32 roadIndex)
 {
-	Assert (junction->roadN >= 2);
+	Assert(junction->roadN >= 2);
 	I32 result = 0;
-	if (roadIndex == junction->roadN - 1)
+	if(roadIndex == junction->roadN - 1)
 	{
 		result = 0;
 	}
@@ -414,153 +414,153 @@ static I32 func GetNextJunctionRoadIndex (Junction* junction, I32 roadIndex)
 	return result;
 }
 
-static F32 func GetRoadAngleAtJunction (Junction* junction, I32 roadIndex)
+static F32 func GetRoadAngleAtJunction(Junction* junction, I32 roadIndex)
 {
-	Assert (junction->roadN >= 1);
-	Assert (IsValidJunctionRoadIndex (junction, roadIndex));
+	Assert(junction->roadN >= 1);
+	Assert(IsValidJunctionRoadIndex(junction, roadIndex));
 	F32 angle = 0.0f;
 	Road* road = junction->roads[roadIndex];
-	if (road->junction1 == junction)
+	if(road->junction1 == junction)
 	{
-		angle = LineAngle (road->endPoint1, road->endPoint2);
+		angle = LineAngle(road->endPoint1, road->endPoint2);
 	}
-	else if (road->junction2 == junction)
+	else if(road->junction2 == junction)
 	{
-		angle = LineAngle (road->endPoint2, road->endPoint1);
+		angle = LineAngle(road->endPoint2, road->endPoint1);
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return angle;
 }
 
-static V2 func GetRoadIntersectionAtJunction (Junction* junction, I32 leftRoadIndex, I32 rightRoadIndex, F32 side)
+static V2 func GetRoadIntersectionAtJunction(Junction* junction, I32 leftRoadIndex, I32 rightRoadIndex, F32 side)
 {
-	Assert (IsValidJunctionRoadIndex (junction, leftRoadIndex));
-	Assert (IsValidJunctionRoadIndex (junction, rightRoadIndex));
-	Assert (leftRoadIndex != rightRoadIndex);
+	Assert(IsValidJunctionRoadIndex(junction, leftRoadIndex));
+	Assert(IsValidJunctionRoadIndex(junction, rightRoadIndex));
+	Assert(leftRoadIndex != rightRoadIndex);
 
-	F32 leftAngle = GetRoadAngleAtJunction (junction, leftRoadIndex);
-	F32 rightAngle = GetRoadAngleAtJunction (junction, rightRoadIndex);
-	if (rightAngle < leftAngle)
+	F32 leftAngle = GetRoadAngleAtJunction(junction, leftRoadIndex);
+	F32 rightAngle = GetRoadAngleAtJunction(junction, rightRoadIndex);
+	if(rightAngle < leftAngle)
 	{
 		rightAngle += 2 * PI;
 	}
 
-	F32 intersectionAngle = (leftAngle + rightAngle) * 0.5f;
+	F32 intersectionAngle =(leftAngle + rightAngle) * 0.5f;
 	F32 halfAngle = (rightAngle - leftAngle) * 0.5f;
 
 	F32 sinHalfAngle = sinf(halfAngle);
-	if (sinHalfAngle == 0.0f) 
+	if(sinHalfAngle == 0.0f) 
 	{
-		DebugBreak ();
+		DebugBreak();
 		sinHalfAngle = 1.0f;
 	}
 
-	F32 intersectionDistance = Abs (side / sinHalfAngle);
+	F32 intersectionDistance = Abs(side / sinHalfAngle);
 	V2 intersection = {};
-	intersection.x = junction->position.x + intersectionDistance * cosf (intersectionAngle);
-	intersection.y = junction->position.y + intersectionDistance * sinf (intersectionAngle);
+	intersection.x = junction->position.x + intersectionDistance * cosf(intersectionAngle);
+	intersection.y = junction->position.y + intersectionDistance * sinf(intersectionAngle);
 	return intersection;
 }
 
-static V2 func GetLeftRoadIntersectionAtJunction (Junction* junction, I32 roadIndex, F32 side)
+static V2 func GetLeftRoadIntersectionAtJunction(Junction* junction, I32 roadIndex, F32 side)
 {
-	Assert (junction->roadN >= 2);
-	Assert (IsValidJunctionRoadIndex (junction, roadIndex));
-	I32 previousRoadIndex = GetPreviousJunctionRoadIndex (junction, roadIndex);
-	V2 intersection = GetRoadIntersectionAtJunction (junction, previousRoadIndex, roadIndex, side);
+	Assert(junction->roadN >= 2);
+	Assert(IsValidJunctionRoadIndex(junction, roadIndex));
+	I32 previousRoadIndex = GetPreviousJunctionRoadIndex(junction, roadIndex);
+	V2 intersection = GetRoadIntersectionAtJunction(junction, previousRoadIndex, roadIndex, side);
 	return intersection;
 }
 
-static V2 func GetJunctionCorner (Junction* junction, I32 cornerIndex)
+static V2 func GetJunctionCorner(Junction* junction, I32 cornerIndex)
 {
 	V2 result = {};
-	Assert (junction->roadN >= 1);
+	Assert(junction->roadN >= 1);
 	F32 radius = LaneWidth + SidewalkWidth * 0.5f;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		if (cornerIndex == 0)
+		if(cornerIndex == 0)
 		{
-			result = FromLeaveJunctionRoadCoord (junction, 0, -radius, -radius);
+			result = FromLeaveJunctionRoadCoord(junction, 0, -radius, -radius);
 		}
-		else if (cornerIndex == 1)
+		else if(cornerIndex == 1)
 		{
-			result = FromLeaveJunctionRoadCoord (junction, 0, -radius, +radius);
+			result = FromLeaveJunctionRoadCoord(junction, 0, -radius, +radius);
 		}
 		else
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	} 
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
 		I32 roadIndex = cornerIndex;
-		Assert (IsValidJunctionRoadIndex (junction, roadIndex));
-		result = GetLeftRoadIntersectionAtJunction (junction, roadIndex, radius);
+		Assert(IsValidJunctionRoadIndex(junction, roadIndex));
+		result = GetLeftRoadIntersectionAtJunction(junction, roadIndex, radius);
 	}
 	return result;
 }
 
-static V2 func GetRoadLeftSidewalkJunctionCorner (Junction* junction, Road* road)
+static V2 func GetRoadLeftSidewalkJunctionCorner(Junction* junction, Road* road)
 {
-	I32 cornerIndex = GetRoadLeftSidewalkJunctionCornerIndex (junction, road);
-	V2 result = GetJunctionCorner (junction, cornerIndex);
+	I32 cornerIndex = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
+	V2 result = GetJunctionCorner(junction, cornerIndex);
 	return result;
 }
 
-static V2 func GetRoadRightSidewalkJunctionCorner (Junction* junction, Road* road)
+static V2 func GetRoadRightSidewalkJunctionCorner(Junction* junction, Road* road)
 {
-	I32 cornerIndex = GetRoadRightSidewalkJunctionCornerIndex (junction, road);
-	V2 result = GetJunctionCorner (junction, cornerIndex);
+	I32 cornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
+	V2 result = GetJunctionCorner(junction, cornerIndex);
 	return result;
 }
 
-static I32 func GetRoadJunctionCornerSidewalkIndex (Junction* junction, Road* road, I32 cornerIndex)
+static I32 func GetRoadJunctionCornerSidewalkIndex(Junction* junction, Road* road, I32 cornerIndex)
 {
-	Assert(IsValidJunctionCornerIndex (junction, cornerIndex));
+	Assert(IsValidJunctionCornerIndex(junction, cornerIndex));
 	I32 sidewalkIndex = 0;
-	I32 leftRoadCornerIndex  = GetRoadLeftSidewalkJunctionCornerIndex (junction, road);
-	I32 rightRoadCornerIndex = GetRoadRightSidewalkJunctionCornerIndex (junction, road);
-	if (cornerIndex == leftRoadCornerIndex)
+	I32 leftRoadCornerIndex  = GetRoadLeftSidewalkJunctionCornerIndex(junction, road);
+	I32 rightRoadCornerIndex = GetRoadRightSidewalkJunctionCornerIndex(junction, road);
+	if(cornerIndex == leftRoadCornerIndex)
 	{
 		sidewalkIndex = LeftRoadSidewalkIndex;
 	}
-	else if (cornerIndex == rightRoadCornerIndex)
+	else if(cornerIndex == rightRoadCornerIndex)
 	{
 		sidewalkIndex = RightRoadSidewalkIndex;
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return sidewalkIndex;
 }
 
-static I32 func GetPreviousJunctionCornerIndex (Junction* junction, I32 cornerIndex)
+static I32 func GetPreviousJunctionCornerIndex(Junction* junction, I32 cornerIndex)
 {
-	Assert (junction->roadN >= 1);
+	Assert(junction->roadN >= 1);
 	I32 previousIndex = 0;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		if (cornerIndex == 1)
+		if(cornerIndex == 1)
 		{
 			previousIndex = 0;
 		}
-		else if (cornerIndex == 0)
+		else if(cornerIndex == 0)
 		{
 			previousIndex = 1;
 		}
 		else
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	} 
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
-		Assert (IsValidJunctionCornerIndex (junction, cornerIndex));
-		if (cornerIndex == 0)
+		Assert(IsValidJunctionCornerIndex(junction, cornerIndex));
+		if(cornerIndex == 0)
 		{
 			previousIndex = junction->roadN - 1;
 		}
@@ -572,98 +572,98 @@ static I32 func GetPreviousJunctionCornerIndex (Junction* junction, I32 cornerIn
 	return previousIndex;
 }
 
-static I32 func GetRandomJunctionCornerIndex (Junction* junction)
+static I32 func GetRandomJunctionCornerIndex(Junction* junction)
 {
-	Assert (junction->roadN > 0);
+	Assert(junction->roadN > 0);
 	I32 maxIndex = 0;
-	if (junction->roadN == 1)
+	if(junction->roadN == 1)
 	{
 		maxIndex = 1;
 	}
-	else if (junction->roadN >= 2)
+	else if(junction->roadN >= 2)
 	{
 		maxIndex = junction->roadN - 1;
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
-	I32 cornerIndex = IntRandom (0, maxIndex);
+	I32 cornerIndex = IntRandom(0, maxIndex);
 	return cornerIndex;
 }
 
-static V4 func GetRoadLeavePoint (Junction* junction, Road* road)
+static V4 func GetRoadLeavePoint(Junction* junction, Road* road)
 {
 	V4 result = {};
-	I32 roadIndex = GetJunctionRoadIndex (junction, road);
+	I32 roadIndex = GetJunctionRoadIndex(junction, road);
 	F32 stopDistance = junction->stopDistances[roadIndex];
-	if (road->junction1 == junction) 
+	if(road->junction1 == junction) 
 	{
-		result.direction = PointDirection (road->endPoint2, road->endPoint1);
-		result.position  = FromRoadCoord1 (road, +stopDistance, -LaneWidth * 0.5f);
+		result.direction = PointDirection(road->endPoint2, road->endPoint1);
+		result.position  = FromRoadCoord1(road, +stopDistance, -LaneWidth * 0.5f);
 	} 
-	else if (road->junction2 == junction) 
+	else if(road->junction2 == junction) 
 	{
-		result.direction = PointDirection (road->endPoint1, road->endPoint2);
-		result.position  = FromRoadCoord2 (road, -stopDistance, +LaneWidth * 0.5f);
+		result.direction = PointDirection(road->endPoint1, road->endPoint2);
+		result.position  = FromRoadCoord2(road, -stopDistance, +LaneWidth * 0.5f);
 	} 
 	else 
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return result;
 }
 
-static V4 func GetRoadEnterPoint (Junction* junction, Road* road)
+static V4 func GetRoadEnterPoint(Junction* junction, Road* road)
 {
 	V4 result = {};
-	I32 roadIndex = GetJunctionRoadIndex (junction, road);
+	I32 roadIndex = GetJunctionRoadIndex(junction, road);
 	F32 stopDistance = junction->stopDistances[roadIndex];
-	if (road->junction1 == junction) 
+	if(road->junction1 == junction) 
 	{
-		result.direction = PointDirection (road->endPoint1, road->endPoint2);
-		result.position  = FromRoadCoord1 (road, +stopDistance, +LaneWidth * 0.5f);
+		result.direction = PointDirection(road->endPoint1, road->endPoint2);
+		result.position  = FromRoadCoord1(road, +stopDistance, +LaneWidth * 0.5f);
 	} 
 	else 
 	{
-		result.direction = PointDirection (road->endPoint2, road->endPoint1);
-		result.position  = FromRoadCoord2 (road, -stopDistance, -LaneWidth * 0.5f);
+		result.direction = PointDirection(road->endPoint2, road->endPoint1);
+		result.position  = FromRoadCoord2(road, -stopDistance, -LaneWidth * 0.5f);
 	}
 	return result;
 }
 
-static V2 func ToRoadCoord (Road* road, V2 point)
+static V2 func ToRoadCoord(Road* road, V2 point)
 {
-	V2 roadDirection = PointDirection (road->endPoint1, road->endPoint2);	
-	V2 xy = (point - road->endPoint1);
-	V2 result = XYToBase (xy, roadDirection);
+	V2 roadDirection = PointDirection(road->endPoint1, road->endPoint2);	
+	V2 xy =(point - road->endPoint1);
+	V2 result = XYToBase(xy, roadDirection);
 	return result;
 }
 
-static F32 func RoadLength (Road* road)
+static F32 func RoadLength(Road* road)
 {
-	F32 length = Distance (road->endPoint1, road->endPoint2);
+	F32 length = Distance(road->endPoint1, road->endPoint2);
 	return length;
 }
 
-static V2 func FromRoadCoord (Road* road, V2 roadCoord1) 
+static V2 func FromRoadCoord(Road* road, V2 roadCoord1) 
 {
-	V2 result = FromRoadCoord1 (road, roadCoord1.x, roadCoord1.y);
+	V2 result = FromRoadCoord1(road, roadCoord1.x, roadCoord1.y);
 	return result;
 }
 
-static V2 func ClosestRoadPoint (Road* road, V2 point)
+static V2 func ClosestRoadPoint(Road* road, V2 point)
 {
 	V2 result = {};
 	V2 resultRoadCoord = {};
-	V2 pointRoadCoord = ToRoadCoord (road, point);
+	V2 pointRoadCoord = ToRoadCoord(road, point);
 
-	F32 roadLength = RoadLength (road);
-	if (pointRoadCoord.x < 0.0f)
+	F32 roadLength = RoadLength(road);
+	if(pointRoadCoord.x < 0.0f)
 	{
 		resultRoadCoord.x = 0.0f;
 	}
-	else if (pointRoadCoord.x < roadLength)
+	else if(pointRoadCoord.x < roadLength)
 	{
 		resultRoadCoord.x = pointRoadCoord.x;
 	}
@@ -674,22 +674,22 @@ static V2 func ClosestRoadPoint (Road* road, V2 point)
 
 	resultRoadCoord.y = 0.0f;
 
-	result = FromRoadCoord (road, resultRoadCoord);
+	result = FromRoadCoord(road, resultRoadCoord);
 	return result;
 }
 
 // TODO: introduce road angle and use it for calculations
-static F32 func DistanceSquareFromRoad (Road* road, V2 point)
+static F32 func DistanceSquareFromRoad(Road* road, V2 point)
 {
-	V2 closest = ClosestRoadPoint (road, point);
-	F32 result = DistanceSquare (point, closest);
+	V2 closest = ClosestRoadPoint(road, point);
+	F32 result = DistanceSquare(point, closest);
 	return result;
 }
 
-static V2 func ClosestLanePoint (Road* road, I32 laneIndex, V2 point)
+static V2 func ClosestLanePoint(Road* road, I32 laneIndex, V2 point)
 {
-	V2 pointRoadCoord = ToRoadCoord (road, point);
-	if (laneIndex > 0)
+	V2 pointRoadCoord = ToRoadCoord(road, point);
+	if(laneIndex > 0)
 	{
 		pointRoadCoord.y = +LaneWidth * 0.5f;
 	}
@@ -697,18 +697,18 @@ static V2 func ClosestLanePoint (Road* road, I32 laneIndex, V2 point)
 	{
 		pointRoadCoord.y = -LaneWidth * 0.5f;
 	}
-	V2 result = FromRoadCoord (road, pointRoadCoord);
+	V2 result = FromRoadCoord(road, pointRoadCoord);
 	return result;
 }
 
-static B32 func IsPointOnRoad (V2 point, Road* road)
+static B32 func IsPointOnRoad(V2 point, Road* road)
 {
-	V2 roadCoord = ToRoadCoord (road, point);
+	V2 roadCoord = ToRoadCoord(road, point);
 	B32 result = false;
-	F32 roadLength = RoadLength (road);
-	if (IsBetween (roadCoord.x, 0.0f, roadLength)) 
+	F32 roadLength = RoadLength(road);
+	if(IsBetween(roadCoord.x, 0.0f, roadLength)) 
 	{
-		if (IsBetween (roadCoord.y, -LaneWidth, +LaneWidth))
+		if(IsBetween(roadCoord.y, -LaneWidth, +LaneWidth))
 		{
 			result = true;
 		}
@@ -716,41 +716,41 @@ static B32 func IsPointOnRoad (V2 point, Road* road)
 	return result;
 }
 
-static B32 func IsPointOnRoadSidewalk (V2 point, Road* road)
+static B32 func IsPointOnRoadSidewalk(V2 point, Road* road)
 {
-	V2 pointRoadCoord = ToRoadCoord (road, point);
+	V2 pointRoadCoord = ToRoadCoord(road, point);
 
-	F32 roadLength = RoadLength (road);
-	B32 result = IsBetween (pointRoadCoord.x, 0.0f, roadLength) 
-		       && IsBetween (Abs (pointRoadCoord.y), LaneWidth, LaneWidth + SidewalkWidth);
+	F32 roadLength = RoadLength(road);
+	B32 result = IsBetween(pointRoadCoord.x, 0.0f, roadLength) 
+		       && IsBetween(Abs(pointRoadCoord.y), LaneWidth, LaneWidth + SidewalkWidth);
 
 	return result;
 }
 
-static void func HighlightRoad (Canvas* canvas, Road* road, V4 color)
+static void func HighlightRoad(Canvas* canvas, Road* road, V4 color)
 {
 	F32 side = LaneWidth + SidewalkWidth;
-	F32 length = RoadLength (road);
-	V2 rBL = MakePoint (0.0f,   -side);
-	V2 rBR = MakePoint (0.0f,   +side);
-	V2 rTL = MakePoint (length, -side);
-	V2 rTR = MakePoint (length, +side);
+	F32 length = RoadLength(road);
+	V2 rBL = MakePoint(0.0f,   -side);
+	V2 rBR = MakePoint(0.0f,   +side);
+	V2 rTL = MakePoint(length, -side);
+	V2 rTR = MakePoint(length, +side);
 
-	V2 pBL = FromRoadCoord (road, rBL);
-	V2 pBR = FromRoadCoord (road, rBR);
-	V2 pTL = FromRoadCoord (road, rTL);
-	V2 pTR = FromRoadCoord (road, rTR);
+	V2 pBL = FromRoadCoord(road, rBL);
+	V2 pBR = FromRoadCoord(road, rBR);
+	V2 pTL = FromRoadCoord(road, rTL);
+	V2 pTR = FromRoadCoord(road, rTR);
 
 	Quad quad = {pBR, pBL, pTL, pTR};
-	DrawQuad (canvas, quad, color);
+	DrawQuad(canvas, quad, color);
 }
 
-static I32 func LaneIndex (Road* road, V2 point)
+static I32 func LaneIndex(Road* road, V2 point)
 {
 	I32 result = 0;
-	B32 turnsRight = TurnsRight (road->endPoint1, road->endPoint2, point);
+	B32 turnsRight = TurnsRight(road->endPoint1, road->endPoint2, point);
 
-	if (turnsRight)
+	if(turnsRight)
 	{
 		result = 1;
 	}
@@ -762,60 +762,60 @@ static I32 func LaneIndex (Road* road, V2 point)
 	return result;
 }
 
-static V2 func LaneDirection (Road* road, I32 laneIndex)
+static V2 func LaneDirection(Road* road, I32 laneIndex)
 {
 	V2 result = {};
 
-	if (laneIndex == 1)
+	if(laneIndex == 1)
 	{
-		result = PointDirection (road->endPoint1, road->endPoint2);
+		result = PointDirection(road->endPoint1, road->endPoint2);
 	}
-	else if (laneIndex == -1)
+	else if(laneIndex == -1)
 	{
-		result = PointDirection (road->endPoint2, road->endPoint1);
+		result = PointDirection(road->endPoint2, road->endPoint1);
 	}
 	
 	return result;
 }
 
-static V4 func GetRoadLaneEnterPoint (Road* road, I32 laneIndex) 
+static V4 func GetRoadLaneEnterPoint(Road* road, I32 laneIndex) 
 {
 	V4 result = {};
 
-	if (laneIndex == 1) 
+	if(laneIndex == 1) 
 	{
-		result.direction = PointDirection (road->endPoint1, road->endPoint2);
-		result.position = FromRoadCoord1 (road, 0.0f, +LaneWidth * 0.5f);
+		result.direction = PointDirection(road->endPoint1, road->endPoint2);
+		result.position = FromRoadCoord1(road, 0.0f, +LaneWidth * 0.5f);
 	} 
 	else 
 	{
-		result.direction = PointDirection (road->endPoint2, road->endPoint1);
-		result.position = FromRoadCoord2 (road, 0.0f, -LaneWidth * 0.5f);
+		result.direction = PointDirection(road->endPoint2, road->endPoint1);
+		result.position = FromRoadCoord2(road, 0.0f, -LaneWidth * 0.5f);
 	}
 
 	return result;
 }
 
 // TODO: can DistanceOnLane and TurnPointFromLane be merged?
-static F32 func DistanceOnLane (Road* road, I32 laneIndex, V2 point)
+static F32 func DistanceOnLane(Road* road, I32 laneIndex, V2 point)
 {
-	V4 startPoint = GetRoadLaneEnterPoint (road, laneIndex);
+	V4 startPoint = GetRoadLaneEnterPoint(road, laneIndex);
 	V2 vector = (point - startPoint.position);
 
-	V2 parallelVector = ParallelVector (vector, startPoint.direction);
+	V2 parallelVector = ParallelVector(vector, startPoint.direction);
 
-	F32 length = VectorLength (parallelVector);
+	F32 length = VectorLength(parallelVector);
 	return length;
 }
 
-static V4 func TurnPointFromLane (Road* road, I32 laneIndex, V2 point)
+static V4 func TurnPointFromLane(Road* road, I32 laneIndex, V2 point)
 {
 	V4 result = {};
 
-	V4 startPoint = GetRoadLaneEnterPoint (road, laneIndex);
+	V4 startPoint = GetRoadLaneEnterPoint(road, laneIndex);
 	V2 vector = (point - startPoint.position);
 
-	V2 parallelVector = ParallelVector (vector, startPoint.direction);
+	V2 parallelVector = ParallelVector(vector, startPoint.direction);
 
 	result.position = (startPoint.position + parallelVector) - ((LaneWidth * 0.5f) * startPoint.direction);
 	result.direction = startPoint.direction;
@@ -823,60 +823,62 @@ static V4 func TurnPointFromLane (Road* road, I32 laneIndex, V2 point)
 	return result;
 }
 
-static V4 func TurnPointToLane (Road* road, I32 laneIndex, V2 point)
+static V4 func TurnPointToLane(Road* road, I32 laneIndex, V2 point)
 {
 	V4 result = {};
 
-	V4 startPoint = GetRoadLaneEnterPoint  (road, laneIndex);
+	V4 startPoint = GetRoadLaneEnterPoint (road, laneIndex);
 	V2 vector = (point - startPoint.position);
 
-	V2 parallelVector = ParallelVector (vector, startPoint.direction);
+	V2 parallelVector = ParallelVector(vector, startPoint.direction);
 
-	result.position = (startPoint.position + parallelVector) + ((LaneWidth * 0.5f) * startPoint.direction);
+	result.position = (startPoint.position + parallelVector) +((LaneWidth * 0.5f) * startPoint.direction);
 	result.direction = startPoint.direction;
 
 	return result;
 }
 
-static void func HighlightRoadSidewalk (Canvas* canvas, Road* road, V4 color)
+static void func HighlightRoadSidewalk(Canvas* canvas, Road* road, V4 color)
 {
 	F32 closeSide = LaneWidth;
 	F32 farSide   = LaneWidth + SidewalkWidth;
 	Quad leftSidewalkQuad = 
 	{
-		FromRoadCoord1 (road, 0.0f, -closeSide),
-		FromRoadCoord1 (road, 0.0f, -farSide),
-		FromRoadCoord2 (road, 0.0f, -farSide),
-		FromRoadCoord2 (road, 0.0f, -closeSide)
+		FromRoadCoord1(road, 0.0f, -closeSide),
+		FromRoadCoord1(road, 0.0f, -farSide),
+		FromRoadCoord2(road, 0.0f, -farSide),
+		FromRoadCoord2(road, 0.0f, -closeSide)
 	};
 	Quad rightSidewalkQuad = 
 	{
-		FromRoadCoord1 (road, 0.0f, +closeSide),
-		FromRoadCoord1 (road, 0.0f, +farSide),
-		FromRoadCoord2 (road, 0.0f, +farSide),
-		FromRoadCoord2 (road, 0.0f, +closeSide)
+		FromRoadCoord1(road, 0.0f, +closeSide),
+		FromRoadCoord1(road, 0.0f, +farSide),
+		FromRoadCoord2(road, 0.0f, +farSide),
+		FromRoadCoord2(road, 0.0f, +closeSide)
 	};
-	DrawQuad (canvas, leftSidewalkQuad, color);
-	DrawQuad (canvas, rightSidewalkQuad, color);
+	DrawQuad(canvas, leftSidewalkQuad, color);
+	DrawQuad(canvas, rightSidewalkQuad, color);
 }
 
-static void func DrawCrossing (Canvas* canvas, Road* road)
+static void func DrawCrossing(Canvas* canvas, Road* road)
 {
-	V4 stepColor = MakeColor (1.0f, 1.0f, 1.0f);
+	V4 stepColor = MakeColor(1.0f, 1.0f, 1.0f);
 	F32 stepDistance = -LaneWidth;
 	B32 drawStep = true;
 
 	F32 crossingSide1 = road->crossingDistance - CrossingWidth * 0.5f;
 	F32 crossingSide2 = road->crossingDistance + CrossingWidth * 0.5f;
 
-	while (stepDistance < LaneWidth) 
+	while(stepDistance < LaneWidth) 
 	{
 		F32 newStepDistance = stepDistance + CrossingStepLength;
-		if (newStepDistance > LaneWidth)
+		if(newStepDistance > LaneWidth)
+		{
 			newStepDistance = LaneWidth;
+		}
 
 		V4 drawColor = {};
-		if (drawStep)
+		if(drawStep)
 		{
 			drawColor = RoadStripeColor;
 		}
@@ -885,10 +887,10 @@ static void func DrawCrossing (Canvas* canvas, Road* road)
 			drawColor = RoadColor;
 		}
 		
-		V2 point1 = FromRoadCoord1 (road, crossingSide1, newStepDistance);
-		V2 point2 = FromRoadCoord1 (road, crossingSide1, stepDistance);
-		V2 point3 = FromRoadCoord1 (road, crossingSide2, stepDistance);
-		V2 point4 = FromRoadCoord1 (road, crossingSide2, newStepDistance);
+		V2 point1 = FromRoadCoord1(road, crossingSide1, newStepDistance);
+		V2 point2 = FromRoadCoord1(road, crossingSide1, stepDistance);
+		V2 point3 = FromRoadCoord1(road, crossingSide2, stepDistance);
+		V2 point4 = FromRoadCoord1(road, crossingSide2, newStepDistance);
 		Quad quad = {point1, point2, point3, point4};
 		DrawQuad(canvas, quad, drawColor);
 
@@ -897,7 +899,7 @@ static void func DrawCrossing (Canvas* canvas, Road* road)
 	}
 }
 
-static void func DrawTexturedCrossing (Canvas* canvas, Road* road, Texture roadTexture, Texture stripeTexture)
+static void func DrawTexturedCrossing(Canvas* canvas, Road* road, Texture roadTexture, Texture stripeTexture)
 {
 	F32 stepDistance = -LaneWidth;
 	B32 drawStep = true;
@@ -905,14 +907,16 @@ static void func DrawTexturedCrossing (Canvas* canvas, Road* road, Texture roadT
 	F32 crossingSide1 = road->crossingDistance - CrossingWidth * 0.5f;
 	F32 crossingSide2 = road->crossingDistance + CrossingWidth * 0.5f;
 
-	while (stepDistance < LaneWidth) 
+	while(stepDistance < LaneWidth) 
 	{
 		F32 newStepDistance = stepDistance + CrossingStepLength;
-		if (newStepDistance > LaneWidth)
+		if(newStepDistance > LaneWidth)
+		{
 			newStepDistance = LaneWidth;
+		}
 
 		Texture drawTexture = {};
-		if (drawStep)
+		if(drawStep)
 		{
 			drawTexture = stripeTexture;
 		}
@@ -921,12 +925,12 @@ static void func DrawTexturedCrossing (Canvas* canvas, Road* road, Texture roadT
 			drawTexture = roadTexture;
 		}
 		
-		V2 point1 = FromRoadCoord1 (road, crossingSide1, newStepDistance);
-		V2 point2 = FromRoadCoord1 (road, crossingSide1, stepDistance);
-		V2 point3 = FromRoadCoord1 (road, crossingSide2, stepDistance);
-		V2 point4 = FromRoadCoord1 (road, crossingSide2, newStepDistance);
+		V2 point1 = FromRoadCoord1(road, crossingSide1, newStepDistance);
+		V2 point2 = FromRoadCoord1(road, crossingSide1, stepDistance);
+		V2 point3 = FromRoadCoord1(road, crossingSide2, stepDistance);
+		V2 point4 = FromRoadCoord1(road, crossingSide2, newStepDistance);
 		Quad quad = {point1, point2, point3, point4};
-		DrawWorldTextureQuad (canvas, quad, drawTexture);
+		DrawWorldTextureQuad(canvas, quad, drawTexture);
 
 		drawStep = !drawStep;
 		stepDistance = newStepDistance;
@@ -937,50 +941,50 @@ static F32 func GetRoadStopDistance (Road* road, Junction* junction)
 {
 	B32 foundRoad = false;
 	F32 result = 0.0f;
-	for (I32 i = 0; i < junction->roadN; ++i) 
+	for(I32 i = 0; i < junction->roadN; i++) 
 	{
-		if (junction->roads[i] == road) 
+		if(junction->roads[i] == road) 
 		{
 			result = junction->stopDistances[i];
 			foundRoad = true;
 		}
 	}
-	Assert (foundRoad);
+	Assert(foundRoad);
 	return result;
 }
 
-static void func GenerateCrossing (Road* road)
+static void func GenerateCrossing(Road* road)
 {
-	F32 roadLength = RoadLength (road);
-	F32 stopDistance1 = GetRoadStopDistance (road, road->junction1);
-	F32 stopDistance2 = GetRoadStopDistance (road, road->junction2);
+	F32 roadLength = RoadLength(road);
+	F32 stopDistance1 = GetRoadStopDistance(road, road->junction1);
+	F32 stopDistance2 = GetRoadStopDistance(road, road->junction2);
 	F32 minCrossingDistance = stopDistance1 + (CrossingWidth * 0.5f);
 	F32 maxCrossingDistance = roadLength - stopDistance2 - (CrossingWidth * 0.5f);
 	Assert(minCrossingDistance < maxCrossingDistance);
-	road->crossingDistance = RandomBetween (minCrossingDistance, maxCrossingDistance);
+	road->crossingDistance = RandomBetween(minCrossingDistance, maxCrossingDistance);
 }
 
-static B32 func IsPointOnCrossing (V2 point, Road* road)
+static B32 func IsPointOnCrossing(V2 point, Road* road)
 {
-	V2 pointRoadCoord = ToRoadCoord (road, point);
+	V2 pointRoadCoord = ToRoadCoord(road, point);
 
 	B32 result = (
-		(Abs (pointRoadCoord.x - road->crossingDistance) <= CrossingWidth * 0.5f) &&
-		(Abs (pointRoadCoord.y) <= LaneWidth)
+		(Abs(pointRoadCoord.x - road->crossingDistance) <= CrossingWidth * 0.5f) &&
+		(Abs(pointRoadCoord.y) <= LaneWidth)
 	);
 
 	return result;
 }
 
-static I32 func RoadSidewalkIndex (Road* road, V2 point)
+static I32 func RoadSidewalkIndex(Road* road, V2 point)
 {
 	I32 result = 0;
-	V2 pointRoadCoord = ToRoadCoord (road, point);
-	if (pointRoadCoord.y < -LaneWidth)
+	V2 pointRoadCoord = ToRoadCoord(road, point);
+	if(pointRoadCoord.y < -LaneWidth)
 	{
 		result = -1;
 	}
-	else if (pointRoadCoord.y > LaneWidth)
+	else if(pointRoadCoord.y > LaneWidth)
 	{
 		result = 1;
 	}
@@ -988,71 +992,71 @@ static I32 func RoadSidewalkIndex (Road* road, V2 point)
 	return result;
 }
 
-static void func DrawRoad (Canvas* canvas, Road* road)
+static void func DrawRoad(Canvas* canvas, Road* road)
 {
-	DrawLine (canvas, road->endPoint1, road->endPoint2, RoadColor, 2.0f * LaneWidth);
-	DrawLine (canvas, road->endPoint1, road->endPoint2, RoadStripeColor, RoadStripeWidth);
-	DrawCrossing (canvas, road);
+	DrawLine(canvas, road->endPoint1, road->endPoint2, RoadColor, 2.0f * LaneWidth);
+	DrawLine(canvas, road->endPoint1, road->endPoint2, RoadStripeColor, RoadStripeWidth);
+	DrawCrossing(canvas, road);
 }
 
-static void func DrawTexturedRoad (Canvas* canvas, Road* road, Texture roadTexture, Texture stripeTexture)
+static void func DrawTexturedRoad(Canvas* canvas, Road* road, Texture roadTexture, Texture stripeTexture)
 {
-	DrawWorldTextureLine (canvas, road->endPoint1, road->endPoint2, 2.0f * LaneWidth, roadTexture);
-	DrawWorldTextureLine (canvas, road->endPoint1, road->endPoint2, RoadStripeWidth, stripeTexture);
-	DrawTexturedCrossing (canvas, road, roadTexture, stripeTexture);
+	DrawWorldTextureLine(canvas, road->endPoint1, road->endPoint2, 2.0f * LaneWidth, roadTexture);
+	DrawWorldTextureLine(canvas, road->endPoint1, road->endPoint2, RoadStripeWidth, stripeTexture);
+	DrawTexturedCrossing(canvas, road, roadTexture, stripeTexture);
 }
 
-static void func DrawRoadSidewalk (Canvas* canvas, Road* road)
+static void func DrawRoadSidewalk(Canvas* canvas, Road* road)
 {
-	V2 side1 = FromRoadCoord1 (road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
-	V2 side2 = FromRoadCoord2 (road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
-	DrawLine (canvas, side1, side2, SidewalkColor, SidewalkWidth);
+	V2 side1 = FromRoadCoord1(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
+	V2 side2 = FromRoadCoord2(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
+	DrawLine(canvas, side1, side2, SidewalkColor, SidewalkWidth);
 
 	side1 = FromRoadCoord1 (road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
-	side2 = FromRoadCoord2 (road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
-	DrawLine (canvas, side1, side2, SidewalkColor, SidewalkWidth);
+	side2 = FromRoadCoord2(road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
+	DrawLine(canvas, side1, side2, SidewalkColor, SidewalkWidth);
 }
 
-static void func DrawTexturedRoadSidewalk (Canvas* canvas, Road* road, Texture sidewalkTexture)
+static void func DrawTexturedRoadSidewalk(Canvas* canvas, Road* road, Texture sidewalkTexture)
 {
-	V2 side1 = FromRoadCoord1 (road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
-	V2 side2 = FromRoadCoord2 (road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
-	DrawWorldTextureLine (canvas, side1, side2, SidewalkWidth, sidewalkTexture);
+	V2 side1 = FromRoadCoord1(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
+	V2 side2 = FromRoadCoord2(road, 0.0f, -LaneWidth - SidewalkWidth * 0.5f);
+	DrawWorldTextureLine(canvas, side1, side2, SidewalkWidth, sidewalkTexture);
 
-	side1 = FromRoadCoord1 (road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
-	side2 = FromRoadCoord2 (road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
-	DrawWorldTextureLine (canvas, side1, side2, SidewalkWidth, sidewalkTexture);
+	side1 = FromRoadCoord1(road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
+	side2 = FromRoadCoord2(road, 0.0f, +LaneWidth + SidewalkWidth * 0.5f);
+	DrawWorldTextureLine(canvas, side1, side2, SidewalkWidth, sidewalkTexture);
 }
 
 // Junction
-static V2 func OtherRoadPoint (Junction* junction, Road* road)
+static V2 func OtherRoadPoint(Junction* junction, Road* road)
 {
 	V2 point = {};
-	if (road->junction1 == junction)
+	if(road->junction1 == junction)
 	{
 		point = road->endPoint2;
 	}
-	else if (road->junction2 == junction)
+	else if(road->junction2 == junction)
 	{
 		point = road->endPoint1;
 	}
 	return point;
 }
 
-static void func AddRoad (Junction* junction, Road* road)
+static void func AddRoad(Junction* junction, Road* road)
 {
 	Assert(junction->roadN < JunctionMaxRoadN);
 	junction->roads[junction->roadN] = road;
 	junction->roadN++;
 
 	I32 i = junction->roadN - 1;
-	while (i > 0) 
+	while(i > 0) 
 	{
-		V2 prevPoint = OtherRoadPoint (junction, junction->roads[i - 1]);
-		V2 thisPoint = OtherRoadPoint (junction, junction->roads[i]);	
-		F32 prevAngle = LineAngle (junction->position, prevPoint);
-		F32 thisAngle = LineAngle (junction->position, thisPoint);
-		if (prevAngle > thisAngle) 
+		V2 prevPoint = OtherRoadPoint(junction, junction->roads[i - 1]);
+		V2 thisPoint = OtherRoadPoint(junction, junction->roads[i]);	
+		F32 prevAngle = LineAngle(junction->position, prevPoint);
+		F32 thisAngle = LineAngle(junction->position, thisPoint);
+		if(prevAngle > thisAngle) 
 		{
 			Road* tmpRoad = junction->roads[i];
 			junction->roads[i] = junction->roads[i - 1];
@@ -1066,82 +1070,82 @@ static void func AddRoad (Junction* junction, Road* road)
 	}
 }
 
-static void func ConnectJunctions (Junction* junction1, Junction* junction2, Road* road) 
+static void func ConnectJunctions(Junction* junction1, Junction* junction2, Road* road) 
 {
-	Assert (junction1 != junction2);
+	Assert(junction1 != junction2);
 	road->junction1 = junction1;
 	road->junction2 = junction2;
 	road->endPoint1 = road->junction1->position;
 	road->endPoint2 = road->junction2->position;
-	AddRoad (junction1, road);
-	AddRoad (junction2, road);
+	AddRoad(junction1, road);
+	AddRoad(junction2, road);
 }
 
-static V2 func ToLeaveJunctionRoadCoord (Junction* junction, I32 roadIndex, V2 point)
+static V2 func ToLeaveJunctionRoadCoord(Junction* junction, I32 roadIndex, V2 point)
 {
-	Assert (IsValidJunctionRoadIndex (junction, roadIndex));
+	Assert(IsValidJunctionRoadIndex(junction, roadIndex));
 	Road* road = junction->roads[roadIndex];
 	V2 result = {};
-	V2 roadCoord = ToRoadCoord (road, point);
-	if (road->junction1 == junction) 
+	V2 roadCoord = ToRoadCoord(road, point);
+	if(road->junction1 == junction) 
 	{
 		result = roadCoord;
 	} 
-	else if (road->junction2 == junction) 
+	else if(road->junction2 == junction) 
 	{
-		result.x = RoadLength (road) - roadCoord.x;
+		result.x = RoadLength(road) - roadCoord.x;
 		result.y = -roadCoord.y;
 	} 
 	else 
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return result;
 }
 
-static Line func GetLineParallelToRoad (Road* road, F32 side)
+static Line func GetLineParallelToRoad(Road* road, F32 side)
 {
 	Line line = {};
-	line.p1 = FromRoadCoord1 (road, 0.0f, side);
-	line.p2 = FromRoadCoord2 (road, 0.0f, side);
+	line.p1 = FromRoadCoord1(road, 0.0f, side);
+	line.p2 = FromRoadCoord2(road, 0.0f, side);
 	return line;
 }
 
-static Line func GetLineParallelToIncomingRoad (Junction* junction, Road* road, F32 side)
+static Line func GetLineParallelToIncomingRoad(Junction* junction, Road* road, F32 side)
 {
 	Line line = {};
-	if (road->junction2 == junction)
+	if(road->junction2 == junction)
 	{
-		line = GetLineParallelToRoad (road, side);
+		line = GetLineParallelToRoad(road, side);
 	}
-	else if (road->junction1 == junction)
+	else if(road->junction1 == junction)
 	{
-		line = GetLineParallelToRoad (road, -side);
+		line = GetLineParallelToRoad(road, -side);
 	}
 	else
 	{
-		DebugBreak ();
+		DebugBreak();
 	}
 	return line;
 }
 
-static V2 func GetRightRoadIntersectionAtJunction (Junction* junction, I32 roadIndex, F32 side)
+static V2 func GetRightRoadIntersectionAtJunction(Junction* junction, I32 roadIndex, F32 side)
 {
-	Assert (junction->roadN >= 2);
-	Assert (IsValidJunctionRoadIndex (junction, roadIndex));
-	I32 nextRoadIndex = GetNextJunctionRoadIndex (junction, roadIndex);
-	V2 intersection = GetRoadIntersectionAtJunction (junction, roadIndex, nextRoadIndex, side);
+	Assert(junction->roadN >= 2);
+	Assert(IsValidJunctionRoadIndex(junction, roadIndex));
+	I32 nextRoadIndex = GetNextJunctionRoadIndex(junction, roadIndex);
+	V2 intersection = GetRoadIntersectionAtJunction(junction, roadIndex, nextRoadIndex, side);
 	return intersection;
 }
 
-static I32 func GetClosestJunctionCornerIndex (Junction* junction, V2 point)
+static I32 func GetClosestJunctionCornerIndex(Junction* junction, V2 point)
 {
-	Assert (junction->roadN >= 1);
+	Assert(junction->roadN >= 1);
 	I32 cornerIndex = InvalidJunctionCornerIndex;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
-		V2 roadCoord = ToLeaveJunctionRoadCoord (junction, 0, point);
-		if (roadCoord.y < 0.0f)
+		V2 roadCoord = ToLeaveJunctionRoadCoord(junction, 0, point);
+		if(roadCoord.y < 0.0f)
 		{
 			cornerIndex = 0;
 		}
@@ -1150,44 +1154,44 @@ static I32 func GetClosestJunctionCornerIndex (Junction* junction, V2 point)
 			cornerIndex = 1;
 		}
 	} 
-	else if (junction->roadN >= 2) 
+	else if(junction->roadN >= 2) 
 	{
-		F32 pointAngle = LineAngle (junction->position, point);
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		F32 pointAngle = LineAngle(junction->position, point);
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			I32 next = GetNextJunctionRoadIndex (junction, i);
-			F32 thisAngle = GetRoadAngleAtJunction (junction, i);
-			F32 nextAngle = GetRoadAngleAtJunction (junction, next);
-			if (IsAngleBetween (thisAngle, pointAngle, nextAngle)) 
+			I32 next = GetNextJunctionRoadIndex(junction, i);
+			F32 thisAngle = GetRoadAngleAtJunction(junction, i);
+			F32 nextAngle = GetRoadAngleAtJunction(junction, next);
+			if(IsAngleBetween(thisAngle, pointAngle, nextAngle)) 
 			{
 				cornerIndex = next;
 				break;
 			}
 		}
 	}
-	Assert(IsValidJunctionCornerIndex (junction, cornerIndex));
+	Assert(IsValidJunctionCornerIndex(junction, cornerIndex));
 	return cornerIndex;
 }
 
-static V2 func GetClosestJunction (Junction* junction, V2 point)
+static V2 func GetClosestJunction(Junction* junction, V2 point)
 {
-	I32 cornerIndex = GetClosestJunctionCornerIndex (junction, point);
-	V2 corner = GetJunctionCorner (junction, cornerIndex);
+	I32 cornerIndex = GetClosestJunctionCornerIndex(junction, point);
+	V2 corner = GetJunctionCorner(junction, cornerIndex);
 	return corner;
 }
 
-static I32 func RandomQuarterIndex ()
+static I32 func RandomQuarterIndex()
 {
 	I32 index = 1 + (rand() % 4);
 	return index;
 }
 
-static TrafficLight* func TrafficLightOfRoad (Junction* junction, Road* road)
+static TrafficLight* func TrafficLightOfRoad(Junction* junction, Road* road)
 {
 	TrafficLight* trafficLight = 0;
-	for (I32 i = 0; i < junction->roadN; ++i) 
+	for(I32 i = 0; i < junction->roadN; i++) 
 	{
-		if (junction->roads[i] == road)
+		if(junction->roads[i] == road)
 		{
 			trafficLight = &junction->trafficLights[i];
 		}
@@ -1195,42 +1199,42 @@ static TrafficLight* func TrafficLightOfRoad (Junction* junction, Road* road)
 	return trafficLight;
 }
 
-static Poly16 func GetJunctionPolyForRoad (Junction* junction, I32 roadIndex, F32 side)
+static Poly16 func GetJunctionPolyForRoad(Junction* junction, I32 roadIndex, F32 side)
 {
-	Assert (IsValidJunctionRoadIndex (junction, roadIndex));
-	Assert (junction->roadN >= 1);
+	Assert(IsValidJunctionRoadIndex(junction, roadIndex));
+	Assert(junction->roadN >= 1);
 	Poly16 poly = {};
 	F32 MinExtraDistance = 0.001f;
-	if (junction->roadN == 1) 
+	if(junction->roadN == 1) 
 	{
 		Road* road = junction->roads[0];
-		if (road->junction1 == junction) 
+		if(road->junction1 == junction) 
 		{
-			Poly16Add (&poly, FromRoadCoord1(road, +side, +side));
-			Poly16Add (&poly, FromRoadCoord1(road, -side, +side));
-			Poly16Add (&poly, FromRoadCoord1(road, -side, -side));
-			Poly16Add (&poly, FromRoadCoord1(road, +side, -side));
+			Poly16Add(&poly, FromRoadCoord1(road, +side, +side));
+			Poly16Add(&poly, FromRoadCoord1(road, -side, +side));
+			Poly16Add(&poly, FromRoadCoord1(road, -side, -side));
+			Poly16Add(&poly, FromRoadCoord1(road, +side, -side));
 		} 
-		else if (road->junction2 == junction) 
+		else if(road->junction2 == junction) 
 		{
-			Poly16Add (&poly, FromRoadCoord2(road, -side, -side));
-			Poly16Add (&poly, FromRoadCoord2(road, +side, -side));
-			Poly16Add (&poly, FromRoadCoord2(road, +side, +side));
-			Poly16Add (&poly, FromRoadCoord2(road, -side, +side));
+			Poly16Add(&poly, FromRoadCoord2(road, -side, -side));
+			Poly16Add(&poly, FromRoadCoord2(road, +side, -side));
+			Poly16Add(&poly, FromRoadCoord2(road, +side, +side));
+			Poly16Add(&poly, FromRoadCoord2(road, -side, +side));
 		} 
 		else 
 		{
-			DebugBreak ();
+			DebugBreak();
 		}
 	}
-	else if (junction->roadN == 2) 
+	else if(junction->roadN == 2) 
 	{
 		Road* road = junction->roads[roadIndex];
-		V2 leftIntersection  = GetLeftRoadIntersectionAtJunction (junction, roadIndex, side);
-		V2 rightIntersection = GetRightRoadIntersectionAtJunction (junction, roadIndex, side);
+		V2 leftIntersection  = GetLeftRoadIntersectionAtJunction(junction, roadIndex, side);
+		V2 rightIntersection = GetRightRoadIntersectionAtJunction(junction, roadIndex, side);
 
-		V2 leftRoadCoord  = ToLeaveJunctionRoadCoord (junction, roadIndex, leftIntersection);
-		V2 rightRoadCoord = ToLeaveJunctionRoadCoord (junction, roadIndex, rightIntersection);
+		V2 leftRoadCoord  = ToLeaveJunctionRoadCoord(junction, roadIndex, leftIntersection);
+		V2 rightRoadCoord = ToLeaveJunctionRoadCoord(junction, roadIndex, rightIntersection);
 
 		F32 leftSideDistance = leftRoadCoord.x;
 		F32 rightSideDistance = rightRoadCoord.x;
@@ -1238,57 +1242,57 @@ static Poly16 func GetJunctionPolyForRoad (Junction* junction, I32 roadIndex, F3
 		Poly16Add(&poly, junction->position);
 		Poly16Add(&poly, leftIntersection);
 
-		if (leftSideDistance < LaneWidth - MinExtraDistance) 
+		if(leftSideDistance < LaneWidth - MinExtraDistance) 
 		{
-			V2 extraPoint = FromLeaveJunctionRoadCoord (junction, roadIndex, LaneWidth, -side);
+			V2 extraPoint = FromLeaveJunctionRoadCoord(junction, roadIndex, LaneWidth, -side);
 			Poly16Add(&poly, extraPoint);
 		}
-		if (rightSideDistance < LaneWidth - MinExtraDistance) 
+		if(rightSideDistance < LaneWidth - MinExtraDistance) 
 		{
-			V2 extraPoint = FromLeaveJunctionRoadCoord (junction, roadIndex, LaneWidth, +side);
+			V2 extraPoint = FromLeaveJunctionRoadCoord(junction, roadIndex, LaneWidth, +side);
 			Poly16Add(&poly, extraPoint);
 		}
 
 		Poly16Add(&poly, rightIntersection);
 	} 
-	else if (junction->roadN >= 3) 
+	else if(junction->roadN >= 3) 
 	{
 		Road* road = junction->roads[roadIndex];
-		V2 leftIntersection  = GetLeftRoadIntersectionAtJunction (junction, roadIndex, side);
-		V2 rightIntersection = GetRightRoadIntersectionAtJunction (junction, roadIndex, side);
+		V2 leftIntersection  = GetLeftRoadIntersectionAtJunction(junction, roadIndex, side);
+		V2 rightIntersection = GetRightRoadIntersectionAtJunction(junction, roadIndex, side);
 
-		V2 leftRoadCoord  = ToLeaveJunctionRoadCoord (junction, roadIndex, leftIntersection);
-		V2 rightRoadCoord = ToLeaveJunctionRoadCoord (junction, roadIndex, rightIntersection);
+		V2 leftRoadCoord  = ToLeaveJunctionRoadCoord(junction, roadIndex, leftIntersection);
+		V2 rightRoadCoord = ToLeaveJunctionRoadCoord(junction, roadIndex, rightIntersection);
 	
 		F32 leftSideDistance  = leftRoadCoord.x;
 		F32 rightSideDistance = rightRoadCoord.x;
 
-		Poly16Add (&poly, junction->position);
-		Poly16Add (&poly, leftIntersection);
+		Poly16Add(&poly, junction->position);
+		Poly16Add(&poly, leftIntersection);
 
-		if (Abs(leftSideDistance - rightSideDistance) >= MinExtraDistance) 
+		if(Abs(leftSideDistance - rightSideDistance) >= MinExtraDistance) 
 		{
 			V2 extraPoint = {};
-			if (leftSideDistance < rightSideDistance)
+			if(leftSideDistance < rightSideDistance)
 			{
-				extraPoint = FromLeaveJunctionRoadCoord (junction, roadIndex, rightSideDistance, -side);
+				extraPoint = FromLeaveJunctionRoadCoord(junction, roadIndex, rightSideDistance, -side);
 			}
 			else
 			{
-				extraPoint = FromLeaveJunctionRoadCoord (junction, roadIndex, leftSideDistance, +side);
+				extraPoint = FromLeaveJunctionRoadCoord(junction, roadIndex, leftSideDistance, +side);
 			}
-			Poly16Add (&poly, extraPoint);
+			Poly16Add(&poly, extraPoint);
 		}
 
-		Poly16Add (&poly, rightIntersection);
+		Poly16Add(&poly, rightIntersection);
 	}
 	return poly;
 }
 
-static B32 func IsPointOnJunction (V2 point, Junction* junction)
+static B32 func IsPointOnJunction(V2 point, Junction* junction)
 {
 	B32 result = false;
-	if (junction->roadN == 0) 
+	if(junction->roadN == 0) 
 	{
 		F32 x = junction->position.x;
 		F32 y = junction->position.y;
@@ -1300,10 +1304,10 @@ static B32 func IsPointOnJunction (V2 point, Junction* junction)
 	} 
 	else 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth);
-			if (IsPointInPoly (point, poly.points, poly.pointN)) 
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
+			if(IsPointInPoly(point, poly.points, poly.pointN)) 
 			{
 				result = true;
 				break;
@@ -1313,20 +1317,20 @@ static B32 func IsPointOnJunction (V2 point, Junction* junction)
 	return result;
 }
 
-static B32 func IsPointOnJunctionSidewalk (V2 point, Junction* junction)
+static B32 func IsPointOnJunctionSidewalk(V2 point, Junction* junction)
 {
 	B32 isOnSidewalk = false;
-	B32 isOnJunction = IsPointOnJunction (point, junction);
-	if (isOnJunction) 
+	B32 isOnJunction = IsPointOnJunction(point, junction);
+	if(isOnJunction) 
 	{
 		isOnSidewalk = false;
 	} 
 	else 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth + SidewalkWidth);
-			if (IsPointInPoly (point, poly.points, poly.pointN)) 
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth + SidewalkWidth);
+			if(IsPointInPoly(point, poly.points, poly.pointN)) 
 			{
 				isOnSidewalk = true;
 				break;
@@ -1336,65 +1340,65 @@ static B32 func IsPointOnJunctionSidewalk (V2 point, Junction* junction)
 	return isOnSidewalk;
 }
 
-static void func StartTrafficLight (TrafficLight* trafficLight)
+static void func StartTrafficLight(TrafficLight* trafficLight)
 {
 	trafficLight->color = TrafficLightGreen;
 	trafficLight->timeLeft = TrafficLightSwitchTime;
 }
 
-static void func UpdateTrafficLight (TrafficLight* trafficLight, F32 seconds)
+static void func UpdateTrafficLight(TrafficLight* trafficLight, F32 seconds)
 {
-	if (trafficLight->color == TrafficLightGreen) 
+	if(trafficLight->color == TrafficLightGreen) 
 	{
 		trafficLight->timeLeft -= seconds;
 
-		if (trafficLight->timeLeft < 0.0f) 
+		if(trafficLight->timeLeft < 0.0f) 
 		{
 			trafficLight->timeLeft += TrafficLightYellowTime;
 			trafficLight->color = TrafficLightYellow;
 		}
 	}
-	else if (trafficLight->color == TrafficLightYellow) 
+	else if(trafficLight->color == TrafficLightYellow) 
 	{
 		trafficLight->timeLeft -= seconds;
 
-		if (trafficLight->timeLeft < 0.0f) 
+		if(trafficLight->timeLeft < 0.0f) 
 		{
 			trafficLight->color = TrafficLightRed;
 		}
 	}
 }
 
-static void func DrawTrafficLight (Canvas* canvas, TrafficLight* trafficLight)
+static void func DrawTrafficLight(Canvas* canvas, TrafficLight* trafficLight)
 {
 	V4 drawColor = {};
-	switch (trafficLight->color) 
+	switch(trafficLight->color) 
 	{
 		case TrafficLightGreen:
 		{
-			drawColor = {0.0f, 1.0f, 0.0f}; 
+			drawColor = MakeColor(0.0f, 1.0f, 0.0f); 
 			break;
 		}
 		case TrafficLightYellow:
 		{
-			drawColor = {1.0f, 1.0f, 0.0f};
+			drawColor = MakeColor(1.0f, 1.0f, 0.0f);
 			break;
 		}
 		case TrafficLightRed:
 		{
-			drawColor = {1.0f, 0.0f, 0.0f};
+			drawColor = MakeColor(1.0f, 0.0f, 0.0f);
 			break;
 		}
 		default:
 		{
-			DebugBreak ();
+			DebugBreak();
 			break;
 		}
 	}
 
 	V2 position = trafficLight->position;
 	F32 radius = TrafficLightRadius;
-	DrawRectLRTB (
+	DrawRectLRTB(
 		canvas,
 		position.x - radius, position.x + radius,
 		position.y - radius, position.y + radius,
@@ -1402,168 +1406,168 @@ static void func DrawTrafficLight (Canvas* canvas, TrafficLight* trafficLight)
 	);
 }
 
-static void func InitTrafficLights (Junction* junction)
+static void func InitTrafficLights(Junction* junction)
 {
-	if (junction->roadN >= 3) 
+	if(junction->roadN >= 3) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			Road* road = junction->roads[i];
 			TrafficLight* trafficLight = junction->trafficLights + i;
 			F32 stopDistance = junction->stopDistances[i];
 			trafficLight->color = TrafficLightRed;
-			if (road->junction1 == junction)
+			if(road->junction1 == junction)
 			{
-				trafficLight->position = FromRoadCoord1 (road, +stopDistance, -0.5f * LaneWidth);
+				trafficLight->position = FromRoadCoord1(road, +stopDistance, -0.5f * LaneWidth);
 			}
-			else if (road->junction2 == junction)
+			else if(road->junction2 == junction)
 			{
-				trafficLight->position = FromRoadCoord2 (road, -stopDistance, +0.5f * LaneWidth);
+				trafficLight->position = FromRoadCoord2(road, -stopDistance, +0.5f * LaneWidth);
 			}
 			else
 			{
-				DebugBreak ();
+				DebugBreak();
 			}
 		}
 
-		StartTrafficLight (junction->trafficLights + 0);
+		StartTrafficLight(junction->trafficLights + 0);
 	}
 }
 
-static void func UpdateTrafficLights (Junction* junction, F32 seconds)
+static void func UpdateTrafficLights(Junction* junction, F32 seconds)
 {
-	if (junction->roadN >= 3) 
+	if(junction->roadN >= 3) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			TrafficLight* trafficLight = &junction->trafficLights[i];
-			if (trafficLight->color != TrafficLightRed) 
+			if(trafficLight->color != TrafficLightRed) 
 			{
-				UpdateTrafficLight (trafficLight, seconds);
-				if (trafficLight->color == TrafficLightRed) 
+				UpdateTrafficLight(trafficLight, seconds);
+				if(trafficLight->color == TrafficLightRed) 
 				{
 					I32 next = i + 1;
-					if (next >= junction->roadN)
+					if(next >= junction->roadN)
 					{
 						next = 0;
 					}
 					TrafficLight* nextTrafficLight = &junction->trafficLights[next];
-					StartTrafficLight (nextTrafficLight);
+					StartTrafficLight(nextTrafficLight);
 				}		
 			}
 		}
 	}
 }
 
-static void func DrawTrafficLights (Canvas* canvas, Junction* junction)
+static void func DrawTrafficLights(Canvas* canvas, Junction* junction)
 {
-	if (junction->roadN >= 3) 
+	if(junction->roadN >= 3) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i)
+		for(I32 i = 0; i < junction->roadN; i++)
 		{
-			DrawTrafficLight (canvas, junction->trafficLights + i);
+			DrawTrafficLight(canvas, junction->trafficLights + i);
 		}
 	}
 }
 
-static void func CalculateStopDistances (Junction* junction)
+static void func CalculateStopDistances(Junction* junction)
 {
-	Assert (junction->roadN >= 1);
-	if (junction->roadN == 1) 
+	Assert(junction->roadN >= 1);
+	if(junction->roadN == 1) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i)
+		for(I32 i = 0; i < junction->roadN; i++)
 		{
 			junction->stopDistances[i] = LaneWidth;
 		}
 	} 
-	else if (junction->roadN == 2) 
+	else if(junction->roadN == 2) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			F32 stopDistance = 0.0f;
 			Road* road = junction->roads[i];
-			V2 leftIntersection  = GetLeftRoadIntersectionAtJunction (junction, i, LaneWidth);
-			V2 rightIntersection = GetRightRoadIntersectionAtJunction (junction, i, LaneWidth);
+			V2 leftIntersection  = GetLeftRoadIntersectionAtJunction(junction, i, LaneWidth);
+			V2 rightIntersection = GetRightRoadIntersectionAtJunction(junction, i, LaneWidth);
 
-			V2 leftRoadCoord  = ToLeaveJunctionRoadCoord (junction, i, leftIntersection);
-			V2 rightRoadCoord = ToLeaveJunctionRoadCoord (junction, i, rightIntersection);
+			V2 leftRoadCoord  = ToLeaveJunctionRoadCoord(junction, i, leftIntersection);
+			V2 rightRoadCoord = ToLeaveJunctionRoadCoord(junction, i, rightIntersection);
 
 			F32 leftSideDistance = leftRoadCoord.x;
 			F32 rightSideDistance = rightRoadCoord.x;
-			junction->stopDistances[i] = Max3 (leftSideDistance, rightSideDistance, LaneWidth);
+			junction->stopDistances[i] = Max3(leftSideDistance, rightSideDistance, LaneWidth);
 		}
 	} 
 	else 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			F32 stopDistance = 0.0f;
 			Road* road = junction->roads[i];
-			V2 rightIntersection = GetRightRoadIntersectionAtJunction (junction, i, LaneWidth);
-			V2 leftIntersection  = GetLeftRoadIntersectionAtJunction (junction, i, LaneWidth);
+			V2 rightIntersection = GetRightRoadIntersectionAtJunction(junction, i, LaneWidth);
+			V2 leftIntersection  = GetLeftRoadIntersectionAtJunction(junction, i, LaneWidth);
 
-			V2 leftRoadCoord  = ToLeaveJunctionRoadCoord (junction, i, leftIntersection);
-			V2 rightRoadCoord = ToLeaveJunctionRoadCoord (junction, i, rightIntersection);
+			V2 leftRoadCoord  = ToLeaveJunctionRoadCoord(junction, i, leftIntersection);
+			V2 rightRoadCoord = ToLeaveJunctionRoadCoord(junction, i, rightIntersection);
 	
 			F32 leftSideDistance  = leftRoadCoord.x;
 			F32 rightSideDistance = rightRoadCoord.x;
-			junction->stopDistances[i] = Max2 (leftSideDistance, rightSideDistance);
+			junction->stopDistances[i] = Max2(leftSideDistance, rightSideDistance);
 		}
 	}
 }
 
-static void func DrawJunctionStripes (Canvas* canvas, Junction* junction)
+static void func DrawJunctionStripes(Canvas* canvas, Junction* junction)
 {
-	if (junction->roadN <= 2) 
+	if(junction->roadN <= 2) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			Road* road = junction->roads[i];
 			F32 stopDistance = junction->stopDistances[i];
 			V2 roadEnterPoint = {};
-			if (road->junction1 == junction)
+			if(road->junction1 == junction)
 			{
-				roadEnterPoint = FromRoadCoord1 (road, +stopDistance, 0.0f);
+				roadEnterPoint = FromRoadCoord1(road, +stopDistance, 0.0f);
 			}
-			else if (road->junction2 == junction)
+			else if(road->junction2 == junction)
 			{
-				roadEnterPoint = FromRoadCoord2 (road, -stopDistance, 0.0f);
+				roadEnterPoint = FromRoadCoord2(road, -stopDistance, 0.0f);
 			}
 			else
 			{
-				DebugBreak ();
+				DebugBreak();
 			}
-			DrawLine (canvas, junction->position, roadEnterPoint, RoadStripeColor, RoadStripeWidth);
+			DrawLine(canvas, junction->position, roadEnterPoint, RoadStripeColor, RoadStripeWidth);
 		}
 	} 
 	else 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			Road* road = junction->roads[i];
 			F32 stopDistance = junction->stopDistances[i];
 			V2 point1 = {};
 			V2 point2 = {};
-			if (road->junction1 == junction) 
+			if(road->junction1 == junction) 
 			{
-				point1 = FromRoadCoord1 (road, +stopDistance, 0.0f);
-				point2 = FromRoadCoord1 (road, +stopDistance, -LaneWidth);
+				point1 = FromRoadCoord1(road, +stopDistance, 0.0f);
+				point2 = FromRoadCoord1(road, +stopDistance, -LaneWidth);
 			} 
 			else 
 			{
-				point1 = FromRoadCoord2 (road, -stopDistance, 0.0f);
-				point2 = FromRoadCoord2 (road, -stopDistance, +LaneWidth);
+				point1 = FromRoadCoord2(road, -stopDistance, 0.0f);
+				point2 = FromRoadCoord2(road, -stopDistance, +LaneWidth);
 			}
-			DrawLine (canvas, point1, point2, RoadStripeColor, RoadStripeWidth);
+			DrawLine(canvas, point1, point2, RoadStripeColor, RoadStripeWidth);
 		}
 	}
 }
 
-static void func DrawJunctionPlaceholder (Canvas* canvas, Junction* junction, V4 color)
+static void func DrawJunctionPlaceholder(Canvas* canvas, Junction* junction, V4 color)
 {
 	V2 position = junction->position;
 	F32 side = LaneWidth + SidewalkWidth;
-	DrawRectLRTB (
+	DrawRectLRTB(
 		canvas,
 		position.x - side, position.x + side,
 		position.y - side, position.y + side,
@@ -1571,7 +1575,7 @@ static void func DrawJunctionPlaceholder (Canvas* canvas, Junction* junction, V4
 	);
 
 	side = LaneWidth;
-	DrawRectLRTB (
+	DrawRectLRTB(
 		canvas,
 		position.x - side, position.x + side,
 		position.y - side, position.y + side,
@@ -1579,135 +1583,135 @@ static void func DrawJunctionPlaceholder (Canvas* canvas, Junction* junction, V4
 	);
 }
 
-static void func DrawJunction (Canvas* canvas, Junction* junction)
+static void func DrawJunction(Canvas* canvas, Junction* junction)
 {
-	if (junction->roadN >= 1) 
+	if(junction->roadN >= 1) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth);
-			DrawPoly (canvas, poly.points, poly.pointN, RoadColor);
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
+			DrawPoly(canvas, poly.points, poly.pointN, RoadColor);
 		}
-		DrawJunctionStripes (canvas, junction);
+		DrawJunctionStripes(canvas, junction);
 	} 
 	else 
 	{
-		DrawJunctionPlaceholder (canvas, junction, RoadColor);
+		DrawJunctionPlaceholder(canvas, junction, RoadColor);
 	}
 }
 
-static void func HighlightJunctionSidewalk  (Canvas* canvas, Junction* junction, V4 color)
+static void func HighlightJunctionSidewalk(Canvas* canvas, Junction* junction, V4 color)
 {
 	Assert(junction->roadN >= 1);
-	for (I32 i = 0; i < junction->roadN; ++i) 
+	for(I32 i = 0; i < junction->roadN; i++) 
 	{
-		Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth + SidewalkWidth);
-		DrawPoly (canvas, poly.points, poly.pointN, color);
+		Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth + SidewalkWidth);
+		DrawPoly(canvas, poly.points, poly.pointN, color);
 	}
-	DrawJunction (canvas, junction);
+	DrawJunction(canvas, junction);
 }
 
-static void func HighlightJunction (Canvas* canvas, Junction* junction, V4 color)
+static void func HighlightJunction(Canvas* canvas, Junction* junction, V4 color)
 {
-	if (junction->roadN >= 1) 
+	if(junction->roadN >= 1) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth);
-			DrawPoly (canvas, poly.points, poly.pointN, color);
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
+			DrawPoly(canvas, poly.points, poly.pointN, color);
 		}
 	} 
 	else 
 	{
-		DrawJunctionPlaceholder (canvas, junction, color);
+		DrawJunctionPlaceholder(canvas, junction, color);
 	}
 }
 
-static void func DrawJunctionSidewalk (Canvas* canvas, Junction* junction)
+static void func DrawJunctionSidewalk(Canvas* canvas, Junction* junction)
 {
-	if (junction->roadN >= 1) 
+	if(junction->roadN >= 1) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth + SidewalkWidth);
-			DrawPoly (canvas, poly.points, poly.pointN, SidewalkColor);
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth + SidewalkWidth);
+			DrawPoly(canvas, poly.points, poly.pointN, SidewalkColor);
 		}
 	}
 }
 
-static void func DrawTexturedJunctionSidewalk (Canvas* canvas, Junction* junction, Texture sidewalkTexture)
+static void func DrawTexturedJunctionSidewalk(Canvas* canvas, Junction* junction, Texture sidewalkTexture)
 {
-	if (junction->roadN >= 1) 
+	if(junction->roadN >= 1) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth + SidewalkWidth);
-			DrawWorldTexturePoly (canvas, poly.points, poly.pointN, sidewalkTexture);
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth + SidewalkWidth);
+			DrawWorldTexturePoly(canvas, poly.points, poly.pointN, sidewalkTexture);
 		}
 	}
 }
 
-static void func DrawTexturedJunctionStripes (Canvas* canvas, Junction* junction, Texture stripeTexture)
+static void func DrawTexturedJunctionStripes(Canvas* canvas, Junction* junction, Texture stripeTexture)
 {
-	if (junction->roadN <= 2) 
+	if(junction->roadN <= 2) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			Road* road = junction->roads[i];
 			F32 stopDistance = junction->stopDistances[i];
 			V2 roadEnterPoint = {};
-			if (road->junction1 == junction)
+			if(road->junction1 == junction)
 			{
-				roadEnterPoint = FromRoadCoord1 (road, +stopDistance, 0.0f);
+				roadEnterPoint = FromRoadCoord1(road, +stopDistance, 0.0f);
 			}
-			else if (road->junction2 == junction)
+			else if(road->junction2 == junction)
 			{
-				roadEnterPoint = FromRoadCoord2 (road, -stopDistance, 0.0f);
+				roadEnterPoint = FromRoadCoord2(road, -stopDistance, 0.0f);
 			}
 			else
 			{
-				DebugBreak ();
+				DebugBreak();
 			}
 
-			DrawWorldTextureLine (canvas, junction->position, roadEnterPoint, RoadStripeWidth, stripeTexture);
+			DrawWorldTextureLine(canvas, junction->position, roadEnterPoint, RoadStripeWidth, stripeTexture);
 		}
 	} 
 	else 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
 			Road* road = junction->roads[i];
 			F32 stopDistance = junction->stopDistances[i];
 			V2 point1 = {};
 			V2 point2 = {};
-			if (road->junction1 == junction) 
+			if(road->junction1 == junction) 
 			{
-				point1 = FromRoadCoord1 (road, +stopDistance, 0.0f);
-				point2 = FromRoadCoord1 (road, +stopDistance, -LaneWidth);
+				point1 = FromRoadCoord1(road, +stopDistance, 0.0f);
+				point2 = FromRoadCoord1(road, +stopDistance, -LaneWidth);
 			}
 			else 
 			{
-				point1 = FromRoadCoord2 (road, -stopDistance, 0.0f);
-				point2 = FromRoadCoord2 (road, -stopDistance, +LaneWidth);
+				point1 = FromRoadCoord2(road, -stopDistance, 0.0f);
+				point2 = FromRoadCoord2(road, -stopDistance, +LaneWidth);
 			}
-			DrawWorldTextureLine (canvas, point1, point2, RoadStripeWidth, stripeTexture);
+			DrawWorldTextureLine(canvas, point1, point2, RoadStripeWidth, stripeTexture);
 		}
 	}
 }
 
-static void func DrawTexturedJunction (Canvas* canvas, Junction* junction, Texture roadTexture, Texture stripeTexture)
+static void func DrawTexturedJunction(Canvas* canvas, Junction* junction, Texture roadTexture, Texture stripeTexture)
 {
-	if (junction->roadN >= 1) 
+	if(junction->roadN >= 1) 
 	{
-		for (I32 i = 0; i < junction->roadN; ++i) 
+		for(I32 i = 0; i < junction->roadN; i++) 
 		{
-			Poly16 poly = GetJunctionPolyForRoad (junction, i, LaneWidth);
-			DrawWorldTexturePoly (canvas, poly.points, poly.pointN, roadTexture);
+			Poly16 poly = GetJunctionPolyForRoad(junction, i, LaneWidth);
+			DrawWorldTexturePoly(canvas, poly.points, poly.pointN, roadTexture);
 		}
-		DrawTexturedJunctionStripes (canvas, junction, stripeTexture);
+		DrawTexturedJunctionStripes(canvas, junction, stripeTexture);
 	} 
 	else 
 	{
-		DrawJunctionPlaceholder (canvas, junction, RoadColor);
+		DrawJunctionPlaceholder(canvas, junction, RoadColor);
 	}
 }
