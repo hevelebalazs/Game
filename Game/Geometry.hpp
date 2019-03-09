@@ -119,13 +119,21 @@ static Quad func MakeQuad (V2 point1, V2 point2, V2 point3, V2 point4)
 
 static F32 func DistanceSquare (V2 point1, V2 point2)
 {
-	return (point1.x - point2.x) * (point1.x - point2.x) +
-		(point1.y - point2.y) * (point1.y - point2.y);
+	F32 distanceSquare = (point1.x - point2.x) * (point1.x - point2.x) + 
+						 (point1.y - point2.y) * (point1.y - point2.y);
+	return distanceSquare;
 }
 
 static F32 func CityDistance (V2 point1, V2 point2)
 {
-	return fabsf (point1.x - point2.x) + fabsf (point1.y - point2.y);
+	F32 distance = fabsf (point1.x - point2.x) + fabsf (point1.y - point2.y);
+	return distance;
+}
+
+static F32 func MinDistance (V2 point1, V2 point2)
+{
+	F32 distance = Max2 (Abs (point1.x - point2.x), Abs (point1.y - point2.y));
+	return distance;
 }
 
 static F32 func Distance (V2 point1, V2 point2)
