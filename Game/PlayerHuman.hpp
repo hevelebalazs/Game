@@ -37,7 +37,7 @@ struct GameState;
 
 // TODO: this doesn't belong here, move it somewhere else
 // TODO: add an aimPosition parameter?
-static void func ShootBullet (PlayerHuman* playerHuman, V2 targetPoint)
+static void func ShootBullet(PlayerHuman* playerHuman, V2 targetPoint)
 {
 	Human* human = &playerHuman->human;
 	V2 aimStartPoint = playerHuman->human.position;
@@ -50,17 +50,17 @@ static void func ShootBullet (PlayerHuman* playerHuman, V2 targetPoint)
 
 	bullet->secondsRemaining = BulletTotalSeconds;
 	bullet->position.position = human->position;
-	bullet->position.direction = PointDirection (human->position, targetPoint);
+	bullet->position.direction = PointDirection(human->position, targetPoint);
 }
 
-static void func MoveHuman (Human* human, V2 moveVector)
+static void func MoveHuman(Human* human, V2 moveVector)
 {
 	Map* map = human->map;
 
-	F32 distanceToGo = VectorLength (moveVector);
+	F32 distanceToGo = VectorLength(moveVector);
 
 	// TODO: should there be a limit on the iteration number?
-	while (distanceToGo > 0.0f) 
+	while(distanceToGo > 0.0f) 
 	{
 		B32 go = true;
 		B32 isTouchingLine = false;
@@ -69,42 +69,48 @@ static void func MoveHuman (Human* human, V2 moveVector)
 
 		V2 pointToGo = (human->position + moveVector);
 
-		if (human->inBuilding) 
+		if(human->inBuilding) 
 		{
-			B32 isInBuilding = IsPointInExtBuilding (human->position, *human->inBuilding, HumanRadius);
+			B32 isInBuilding = IsPointInExtBuilding(human->position, *human->inBuilding, HumanRadius);
 
 			if (isInBuilding)
-				crossInfo = ExtBuildingInsideClosestCrossInfo (human->inBuilding, HumanRadius, human->position, pointToGo);
+			{
+				crossInfo = ExtBuildingInsideClosestCrossInfo(human->inBuilding, HumanRadius, human->position, pointToGo);
+			}
 			else
+			{
 				human->inBuilding = 0;
+			}
 		}
 		else 
 		{
-			crossInfo = GetClosestExtBuildingCrossInfo (human->map, HumanRadius, human->position, pointToGo);
+			crossInfo = GetClosestExtBuildingCrossInfo(human->map, HumanRadius, human->position, pointToGo);
 
-			if (crossInfo.type == CrossEntrance)
+			if(crossInfo.type == CrossEntrance)
+			{
 				human->inBuilding = crossInfo.building;
+			}
 		}
 
-		if (crossInfo.type == CrossWall) 
+		if(crossInfo.type == CrossWall) 
 		{
 			Building* crossedBuilding = crossInfo.building;
 
 			V2 crossPoint = crossInfo.crossPoint;
 
 			// TODO: create a proper collision system
-			F32 distanceTaken = Distance (human->position, crossPoint);
+			F32 distanceTaken = Distance(human->position, crossPoint);
 
-			V2 moveNormal = (1.0f / VectorLength (moveVector)) * moveVector;
+			V2 moveNormal = (1.0f / VectorLength(moveVector)) * moveVector;
 			V2 wallDirection = (crossInfo.corner1 - crossInfo.corner2);
-			moveVector = ParallelVector (moveVector, wallDirection);
+			moveVector = ParallelVector(moveVector, wallDirection);
 
-			distanceToGo = VectorLength (moveVector);
+			distanceToGo = VectorLength(moveVector);
 
 			go = false;
 		}
 
-		if (go) 
+		if(go) 
 		{
 			human->position = pointToGo;
 			distanceToGo = 0.0f;
@@ -113,62 +119,66 @@ static void func MoveHuman (Human* human, V2 moveVector)
 }
 
 // TODO: Put back bullet damage!
-static void func UpdatePlayerHuman (PlayerHuman* playerHuman, F32 seconds/*, GameState* gameState*/)
+static void func UpdatePlayerHuman(PlayerHuman* playerHuman, F32 seconds/*, GameState* gameState*/)
 {
 	Human* human = &playerHuman->human;
 
-	playerHuman->moveDirection = MakePoint (0.0f, 0.0f);
+	playerHuman->moveDirection = MakePoint(0.0f, 0.0f);
 
 	B32 moveX = false;
 	B32 moveY = false;
 
-	if (playerHuman->moveLeft) 
+	if(playerHuman->moveLeft) 
 	{
 		playerHuman->moveDirection.x = -1.0f;
 		moveX = true;
 	}
 
-	if (playerHuman->moveRight) 
+	if(playerHuman->moveRight) 
 	{
 		playerHuman->moveDirection.x = 1.0f;
 		moveX = true;
 	}
 
-	if (playerHuman->moveUp) 
+	if(playerHuman->moveUp) 
 	{
 		playerHuman->moveDirection.y = -1.0f;
 		moveY = true;
 	}
 
-	if (playerHuman->moveDown) 
+	if(playerHuman->moveDown) 
 	{
 		playerHuman->moveDirection.y = 1.0f;
 		moveY = true;
 	}
 
-	if (moveX && moveY) 
-		playerHuman->moveDirection = (1.0f / Sqrt (2.0f)) * playerHuman->moveDirection;
+	if(moveX && moveY) 
+	{
+		playerHuman->moveDirection = (1.0f / Sqrt(2.0f)) * playerHuman->moveDirection;
+	}
 
 	V2 moveVector = (human->moveSpeed * seconds) * playerHuman->moveDirection;
 
-	MoveHuman (human, moveVector);
+	MoveHuman(human, moveVector);
 
 	// TODO: merge update and draw everywhere
-	if (playerHuman->shootCooldown >= 0.0f) 
+	if(playerHuman->shootCooldown >= 0.0f) 
 	{
 		playerHuman->shootCooldown -= seconds;
-		if (playerHuman->shootCooldown <= 0.0f)
+		if(playerHuman->shootCooldown <= 0.0f)
+		{
 			playerHuman->shootCooldown = 0.0f;
+		}
 	}
 
 	// TODO: create an UpdateBullet function
 	//       and move it to another file?
 	Bullet* bullet = &playerHuman->bullet;
-	if (bullet->secondsRemaining > 0.0f) 
+	if(bullet->secondsRemaining > 0.0f) 
 	{
 		F32 secondsToGo = 0.0f;
 
-		if (bullet->secondsRemaining > seconds) 
+		if(bullet->secondsRemaining > seconds) 
 		{
 			secondsToGo = seconds;
 			bullet->secondsRemaining -= seconds;
@@ -188,14 +198,14 @@ static void func UpdatePlayerHuman (PlayerHuman* playerHuman, F32 seconds/*, Gam
 		Line bulletLine = Line{oldPosition, newPosition};
 
 		/*
-		for (I32 i = 0; i < gameState->autoHumanCount; ++i) 
+		for(I32 i = 0; i < gameState->autoHumanCount; ++i) 
 		{
 			AutoHuman* autoHuman = &gameState->autoHumans[i];
 			Human* human = &autoHuman->human;
 
-			if (!autoHuman->dead && IsHumanCrossedByLine (human, bulletLine)) 
+			if(!autoHuman->dead && IsHumanCrossedByLine(human, bulletLine)) 
 			{
-				DamageAutoHuman (autoHuman, &gameState->pathPool);
+				DamageAutoHuman(autoHuman, &gameState->pathPool);
 				bullet->secondsRemaining = 0.0f;
 				break;
 			}
@@ -204,12 +214,12 @@ static void func UpdatePlayerHuman (PlayerHuman* playerHuman, F32 seconds/*, Gam
 	}
 }
 
-static void func DrawPlayerHuman (Canvas* canvas, PlayerHuman* playerHuman)
+static void func DrawPlayerHuman(Canvas* canvas, PlayerHuman* playerHuman)
 {
 	Human* human = &playerHuman->human;
 
 	Bullet* bullet = &playerHuman->bullet;
-	if (bullet->secondsRemaining > 0.0f) 
+	if(bullet->secondsRemaining > 0.0f) 
 	{
 		F32 bulletTailLength = 2.0f;
 
@@ -217,9 +227,9 @@ static void func DrawPlayerHuman (Canvas* canvas, PlayerHuman* playerHuman)
 		V2 point2 = point1 - (bulletTailLength * bullet->position.direction);
 
 		// TODO: make this a global value
-		V4 bulletColor = MakeColor (1.0f, 1.0f, 0.0f);
-		Bresenham (canvas, point1, point2, bulletColor);
+		V4 bulletColor = MakeColor(1.0f, 1.0f, 0.0f);
+		Bresenham(canvas, point1, point2, bulletColor);
 	}
 
-	DrawHuman (canvas, playerHuman->human);
+	DrawHuman(canvas, playerHuman->human);
 }

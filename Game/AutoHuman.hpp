@@ -24,17 +24,17 @@ struct AutoHuman
 	B32 dead;
 };
 
-static void func InitAutoHumanMovement (AutoHuman* autoHuman)
+static void func InitAutoHumanMovement(AutoHuman* autoHuman)
 {
 	Human* human = &autoHuman->human;
 
-	F32 moveDistance = Distance (autoHuman->moveStartPoint.position, autoHuman->moveEndPoint.position);
+	F32 moveDistance = Distance(autoHuman->moveStartPoint.position, autoHuman->moveEndPoint.position);
 
 	autoHuman->moveTotalSeconds = (moveDistance / human->moveSpeed);
 	autoHuman->moveSeconds = 0.0f;
 }
 
-static void func MoveAutoHumanToJunction (AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+static void func MoveAutoHumanToJunction(AutoHuman* autoHuman, Junction* junction, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
 	Human* human = &autoHuman->human;
 
@@ -43,64 +43,64 @@ static void func MoveAutoHumanToJunction (AutoHuman* autoHuman, Junction* juncti
 	I32 startCornerIndex = GetClosestJunctionCornerIndex (autoHuman->onJunction, autoHuman->human.position);
 	I32 endCornerIndex = GetRandomJunctionCornerIndex (junction);
 
-	autoHuman->moveNode = ConnectPedestrianElems (human->map, targetElem, startCornerIndex, nextElem, endCornerIndex,
-												  tmpArena, pathPool);
+	autoHuman->moveNode = ConnectPedestrianElems(human->map, targetElem, startCornerIndex, nextElem, endCornerIndex,
+												 tmpArena, pathPool);
 
-	if (autoHuman->moveNode)
+	if(autoHuman->moveNode)
 	{
 		// autoHuman->moveStartPoint = StartNodePoint(autoHuman->moveNode);
 		autoHuman->moveStartPoint.position = human->position;
 		V4 humanPosition = {};
 		humanPosition.position = human->position;
-		autoHuman->moveEndPoint = NextNodePoint (autoHuman->moveNode, humanPosition);
+		autoHuman->moveEndPoint = NextNodePoint(autoHuman->moveNode, humanPosition);
 
-		InitAutoHumanMovement (autoHuman);
+		InitAutoHumanMovement(autoHuman);
 
 		autoHuman->moveTargetJunction = junction;
 	}
 }
 
-static void func UpdateAutoHuman (AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
+static void func UpdateAutoHuman(AutoHuman* autoHuman, F32 seconds, MemArena* arena, MemArena* tmpArena, PathPool* pathPool)
 {
-	if (autoHuman->dead)
+	if(autoHuman->dead)
 	{
 		return;
 	}
 
 	Human* human = &autoHuman->human;
 
-	if (autoHuman->moveTargetJunction)
+	if(autoHuman->moveTargetJunction)
 	{
 		// TODO: should there be a limit on the interation number?
-		while (seconds > 0.0f)
+		while(seconds > 0.0f)
 		{
 			PathNode* moveNode = autoHuman->moveNode;
 
-			if (!moveNode)
+			if(!moveNode)
 			{
 				autoHuman->onJunction = autoHuman->moveTargetJunction;
 				autoHuman->moveTargetJunction = 0;
 				break;
 			}
 
-			if (moveNode)
+			if(moveNode)
 			{
 				autoHuman->moveSeconds += seconds;
 
-				if (autoHuman->moveSeconds >= autoHuman->moveTotalSeconds)
+				if(autoHuman->moveSeconds >= autoHuman->moveTotalSeconds)
 				{
 					autoHuman->moveStartPoint = autoHuman->moveEndPoint;
 
 					seconds = (autoHuman->moveSeconds - autoHuman->moveTotalSeconds);
 
-					if (IsNodeEndPoint (moveNode, autoHuman->moveStartPoint))
+					if(IsNodeEndPoint(moveNode, autoHuman->moveStartPoint))
 					{
 						moveNode = moveNode->next;
 
 						FreePathNode(autoHuman->moveNode, pathPool);
 						autoHuman->moveNode = moveNode;
 
-						if (!moveNode)
+						if(!moveNode)
 						{
 							continue;
 						}
@@ -123,7 +123,7 @@ static void func UpdateAutoHuman (AutoHuman* autoHuman, F32 seconds, MemArena* a
 					point.position = (startRatio * autoHuman->moveStartPoint.position) +
 									 (endRatio * autoHuman->moveEndPoint.position);
 
-					MoveHuman (human, point);
+					MoveHuman(human, point);
 				}
 			}
 		}
@@ -131,16 +131,16 @@ static void func UpdateAutoHuman (AutoHuman* autoHuman, F32 seconds, MemArena* a
 	else
 	{
 		Junction* targetJunction = GetRandomJunction(human->map);
-		MoveAutoHumanToJunction (autoHuman, targetJunction, arena, tmpArena, pathPool);
+		MoveAutoHumanToJunction(autoHuman, targetJunction, arena, tmpArena, pathPool);
 	}
 }
 
-static void func KillAutoHuman (AutoHuman* autoHuman, PathPool* pathPool)
+static void func KillAutoHuman(AutoHuman* autoHuman, PathPool* pathPool)
 {
 	autoHuman->dead = true;
-	if (autoHuman->moveNode)
+	if(autoHuman->moveNode)
 	{
-		FreePath (autoHuman->moveNode, pathPool);
+		FreePath(autoHuman->moveNode, pathPool);
 		autoHuman->moveNode = 0;
 	}
 }
@@ -159,13 +159,13 @@ static void func DamageAutoHuman (AutoHuman* autoHuman, PathPool* pathPool)
 	}
 }
 
-static void func DrawAutoHuman (Canvas* canvas, AutoHuman* autoHuman) 
+static void func DrawAutoHuman(Canvas* canvas, AutoHuman* autoHuman) 
 {
-	if (autoHuman->dead) 
+	if(autoHuman->dead) 
 	{
 		// TODO: this messes up other things that use random
-		SeedRandom ((I32)autoHuman->human.position.x + (I32)autoHuman->human.position.y);
-		for (I32 i = 0; i < 5; ++i) 
+		SeedRandom((I32)autoHuman->human.position.x + (I32)autoHuman->human.position.y);
+		for(I32 i = 0; i < 5; ++i) 
 		{
 			F32 x = autoHuman->human.position.x + RandomBetween(-2.0f, 2.0f);
 			F32 y = autoHuman->human.position.y + RandomBetween(-2.0f, 2.0f);
@@ -178,12 +178,12 @@ static void func DrawAutoHuman (Canvas* canvas, AutoHuman* autoHuman)
 
 			// TODO: make this a global variable?
 			V4 bloodColor = MakeColor(1.0f, 0.0f, 0.0f);
-			DrawRectLRTB (canvas, left, right, top, bottom, bloodColor);
+			DrawRectLRTB(canvas, left, right, top, bottom, bloodColor);
 		}
 		InitRandom();
 	} 
 	else 
 	{
-		DrawHuman (canvas, autoHuman->human);
+		DrawHuman(canvas, autoHuman->human);
 	}
 }
