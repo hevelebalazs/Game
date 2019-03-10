@@ -6,12 +6,20 @@
 #define TileRowN 10
 #define TileColN 10
 
-#define EntityRadius (0.25f * TileSide)
-
 struct TileIndex
 {
 	I32 row;
 	I32 col;
+};
+
+#define EntityRadius (0.25f * TileSide)
+#define EntityMaxHealth 100
+struct Entity
+{
+	V2 position;
+	F32 recharge;
+	F32 rechargeFrom;
+	I32 health;
 };
 
 struct CombatLabState
@@ -20,14 +28,16 @@ struct CombatLabState
 	Canvas canvas;
 	B32 running;
 
-	V2 playerPosition;
 	V2 playerMoveDirection;
 
-	V2 enemyPosition;
+	Entity player;
+	Entity enemy;
 };
 CombatLabState gCombatLabState;
 
 #define PlayerSpeed 20.0f
+
+#define EnemyAttackRadius 10.0f
 
 static void func CombatLabResize(CombatLabState* labState, I32 width, I32 height)
 {
@@ -98,12 +108,16 @@ static void func CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 wi
 
 	F32 mapWidth = TileRowN * TileSide;
 	F32 mapHeight = TileColN * TileSide;
-
 	V2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
-	labState->playerPosition = mapCenter;
+
+	Entity* player = &labState->player;
+	player->position = mapCenter;
+	player->health = EntityMaxHealth;
 	labState->playerMoveDirection = MakePoint(0.0f, 0.0f);
 
-	labState->enemyPosition = MakePoint(mapWidth - EntityRadius, mapHeight - EntityRadius);
+	Entity* enemy = &labState->enemy;
+	enemy->position = MakePoint(mapWidth - EntityRadius, mapHeight - EntityRadius);
+	enemy->health = EntityMaxHealth;
 }
 
 static I32 func GetTileDistance(TileIndex tileIndex1, TileIndex tileIndex2)
@@ -280,6 +294,49 @@ static void func DrawCircleOutline(Canvas* canvas, V2 center, F32 radius, V4 col
 	}
 }
 
+static void func DrawEntity(Canvas* canvas, Entity* entity, V4 color)
+{
+	V4 entityOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawCircle(canvas, entity->position, EntityRadius, color);
+	DrawCircleOutline(canvas, entity->position, EntityRadius, entityOutlineColor);
+}
+
+static void func DrawEntityBars(Canvas* canvas, Entity* entity)
+{
+	V2 healthBarCenter = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
+	F32 healthBarWidth = 2.0f * EntityRadius;
+	F32 healthBarHeight = 0.5f * EntityRadius;
+	V4 healthBarBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 healthBarFilledColor = MakeColor(1.0f, 0.0f, 0.0f);
+	V4 healthBarOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+	F32 healthRatio = F32(entity->health) / F32(EntityMaxHealth);
+	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
+	Rect healthBarBackgroundRect = MakeRect(healthBarCenter, healthBarWidth, healthBarHeight);
+	DrawRect(canvas, healthBarBackgroundRect, healthBarBackgroundColor);
+	Rect healthBarFilledRect = healthBarBackgroundRect;
+	healthBarFilledRect.right = Lerp(healthBarFilledRect.left, healthRatio, healthBarFilledRect.right);
+	DrawRect(canvas, healthBarFilledRect, healthBarFilledColor);
+	DrawRectOutline(canvas, healthBarBackgroundRect, healthBarOutlineColor);
+
+	if(entity->recharge > 0.0f)
+	{
+		Assert(entity->recharge <= entity->rechargeFrom);
+		F32 rechargeRatio = entity->recharge / entity->rechargeFrom;
+		V4 rechargeBarBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+		V4 rechargeBarColor = MakeColor(1.0f, 1.0f, 0.0f);
+		V4 rechargeBarOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+		V2 rechargeBarCenter = entity->position + MakeVector(0.0f, -1.8f * EntityRadius);
+		F32 rechargeBarWidth = 2.0f * EntityRadius;
+		F32 rechargeBarHeight = 0.3f * EntityRadius;
+		Rect rechargeBar = MakeRect(rechargeBarCenter, rechargeBarWidth, rechargeBarHeight);
+		DrawRect(canvas, rechargeBar, rechargeBarBackgroundColor);
+		Rect rechargeBarFilled = rechargeBar;
+		rechargeBarFilled.right = Lerp(rechargeBarFilled.left, rechargeRatio, rechargeBarFilled.right);
+		DrawRect(canvas, rechargeBarFilled, rechargeBarColor);
+		DrawRectOutline(canvas, rechargeBar, rechargeBarOutlineColor);
+	}
+}
+
 static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seconds)
 {
 	Canvas* canvas = &labState->canvas;
@@ -311,27 +368,27 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	F32 mapWidth = TileColN * TileSide;
 	F32 mapHeight = TileRowN * TileSide;
 
-	labState->playerPosition = labState->playerPosition + PlayerSpeed * seconds * labState->playerMoveDirection;
+	Entity* player = &labState->player;
+	Entity* enemy = &labState->enemy;
 
-	labState->playerPosition.x = Clip(labState->playerPosition.x, EntityRadius, mapWidth - EntityRadius);
-	labState->playerPosition.y = Clip(labState->playerPosition.y, EntityRadius, mapHeight - EntityRadius);
+	player->position = player->position + PlayerSpeed * seconds * labState->playerMoveDirection;
 
-	V4 entityOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+	player->position.x = Clip(player->position.x, EntityRadius, mapWidth - EntityRadius);
+	player->position.y = Clip(player->position.y, EntityRadius, mapHeight - EntityRadius);
+
 
 	V4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
-	DrawCircle(canvas, labState->playerPosition, EntityRadius, playerColor);
-	DrawCircleOutline(canvas, labState->playerPosition, EntityRadius, entityOutlineColor);
+	DrawEntity(canvas, player, playerColor);
 
 	V4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
-	DrawCircle(canvas, labState->enemyPosition, EntityRadius, enemyColor);
-	DrawCircleOutline(canvas, labState->enemyPosition, EntityRadius, entityOutlineColor);
+	DrawEntity(canvas, enemy, enemyColor);
 
 	B32 foundTargetTile = false;
 	F32 enemyTargetDistance = 0.0f;
 
 	V2 targetDirection = {};
 	V2 targetPosition = {};
-	TileIndex playerTileIndex = GetContainingTileIndex(labState->playerPosition);
+	TileIndex playerTileIndex = GetContainingTileIndex(player->position);
 	F32 attackDistance = 2.5f * EntityRadius;
 
 	for(I32 row = playerTileIndex.row - 1; row <= playerTileIndex.row + 1; row++)
@@ -351,8 +408,8 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 			TileIndex tileIndex = MakeTileIndex(row, col);
 			if(IsValidTileIndex(tileIndex))
 			{
-				V2 position = labState->playerPosition + attackDistance * direction;
-				F32 enemyDistance = MinDistance(labState->enemyPosition, position);
+				V2 position = player->position + attackDistance * direction;
+				F32 enemyDistance = MaxDistance(enemy->position, position);
 				if(!foundTargetTile || enemyDistance < enemyTargetDistance)
 				{
 					targetDirection = direction;
@@ -369,23 +426,39 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	F32 enemyMoveSpeed = 10.0f;
 	F32 enemyMoveDistance = seconds * enemyMoveSpeed;
 
-	if(labState->enemyPosition.x < targetPosition.x)
+	if(enemy->position.x < targetPosition.x)
 	{
-		labState->enemyPosition.x = Min2(labState->enemyPosition.x + enemyMoveDistance, targetPosition.x);
+		enemy->position.x = Min2(enemy->position.x + enemyMoveDistance, targetPosition.x);
 	}
 	else
 	{
-		labState->enemyPosition.x = Max2(labState->enemyPosition.x - enemyMoveDistance, targetPosition.x);
+		enemy->position.x = Max2(enemy->position.x - enemyMoveDistance, targetPosition.x);
 	}
 
-	if(labState->enemyPosition.y < targetPosition.y)
+	if(enemy->position.y < targetPosition.y)
 	{
-		labState->enemyPosition.y = Min2(labState->enemyPosition.y + enemyMoveDistance, targetPosition.y);
+		enemy->position.y = Min2(enemy->position.y + enemyMoveDistance, targetPosition.y);
 	}
 	else
 	{
-		labState->enemyPosition.y = Max2(labState->enemyPosition.y - enemyMoveDistance, targetPosition.y);
+		enemy->position.y = Max2(enemy->position.y - enemyMoveDistance, targetPosition.y);
 	}
+
+	enemy->recharge = Max2(enemy->recharge - seconds, 0.0f);
+
+	if(MaxDistance(enemy->position, player->position) <= EnemyAttackRadius)
+	{
+		if(enemy->recharge == 0.0f)
+		{
+			player->health = IntMax2(player->health - 10, 0);
+
+			enemy->rechargeFrom = 3.0f;
+			enemy->recharge = enemy->rechargeFrom;
+		}
+	}
+
+	DrawEntityBars(canvas, player);
+	DrawEntityBars(canvas, enemy);
 
 	V2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 	Camera* camera = &labState->camera;
@@ -459,10 +532,10 @@ static void func CombatLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Computer controlled enemies
-	// TODO: Multiple enemies
-	// TODO: Attack player
-	// TODO: Don't stack upon each other (find a simple solution in this task)
 // TODO: Real time Monk abilities!
+// TODO: Computer controlled enemies
+	// TODO: Only get pulled from a certain distance!
+	// TODO: Multiple enemies
+	// TODO: Don't stack upon each other (find a simple solution in this task)
 // TODO: Cult Warrior class
 // TODO: Paladin class

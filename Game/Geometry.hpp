@@ -130,7 +130,7 @@ static F32 func CityDistance(V2 point1, V2 point2)
 	return distance;
 }
 
-static F32 func MinDistance (V2 point1, V2 point2)
+static F32 func MaxDistance(V2 point1, V2 point2)
 {
 	F32 distance = Max2(Abs(point1.x - point2.x), Abs(point1.y - point2.y));
 	return distance;
