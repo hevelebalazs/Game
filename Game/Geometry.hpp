@@ -142,6 +142,7 @@ static F32 func Distance(V2 point1, V2 point2)
 	F32 dy = (point1.y - point2.y);
 
 	F32 distance = sqrtf((dx * dx) + (dy * dy));
+	return distance;
 }
 
 static F32 func VectorLength(V2 vector)

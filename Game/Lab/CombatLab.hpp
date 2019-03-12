@@ -15,7 +15,7 @@ enum AbilityId
 	SpinningKickAbilityId,
 	AvoidanceAbilityId,
 	RollAbilityId,
-	AbilityN
+	EnemyAbilityId
 };
 
 enum EffectId
@@ -34,13 +34,24 @@ struct TileIndex
 
 #define EntityRadius (0.25f * TileSide)
 #define EntityMaxHealth 100
+
+enum EntityGroupId
+{
+	PlayerGroupId,
+	EnemyGroupId
+};
+
 struct Entity
 {
 	V2 position;
 	V2 velocity;
+
 	F32 recharge;
 	F32 rechargeFrom;
 	I32 health;
+
+	I32 groupId;
+	Entity* target;
 
 	V2 inputDirection;
 };
@@ -61,6 +72,7 @@ struct Effect
 
 #define MaxCooldownN 64
 #define MaxEffectN 64
+#define EntityN 5
 struct CombatLabState
 {
 	Camera camera;
@@ -73,8 +85,7 @@ struct CombatLabState
 	Effect effects[MaxEffectN];
 	I32 effectN;
 
-	Entity player;
-	Entity enemy;
+	Entity entities[EntityN];
 };
 CombatLabState gCombatLabState;
 
@@ -155,14 +166,36 @@ static void func CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 wi
 	F32 mapHeight = TileColN * TileSide;
 	V2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 
-	Entity* player = &labState->player;
+	Entity* player = &labState->entities[0];
 	player->position = mapCenter;
 	player->health = EntityMaxHealth;
 	player->inputDirection = MakePoint(0.0f, 0.0f);
+	player->groupId = PlayerGroupId;
 
-	Entity* enemy = &labState->enemy;
-	enemy->position = MakePoint(mapWidth - EntityRadius, mapHeight - EntityRadius);
-	enemy->health = EntityMaxHealth;
+	{
+		Entity* enemy = &labState->entities[1];
+		enemy->position = MakePoint(EntityRadius, EntityRadius);
+		enemy->health = EntityMaxHealth;
+		enemy->groupId = EnemyGroupId;
+	}
+	{
+		Entity* enemy = &labState->entities[2];
+		enemy->position = MakePoint(mapWidth - EntityRadius, EntityRadius);
+		enemy->health = EntityMaxHealth;
+		enemy->groupId = EnemyGroupId;
+	}
+	{
+		Entity* enemy = &labState->entities[3];
+		enemy->position = MakePoint(mapWidth - EntityRadius, mapHeight - EntityRadius);
+		enemy->health = EntityMaxHealth;
+		enemy->groupId = EnemyGroupId;
+	}
+	{
+		Entity* enemy = &labState->entities[4];
+		enemy->position = MakePoint(EntityRadius, mapHeight - EntityRadius);
+		enemy->health = EntityMaxHealth;
+		enemy->groupId = EnemyGroupId;
+	}
 }
 
 static I32 func GetTileDistance(TileIndex tileIndex1, TileIndex tileIndex2)
@@ -198,17 +231,16 @@ static B32 func IsDead(Entity* entity)
 	return isDead;
 }
 
-static B32 func CanUseAbility(CombatLabState* labState, I32 abilityId)
+static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
 {
 	B32 canUse = false;
-	Entity* player = &labState->player;
-	Entity* enemy = &labState->enemy;
+	Entity* target = entity->target;
 
-	if(IsDead(player) || player->recharge > 0.0f)
+	if(IsDead(entity) || entity->recharge > 0.0f)
 	{
 		canUse = false;
 	}
-	else if(IsOnCooldown(labState, player, abilityId))
+	else if(IsOnCooldown(labState, entity, abilityId))
 	{
 		canUse = false;
 	}
@@ -219,15 +251,18 @@ static B32 func CanUseAbility(CombatLabState* labState, I32 abilityId)
 			case SmallPunchAbilityId:
 			case BigPunchAbilityId:
 			case KickAbilityId:
+			case EnemyAbilityId:
 			{
-				canUse = (MaxDistance(player->position, enemy->position) <= MaxMeleeAttackDistance);
+				canUse = ((target != 0) && (!IsDead(target)) &&
+					      (MaxDistance(entity->position, target->position) <= MaxMeleeAttackDistance));
 				break;
 			}
 			case RollAbilityId:
 			{
-				canUse = (player->inputDirection.x != 0.0f || player->inputDirection.y != 0.0f);
+				canUse = (entity->inputDirection.x != 0.0f || entity->inputDirection.y != 0.0f);
 				break;
 			}
+			case SpinningKickAbilityId:
 			case AvoidanceAbilityId:
 			{
 				canUse = true;
@@ -322,6 +357,13 @@ static F32 func GetAbilityCooldownDuration(I32 abilityId)
 			duration = 10.0f;
 			break;
 		}
+		case SmallPunchAbilityId:
+		case SpinningKickAbilityId:
+		case EnemyAbilityId:
+		{
+			duration = 0.0f;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -330,8 +372,16 @@ static F32 func GetAbilityCooldownDuration(I32 abilityId)
 	return duration;
 }
 
+static B32 func HasCooldown(I32 abilityId)
+{
+	F32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
+	B32 hasCooldown = (cooldownDuration > 0.0f);
+	return hasCooldown;
+}
+
 static void func AddCooldown(CombatLabState* labState, Entity* entity, I32 abilityId)
 {
+	Assert(HasCooldown(abilityId));
 	F32 duration = GetAbilityCooldownDuration(abilityId);
 
 	Assert(duration > 0.0f);
@@ -428,49 +478,24 @@ static void func AddEffect(CombatLabState* labState, Entity* entity, I32 effectI
 	effect->timeRemaining = duration;
 }
 
-static void func UseAbility(CombatLabState* labState, I32 abilityId)
+static F32 func GetAbilityRechargeDuration(I32 abilityId)
 {
-	Assert(CanUseAbility(labState, abilityId));
-	Entity* player = &labState->player;
-	Entity* enemy = &labState->enemy;
-	switch (abilityId)
+	F32 duration = 0.0f;
+	switch(abilityId)
 	{
 		case SmallPunchAbilityId:
-		{
-			AttemptToDoDamage(labState, enemy, 10);
-			PutOnRecharge(player, 1.0f);
-			break;
-		}
 		case BigPunchAbilityId:
-		{
-			AttemptToDoDamage(labState, enemy, 30);
-			PutOnRecharge(player, 1.0f);
-			AddCooldown(labState, player, BigPunchAbilityId);
-			break;
-		}
 		case KickAbilityId:
-		{
-			F32 moveSpeed = 20.0f;
-			enemy->velocity = moveSpeed * GetClosestMoveDirection(enemy->position - player->position);
-			AddEffect(labState, enemy, KickedEffectId, 1.0f);
-			PutOnRecharge(player, 1.0f);
-			AddCooldown(labState, player, KickAbilityId);
-			break;
-		}
+		case SpinningKickAbilityId:
+		case AvoidanceAbilityId:
 		case RollAbilityId:
 		{
-			F32 moveSpeed = 20.0f;
-			player->velocity = moveSpeed * GetClosestMoveDirection(player->inputDirection);
-			AddEffect(labState, player, RollingEffectId, 1.0f);
-			PutOnRecharge(player, 1.0f);
-			AddCooldown(labState, player, RollAbilityId);
+			duration = 1.0f;
 			break;
 		}
-		case AvoidanceAbilityId:
+		case EnemyAbilityId:
 		{
-			AddEffect(labState, player, InvulnerableEffectId, 2.0f);
-			PutOnRecharge(player, 2.0f);
-			AddCooldown(labState, player, AvoidanceAbilityId);
+			duration = 3.0f;
 			break;
 		}
 		default:
@@ -478,13 +503,89 @@ static void func UseAbility(CombatLabState* labState, I32 abilityId)
 			DebugBreak();
 		}
 	}
+	return duration;
 }
 
-static void func AttemptToUseAbility(CombatLabState* labState, I32 abilityId)
+static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
 {
-	if(CanUseAbility(labState, abilityId))
+	Assert(CanUseAbility(labState, entity, abilityId));
+	Entity* target = entity->target;
+	switch (abilityId)
 	{
-		UseAbility(labState, abilityId);
+		case SmallPunchAbilityId:
+		{
+			Assert(target != 0);
+			AttemptToDoDamage(labState, target, 10);
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			Assert(target != 0);
+			AttemptToDoDamage(labState, target, 30);
+			break;
+		}
+		case KickAbilityId:
+		{
+			Assert(target != 0);
+			F32 moveSpeed = 20.0f;
+			target->velocity = moveSpeed * GetClosestMoveDirection(target->position - entity->position);
+			AddEffect(labState, target, KickedEffectId, 1.0f);
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			for(I32 i = 0; i < EntityN; i++)
+			{
+				Entity* target = &labState->entities[i];
+				if(target->groupId != entity->groupId)
+				{
+					F32 distance = Distance(entity->position, target->position);
+					if(distance <= MaxMeleeAttackDistance)
+					{
+						AttemptToDoDamage(labState, target, 10);
+					}
+				}
+			}
+			break;
+		}
+		case RollAbilityId:
+		{
+			F32 moveSpeed = 20.0f;
+			entity->velocity = moveSpeed * GetClosestMoveDirection(entity->inputDirection);
+			AddEffect(labState, entity, RollingEffectId, 1.0f);
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			AddEffect(labState, entity, InvulnerableEffectId, 2.0f);
+			break;
+		}
+		case EnemyAbilityId:
+		{
+			Assert(target != 0);
+			AttemptToDoDamage(labState, target, 10);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	F32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
+	PutOnRecharge(entity, rechargeDuration);
+
+	if(HasCooldown(abilityId))
+	{
+		AddCooldown(labState, entity, abilityId);
+	}
+}
+
+static void func AttemptToUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+{
+	if(CanUseAbility(labState, entity, abilityId))
+	{
+		UseAbility(labState, entity, abilityId);
 	}
 }
 
@@ -493,7 +594,8 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 	LRESULT result = 0;
 	
 	CombatLabState* labState = &gCombatLabState;
-	Entity* player = &labState->player;
+	Entity* player = &labState->entities[0];
+	Assert(player->groupId == PlayerGroupId);
 	switch(message)
 	{
 		case WM_SIZE:
@@ -523,6 +625,33 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 			WPARAM keyCode = wparam;
 			switch(keyCode)
 			{
+				case VK_TAB:
+				{
+					Entity* target = 0;
+					F32 targetPlayerDistance = 0.0f;
+					for(I32 i = 0; i < EntityN; i++)
+					{
+						Entity* enemy = &labState->entities[i];
+						if(enemy->groupId == player->groupId || IsDead(enemy) || enemy == player->target)
+						{
+							continue;
+						}
+						Assert(enemy != player);
+
+						F32 enemyPlayerDistance = Distance(enemy->position, player->position);
+						if(target == 0 || enemyPlayerDistance < targetPlayerDistance)
+						{
+							target = enemy;
+							targetPlayerDistance = enemyPlayerDistance;
+						}
+					}
+
+					if(target)
+					{
+						player->target = target;
+					}
+					break;
+				}
 				case VK_LEFT:
 				case 'A':
 				{
@@ -549,27 +678,32 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 				}
 				case '1':
 				{
-					AttemptToUseAbility(labState, SmallPunchAbilityId);
+					AttemptToUseAbility(labState, player, SmallPunchAbilityId);
 					break;
 				}
 				case '2':
 				{
-					AttemptToUseAbility(labState, BigPunchAbilityId);
+					AttemptToUseAbility(labState, player, BigPunchAbilityId);
 					break;
 				}
 				case '3':
 				{
-					AttemptToUseAbility(labState, KickAbilityId);
+					AttemptToUseAbility(labState, player, KickAbilityId);
 					break;
 				}
 				case '4':
 				{
-					AttemptToUseAbility(labState, RollAbilityId);
+					AttemptToUseAbility(labState, player, SpinningKickAbilityId);
 					break;
 				}
 				case '5':
 				{
-					AttemptToUseAbility(labState, AvoidanceAbilityId);
+					AttemptToUseAbility(labState, player, RollAbilityId);
+					break;
+				}
+				case '6':
+				{
+					AttemptToUseAbility(labState, player, AvoidanceAbilityId);
 					break;
 				}
 			}
@@ -691,6 +825,13 @@ static void func DrawEntity(Canvas* canvas, Entity* entity, V4 color)
 	DrawCircleOutline(canvas, entity->position, EntityRadius, entityOutlineColor);
 }
 
+static void func DrawSelectedEntity(Canvas* canvas, Entity* entity, V4 color)
+{
+	V4 selectionOutlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawCircle(canvas, entity->position, EntityRadius, color);
+	DrawCircleOutline(canvas, entity->position, EntityRadius, selectionOutlineColor);	
+}
+
 static void func DrawEntityBars(Canvas* canvas, Entity* entity)
 {
 	V2 healthBarCenter = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
@@ -734,15 +875,16 @@ static void func DrawAbilityBar(CombatLabState* labState)
 	Assert(glyphData != 0);
 
 	Camera* camera = &labState->camera;
-	I32 abilityIds[5] = 
+	I32 abilityIds[6] = 
 	{
 		SmallPunchAbilityId,
 		BigPunchAbilityId,
 		KickAbilityId,
+		SpinningKickAbilityId,
 		RollAbilityId,
 		AvoidanceAbilityId
 	};
-	I32 abilityN = 5;
+	I32 abilityN = 6;
 
 	I32 boxSide = 40;
 	I32 padding = 5;
@@ -755,7 +897,8 @@ static void func DrawAbilityBar(CombatLabState* labState)
 	I32 bottom = (bitmap->height - 1) - 30;
 	I32 top = bottom - boxSide;
 
-	Entity* entity = &labState->player;
+	Entity* entity = &labState->entities[0];
+	Assert(entity->groupId == PlayerGroupId);
 
 	I32 boxLeft = left;
 	for(I32 i = 0; i < abilityN; i++)
@@ -786,7 +929,7 @@ static void func DrawAbilityBar(CombatLabState* labState)
 			recharge = entity->recharge;
 			rechargeFrom = entity->rechargeFrom;
 		}
-		else if(!CanUseAbility(labState, abilityId))
+		else if(!CanUseAbility(labState, entity, abilityId))
 		{
 			DrawBitmapRect(bitmap, boxLeft, boxRight, boxTop, boxBottom, boxCannotUseColor);
 		}
@@ -898,8 +1041,8 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	F32 mapWidth = TileColN * TileSide;
 	F32 mapHeight = TileRowN * TileSide;
 
-	Entity* player = &labState->player;
-	Entity* enemy = &labState->enemy;
+	Entity* player = &labState->entities[0];
+	Assert(player->groupId == PlayerGroupId);
 
 	UpdateCooldowns(labState, seconds);
 	UpdateEffects(labState, seconds);
@@ -920,93 +1063,147 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	DrawEntity(canvas, player, playerColor);
 
 	V4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
-	DrawEntity(canvas, enemy, enemyColor);
 
-	B32 foundTargetTile = false;
-	F32 enemyTargetDistance = 0.0f;
-
-	V2 targetDirection = {};
-	V2 targetPosition = {};
-	TileIndex playerTileIndex = GetContainingTileIndex(player->position);
-
-	for(I32 row = playerTileIndex.row - 1; row <= playerTileIndex.row + 1; row++)
+	for(I32 i = 0; i < EntityN; i++)
 	{
-		V2 direction = {};
-		direction.y = (F32)(row - playerTileIndex.row);
-
-		for(I32 col = playerTileIndex.col - 1; col <= playerTileIndex.col + 1; col++)
+		Entity* enemy = &labState->entities[i];
+		if (enemy->groupId != EnemyGroupId)
 		{
-			direction.x = (F32)(col - playerTileIndex.col);
+			continue;
+		}
 
-			if(row == playerTileIndex.row && col == playerTileIndex.col)
+		if(enemy == player->target)
+		{
+			DrawSelectedEntity(canvas, enemy, enemyColor);
+		}
+		else
+		{
+			DrawEntity(canvas, enemy, enemyColor);
+		}
+	}
+
+	F32 enemyPullDistance = 30.0f;
+	for(I32 i = 0; i < EntityN; i++)
+	{
+		Entity* enemy = &labState->entities[i];
+		if (enemy->groupId != EnemyGroupId)
+		{
+			continue;
+		}
+
+		if(enemy->target == 0)
+		{
+			F32 distance = MaxDistance(player->position, enemy->position);
+			if(distance <= enemyPullDistance)
 			{
-				continue;
+				enemy->target = player;
 			}
+		}
 
-			F32 attackDistance = 2.5f * EntityRadius;
-			TileIndex tileIndex = MakeTileIndex(row, col);
-			if(IsValidTileIndex(tileIndex))
+		Entity* target = enemy->target;
+		if(target == 0)
+		{
+			if(CanMove(labState, enemy))
 			{
-				V2 position = player->position + attackDistance * direction;
-				F32 enemyDistance = MaxDistance(enemy->position, position);
-				if(!foundTargetTile || enemyDistance < enemyTargetDistance)
+				enemy->velocity = MakeVector(0.0f, 0.0f);
+			}
+		}
+		else
+		{
+			B32 foundTargetTile = false;
+			F32 enemyTargetDistance = 0.0f;
+
+			V2 targetDirection = {};
+			V2 targetPosition = {};
+			TileIndex playerTileIndex = GetContainingTileIndex(target->position);
+
+			for(I32 row = playerTileIndex.row - 1; row <= playerTileIndex.row + 1; row++)
+			{
+				V2 direction = {};
+				direction.y = (F32)(row - playerTileIndex.row);
+
+				for(I32 col = playerTileIndex.col - 1; col <= playerTileIndex.col + 1; col++)
 				{
-					targetDirection = direction;
-					targetPosition = position;
-					enemyTargetDistance = enemyDistance;
-					foundTargetTile = true;
+					direction.x = (F32)(col - playerTileIndex.col);
+
+					if(row == playerTileIndex.row && col == playerTileIndex.col)
+					{
+						continue;
+					}
+
+					F32 attackDistance = 2.5f * EntityRadius;
+					TileIndex tileIndex = MakeTileIndex(row, col);
+					if(IsValidTileIndex(tileIndex))
+					{
+						V2 position = target->position + attackDistance * direction;
+						F32 enemyDistance = MaxDistance(enemy->position, position);
+						if(!foundTargetTile || enemyDistance < enemyTargetDistance)
+						{
+							targetDirection = direction;
+							targetPosition = position;
+							enemyTargetDistance = enemyDistance;
+							foundTargetTile = true;
+						}
+					}
+
 				}
 			}
 
+			Assert(foundTargetTile);
+			F32 enemyMoveSpeed = 10.0f;
+
+			if(IsDead(enemy))
+			{
+				enemy->velocity = MakeVector(0.0f, 0.0f);
+			}
+			if(CanMove(labState, enemy))
+			{
+				enemy->velocity = MakeVector(0.0f, 0.0f);
+				if(enemy->position.x < targetPosition.x)
+				{
+					enemy->velocity.x = Min2(+enemyMoveSpeed, (targetPosition.x - enemy->position.x) / seconds);
+				}
+				else
+				{
+					enemy->velocity.x = Max2(-enemyMoveSpeed, (targetPosition.x - enemy->position.x) / seconds);
+				}
+
+				if(enemy->position.y < targetPosition.y)
+				{
+					enemy->velocity.y = Min2(+enemyMoveSpeed, (targetPosition.y - enemy->position.y) / seconds);
+				}
+				else
+				{
+					enemy->velocity.y = Max2(-enemyMoveSpeed, (targetPosition.y - enemy->position.y) / seconds);
+				}
+			}
 		}
+		enemy->position = enemy->position + seconds * enemy->velocity;
+		enemy->position.x = Clip(enemy->position.x, EntityRadius, mapWidth - EntityRadius);
+		enemy->position.y = Clip(enemy->position.y, EntityRadius, mapHeight - EntityRadius);
 	}
 
-	Assert(foundTargetTile);
-	F32 enemyMoveSpeed = 10.0f;
-
-	if(IsDead(enemy))
+	for(I32 i = 0; i < EntityN; i++)
 	{
-		enemy->velocity = MakeVector(0.0f, 0.0f);
+		Entity* entity = &labState->entities[i];
+		UpdateEntityRecharge(entity, seconds);
 	}
-	if(CanMove(labState, enemy))
+
+	for(I32 i = 0; i < EntityN; i++)
 	{
-		enemy->velocity = MakeVector(0.0f, 0.0f);
-		if(enemy->position.x < targetPosition.x)
+		Entity* enemy = &labState->entities[i];
+		if(enemy->groupId != EnemyGroupId)
 		{
-			enemy->velocity.x = Min2(+enemyMoveSpeed, (targetPosition.x - enemy->position.x) / seconds);
+			continue;
 		}
-		else
-		{
-			enemy->velocity.x = Max2(-enemyMoveSpeed, (targetPosition.x - enemy->position.x) / seconds);
-		}
-
-		if(enemy->position.y < targetPosition.y)
-		{
-			enemy->velocity.y = Min2(+enemyMoveSpeed, (targetPosition.y - enemy->position.y) / seconds);
-		}
-		else
-		{
-			enemy->velocity.y = Max2(-enemyMoveSpeed, (targetPosition.y - enemy->position.y) / seconds);
-		}
+		AttemptToUseAbility(labState, enemy, EnemyAbilityId);
 	}
-	enemy->position = enemy->position + seconds * enemy->velocity;
-	enemy->position.x = Clip(enemy->position.x, EntityRadius, mapWidth - EntityRadius);
-	enemy->position.y = Clip(enemy->position.y, EntityRadius, mapHeight - EntityRadius);
 
-	UpdateEntityRecharge(player, seconds);
-	UpdateEntityRecharge(enemy, seconds);
-
-	if(MaxDistance(enemy->position, player->position) <= EnemyAttackRadius)
+	for(I32 i = 0; i < EntityN; i++)
 	{
-		if(enemy->recharge == 0.0f)
-		{
-			AttemptToDoDamage(labState, player, 10);
-			PutOnRecharge(enemy, 3.0f);
-		}
+		Entity* entity = &labState->entities[i];
+		DrawEntityBars(canvas, entity);
 	}
-
-	DrawEntityBars(canvas, player);
-	DrawEntityBars(canvas, enemy);
 
 	V2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 	Camera* camera = &labState->camera;
@@ -1082,14 +1279,8 @@ static void func CombatLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Real time Monk abilities
-// TODO: Momentum
-// TODO: Enemy ability
-// TODO: Disable entity on death!
-	// TODO: Stop enemy from using abilities!
 // TODO: Computer controlled enemies
-	// TODO: Only get pulled from a certain distance!
-	// TODO: Multiple enemies
 	// TODO: Don't stack upon each other (find a simple solution in this task)
 // TODO: Cult Warrior class
 // TODO: Paladin class
+// TODO: Momentum and acceleration (Out of Co9 scope)
