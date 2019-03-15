@@ -18,7 +18,11 @@ enum AbilityId
 
 	SwordStabAbilityId,
 	SwordSwingAbilityId,
+	RaiseShieldAbilityId,
 	BurnAbilityId,
+	LightOfTheSunAbilityId,
+	BlessingOfTheSunAbilityId,
+	MercyOfTheSunAbilityId,
 
 	EnemyAbilityId,
 	AbilityN
@@ -30,7 +34,10 @@ enum EffectId
 	KickedEffectId,
 	RollingEffectId,
 	InvulnerableEffectId,
-	BurningEffectId
+	ShieldRaisedEffectId,
+	BurningEffectId,
+	BlessingOfTheSunEffectId,
+	BlindEffectId
 };
 
 enum ClassId
@@ -283,7 +290,11 @@ static I32 func GetAbilityClass(I32 abilityId)
 		}
 		case SwordStabAbilityId:
 		case SwordSwingAbilityId:
+		case RaiseShieldAbilityId:
 		case BurnAbilityId:
+		case LightOfTheSunAbilityId:
+		case BlessingOfTheSunAbilityId:
+		case MercyOfTheSunAbilityId:
 		{
 			classId = PaladinClassId;
 			break;
@@ -299,6 +310,21 @@ static I32 func GetAbilityClass(I32 abilityId)
 		}
 	}
 	return classId;
+}
+
+static B32 func HasEffect(CombatLabState* labState, Entity* entity, I32 effectId)
+{
+	B32 hasEffect = false;
+	for(I32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		if(effect->entity == entity && effect->effectId == effectId)
+		{
+			hasEffect = true;
+			break;
+		}
+	}
+	return hasEffect;
 }
 
 static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
@@ -340,17 +366,21 @@ static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abil
 				canUse = (entity->inputDirection.x != 0.0f || entity->inputDirection.y != 0.0f);
 				break;
 			}
-			case SpinningKickAbilityId:
-			case AvoidanceAbilityId:
-			case SwordSwingAbilityId:
-			{
-				canUse = true;
-				break;
-			}
 			case BurnAbilityId:
 			{
 				canUse = ((target != 0) && (!IsDead(target)) &&
 						  (MaxDistance(entity->position, target->position) <= 30.0f));
+				break;
+			}
+			case SpinningKickAbilityId:
+			case AvoidanceAbilityId:
+			case SwordSwingAbilityId:
+			case RaiseShieldAbilityId:
+			case LightOfTheSunAbilityId:
+			case BlessingOfTheSunAbilityId:
+			case MercyOfTheSunAbilityId:
+			{
+				canUse = true;
 				break;
 			}
 			default:
@@ -359,6 +389,18 @@ static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abil
 			}
 		}
 	}
+
+	if(entity->classId == PaladinClassId && HasEffect(labState, entity, ShieldRaisedEffectId))
+	{
+		if(abilityId == SwordStabAbilityId || abilityId == SwordSwingAbilityId)
+		{
+			canUse = false;
+		}
+	} else if(HasEffect(labState, entity, BlindEffectId))
+	{
+		canUse = false;
+	}
+
 	return canUse;
 }
 
@@ -370,37 +412,22 @@ static void func PutOnRecharge(Entity* entity, F32 rechargeTime)
 	entity->recharge = rechargeTime;
 }
 
-static B32 func HasEffect(CombatLabState* labState, Entity* entity, I32 effectId)
+static B32 func CanDamage(CombatLabState* labState, Entity* entity)
 {
-	B32 hasEffect = false;
-	for(I32 i = 0; i < labState->effectN; i++)
-	{
-		Effect* effect = &labState->effects[i];
-		if(effect->entity == entity && effect->effectId == effectId)
-		{
-			hasEffect = true;
-			break;
-		}
-	}
-	return hasEffect;
-}
-
-static B32 func CanDoDamage(CombatLabState* labState, Entity* entity)
-{
-	B32 canDoDamage = false;
+	B32 canDamage = false;
 	if(IsDead(entity))
 	{
-		canDoDamage = false;
+		canDamage = false;
 	}
 	else if(HasEffect(labState, entity, InvulnerableEffectId))
 	{
-		canDoDamage = false;
+		canDamage = false;
 	}
 	else
 	{
-		canDoDamage = true;
+		canDamage = true;
 	}
-	return canDoDamage;
+	return canDamage;
 }
 
 static void func AddDamageDisplay(CombatLabState* labState, V2 position, I32 damage)
@@ -413,56 +440,82 @@ static void func AddDamageDisplay(CombatLabState* labState, V2 position, I32 dam
 	display->timeRemaining = DamageDisplayDuration;
 }
 
-static void func DoDamage(Entity* entity, I32 damage)
+static void func DealFinalDamage(Entity* entity, I32 damage)
 {
 	Assert(damage > 0);
 	entity->health = IntMax2(entity->health - damage, 0);
 }
 
-static void func DoAndDisplayDamage(CombatLabState* labState, Entity* entity, I32 damage)
+static void func DealDamage(CombatLabState* labState, Entity* entity, I32 damage)
 {
-	Assert(damage > 0);
-	Assert(CanDoDamage(labState, entity));
-	DoDamage(entity, damage);
-	AddDamageDisplay(labState, entity->position, damage);
+	if(CanDamage(labState, entity))
+	{
+		I32 finalDamage = damage;
+		if(HasEffect(labState, entity, ShieldRaisedEffectId))
+		{
+			finalDamage = damage / 2;
+		}
+
+		DealFinalDamage(entity, finalDamage);
+		AddDamageDisplay(labState, entity->position, finalDamage);
+	}
 }
 
-static void func AttemptToDoAndDisplayDamage(CombatLabState* labState, Entity* entity, I32 damage)
+static void func Heal(CombatLabState* labState, Entity* entity, I32 damage)
 {
-	if(CanDoDamage(labState, entity))
-	{
-		DoAndDisplayDamage(labState, entity, damage);
-	}
+	Assert(!IsDead(entity));
+	entity->health = IntMin2(entity->health + damage, EntityMaxHealth);
+	AddDamageDisplay(labState, entity->position, -damage);
 }
 
 static F32 func GetAbilityCooldownDuration(I32 abilityId)
 {
-	F32 duration = 0.0f;
+	F32 cooldown = 0.0f;
 	switch(abilityId)
 	{
 		case BigPunchAbilityId:
 		{
-			duration = 3.0f;
+			cooldown = 3.0f;
 			break;
 		}
 		case KickAbilityId:
 		{
-			duration = 5.0f;
+			cooldown = 5.0f;
 			break;
 		}
 		case RollAbilityId:
 		{
-			duration = 5.0f;
+			cooldown = 5.0f;
 			break;
 		}
 		case AvoidanceAbilityId:
 		{
-			duration = 10.0f;
+			cooldown = 10.0f;
+			break;
+		}
+		case RaiseShieldAbilityId:
+		{
+			cooldown = 6.0f;
 			break;
 		}
 		case BurnAbilityId:
 		{
-			duration = 10.0f;
+			cooldown = 10.0f;
+			break;
+		}
+		case LightOfTheSunAbilityId:
+		{
+			cooldown = 10.0f;
+			break;
+		}
+		case BlessingOfTheSunAbilityId:
+		{
+			cooldown = 10.0f;
+			break;
+		}
+		case MercyOfTheSunAbilityId:
+		{
+			cooldown = 60.0f;
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -471,7 +524,7 @@ static F32 func GetAbilityCooldownDuration(I32 abilityId)
 		case SwordSwingAbilityId:
 		case EnemyAbilityId:
 		{
-			duration = 0.0f;
+			cooldown = 0.0f;
 			break;
 		}
 		default:
@@ -479,7 +532,7 @@ static F32 func GetAbilityCooldownDuration(I32 abilityId)
 			DebugBreak();
 		}
 	}
-	return duration;
+	return cooldown;
 }
 
 static B32 func HasCooldown(I32 abilityId)
@@ -601,6 +654,21 @@ static F32 func GetEffectTotalDuration(I32 effectId)
 			duration = 8.0f;
 			break;
 		}
+		case ShieldRaisedEffectId:
+		{
+			duration = 3.0f;
+			break;
+		}
+		case BlessingOfTheSunEffectId:
+		{
+			duration = 60.0f;
+			break;
+		}
+		case BlindEffectId:
+		{
+			duration = 5.0f;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -608,6 +676,21 @@ static F32 func GetEffectTotalDuration(I32 effectId)
 	}
 	Assert(duration > 0.0f);
 	return duration;
+}
+
+static void func RemoveEffect(CombatLabState* labState, Entity* entity, I32 effectId)
+{
+	I32 remainingEffectN = 0;
+	for(I32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		if(effect->entity != entity || effect->effectId != effectId)
+		{
+			labState->effects[remainingEffectN] = *effect;
+			remainingEffectN++;
+		}
+	}
+	labState->effectN = remainingEffectN;
 }
 
 static void func AddEffect(CombatLabState* labState, Entity* entity, I32 effectId)
@@ -626,7 +709,7 @@ static void func AddEffect(CombatLabState* labState, Entity* entity, I32 effectI
 
 static F32 func GetAbilityRechargeDuration(I32 abilityId)
 {
-	F32 duration = 0.0f;
+	F32 recharge = 0.0f;
 	switch(abilityId)
 	{
 		case SmallPunchAbilityId:
@@ -637,18 +720,22 @@ static F32 func GetAbilityRechargeDuration(I32 abilityId)
 		case RollAbilityId:
 		case SwordStabAbilityId:
 		case SwordSwingAbilityId:
+		case RaiseShieldAbilityId:
+		case LightOfTheSunAbilityId:
 		{
-			duration = 1.0f;
+			recharge = 1.0f;
 			break;
 		}
 		case EnemyAbilityId:
 		{
-			duration = 3.0f;
+			recharge = 3.0f;
 			break;
 		}
 		case BurnAbilityId:
+		case BlessingOfTheSunAbilityId:
+		case MercyOfTheSunAbilityId:
 		{
-			duration = 0.0f;
+			recharge = 0.0f;
 			break;
 		}
 		default:
@@ -656,25 +743,25 @@ static F32 func GetAbilityRechargeDuration(I32 abilityId)
 			DebugBreak();
 		}
 	}
-	return duration;
+	return recharge;
 }
 
 static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
 {
 	Assert(CanUseAbility(labState, entity, abilityId));
 	Entity* target = entity->target;
-	switch (abilityId)
+	switch(abilityId)
 	{
 		case SmallPunchAbilityId:
 		{
 			Assert(target != 0);
-			AttemptToDoAndDisplayDamage(labState, target, 10);
+			DealDamage(labState, target, 10);
 			break;
 		}
 		case BigPunchAbilityId:
 		{
 			Assert(target != 0);
-			AttemptToDoAndDisplayDamage(labState, target, 30);
+			DealDamage(labState, target, 30);
 			break;
 		}
 		case KickAbilityId:
@@ -695,7 +782,7 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 					F32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
-						AttemptToDoAndDisplayDamage(labState, target, 10);
+						DealDamage(labState, target, 10);
 					}
 				}
 			}
@@ -715,12 +802,24 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 		}
 		case SwordStabAbilityId:
 		{
+			I32 damage = 15;
+			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
+			{
+				damage += 2;
+			}
+
 			Assert(target != 0);
-			AttemptToDoAndDisplayDamage(labState, target, 15);
+			DealDamage(labState, target, damage);
 			break;
 		}
 		case SwordSwingAbilityId:
 		{
+			I32 damage = 10;
+			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
+			{
+				damage += 2;
+			}
+
 			for(I32 i = 0; i < EntityN; i++)
 			{
 				Entity* target = &labState->entities[i];
@@ -729,9 +828,18 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 					F32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
-						AttemptToDoAndDisplayDamage(labState, target, 10);
+						DealDamage(labState, target, damage);
 					}
 				}
+			}
+			break;
+		}
+		case RaiseShieldAbilityId:
+		{
+			AddEffect(labState, entity, ShieldRaisedEffectId);
+			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
+			{
+				Heal(labState, entity, 10);
 			}
 			break;
 		}
@@ -741,10 +849,38 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 			AddEffect(labState, target, BurningEffectId);
 			break;
 		}
+		case LightOfTheSunAbilityId:
+		{
+			Heal(labState, entity, 20);
+			break;
+		}
+		case BlessingOfTheSunAbilityId:
+		{
+			RemoveEffect(labState, entity, BlessingOfTheSunEffectId);
+			AddEffect(labState, entity, BlessingOfTheSunEffectId);
+			break;
+		}
+		case MercyOfTheSunAbilityId:
+		{
+			Heal(labState, entity, 30);
+			for(I32 i = 0; i < EntityN; i++)
+			{
+				Entity* target = &labState->entities[i];
+				if(!IsDead(target) && target->groupId != entity->groupId)
+				{
+					F32 distance = Distance(entity->position, target->position);
+					if(distance <= MaxMeleeAttackDistance)
+					{
+						AddEffect(labState, target, BlindEffectId);
+					}
+				}
+			}
+			break;
+		}
 		case EnemyAbilityId:
 		{
 			Assert(target != 0);
-			AttemptToDoAndDisplayDamage(labState, target, 10);
+			DealDamage(labState, target, 10);
 			break;
 		}
 		default:
@@ -916,6 +1052,11 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 				case '6':
 				{
 					AttemptToUseAbilityOfIndex(labState, player, 5);
+					break;
+				}
+				case '7':
+				{
+					AttemptToUseAbilityOfIndex(labState, player, 6);
 					break;
 				}
 				case 'C':
@@ -1131,9 +1272,29 @@ static I8* func GetAbilityName(I32 abilityId)
 			name = "Sword Swing";
 			break;
 		}
+		case RaiseShieldAbilityId:
+		{
+			name = "Raise Shield";
+			break;
+		}
 		case BurnAbilityId:
 		{
 			name = "Burn";
+			break;
+		}
+		case LightOfTheSunAbilityId:
+		{
+			name = "Light of the Sun";
+			break;
+		}
+		case BlessingOfTheSunAbilityId:
+		{
+			name = "Blessing of the Sun";
+			break;
+		}
+		case MercyOfTheSunAbilityId:
+		{
+			name = "Mercy of the Sun";
 			break;
 		}
 		case EnemyAbilityId:
@@ -1228,11 +1389,49 @@ static String func GetAbilityTooltipText(I32 abilityId, I8* buffer, I32 bufferSi
 			AddLine(text, "of you (melee range).");
 			break;
 		}
+		case RaiseShieldAbilityId:
+		{
+			AddLine(text, "Raise up your shield, reducing the");
+			AddLine(text, "effectiveness of incoming attacks,");
+			AddLine(text, "decreasing the damage you take from");
+			AddLine(text, "melee attacks by 50%.");
+			AddLine(text, "You cannot use melee attacks while");
+			AddLine(text, "your shield is raised.");
+			AddLine(text, "Lasts for 3 seconds.");
+			break;
+		}
 		case BurnAbilityId:
 		{
 			AddLine(text, "Burn target enemy with the power of");
 			AddLine(text, "the sun, dealing 2 damage every second");
 			AddLine(text, "for 8 seconds.");
+			break;
+		}
+		case LightOfTheSunAbilityId:
+		{
+			AddLine(text, "Use the light of the Sun to heal yourself");
+			AddLine(text, "for 20 damage.");
+			break;
+		}
+		case BlessingOfTheSunAbilityId:
+		{
+			AddLine(text, "Heat up your weapon and shield with the");
+			AddLine(text, "light of the Sun, making your melee attacks");
+			AddLine(text, "deal 2 additional damage and heal you");
+			AddLine(text, "for 2 damage.");
+			AddLine(text, "Raising your shield burns enemies within");
+			AddLine(text, "melee range for 10 damage and heals you");
+			AddLine(text, "for 10 damage.");
+			AddLine(text, "Lasts for 60 seconds.");
+			break;
+		}
+		case MercyOfTheSunAbilityId:
+		{
+			AddLine(text, "Plead for the mercy of the Sun, healing");
+			AddLine(text, "you for 30 damage and blinding all");
+			AddLine(text, "enemies within your melee range");
+			AddLine(text, "for 5 seconds, making them unable to");
+			AddLine(text, "use abilities while it lasts.");
 			break;
 		}
 		case EnemyAbilityId:
@@ -1419,8 +1618,8 @@ static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 				I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
 				I32 tooltipBottom = boxTop - 5;
 
-				static I8 tooltipBuffer[256] = {};
-				String tooltipText = GetAbilityTooltipText(abilityId, tooltipBuffer, 256);
+				static I8 tooltipBuffer[512] = {};
+				String tooltipText = GetAbilityTooltipText(abilityId, tooltipBuffer, 512);
 				DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
 
 				labState->hoverAbilityId = abilityId;
@@ -1473,13 +1672,14 @@ static void func UpdateEffects(CombatLabState* labState, F32 seconds)
 		Effect* effect = &labState->effects[i];
 		F32 time = effect->timeRemaining;
 		F32 previousTime = time + seconds;
-		switch(effect->effectId)
+		I32 effectId = effect->effectId;
+		switch(effectId)
 		{
 			case BurningEffectId:
 			{
 				if(Floor(time) != Floor(previousTime))
 				{
-					AttemptToDoAndDisplayDamage(labState, effect->entity, 2);
+					DealDamage(labState, effect->entity, 2);
 				}
 				break;
 			}
@@ -1527,13 +1727,28 @@ static B32 func CanMove(CombatLabState* labState, Entity* entity)
 
 static void func DrawDamageDisplays(CombatLabState* labState)
 {
-	V4 textColor = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 damageColor = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 healColor = MakeColor(0.0f, 0.5f, 0.0f);
 	Canvas* canvas = &labState->canvas;
 	for(I32 i = 0; i < labState->damageDisplayN; i++)
 	{
 		DamageDisplay* display = &labState->damageDisplays[i];
 		I8 text[16] = {};
-		OneLineString(text, 16, display->damage);
+		V4 textColor = {};
+		if(display->damage > 0)
+		{
+			textColor = damageColor;
+			OneLineString(text, 16, display->damage);
+		}
+		else if(display->damage < 0)
+		{
+			textColor = healColor;
+			OneLineString(text, 16, -display->damage);
+		}
+		else
+		{
+			DebugBreak();
+		}
 		DrawTextLineXYCentered(canvas, text, display->position.y, display->position.x, textColor);
 	}
 }
@@ -1811,18 +2026,18 @@ static void func CombatLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Paladin abilities
-	// TODO: Sword swing should only damage enemies in front of the paladin!
-	// TODO: Raise shield!
-// TODO: Combat log
-// TODO: Cult Warrior class
 // TODO: Select entities with mouse
 // TODO: Show "cannot use ability" color of abilities on recharge/cooldown!
 // TODO: "Help" menu showing keybinds
 // TODO: Move with mouse?
 
 // TODO: Out of Co9 scope
-	// TODO: Computer controlled enemies
-		// TODO: Don't stack upon each other
+	// TODO: Computer controlled enemies shouldn't stack upon each other
 	// TODO: Momentum and acceleration
 	// TODO: Remove limitation of 8 directions!
+	// TODO: Heal others
+	// TODO: Target friendly entity
+	// TODO: Damage types
+	// TODO: Text display for effects
+	// TODO: Sword swing should only damage enemies in front of the paladin!
+	// TODO: Combat log
