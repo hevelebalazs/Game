@@ -124,39 +124,20 @@
     <ClCompile Include="Windows.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AutoHuman.hpp" />
     <ClInclude Include="Bezier.hpp" />
     <ClInclude Include="Bitmap.hpp" />
-    <ClInclude Include="Building.hpp" />
-    <ClInclude Include="BuildingType.hpp" />
     <ClInclude Include="Debug.hpp" />
-    <ClInclude Include="DungeonMap.hpp" />
-    <ClInclude Include="Game.hpp" />
     <ClInclude Include="Geometry.hpp" />
-    <ClInclude Include="GridMap.hpp" />
-    <ClInclude Include="Human.hpp" />
-    <ClInclude Include="Item.hpp" />
-    <ClInclude Include="Lab\CarLab.hpp" />
     <ClInclude Include="Lab\CombatLab.hpp" />
-    <ClInclude Include="Lab\DungeonLab.hpp" />
     <ClInclude Include="Lab\Lab.hpp" />
-    <ClInclude Include="Lab\MapLab.hpp" />
-    <ClInclude Include="Lab\PhysicsLab.hpp" />
-    <ClInclude Include="Lab\RoadLab.hpp" />
     <ClInclude Include="Lab\TextLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
-    <ClInclude Include="Light.hpp" />
-    <ClInclude Include="Map.hpp" />
     <ClInclude Include="Math.hpp" />
     <ClInclude Include="Memory.hpp" />
-    <ClInclude Include="Path.hpp" />
-    <ClInclude Include="PlayerHuman.hpp" />
     <ClInclude Include="Draw.hpp" />
-    <ClInclude Include="Road.hpp" />
     <ClInclude Include="String.hpp" />
     <ClInclude Include="Text.hpp" />
     <ClInclude Include="Texture.hpp" />
-    <ClInclude Include="Car.hpp" />
     <ClInclude Include="Type.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
