@@ -10,41 +10,41 @@
 #define PI	3.14159265358979323f
 #define TAU (2.0f * PI)
 
-struct V2 
+struct Vec2 
 {
-	F32 x;
-	F32 y;
+	Real32 x;
+	Real32 y;
 };
 
-struct V4 
+struct Vec4 
 {
 	union 
 	{
 		struct 
 		{
-			V2 position;
-			V2 direction;
+			Vec2 position;
+			Vec2 direction;
 		};
 		struct 
 		{
-			F32 red;
-			F32 green;
-			F32 blue;
-			F32 alpha;
+			Real32 red;
+			Real32 green;
+			Real32 blue;
+			Real32 alpha;
 		};
 	};
 };
 
-static void func IntSwap(I32* i, I32* j)
+static void func IntSwap(Int32* i, Int32* j)
 {
-	I32 tmp = *i;
+	Int32 tmp = *i;
 	*i = *j;
 	*j = tmp;
 }
 
-static I32 func IntAbs(I32 i)
+static Int32 func IntAbs(Int32 i)
 {
-	I32 result = 0;
+	Int32 result = 0;
 	if(i > 0)
 	{
 		result = i;
@@ -56,15 +56,15 @@ static I32 func IntAbs(I32 i)
 	return result;
 }
 
-static I32 func IntRandom(I32 min, I32 max)
+static Int32 func IntRandom(Int32 min, Int32 max)
 {
-	I32 result = min + (rand() % (max - min + 1));
+	Int32 result = min + (rand() % (max - min + 1));
 	return result;
 }
 
-static I32 func IntMin2(I32 i1, I32 i2)
+static Int32 func IntMin2(Int32 i1, Int32 i2)
 {
-	I32 min = 0;
+	Int32 min = 0;
 	if(i1 < i2) 
 	{
 		min = i1;
@@ -76,9 +76,9 @@ static I32 func IntMin2(I32 i1, I32 i2)
 	return min;
 }
 
-static I32 func IntMax2(I32 i1, I32 i2)
+static Int32 func IntMax2(Int32 i1, Int32 i2)
 {
-	I32 max = 0;
+	Int32 max = 0;
 	if(i1 > i2)
 	{
 		max = i1;
@@ -90,14 +90,14 @@ static I32 func IntMax2(I32 i1, I32 i2)
 	return max;
 }
 
-static F32 func Sqrt(F32 x)
+static Real32 func Sqrt(Real32 x)
 {
 	return sqrtf(x);
 }
 
-static F32 func Abs(F32 x)
+static Real32 func Abs(Real32 x)
 {
-	F32 result = 0;
+	Real32 result = 0;
 	if(x > 0.0f)
 	{
 		result = x;
@@ -109,62 +109,62 @@ static F32 func Abs(F32 x)
 	return result;
 }
 
-static I32 func Floor(F32 x)
+static Int32 func Floor(Real32 x)
 {
-	I32 result = (I32)floorf(x);
+	Int32 result = (Int32)floorf(x);
 	return result;
 }
 
-static I32 func RandMod(I32 mod)
+static Int32 func RandMod(Int32 mod)
 {
-	I32 result = (rand() % mod);
+	Int32 result = (rand() % mod);
 	return result;
 }
 
-static void func SeedRandom(I32 seed)
+static void func SeedRandom(Int32 seed)
 {
-	srand((U32)seed);
+	srand((UInt32)seed);
 }
 
-static V2 func operator+(V2 point1, V2 point2)
+static Vec2 func operator+(Vec2 point1, Vec2 point2)
 {
-	V2 result = {};
+	Vec2 result = {};
 	result.x = (point1.x + point2.x);
 	result.y = (point1.y + point2.y);
 	return result;
 }
 
-static V2 func operator-(V2 point1, V2 point2)
+static Vec2 func operator-(Vec2 point1, Vec2 point2)
 {
-	V2 result = {};
+	Vec2 result = {};
 	result.x = (point1.x - point2.x);
 	result.y = (point1.y - point2.y);
 	return result;
 }
 
-static V2 func operator*(F32 times, V2 point)
+static Vec2 func operator*(Real32 times, Vec2 point)
 {
-	V2 result = {};
+	Vec2 result = {};
 	result.x = (times * point.x);
 	result.y = (times * point.y);
 	return result;
 }
 
-static B32 func operator==(V2 point1, V2 point2)
+static Bool32 func operator==(Vec2 point1, Vec2 point2)
 {
-	B32 result = ((point1.x == point2.x) && (point1.y == point2.y));
+	Bool32 result = ((point1.x == point2.x) && (point1.y == point2.y));
 	return result;
 }
 
-static B32 func operator!=(V2 point1, V2 point2)
+static Bool32 func operator!=(Vec2 point1, Vec2 point2)
 {
-	B32 result = ((point1.x != point2.x) || (point1.y != point2.y));
+	Bool32 result = ((point1.x != point2.x) || (point1.y != point2.y));
 	return result;
 }
 
-static F32 func Min2(F32 x, F32 y)
+static Real32 func Min2(Real32 x, Real32 y)
 {
-	F32 min = 0.0f;
+	Real32 min = 0.0f;
 	if(x < y)
 	{
 		min = x;
@@ -176,9 +176,9 @@ static F32 func Min2(F32 x, F32 y)
 	return min;
 }
 
-static F32 func Min4(F32 x, F32 y, F32 z, F32 w)
+static Real32 func Min4(Real32 x, Real32 y, Real32 z, Real32 w)
 {
-	F32 min = x;
+	Real32 min = x;
 	if(y < min)
 	{
 		min = y;
@@ -194,9 +194,9 @@ static F32 func Min4(F32 x, F32 y, F32 z, F32 w)
 	return min;
 }
 
-static F32 func Max2(F32 x, F32 y)
+static Real32 func Max2(Real32 x, Real32 y)
 {
-	F32 max = 0.0f;
+	Real32 max = 0.0f;
 	if(x > y)
 	{
 		max = x;
@@ -208,9 +208,9 @@ static F32 func Max2(F32 x, F32 y)
 	return max;
 }
 
-static F32 func Max3(F32 x, F32 y, F32 z) 
+static Real32 func Max3(Real32 x, Real32 y, Real32 z) 
 {
-	F32 max = x;
+	Real32 max = x;
 	if(y > max) 
 	{
 		max = y;
@@ -222,9 +222,9 @@ static F32 func Max3(F32 x, F32 y, F32 z)
 	return max;
 }
 
-static F32 func Max4(F32 x, F32 y, F32 z, F32 w)
+static Real32 func Max4(Real32 x, Real32 y, Real32 z, Real32 w)
 {
-	F32 max = x;
+	Real32 max = x;
 	if(y > max)
 	{
 		max = y;
@@ -240,10 +240,10 @@ static F32 func Max4(F32 x, F32 y, F32 z, F32 w)
 	return max;
 }
 
-static F32 func Clip(F32 value, F32 min, F32 max)
+static Real32 func Clip(Real32 value, Real32 min, Real32 max)
 {
 	Assert(min < max);
-	F32 result = value;
+	Real32 result = value;
 	if(result < min)
 	{
 		result = min;
@@ -255,10 +255,10 @@ static F32 func Clip(F32 value, F32 min, F32 max)
 	return result;
 }
 
-static I32 func ClipInt(I32 value, I32 min, I32 max)
+static Int32 func ClipInt(Int32 value, Int32 min, Int32 max)
 {
 	Assert(min < max);
-	I32 result = value;
+	Int32 result = value;
 	if(result < min)
 	{
 		result = min;
@@ -270,68 +270,68 @@ static I32 func ClipInt(I32 value, I32 min, I32 max)
 	return result;
 }
 
-static F32 func Invert(F32 value)
+static Real32 func Invert(Real32 value)
 {
 	Assert(value != 0.0f);
-	F32 inverseValue = (1.0f / value);
+	Real32 inverseValue = (1.0f / value);
 	return inverseValue;
 }
 
-static F32 func Square(F32 x)
+static Real32 func Square(Real32 x)
 {
-	F32 result = (x * x);
+	Real32 result = (x * x);
 	return result;
 }
 
-static I32 func IntSquare(I32 x)
+static Int32 func IntSquare(Int32 x)
 {
-	I32 result = (x * x);
+	Int32 result = (x * x);
 	return result;
 }
 
 static void func InitRandom()
 {
-	srand ((U32)time(0));
+	srand ((UInt32)time(0));
 }
 
-static F32 func RandomBetween(F32 min, F32 max)
+static Real32 func RandomBetween(Real32 min, Real32 max)
 {
-	F32 result = (min) + (max - min) * ((F32)rand() / (F32)RAND_MAX);
+	Real32 result = (min) + (max - min) * ((Real32)rand() / (Real32)RAND_MAX);
 	return result;
 }
 
-static B32 func IsBetween(F32 test, F32 value1, F32 value2)
+static Bool32 func IsBetween(Real32 test, Real32 value1, Real32 value2)
 {
-	F32 min = Min2(value1, value2);
-	F32 max = Max2(value1, value2);
-	B32 result = (min <= test && test <= max);
+	Real32 min = Min2(value1, value2);
+	Real32 max = Max2(value1, value2);
+	Bool32 result = (min <= test && test <= max);
 	return result;
 }
 
-static F32 func Lerp(F32 value1, F32 ratio, F32 value2)
+static Real32 func Lerp(Real32 value1, Real32 ratio, Real32 value2)
 {
 	Assert(IsBetween(ratio, 0.0f, 1.0f));
 	return ((1.0f - ratio) * value1) + ((ratio) * value2);
 }
 
-static V2 func PointLerp(V2 point1, F32 ratio, V2 point2)
+static Vec2 func PointLerp(Vec2 point1, Real32 ratio, Vec2 point2)
 {
 	Assert(IsBetween(ratio, 0.0f, 1.0f));
-	V2 result = {};
+	Vec2 result = {};
 	result.x = Lerp(point1.x, ratio, point2.x);
 	result.y = Lerp(point1.y, ratio, point2.y);
 	return result;
 }
 
-static B32 func IsIntBetween(I32 test, I32 min, I32 max)
+static Bool32 func IsIntBetween(Int32 test, Int32 min, Int32 max)
 {
-	B32 isBetween = (min <= test && test <= max);
+	Bool32 isBetween = (min <= test && test <= max);
 	return isBetween;
 }
 
-static B32 func IsPointInRect(V2 point, F32 left, F32 right, F32 top, F32 bottom)
+static Bool32 func IsPointInRect(Vec2 point, Real32 left, Real32 right, Real32 top, Real32 bottom)
 {
-	B32 result = true;
+	Bool32 result = true;
 	if(point.x < left || point.x > right)
 	{
 		result = false;
@@ -340,13 +340,12 @@ static B32 func IsPointInRect(V2 point, F32 left, F32 right, F32 top, F32 bottom
 	{
 		result = false;
 	}
-
-	return true;
+	return result;
 }
 
-static B32 func IntSign(I32 i)
+static Bool32 func IntSign(Int32 i)
 {
-	I32 sign = 0;
+	Int32 sign = 0;
 	if(i < 0)
 	{
 		sign = -1;

@@ -10,8 +10,9 @@
 #include "Lab/TextLab.hpp"
 #include "Lab/ThreadLab.hpp"
 
-I32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
+Int32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, Int32 cmdShow)
 {
+	int x = 10;
 	CombatLab(instance);
 	return 0;
 }

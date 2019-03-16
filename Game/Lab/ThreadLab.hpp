@@ -11,8 +11,8 @@
 struct RowPaintWork 
 {
 	Bitmap* bitmap;
-	I32 row;
-	U32 colorCode;
+	Int32 row;
+	UInt32 colorCode;
 };
 
 #define MaxRowPaintWorkListN 1024
@@ -20,8 +20,8 @@ struct RowPaintWork
 struct RowPaintWorkList 
 {
 	RowPaintWork works[MaxRowPaintWorkListN];
-	volatile I32 workN;
-	volatile I32 firstWorkToDo;
+	volatile Int32 workN;
+	volatile Int32 firstWorkToDo;
 	HANDLE semaphore;
 	HANDLE semaphoreDone;
 };
@@ -33,11 +33,11 @@ struct ThreadLabState
 
 	RowPaintWorkList workList;
 
-	B32 running;
+	Bool32 running;
 };
 static ThreadLabState gThreadLabState;
 
-static void func ThreadLabResize(ThreadLabState* labState, I32 width, I32 height)
+static void func ThreadLabResize(ThreadLabState* labState, Int32 width, Int32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -50,8 +50,8 @@ static void func ThreadLabResize(ThreadLabState* labState, I32 width, I32 height
 
 static void func ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
-	I32 width = rect.right - rect.left;
-	I32 height = rect.bottom - rect.top;
+	Int32 width = rect.right - rect.left;
+	Int32 height = rect.bottom - rect.top;
 
 	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
@@ -65,11 +65,11 @@ static void func ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static void func PaintRow(Bitmap* bitmap, I32 row, U32 colorCode)
+static void func PaintRow(Bitmap* bitmap, Int32 row, UInt32 colorCode)
 {
 	Assert(row >= 0 && row < bitmap->height);
-	U32* pixel = bitmap->memory +(row * bitmap->width);
-	for(I32 col = 0; col < bitmap->width; col++) 
+	UInt32* pixel = bitmap->memory +(row * bitmap->width);
+	for(Int32 col = 0; col < bitmap->width; col++) 
 	{
 		*pixel = colorCode;
 		pixel++;
@@ -82,7 +82,7 @@ static DWORD WINAPI func RowPaintWorkProc(LPVOID parameter)
 	while(1) 
 	{
 		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
-		I32 workIndex = (I32)InterlockedIncrement((volatile U64*)&workList->firstWorkToDo) - 1;
+		Int32 workIndex = (Int32)InterlockedIncrement((volatile UInt64*)&workList->firstWorkToDo) - 1;
 		RowPaintWork work = workList->works[workIndex];
 		PaintRow(work.bitmap, work.row, work.colorCode);
 		ReleaseSemaphore(workList->semaphoreDone, 1, 0);
@@ -97,13 +97,13 @@ static void func PushRowPaintWork(RowPaintWorkList* workList, RowPaintWork work)
 	ReleaseSemaphore(workList->semaphore, 1, 0);
 }
 
-static void func ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func ThreadLabInit(ThreadLabState* labState, Int32 windowWidth, Int32 windowHeight)
 {
 	labState->running = true;
 	ThreadLabResize(labState, windowWidth, windowHeight);
 	labState->workList.semaphore = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
 	labState->workList.semaphoreDone = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
-	for(I32 i = 0; i < 5; i++)
+	for(Int32 i = 0; i < 5; i++)
 	{
 		CreateThread(0, 0, RowPaintWorkProc, &labState->workList, 0, 0);
 	}
@@ -112,15 +112,15 @@ static void func ThreadLabInit(ThreadLabState* labState, I32 windowWidth, I32 wi
 static void func ThreadLabUpdate(ThreadLabState* labState)
 {
 	Canvas canvas = labState->canvas;
-	V4 backgroundColor = MakeColor(0.8f, 1.0f, 1.0f);
+	Vec4 backgroundColor = MakeColor(0.8f, 1.0f, 1.0f);
 	Bitmap* bitmap = &canvas.bitmap;
 
-	U32 paintColorCode = GetRandomColorCode();
+	UInt32 paintColorCode = GetRandomColorCode();
 
 	RowPaintWorkList* workList = &labState->workList;
 	workList->workN = 0;
 	workList->firstWorkToDo = 0;
-	for(I32 row = 0; row < bitmap->height; row++) 
+	for(Int32 row = 0; row < bitmap->height; row++) 
 	{
 		RowPaintWork work = {};
 		work.bitmap = bitmap;
@@ -129,7 +129,7 @@ static void func ThreadLabUpdate(ThreadLabState* labState)
 		PushRowPaintWork(workList, work);
 	}
 
-	for(I32 row = 0; row < bitmap->height; row++)
+	for(Int32 row = 0; row < bitmap->height; row++)
 	{
 		WaitForSingleObjectEx(workList->semaphoreDone, INFINITE, FALSE);
 	}
@@ -146,8 +146,8 @@ static LRESULT CALLBACK func ThreadLabCallback(HWND window, UINT message, WPARAM
 		{
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
-			I32 width = clientRect.right - clientRect.left;
-			I32 height = clientRect.bottom - clientRect.top;
+			Int32 width = clientRect.right - clientRect.left;
+			Int32 height = clientRect.bottom - clientRect.top;
 			ThreadLabResize(labState, width, height);
 			break;
 		}
@@ -215,8 +215,8 @@ static void func ThreadLab(HINSTANCE instance)
 
 	RECT rect = {};
 	GetClientRect(window, &rect);
-	I32 width = rect.right - rect.left;
-	I32 height = rect.bottom - rect.top;
+	Int32 width = rect.right - rect.left;
+	Int32 height = rect.bottom - rect.top;
 	ThreadLabInit(labState, width, height);
 
 	MSG message = {};
