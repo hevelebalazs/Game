@@ -327,24 +327,20 @@ static B32 func HasEffect(CombatLabState* labState, Entity* entity, I32 effectId
 	return hasEffect;
 }
 
-static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+static B32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, I32 abilityId)
 {
 	B32 canUse = false;
 	Entity* target = entity->target;
 
 	I32 abilityClassId = GetAbilityClass(abilityId);
 
-	if(IsDead(entity) || entity->recharge > 0.0f)
+	if(IsDead(entity))
 	{
 		canUse = false;
 	}
 	else if(abilityClassId != entity->classId)
 	{
 		DebugBreak();
-		canUse = false;
-	}
-	else if(IsOnCooldown(labState, entity, abilityId))
-	{
 		canUse = false;
 	}
 	else
@@ -402,6 +398,13 @@ static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abil
 	}
 
 	return canUse;
+}
+
+static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+{
+	B32 canUseAbility = (entity->recharge == 0.0f && !IsOnCooldown(labState, entity, abilityId) &&
+						 AbilityIsEnabled(labState, entity, abilityId));
+	return canUseAbility;
 }
 
 static void func PutOnRecharge(Entity* entity, F32 rechargeTime)
@@ -1108,6 +1111,20 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 			{
 				AttemptToUseAbility(labState, &labState->entities[0], labState->hoverAbilityId);
 			}
+			else
+			{
+				V2 mousePosition = GetMousePosition(&labState->camera, window);
+				for(I32 i = 0; i < EntityN; i++)
+				{
+					Entity* entity = &labState->entities[i];
+					if(Distance(mousePosition, entity->position) <= EntityRadius &&
+					   !IsDead(entity) && entity->groupId != player->groupId)
+					{
+						player->target = entity;
+						break;
+					}
+				}
+			}
 			break;
 		}
 		case WM_SETCURSOR:
@@ -1538,6 +1555,44 @@ static void func DrawTargetEffectBar(CombatLabState* labState)
 	}
 }
 
+static void func DrawHelpBar(CombatLabState* labState, V2 mousePosition)
+{
+	Bitmap* bitmap = &labState->canvas.bitmap;
+	GlyphData* glyphData = labState->canvas.glyphData;
+	Assert(glyphData != 0);
+
+	Camera* camera = &labState->camera;
+	I32 mouseX = UnitXtoPixel(camera, mousePosition.x);
+	I32 mouseY = UnitYtoPixel(camera, mousePosition.y);
+
+	I32 right  = (bitmap->width - 1) - UIBoxPadding;
+	I32 left   = right - UIBoxSide;
+	I32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	I32 top    = bottom - UIBoxSide;
+
+	V4 boxColor = MakeColor(0.0f, 0.0f, 0.0f);
+
+	I8 textBuffer[8] = {};
+	OneLineString(textBuffer, 8, "Help");
+
+	DrawUIBoxWithText(bitmap, left, right, top, bottom, 0.0f, textBuffer, glyphData, boxColor);
+
+	if(IsIntBetween(mouseX, left, right) && IsIntBetween(mouseY, top, bottom))
+	{
+		I8 tooltipBuffer[256] = {};
+		String tooltip = StartString(tooltipBuffer, 256);
+		AddLine(tooltip, "Key binds");
+		AddLine(tooltip, "[W][A][S][D] or Arrows - Move");
+		AddLine(tooltip, "[Tab] - Target closest enemy");
+		AddLine(tooltip, "[1]-[7] - Use Ability");
+		AddLine(tooltip, "[C] - Switch between classes Monk/Paladin");
+
+		I32 tooltipBottom = top - UIBoxPadding;
+		I32 tooltipRight = (bitmap->width - 1);
+		DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
+	}
+}
+
 static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 {
 	Bitmap* bitmap = &labState->canvas.bitmap;
@@ -1565,10 +1620,10 @@ static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 	I32 centerX = (bitmap->width - 1) / 2;
 	I32 width = UIBoxSide * abilityN + UIBoxPadding * (abilityN - 1);
 
-	I32 left = centerX - width / 2;
-	I32 right = centerX + width / 2;
+	I32 left   = centerX - width / 2;
+	I32 right  = centerX + width / 2;
 	I32 bottom = (bitmap->height - 1) - 30;
-	I32 top = bottom - UIBoxSide;
+	I32 top    = bottom - UIBoxSide;
 
 	I32 boxLeft = left;
 	I32 abilityIndex = 0;
@@ -1601,7 +1656,8 @@ static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 				recharge = entity->recharge;
 				rechargeFrom = entity->rechargeFrom;
 			}
-			else if(!CanUseAbility(labState, entity, abilityId))
+
+			if(!AbilityIsEnabled(labState, entity, abilityId))
 			{
 				color = boxCannotUseColor;
 			}
@@ -1954,6 +2010,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	camera->center = mapCenter;
 
 	DrawAbilityBar(labState, mousePosition);
+	DrawHelpBar(labState, mousePosition);
 	DrawPlayerEffectBar(labState);
 	DrawTargetEffectBar(labState);
 	DrawDamageDisplays(labState);
@@ -2026,18 +2083,14 @@ static void func CombatLab(HINSTANCE instance)
 	}
 }
 
-// TODO: Select entities with mouse
-// TODO: Show "cannot use ability" color of abilities on recharge/cooldown!
-// TODO: "Help" menu showing keybinds
+// TODO: Computer controlled enemies shouldn't stack upon each other
+// TODO: Momentum and acceleration
+// TODO: Remove limitation of 8 directions!
 // TODO: Move with mouse?
-
-// TODO: Out of Co9 scope
-	// TODO: Computer controlled enemies shouldn't stack upon each other
-	// TODO: Momentum and acceleration
-	// TODO: Remove limitation of 8 directions!
-	// TODO: Heal others
-	// TODO: Target friendly entity
-	// TODO: Damage types
-	// TODO: Text display for effects
-	// TODO: Sword swing should only damage enemies in front of the paladin!
-	// TODO: Combat log
+// TODO: Heal others
+// TODO: Target friendly entity
+// TODO: Damage types
+// TODO: Text display for effects
+// TODO: Sword swing should only damage enemies in front of the paladin!
+// TODO: Entity facing direction!
+// TODO: Combat log

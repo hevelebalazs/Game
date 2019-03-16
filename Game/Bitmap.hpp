@@ -771,6 +771,14 @@ static void func DrawBitmapStringTooltipBottom(Bitmap* bitmap, String string, Gl
 	DrawBitmapStringTooltip(bitmap, string, glyphData, top, left);
 }
 
+static void func DrawBitmapStringTooltipBottomRight(Bitmap* bitmap, String string, GlyphData* glyphData, I32 bottom, I32 right)
+{
+	I32 lineN = GetNumberOfLines(string);
+	I32 top = bottom - GetTooltipHeight(lineN);
+	I32 left = right - TooltipWidth;
+	DrawBitmapStringTooltip(bitmap, string, glyphData, top, left);
+}
+
 static void func DrawBitmapTooltip(Bitmap* bitmap, I8** lines, I32 lineN, GlyphData* glyphData, I32 top, I32 left)
 {
 	Assert(glyphData != 0);
@@ -802,5 +810,12 @@ static void func DrawBitmapTooltip(Bitmap* bitmap, I8** lines, I32 lineN, GlyphD
 static void func DrawBitmapTooltipBottom(Bitmap* bitmap, I8** lines, I32 lineN, GlyphData* glyphData, I32 bottom, I32 left)
 {
 	I32 top = bottom - GetTooltipHeight(lineN);
+	DrawBitmapTooltip(bitmap, lines, lineN, glyphData, top, left);
+}
+
+static void func DrawBitmapTooltipBottomRight(Bitmap* bitmap, I8** lines, I32 lineN, GlyphData* glyphData, I32 bottom, I32 right)
+{
+	I32 top = bottom - GetTooltipHeight(lineN);
+	I32 left = right - TooltipWidth;
 	DrawBitmapTooltip(bitmap, lines, lineN, glyphData, top, left);
 }
