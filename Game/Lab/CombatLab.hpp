@@ -50,8 +50,8 @@ enum ClassId
 
 struct TileIndex
 {
-	I32 row;
-	I32 col;
+	Int32 row;
+	Int32 col;
 };
 
 #define EntityRadius (0.25f * TileSide)
@@ -65,40 +65,40 @@ enum EntityGroupId
 
 struct Entity
 {
-	V2 position;
-	V2 velocity;
+	Vec2 position;
+	Vec2 velocity;
 
-	F32 recharge;
-	F32 rechargeFrom;
-	I32 health;
+	Real32 recharge;
+	Real32 rechargeFrom;
+	Int32 health;
 
-	I32 classId;
-	I32 groupId;
+	Int32 classId;
+	Int32 groupId;
 	Entity* target;
 
-	V2 inputDirection;
+	Vec2 inputDirection;
 };
 
 struct Cooldown
 {
 	Entity* entity;
-	I32 abilityId;
-	F32 timeRemaining;
+	Int32 abilityId;
+	Real32 timeRemaining;
 };
 
 #define DamageDisplayDuration 2.0f
 struct DamageDisplay
 {
-	F32 timeRemaining;
-	V2 position;
-	I32 damage;
+	Real32 timeRemaining;
+	Vec2 position;
+	Int32 damage;
 };
 
 struct Effect
 {
 	Entity* entity;
-	I32 effectId;
-	F32 timeRemaining;
+	Int32 effectId;
+	Real32 timeRemaining;
 };
 
 #define EntityN 5
@@ -109,20 +109,20 @@ struct CombatLabState
 {
 	Camera camera;
 	Canvas canvas;
-	B32 running;
+	Bool32 running;
 
 	Cooldown cooldowns[MaxCooldownN];
-	I32 cooldownN;
+	Int32 cooldownN;
 
 	Effect effects[MaxEffectN];
-	I32 effectN;
+	Int32 effectN;
 
 	Entity entities[EntityN];
 
 	DamageDisplay damageDisplays[MaxDamageDisplayN];
-	I32 damageDisplayN;
+	Int32 damageDisplayN;
 
-	I32 hoverAbilityId;
+	Int32 hoverAbilityId;
 };
 CombatLabState gCombatLabState;
 
@@ -132,7 +132,7 @@ CombatLabState gCombatLabState;
 
 #define MaxMeleeAttackDistance (4.0f * EntityRadius)
 
-static void func CombatLabResize(CombatLabState* labState, I32 width, I32 height)
+static void func CombatLabResize(CombatLabState* labState, Int32 width, Int32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -146,8 +146,8 @@ static void func CombatLabResize(CombatLabState* labState, I32 width, I32 height
 
 static void func CombatLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
-	I32 width  = rect.right - rect.left;
-	I32 height = rect.bottom - rect.top;
+	Int32 width  = rect.right - rect.left;
+	Int32 height = rect.bottom - rect.top;
 
 	Bitmap* bitmap = &canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
@@ -161,7 +161,7 @@ static void func CombatLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static TileIndex func MakeTileIndex(I32 row, I32 col)
+static TileIndex func MakeTileIndex(Int32 row, Int32 col)
 {
 	TileIndex index = {};
 	index.row = row;
@@ -169,39 +169,39 @@ static TileIndex func MakeTileIndex(I32 row, I32 col)
 	return index;
 }
 
-static B32 func IsValidTileIndex(TileIndex index)
+static Bool32 func IsValidTileIndex(TileIndex index)
 {
-	B32 result = (IsIntBetween(index.row, 0, TileRowN - 1) &&
-				  IsIntBetween(index.col, 0, TileColN - 1));
+	Bool32 result = (IsIntBetween(index.row, 0, TileRowN - 1) &&
+					 IsIntBetween(index.col, 0, TileColN - 1));
 	return result;
 }
 
-static V2 func GetTileCenter(TileIndex index)
+static Vec2 func GetTileCenter(TileIndex index)
 {
 	Assert(IsValidTileIndex(index));
-	F32 x = F32(index.col) * TileSide + TileSide * 0.5f;
-	F32 y = F32(index.row) * TileSide + TileSide * 0.5f;
-	V2 position = MakePoint(x, y);
+	Real32 x = (Real32)index.col * TileSide + TileSide * 0.5f;
+	Real32 y = (Real32)index.row * TileSide + TileSide * 0.5f;
+	Vec2 position = MakePoint(x, y);
 	return position;
 }
 
-static TileIndex func GetContainingTileIndex(V2 point)
+static TileIndex func GetContainingTileIndex(Vec2 point)
 {
-	I32 row = Floor(point.y / TileSide);
-	I32 col = Floor(point.x / TileSide);
+	Int32 row = Floor(point.y / TileSide);
+	Int32 col = Floor(point.x / TileSide);
 	TileIndex index = MakeTileIndex(row, col);
 	return index;
 }
 
-static void func CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func CombatLabInit(CombatLabState* labState, Int32 windowWidth, Int32 windowHeight)
 {
 	labState->running = true;
 	labState->canvas.glyphData = GetGlobalGlyphData();
 	CombatLabResize(labState, windowWidth, windowHeight);
 
-	F32 mapWidth = TileRowN * TileSide;
-	F32 mapHeight = TileColN * TileSide;
-	V2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
+	Real32 mapWidth = TileRowN * TileSide;
+	Real32 mapHeight = TileColN * TileSide;
+	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 
 	Entity* player = &labState->entities[0];
 	player->position = mapCenter;
@@ -240,22 +240,22 @@ static void func CombatLabInit(CombatLabState* labState, I32 windowWidth, I32 wi
 	}
 }
 
-static I32 func GetTileDistance(TileIndex tileIndex1, TileIndex tileIndex2)
+static Int32 func GetTileDistance(TileIndex tileIndex1, TileIndex tileIndex2)
 {
 	Assert(IsValidTileIndex(tileIndex1));
 	Assert(IsValidTileIndex(tileIndex2));
-	I32 rowDistance = IntAbs(tileIndex1.row - tileIndex2.row);
-	I32 colDistance = IntAbs(tileIndex1.col - tileIndex2.col);
-	I32 distance = IntMax2(rowDistance, colDistance);
+	Int32 rowDistance = IntAbs(tileIndex1.row - tileIndex2.row);
+	Int32 colDistance = IntAbs(tileIndex1.col - tileIndex2.col);
+	Int32 distance = IntMax2(rowDistance, colDistance);
 	return distance;
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
 
-static B32 func IsOnCooldown(CombatLabState* labState, Entity* entity, I32 abilityId)
+static Bool32 func IsOnCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
-	B32 isOnCooldown = false;
-	for(I32 i = 0; i < labState->cooldownN; i++)
+	Bool32 isOnCooldown = false;
+	for(Int32 i = 0; i < labState->cooldownN; i++)
 	{
 		Cooldown* cooldown = &labState->cooldowns[i];
 		if(cooldown->entity == entity && cooldown->abilityId == abilityId)
@@ -267,15 +267,15 @@ static B32 func IsOnCooldown(CombatLabState* labState, Entity* entity, I32 abili
 	return isOnCooldown;
 }
 
-static B32 func IsDead(Entity* entity)
+static Bool32 func IsDead(Entity* entity)
 {
-	B32 isDead = (entity->health == 0);
+	Bool32 isDead = (entity->health == 0);
 	return isDead;
 }
 
-static I32 func GetAbilityClass(I32 abilityId)
+static Int32 func GetAbilityClass(Int32 abilityId)
 {
-	I32 classId = NoClassId;
+	Int32 classId = NoClassId;
 	switch(abilityId)
 	{
 		case SmallPunchAbilityId:
@@ -312,10 +312,10 @@ static I32 func GetAbilityClass(I32 abilityId)
 	return classId;
 }
 
-static B32 func HasEffect(CombatLabState* labState, Entity* entity, I32 effectId)
+static Bool32 func HasEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
-	B32 hasEffect = false;
-	for(I32 i = 0; i < labState->effectN; i++)
+	Bool32 hasEffect = false;
+	for(Int32 i = 0; i < labState->effectN; i++)
 	{
 		Effect* effect = &labState->effects[i];
 		if(effect->entity == entity && effect->effectId == effectId)
@@ -327,12 +327,12 @@ static B32 func HasEffect(CombatLabState* labState, Entity* entity, I32 effectId
 	return hasEffect;
 }
 
-static B32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, I32 abilityId)
+static Bool32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
-	B32 canUse = false;
+	Bool32 canUse = false;
 	Entity* target = entity->target;
 
-	I32 abilityClassId = GetAbilityClass(abilityId);
+	Int32 abilityClassId = GetAbilityClass(abilityId);
 
 	if(IsDead(entity))
 	{
@@ -392,7 +392,8 @@ static B32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, I32 a
 		{
 			canUse = false;
 		}
-	} else if(HasEffect(labState, entity, BlindEffectId))
+	}
+	else if(HasEffect(labState, entity, BlindEffectId))
 	{
 		canUse = false;
 	}
@@ -400,14 +401,14 @@ static B32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, I32 a
 	return canUse;
 }
 
-static B32 func CanUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+static Bool32 func CanUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
-	B32 canUseAbility = (entity->recharge == 0.0f && !IsOnCooldown(labState, entity, abilityId) &&
-						 AbilityIsEnabled(labState, entity, abilityId));
+	Bool32 canUseAbility = (entity->recharge == 0.0f && !IsOnCooldown(labState, entity, abilityId) &&
+							AbilityIsEnabled(labState, entity, abilityId));
 	return canUseAbility;
 }
 
-static void func PutOnRecharge(Entity* entity, F32 rechargeTime)
+static void func PutOnRecharge(Entity* entity, Real32 rechargeTime)
 {
 	Assert(rechargeTime > 0.0f);
 	Assert(entity->recharge == 0.0f);
@@ -415,9 +416,9 @@ static void func PutOnRecharge(Entity* entity, F32 rechargeTime)
 	entity->recharge = rechargeTime;
 }
 
-static B32 func CanDamage(CombatLabState* labState, Entity* entity)
+static Bool32 func CanDamage(CombatLabState* labState, Entity* entity)
 {
-	B32 canDamage = false;
+	Bool32 canDamage = false;
 	if(IsDead(entity))
 	{
 		canDamage = false;
@@ -433,7 +434,7 @@ static B32 func CanDamage(CombatLabState* labState, Entity* entity)
 	return canDamage;
 }
 
-static void func AddDamageDisplay(CombatLabState* labState, V2 position, I32 damage)
+static void func AddDamageDisplay(CombatLabState* labState, Vec2 position, Int32 damage)
 {
 	Assert(labState->damageDisplayN < MaxDamageDisplayN);
 	DamageDisplay* display = &labState->damageDisplays[labState->damageDisplayN];
@@ -443,17 +444,17 @@ static void func AddDamageDisplay(CombatLabState* labState, V2 position, I32 dam
 	display->timeRemaining = DamageDisplayDuration;
 }
 
-static void func DealFinalDamage(Entity* entity, I32 damage)
+static void func DealFinalDamage(Entity* entity, Int32 damage)
 {
 	Assert(damage > 0);
 	entity->health = IntMax2(entity->health - damage, 0);
 }
 
-static void func DealDamage(CombatLabState* labState, Entity* entity, I32 damage)
+static void func DealDamage(CombatLabState* labState, Entity* entity, Int32 damage)
 {
 	if(CanDamage(labState, entity))
 	{
-		I32 finalDamage = damage;
+		Int32 finalDamage = damage;
 		if(HasEffect(labState, entity, ShieldRaisedEffectId))
 		{
 			finalDamage = damage / 2;
@@ -464,16 +465,16 @@ static void func DealDamage(CombatLabState* labState, Entity* entity, I32 damage
 	}
 }
 
-static void func Heal(CombatLabState* labState, Entity* entity, I32 damage)
+static void func Heal(CombatLabState* labState, Entity* entity, Int32 damage)
 {
 	Assert(!IsDead(entity));
 	entity->health = IntMin2(entity->health + damage, EntityMaxHealth);
 	AddDamageDisplay(labState, entity->position, -damage);
 }
 
-static F32 func GetAbilityCooldownDuration(I32 abilityId)
+static Real32 func GetAbilityCooldownDuration(Int32 abilityId)
 {
-	F32 cooldown = 0.0f;
+	Real32 cooldown = 0.0f;
 	switch(abilityId)
 	{
 		case BigPunchAbilityId:
@@ -538,17 +539,17 @@ static F32 func GetAbilityCooldownDuration(I32 abilityId)
 	return cooldown;
 }
 
-static B32 func HasCooldown(I32 abilityId)
+static Bool32 func HasCooldown(Int32 abilityId)
 {
-	F32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
-	B32 hasCooldown = (cooldownDuration > 0.0f);
+	Real32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
+	Bool32 hasCooldown = (cooldownDuration > 0.0f);
 	return hasCooldown;
 }
 
-static void func AddCooldown(CombatLabState* labState, Entity* entity, I32 abilityId)
+static void func AddCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Assert(HasCooldown(abilityId));
-	F32 duration = GetAbilityCooldownDuration(abilityId);
+	Real32 duration = GetAbilityCooldownDuration(abilityId);
 
 	Assert(duration > 0.0f);
 	Assert(labState->cooldownN < MaxCooldownN);
@@ -560,10 +561,10 @@ static void func AddCooldown(CombatLabState* labState, Entity* entity, I32 abili
 	cooldown->timeRemaining = duration;
 }
 
-static Cooldown* func GetCooldown(CombatLabState* labState, Entity* entity, I32 abilityId)
+static Cooldown* func GetCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Cooldown* result = 0;
-	for(I32 i = 0; i < labState->cooldownN; i++)
+	for(Int32 i = 0; i < labState->cooldownN; i++)
 	{
 		Cooldown* cooldown = &labState->cooldowns[i];
 		if(cooldown->entity == entity && cooldown->abilityId == abilityId)
@@ -575,13 +576,13 @@ static Cooldown* func GetCooldown(CombatLabState* labState, Entity* entity, I32 
 	return result;
 }
 
-static V2 func GetClosestMoveDirection(V2 distance)
+static Vec2 func GetClosestMoveDirection(Vec2 distance)
 {
-	V2 left  = MakeVector(-1.0f, 0.0f);
-	V2 right = MakeVector(+1.0f, 0.0f);
-	V2 up    = MakeVector(0.0f, -1.0f);
-	V2 down  = MakeVector(0.0f, +1.0f);
-	V2 direction = {};
+	Vec2 left  = MakeVector(-1.0f, 0.0f);
+	Vec2 right = MakeVector(+1.0f, 0.0f);
+	Vec2 up    = MakeVector(0.0f, -1.0f);
+	Vec2 down  = MakeVector(0.0f, +1.0f);
+	Vec2 direction = {};
 
 	if(distance.x > 0.0f)
 	{
@@ -632,9 +633,9 @@ static V2 func GetClosestMoveDirection(V2 distance)
 	return direction;
 }
 
-static F32 func GetEffectTotalDuration(I32 effectId)
+static Real32 func GetEffectTotalDuration(Int32 effectId)
 {
-	F32 duration = 0.0f;
+	Real32 duration = 0.0f;
 	switch(effectId)
 	{
 		case KickedEffectId:
@@ -681,10 +682,10 @@ static F32 func GetEffectTotalDuration(I32 effectId)
 	return duration;
 }
 
-static void func RemoveEffect(CombatLabState* labState, Entity* entity, I32 effectId)
+static void func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
-	I32 remainingEffectN = 0;
-	for(I32 i = 0; i < labState->effectN; i++)
+	Int32 remainingEffectN = 0;
+	for(Int32 i = 0; i < labState->effectN; i++)
 	{
 		Effect* effect = &labState->effects[i];
 		if(effect->entity != entity || effect->effectId != effectId)
@@ -696,7 +697,7 @@ static void func RemoveEffect(CombatLabState* labState, Entity* entity, I32 effe
 	labState->effectN = remainingEffectN;
 }
 
-static void func AddEffect(CombatLabState* labState, Entity* entity, I32 effectId)
+static void func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
 	Assert(labState->effectN < MaxEffectN);
 	Effect* effect = &labState->effects[labState->effectN];
@@ -705,14 +706,14 @@ static void func AddEffect(CombatLabState* labState, Entity* entity, I32 effectI
 	effect->entity = entity;
 	effect->effectId = effectId;
 	
-	F32 duration = GetEffectTotalDuration(effectId);
+	Real32 duration = GetEffectTotalDuration(effectId);
 	Assert(duration > 0.0f);
 	effect->timeRemaining = duration;
 }
 
-static F32 func GetAbilityRechargeDuration(I32 abilityId)
+static Real32 func GetAbilityRechargeDuration(Int32 abilityId)
 {
-	F32 recharge = 0.0f;
+	Real32 recharge = 0.0f;
 	switch(abilityId)
 	{
 		case SmallPunchAbilityId:
@@ -749,7 +750,7 @@ static F32 func GetAbilityRechargeDuration(I32 abilityId)
 	return recharge;
 }
 
-static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+static void func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Assert(CanUseAbility(labState, entity, abilityId));
 	Entity* target = entity->target;
@@ -770,19 +771,19 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 		case KickAbilityId:
 		{
 			Assert(target != 0);
-			F32 moveSpeed = 20.0f;
+			Real32 moveSpeed = 20.0f;
 			target->velocity = moveSpeed * GetClosestMoveDirection(target->position - entity->position);
 			AddEffect(labState, target, KickedEffectId);
 			break;
 		}
 		case SpinningKickAbilityId:
 		{
-			for(I32 i = 0; i < EntityN; i++)
+			for(Int32 i = 0; i < EntityN; i++)
 			{
 				Entity* target = &labState->entities[i];
 				if(target->groupId != entity->groupId)
 				{
-					F32 distance = Distance(entity->position, target->position);
+					Real32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
 						DealDamage(labState, target, 10);
@@ -793,7 +794,7 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 		}
 		case RollAbilityId:
 		{
-			F32 moveSpeed = 20.0f;
+			Real32 moveSpeed = 20.0f;
 			entity->velocity = moveSpeed * GetClosestMoveDirection(entity->inputDirection);
 			AddEffect(labState, entity, RollingEffectId);
 			break;
@@ -805,7 +806,7 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 		}
 		case SwordStabAbilityId:
 		{
-			I32 damage = 15;
+			Int32 damage = 15;
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
@@ -817,18 +818,18 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 		}
 		case SwordSwingAbilityId:
 		{
-			I32 damage = 10;
+			Int32 damage = 10;
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
 			}
 
-			for(I32 i = 0; i < EntityN; i++)
+			for(Int32 i = 0; i < EntityN; i++)
 			{
 				Entity* target = &labState->entities[i];
 				if(target->groupId != entity->groupId)
 				{
-					F32 distance = Distance(entity->position, target->position);
+					Real32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
 						DealDamage(labState, target, damage);
@@ -866,12 +867,12 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 		case MercyOfTheSunAbilityId:
 		{
 			Heal(labState, entity, 30);
-			for(I32 i = 0; i < EntityN; i++)
+			for(Int32 i = 0; i < EntityN; i++)
 			{
 				Entity* target = &labState->entities[i];
 				if(!IsDead(target) && target->groupId != entity->groupId)
 				{
-					F32 distance = Distance(entity->position, target->position);
+					Real32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
 						AddEffect(labState, target, BlindEffectId);
@@ -892,7 +893,7 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 		}
 	}
 
-	F32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
+	Real32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
 	if(rechargeDuration > 0.0f)
 	{
 		PutOnRecharge(entity, rechargeDuration);
@@ -904,7 +905,7 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, I32 abilit
 	}
 }
 
-static void func AttemptToUseAbility(CombatLabState* labState, Entity* entity, I32 abilityId)
+static void func AttemptToUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	if(CanUseAbility(labState, entity, abilityId))
 	{
@@ -912,11 +913,11 @@ static void func AttemptToUseAbility(CombatLabState* labState, Entity* entity, I
 	}
 }
 
-static I32 func GetClassAbilityOfIndex(I32 classId, I32 abilityIndex)
+static Int32 func GetClassAbilityOfIndex(Int32 classId, Int32 abilityIndex)
 {
-	I32 result = NoAbilityId;
-	I32 classAbilityIndex = 0;
-	for(I32 abilityId = 1; abilityId < AbilityN; abilityId++)
+	Int32 result = NoAbilityId;
+	Int32 classAbilityIndex = 0;
+	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
 	{
 		if(GetAbilityClass(abilityId) == classId)
 		{
@@ -931,9 +932,9 @@ static I32 func GetClassAbilityOfIndex(I32 classId, I32 abilityIndex)
 	return result;
 }
 
-static void func AttemptToUseAbilityOfIndex(CombatLabState* labState, Entity* entity, I32 abilityIndex)
+static void func AttemptToUseAbilityOfIndex(CombatLabState* labState, Entity* entity, Int32 abilityIndex)
 {
-	I32 abilityId = GetClassAbilityOfIndex(entity->classId, abilityIndex);
+	Int32 abilityId = GetClassAbilityOfIndex(entity->classId, abilityIndex);
 	if(abilityId != NoAbilityId)
 	{
 		AttemptToUseAbility(labState, entity, abilityId);
@@ -953,8 +954,8 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 		{
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
-			I32 width  = clientRect.right - clientRect.left;
-			I32 height = clientRect.bottom - clientRect.top;
+			Int32 width  = clientRect.right - clientRect.left;
+			Int32 height = clientRect.bottom - clientRect.top;
 			CombatLabResize(labState, width, height);
 			break;
 		}
@@ -979,8 +980,8 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 				case VK_TAB:
 				{
 					Entity* target = 0;
-					F32 targetPlayerDistance = 0.0f;
-					for(I32 i = 0; i < EntityN; i++)
+					Real32 targetPlayerDistance = 0.0f;
+					for(Int32 i = 0; i < EntityN; i++)
 					{
 						Entity* enemy = &labState->entities[i];
 						if(enemy->groupId == player->groupId || IsDead(enemy) || enemy == player->target)
@@ -989,7 +990,7 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 						}
 						Assert(enemy != player);
 
-						F32 enemyPlayerDistance = Distance(enemy->position, player->position);
+						Real32 enemyPlayerDistance = Distance(enemy->position, player->position);
 						if(target == 0 || enemyPlayerDistance < targetPlayerDistance)
 						{
 							target = enemy;
@@ -1113,8 +1114,8 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 			}
 			else
 			{
-				V2 mousePosition = GetMousePosition(&labState->camera, window);
-				for(I32 i = 0; i < EntityN; i++)
+				Vec2 mousePosition = GetMousePosition(&labState->camera, window);
+				for(Int32 i = 0; i < EntityN; i++)
 				{
 					Entity* entity = &labState->entities[i];
 					if(Distance(mousePosition, entity->position) <= EntityRadius &&
@@ -1148,19 +1149,19 @@ static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM
 	return result;
 }
 
-static void func DrawCircle(Canvas* canvas, V2 center, F32 radius, V4 color)
+static void func DrawCircle(Canvas* canvas, Vec2 center, Real32 radius, Vec4 color)
 {
-	U32 colorCode = GetColorCode(color);
+	UInt32 colorCode = GetColorCode(color);
 
 	Camera *camera = canvas->camera;
 
-	I32 centerXPixel = UnitXtoPixel(camera, center.x);
-	I32 centerYPixel = UnitYtoPixel(camera, center.y);
+	Int32 centerXPixel = UnitXtoPixel(camera, center.x);
+	Int32 centerYPixel = UnitYtoPixel(camera, center.y);
 
-	I32 leftPixel   = UnitXtoPixel(camera, center.x - radius);
-	I32 rightPixel  = UnitXtoPixel(camera, center.x + radius);
-	I32 topPixel    = UnitYtoPixel(camera, center.y - radius);
-	I32 bottomPixel = UnitYtoPixel(camera, center.y + radius);
+	Int32 leftPixel   = UnitXtoPixel(camera, center.x - radius);
+	Int32 rightPixel  = UnitXtoPixel(camera, center.x + radius);
+	Int32 topPixel    = UnitYtoPixel(camera, center.y - radius);
+	Int32 bottomPixel = UnitYtoPixel(camera, center.y + radius);
 
 	if(topPixel > bottomPixel)
 	{
@@ -1172,8 +1173,8 @@ static void func DrawCircle(Canvas* canvas, V2 center, F32 radius, V4 color)
 		IntSwap(&leftPixel, &rightPixel);
 	}
 
-	I32 pixelRadius = I32(radius * camera->unitInPixels);
-	I32 pixelRadiusSquare = pixelRadius * pixelRadius;
+	Int32 pixelRadius = (Int32)(radius * camera->unitInPixels);
+	Int32 pixelRadiusSquare = pixelRadius * pixelRadius;
 
 	Bitmap bitmap = canvas->bitmap;
 	topPixel    = IntMax2(topPixel, 0);
@@ -1181,12 +1182,12 @@ static void func DrawCircle(Canvas* canvas, V2 center, F32 radius, V4 color)
 	leftPixel   = IntMax2(leftPixel, 0);
 	rightPixel  = IntMin2(rightPixel, bitmap.width - 1);
 
-	for(I32 row = topPixel; row < bottomPixel; row++)
+	for(Int32 row = topPixel; row < bottomPixel; row++)
 	{
-		for(I32 col = leftPixel; col < rightPixel; col++)
+		for(Int32 col = leftPixel; col < rightPixel; col++)
 		{
-			U32* pixel = bitmap.memory + row * bitmap.width + col;
-			I32 pixelDistanceSquare = IntSquare(row - centerYPixel) + IntSquare(col - centerXPixel);
+			UInt32* pixel = bitmap.memory + row * bitmap.width + col;
+			Int32 pixelDistanceSquare = IntSquare(row - centerYPixel) + IntSquare(col - centerXPixel);
 			if(pixelDistanceSquare <= pixelRadiusSquare)
 			{
 				*pixel = colorCode;
@@ -1195,46 +1196,46 @@ static void func DrawCircle(Canvas* canvas, V2 center, F32 radius, V4 color)
 	}
 }
 
-static void func DrawCircleOutline(Canvas* canvas, V2 center, F32 radius, V4 color)
+static void func DrawCircleOutline(Canvas* canvas, Vec2 center, Real32 radius, Vec4 color)
 {
-	I32 lineN = 20;
-	F32 angleAdvance = (2.0f * PI) / F32(lineN);
-	F32 angle = 0.0f;
-	for(I32 i = 0; i < lineN; i++)
+	Int32 lineN = 20;
+	Real32 angleAdvance = (2.0f * PI) / Real32(lineN);
+	Real32 angle = 0.0f;
+	for(Int32 i = 0; i < lineN; i++)
 	{
-		F32 angle1 = angle;
-		F32 angle2 = angle + angleAdvance;
-		V2 point1 = center + radius * RotationVector(angle1);
-		V2 point2 = center + radius * RotationVector(angle2);
+		Real32 angle1 = angle;
+		Real32 angle2 = angle + angleAdvance;
+		Vec2 point1 = center + radius * RotationVector(angle1);
+		Vec2 point2 = center + radius * RotationVector(angle2);
 		Bresenham(canvas, point1, point2, color);
 
 		angle += angleAdvance;
 	}
 }
 
-static void func DrawEntity(Canvas* canvas, Entity* entity, V4 color)
+static void func DrawEntity(Canvas* canvas, Entity* entity, Vec4 color)
 {
-	V4 entityOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 entityOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
 	DrawCircle(canvas, entity->position, EntityRadius, color);
 	DrawCircleOutline(canvas, entity->position, EntityRadius, entityOutlineColor);
 }
 
-static void func DrawSelectedEntity(Canvas* canvas, Entity* entity, V4 color)
+static void func DrawSelectedEntity(Canvas* canvas, Entity* entity, Vec4 color)
 {
-	V4 selectionOutlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 selectionOutlineColor = MakeColor(1.0f, 1.0f, 1.0f);
 	DrawCircle(canvas, entity->position, EntityRadius, color);
 	DrawCircleOutline(canvas, entity->position, EntityRadius, selectionOutlineColor);	
 }
 
 static void func DrawEntityBars(Canvas* canvas, Entity* entity)
 {
-	V2 healthBarCenter = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
-	F32 healthBarWidth = 2.0f * EntityRadius;
-	F32 healthBarHeight = 0.5f * EntityRadius;
-	V4 healthBarBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
-	V4 healthBarFilledColor = MakeColor(1.0f, 0.0f, 0.0f);
-	V4 healthBarOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
-	F32 healthRatio = F32(entity->health) / F32(EntityMaxHealth);
+	Vec2 healthBarCenter = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
+	Real32 healthBarWidth = 2.0f * EntityRadius;
+	Real32 healthBarHeight = 0.5f * EntityRadius;
+	Vec4 healthBarBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 healthBarFilledColor = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 healthBarOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Real32 healthRatio = Real32(entity->health) / Real32(EntityMaxHealth);
 	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
 	Rect healthBarBackgroundRect = MakeRect(healthBarCenter, healthBarWidth, healthBarHeight);
 	DrawRect(canvas, healthBarBackgroundRect, healthBarBackgroundColor);
@@ -1244,9 +1245,9 @@ static void func DrawEntityBars(Canvas* canvas, Entity* entity)
 	DrawRectOutline(canvas, healthBarBackgroundRect, healthBarOutlineColor);
 }
 
-static I8* func GetAbilityName(I32 abilityId)
+static Int8* func GetAbilityName(Int32 abilityId)
 {
-	I8* name = 0;
+	Int8* name = 0;
 	switch(abilityId)
 	{
 		case SmallPunchAbilityId:
@@ -1324,14 +1325,14 @@ static I8* func GetAbilityName(I32 abilityId)
 	return name;
 }
 
-static String func GetAbilityTooltipText(I32 abilityId, I8* buffer, I32 bufferSize)
+static String func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 {
 	String text = StartString(buffer, bufferSize);
 
-	I8* abilityName = GetAbilityName(abilityId);
+	Int8* abilityName = GetAbilityName(abilityId);
 	AddLine(text, abilityName);
 
-	F32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
+	Real32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
 	if(rechargeDuration == 1.0f)
 	{
 		AddLine(text, "Recharge: 1 second");
@@ -1343,7 +1344,7 @@ static String func GetAbilityTooltipText(I32 abilityId, I8* buffer, I32 bufferSi
 
 	if(HasCooldown(abilityId))
 	{
-		F32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
+		Real32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
 		Assert(cooldownDuration > 0.0f);
 		if(cooldownDuration == 1.0f)
 		{
@@ -1462,41 +1463,41 @@ static String func GetAbilityTooltipText(I32 abilityId, I8* buffer, I32 bufferSi
 
 #define UIBoxSide 40
 #define UIBoxPadding 5
-static void func DrawUIBox(Bitmap* bitmap, I32 left, I32 right, I32 top, I32 bottom, F32 rechargeRatio, V4 color)
+static void func DrawUIBox(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 rechargeRatio, Vec4 color)
 {
-	V4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
-	V4 rechargeColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 rechargeColor = MakeColor(0.5f, 0.5f, 0.5f);
 
 	DrawBitmapRect(bitmap, left, right, top, bottom, color);
 
 	Assert(IsBetween(rechargeRatio, 0.0f, 1.0f));
-	I32 rechargeRight = (I32)Lerp((F32)left, rechargeRatio, (F32)right);
+	Int32 rechargeRight = (Int32)Lerp((Real32)left, rechargeRatio, (Real32)right);
 	DrawBitmapRect(bitmap, left, rechargeRight, top, bottom, rechargeColor);
 
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
 }
 
-static void func DrawUIBoxWithText(Bitmap* bitmap, I32 left, I32 right, I32 top, I32 bottom, F32 rechargeRatio,
-								   I8* text, GlyphData* glyphData, V4 color)
+static void func DrawUIBoxWithText(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 rechargeRatio,
+								   Int8* text, GlyphData* glyphData, Vec4 color)
 {
 	DrawUIBox(bitmap, left, right, top, bottom, rechargeRatio, color);
-	V4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
 	Assert(text != 0 && glyphData != 0);
 	DrawBitmapTextLineCentered(bitmap, text, glyphData, left, right, top, bottom, textColor);
 }
 
-static void func DrawEffectUIBox(Bitmap* bitmap, Effect* effect, I32 top, I32 left)
+static void func DrawEffectUIBox(Bitmap* bitmap, Effect* effect, Int32 top, Int32 left)
 {
-	I32 right = left + UIBoxSide;
-	I32 bottom = top + UIBoxSide;
+	Int32 right = left + UIBoxSide;
+	Int32 bottom = top + UIBoxSide;
 
-	F32 totalDuration = GetEffectTotalDuration(effect->effectId);
+	Real32 totalDuration = GetEffectTotalDuration(effect->effectId);
 	Assert(totalDuration > 0.0f);
 
-	F32 durationRatio = (effect->timeRemaining / totalDuration);
+	Real32 durationRatio = (effect->timeRemaining / totalDuration);
 	Assert(IsBetween(durationRatio, 0.0f, 1.0f));
 
-	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	DrawUIBox(bitmap, left, right, top, bottom, durationRatio, backgroundColor);
 }
 
@@ -1509,12 +1510,12 @@ static void func DrawPlayerEffectBar(CombatLabState* labState)
 	Entity* player = &labState->entities[0];
 	Assert(player->groupId == PlayerGroupId);
 
-	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 
-	I32 left = UIBoxPadding;
-	I32 top = UIBoxPadding;
+	Int32 left = UIBoxPadding;
+	Int32 top = UIBoxPadding;
 
-	for(I32 i = 0; i < labState->effectN; i++)
+	for(Int32 i = 0; i < labState->effectN; i++)
 	{
 		Effect* effect = &labState->effects[i];
 		if(effect->entity == player)
@@ -1538,12 +1539,12 @@ static void func DrawTargetEffectBar(CombatLabState* labState)
 
 	if(target)
 	{
-		V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+		Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 
-		I32 left = (bitmap->width - 1) - UIBoxPadding - UIBoxSide;
-		I32 top = UIBoxPadding;
+		Int32 left = (bitmap->width - 1) - UIBoxPadding - UIBoxSide;
+		Int32 top = UIBoxPadding;
 
-		for(I32 i = 0; i < labState->effectN; i++)
+		for(Int32 i = 0; i < labState->effectN; i++)
 		{
 			Effect* effect = &labState->effects[i];
 			if(effect->entity == target)
@@ -1555,31 +1556,31 @@ static void func DrawTargetEffectBar(CombatLabState* labState)
 	}
 }
 
-static void func DrawHelpBar(CombatLabState* labState, V2 mousePosition)
+static void func DrawHelpBar(CombatLabState* labState, Vec2 mousePosition)
 {
 	Bitmap* bitmap = &labState->canvas.bitmap;
 	GlyphData* glyphData = labState->canvas.glyphData;
 	Assert(glyphData != 0);
 
 	Camera* camera = &labState->camera;
-	I32 mouseX = UnitXtoPixel(camera, mousePosition.x);
-	I32 mouseY = UnitYtoPixel(camera, mousePosition.y);
+	Int32 mouseX = UnitXtoPixel(camera, mousePosition.x);
+	Int32 mouseY = UnitYtoPixel(camera, mousePosition.y);
 
-	I32 right  = (bitmap->width - 1) - UIBoxPadding;
-	I32 left   = right - UIBoxSide;
-	I32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	I32 top    = bottom - UIBoxSide;
+	Int32 right  = (bitmap->width - 1) - UIBoxPadding;
+	Int32 left   = right - UIBoxSide;
+	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	Int32 top    = bottom - UIBoxSide;
 
-	V4 boxColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 boxColor = MakeColor(0.0f, 0.0f, 0.0f);
 
-	I8 textBuffer[8] = {};
+	Int8 textBuffer[8] = {};
 	OneLineString(textBuffer, 8, "Help");
 
 	DrawUIBoxWithText(bitmap, left, right, top, bottom, 0.0f, textBuffer, glyphData, boxColor);
 
 	if(IsIntBetween(mouseX, left, right) && IsIntBetween(mouseY, top, bottom))
 	{
-		I8 tooltipBuffer[256] = {};
+		Int8 tooltipBuffer[256] = {};
 		String tooltip = StartString(tooltipBuffer, 256);
 		AddLine(tooltip, "Key binds");
 		AddLine(tooltip, "[W][A][S][D] or Arrows - Move");
@@ -1587,29 +1588,29 @@ static void func DrawHelpBar(CombatLabState* labState, V2 mousePosition)
 		AddLine(tooltip, "[1]-[7] - Use Ability");
 		AddLine(tooltip, "[C] - Switch between classes Monk/Paladin");
 
-		I32 tooltipBottom = top - UIBoxPadding;
-		I32 tooltipRight = (bitmap->width - 1);
+		Int32 tooltipBottom = top - UIBoxPadding;
+		Int32 tooltipRight = (bitmap->width - 1);
 		DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
 	}
 }
 
-static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
+static void func DrawAbilityBar(CombatLabState* labState, Vec2 mousePosition)
 {
 	Bitmap* bitmap = &labState->canvas.bitmap;
 	GlyphData* glyphData = labState->canvas.glyphData;
 	Assert(glyphData != 0);
 
 	Camera* camera = &labState->camera;
-	I32 mouseX = UnitXtoPixel(camera, mousePosition.x);
-	I32 mouseY = UnitYtoPixel(camera, mousePosition.y);
+	Int32 mouseX = UnitXtoPixel(camera, mousePosition.x);
+	Int32 mouseY = UnitYtoPixel(camera, mousePosition.y);
 
 	Entity* entity = &labState->entities[0];
 	Assert(entity->groupId == PlayerGroupId);
-	I32 classId = entity->classId;
+	Int32 classId = entity->classId;
 	Assert(classId != NoClassId);
 
-	I32 abilityN = 0;
-	for(I32 abilityId = 1; abilityId < AbilityN; abilityId++)
+	Int32 abilityN = 0;
+	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
 	{
 		if(GetAbilityClass(abilityId) == classId)
 		{
@@ -1617,34 +1618,34 @@ static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 		}
 	}
 
-	I32 centerX = (bitmap->width - 1) / 2;
-	I32 width = UIBoxSide * abilityN + UIBoxPadding * (abilityN - 1);
+	Int32 centerX = (bitmap->width - 1) / 2;
+	Int32 width = UIBoxSide * abilityN + UIBoxPadding * (abilityN - 1);
 
-	I32 left   = centerX - width / 2;
-	I32 right  = centerX + width / 2;
-	I32 bottom = (bitmap->height - 1) - 30;
-	I32 top    = bottom - UIBoxSide;
+	Int32 left   = centerX - width / 2;
+	Int32 right  = centerX + width / 2;
+	Int32 bottom = (bitmap->height - 1) - 30;
+	Int32 top    = bottom - UIBoxSide;
 
-	I32 boxLeft = left;
-	I32 abilityIndex = 0;
+	Int32 boxLeft = left;
+	Int32 abilityIndex = 0;
 
 	labState->hoverAbilityId = NoAbilityId;
 
-	for(I32 abilityId = 1; abilityId < AbilityN; abilityId++)
+	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
 	{
 		if(GetAbilityClass(abilityId) == classId)
 		{
-			I32 boxRight = boxLeft + UIBoxSide;
-			I32 boxTop = top;
-			I32 boxBottom = bottom;
+			Int32 boxRight = boxLeft + UIBoxSide;
+			Int32 boxTop = top;
+			Int32 boxBottom = bottom;
 
-			V4 boxBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
-			V4 boxCannotUseColor = MakeColor(0.2f, 0.0f, 0.0f);
+			Vec4 boxBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+			Vec4 boxCannotUseColor = MakeColor(0.2f, 0.0f, 0.0f);
 
-			V4 color = boxBackgroundColor;
+			Vec4 color = boxBackgroundColor;
 
-			F32 recharge = 0.0f;
-			F32 rechargeFrom = 0.0f;
+			Real32 recharge = 0.0f;
+			Real32 rechargeFrom = 0.0f;
 			Cooldown* cooldown = GetCooldown(labState, entity, abilityId);
 			if(cooldown)
 			{
@@ -1662,19 +1663,19 @@ static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 				color = boxCannotUseColor;
 			}
 
-			F32 rechargeRatio = (rechargeFrom > 0.0f) ? (recharge / rechargeFrom) : 0.0f;
+			Real32 rechargeRatio = (rechargeFrom > 0.0f) ? (recharge / rechargeFrom) : 0.0f;
 
-			I8 name[8] = {};
+			Int8 name[8] = {};
 			OneLineString(name, 8, (abilityIndex + 1));
 
 			DrawUIBoxWithText(bitmap, boxLeft, boxRight, boxTop, boxBottom, rechargeRatio, name, glyphData, color);
 
 			if(IsIntBetween(mouseX, boxLeft, boxRight) && IsIntBetween(mouseY, boxTop, boxBottom))
 			{
-				I32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
-				I32 tooltipBottom = boxTop - 5;
+				Int32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
+				Int32 tooltipBottom = boxTop - 5;
 
-				static I8 tooltipBuffer[512] = {};
+				static Int8 tooltipBuffer[512] = {};
 				String tooltipText = GetAbilityTooltipText(abilityId, tooltipBuffer, 512);
 				DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
 
@@ -1687,15 +1688,15 @@ static void func DrawAbilityBar(CombatLabState* labState, V2 mousePosition)
 	}
 }
 
-static void func UpdateEntityRecharge(Entity* entity, F32 seconds)
+static void func UpdateEntityRecharge(Entity* entity, Real32 seconds)
 {
 	entity->recharge = Max2(entity->recharge - seconds, 0.0f);
 }
 
-static void func UpdateCooldowns(CombatLabState* labState, F32 seconds)
+static void func UpdateCooldowns(CombatLabState* labState, Real32 seconds)
 {
-	I32 remainingCooldownN = 0;
-	for(I32 i = 0; i < labState->cooldownN; i++)
+	Int32 remainingCooldownN = 0;
+	for(Int32 i = 0; i < labState->cooldownN; i++)
 	{
 		Cooldown* cooldown = &labState->cooldowns[i];
 		cooldown->timeRemaining -= seconds;
@@ -1708,10 +1709,10 @@ static void func UpdateCooldowns(CombatLabState* labState, F32 seconds)
 	labState->cooldownN = remainingCooldownN;
 }
 
-static void func UpdateEffects(CombatLabState* labState, F32 seconds)
+static void func UpdateEffects(CombatLabState* labState, Real32 seconds)
 {
-	I32 remainingEffectN = 0;
-	for(I32 i = 0; i < labState->effectN; i++)
+	Int32 remainingEffectN = 0;
+	for(Int32 i = 0; i < labState->effectN; i++)
 	{
 		Effect* effect = &labState->effects[i];
 		effect->timeRemaining -= seconds;
@@ -1723,12 +1724,12 @@ static void func UpdateEffects(CombatLabState* labState, F32 seconds)
 	}
 	labState->effectN = remainingEffectN;
 
-	for(I32 i = 0; i < labState->effectN; i++)
+	for(Int32 i = 0; i < labState->effectN; i++)
 	{
 		Effect* effect = &labState->effects[i];
-		F32 time = effect->timeRemaining;
-		F32 previousTime = time + seconds;
-		I32 effectId = effect->effectId;
+		Real32 time = effect->timeRemaining;
+		Real32 previousTime = time + seconds;
+		Int32 effectId = effect->effectId;
 		switch(effectId)
 		{
 			case BurningEffectId:
@@ -1743,12 +1744,12 @@ static void func UpdateEffects(CombatLabState* labState, F32 seconds)
 	}
 }
 
-static void func UpdateDamageDisplays(CombatLabState* labState, F32 seconds)
+static void func UpdateDamageDisplays(CombatLabState* labState, Real32 seconds)
 {
-	F32 scrollUpSpeed = 1.0f;
+	Real32 scrollUpSpeed = 1.0f;
 
-	I32 remainingDisplayN = 0;
-	for(I32 i = 0; i < labState->damageDisplayN; i++)
+	Int32 remainingDisplayN = 0;
+	for(Int32 i = 0; i < labState->damageDisplayN; i++)
 	{
 		DamageDisplay* display = &labState->damageDisplays[i];
 		display->position.y -= scrollUpSpeed * seconds;
@@ -1763,9 +1764,9 @@ static void func UpdateDamageDisplays(CombatLabState* labState, F32 seconds)
 	labState->damageDisplayN = remainingDisplayN;
 }
 
-static B32 func CanMove(CombatLabState* labState, Entity* entity)
+static Bool32 func CanMove(CombatLabState* labState, Entity* entity)
 {
-	B32 canMove = false;
+	Bool32 canMove = false;
 	if(IsDead(entity))
 	{
 		canMove = false;
@@ -1783,14 +1784,14 @@ static B32 func CanMove(CombatLabState* labState, Entity* entity)
 
 static void func DrawDamageDisplays(CombatLabState* labState)
 {
-	V4 damageColor = MakeColor(1.0f, 1.0f, 0.0f);
-	V4 healColor = MakeColor(0.0f, 0.5f, 0.0f);
+	Vec4 damageColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 healColor = MakeColor(0.0f, 0.5f, 0.0f);
 	Canvas* canvas = &labState->canvas;
-	for(I32 i = 0; i < labState->damageDisplayN; i++)
+	for(Int32 i = 0; i < labState->damageDisplayN; i++)
 	{
 		DamageDisplay* display = &labState->damageDisplays[i];
-		I8 text[16] = {};
-		V4 textColor = {};
+		Int8 text[16] = {};
+		Vec4 textColor = {};
 		if(display->damage > 0)
 		{
 			textColor = damageColor;
@@ -1809,36 +1810,36 @@ static void func DrawDamageDisplays(CombatLabState* labState)
 	}
 }
 
-static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32 seconds)
+static void func CombatLabUpdate(CombatLabState* labState, Vec2 mousePosition, Real32 seconds)
 {
 	Canvas* canvas = &labState->canvas;
-	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
-	V4 tileColor = MakeColor(0.5f, 0.5f, 0.5f);
-	V4 hoverTileColor = MakeColor(0.6f, 0.6f, 0.6f);
+	Vec4 tileColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 hoverTileColor = MakeColor(0.6f, 0.6f, 0.6f);
 
-	V4 moveTileColor = MakeColor(0.8f, 0.8f, 0.8f);
-	V4 hoverMoveTileColor = MakeColor(0.9f, 0.9f, 0.9f);
+	Vec4 moveTileColor = MakeColor(0.8f, 0.8f, 0.8f);
+	Vec4 hoverMoveTileColor = MakeColor(0.9f, 0.9f, 0.9f);
 
-	V4 attackTileColor = MakeColor(0.8f, 0.5f, 0.5f);
-	V4 hoverAttackTileColor = MakeColor(0.9f, 0.6f, 0.6f);
+	Vec4 attackTileColor = MakeColor(0.8f, 0.5f, 0.5f);
+	Vec4 hoverAttackTileColor = MakeColor(0.9f, 0.6f, 0.6f);
 
-	for(I32 row = 0; row < TileRowN; row++)
+	for(Int32 row = 0; row < TileRowN; row++)
 	{
-		for(I32 col = 0; col < TileColN; col++)
+		for(Int32 col = 0; col < TileColN; col++)
 		{
 			TileIndex tileIndex = MakeTileIndex(row, col);
-			V4 color = tileColor;
-			V2 tileCenter = GetTileCenter(tileIndex);
+			Vec4 color = tileColor;
+			Vec2 tileCenter = GetTileCenter(tileIndex);
 			Rect tileRect = MakeSquareRect(tileCenter, TileSide);
 			DrawRect(canvas, tileRect, color);
 			DrawRectOutline(canvas, tileRect, TileGridColor);
 		}
 	}
 
-	F32 mapWidth = TileColN * TileSide;
-	F32 mapHeight = TileRowN * TileSide;
+	Real32 mapWidth = TileColN * TileSide;
+	Real32 mapHeight = TileRowN * TileSide;
 
 	Entity* player = &labState->entities[0];
 	Assert(player->groupId == PlayerGroupId);
@@ -1859,12 +1860,12 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 	player->position.x = Clip(player->position.x, EntityRadius, mapWidth - EntityRadius);
 	player->position.y = Clip(player->position.y, EntityRadius, mapHeight - EntityRadius);
 
-	V4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
+	Vec4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
 	DrawEntity(canvas, player, playerColor);
 
-	V4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
 
-	for(I32 i = 0; i < EntityN; i++)
+	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
 		if (enemy->groupId != EnemyGroupId)
@@ -1882,8 +1883,8 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 		}
 	}
 
-	F32 enemyPullDistance = 30.0f;
-	for(I32 i = 0; i < EntityN; i++)
+	Real32 enemyPullDistance = 30.0f;
+	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
 		if (enemy->groupId != EnemyGroupId)
@@ -1893,7 +1894,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 
 		if(enemy->target == 0)
 		{
-			F32 distance = MaxDistance(player->position, enemy->position);
+			Real32 distance = MaxDistance(player->position, enemy->position);
 			if(distance <= enemyPullDistance)
 			{
 				enemy->target = player;
@@ -1910,33 +1911,33 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 		}
 		else
 		{
-			B32 foundTargetTile = false;
-			F32 enemyTargetDistance = 0.0f;
+			Bool32 foundTargetTile = false;
+			Real32 enemyTargetDistance = 0.0f;
 
-			V2 targetDirection = {};
-			V2 targetPosition = {};
+			Vec2 targetDirection = {};
+			Vec2 targetPosition = {};
 			TileIndex playerTileIndex = GetContainingTileIndex(target->position);
 
-			for(I32 row = playerTileIndex.row - 1; row <= playerTileIndex.row + 1; row++)
+			for(Int32 row = playerTileIndex.row - 1; row <= playerTileIndex.row + 1; row++)
 			{
-				V2 direction = {};
-				direction.y = (F32)(row - playerTileIndex.row);
+				Vec2 direction = {};
+				direction.y = (Real32)(row - playerTileIndex.row);
 
-				for(I32 col = playerTileIndex.col - 1; col <= playerTileIndex.col + 1; col++)
+				for(Int32 col = playerTileIndex.col - 1; col <= playerTileIndex.col + 1; col++)
 				{
-					direction.x = (F32)(col - playerTileIndex.col);
+					direction.x = (Real32)(col - playerTileIndex.col);
 
 					if(row == playerTileIndex.row && col == playerTileIndex.col)
 					{
 						continue;
 					}
 
-					F32 attackDistance = 2.5f * EntityRadius;
+					Real32 attackDistance = 2.5f * EntityRadius;
 					TileIndex tileIndex = MakeTileIndex(row, col);
 					if(IsValidTileIndex(tileIndex))
 					{
-						V2 position = target->position + attackDistance * direction;
-						F32 enemyDistance = MaxDistance(enemy->position, position);
+						Vec2 position = target->position + attackDistance * direction;
+						Real32 enemyDistance = MaxDistance(enemy->position, position);
 						if(!foundTargetTile || enemyDistance < enemyTargetDistance)
 						{
 							targetDirection = direction;
@@ -1950,7 +1951,7 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 			}
 
 			Assert(foundTargetTile);
-			F32 enemyMoveSpeed = 10.0f;
+			Real32 enemyMoveSpeed = 10.0f;
 
 			if(IsDead(enemy))
 			{
@@ -1983,13 +1984,13 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 		enemy->position.y = Clip(enemy->position.y, EntityRadius, mapHeight - EntityRadius);
 	}
 
-	for(I32 i = 0; i < EntityN; i++)
+	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* entity = &labState->entities[i];
 		UpdateEntityRecharge(entity, seconds);
 	}
 
-	for(I32 i = 0; i < EntityN; i++)
+	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
 		if(enemy->groupId != EnemyGroupId)
@@ -1999,13 +2000,13 @@ static void func CombatLabUpdate(CombatLabState* labState, V2 mousePosition, F32
 		AttemptToUseAbility(labState, enemy, EnemyAbilityId);
 	}
 
-	for(I32 i = 0; i < EntityN; i++)
+	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* entity = &labState->entities[i];
 		DrawEntityBars(canvas, entity);
 	}
 
-	V2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
+	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 	Camera* camera = &labState->camera;
 	camera->center = mapCenter;
 
@@ -2045,8 +2046,8 @@ static void func CombatLab(HINSTANCE instance)
 
 	RECT rect = {};
 	GetClientRect(window, &rect);
-	I32 width  = rect.right - rect.left;
-	I32 height = rect.bottom - rect.top;
+	Int32 width  = rect.right - rect.left;
+	Int32 height = rect.bottom - rect.top;
 	CombatLabInit(labState, width, height);
 
 	LARGE_INTEGER counterFrequency;
@@ -2066,12 +2067,12 @@ static void func CombatLab(HINSTANCE instance)
 
 		LARGE_INTEGER counter;
 		QueryPerformanceCounter(&counter);
-		I64 microSeconds = counter.QuadPart - lastCounter.QuadPart;
-		F32 milliSeconds = (F32(microSeconds) * 1000.0f) / F32(counterFrequency.QuadPart);
-		F32 seconds = 0.001f * milliSeconds;
+		Int64 microSeconds = counter.QuadPart - lastCounter.QuadPart;
+		Real32 milliSeconds = (Real32(microSeconds) * 1000.0f) / Real32(counterFrequency.QuadPart);
+		Real32 seconds = 0.001f * milliSeconds;
 		lastCounter = counter;
 
-		V2 mousePosition = GetMousePosition(&labState->camera, window);
+		Vec2 mousePosition = GetMousePosition(&labState->camera, window);
 		CombatLabUpdate(labState, mousePosition, seconds);
 
 		RECT rect = {};

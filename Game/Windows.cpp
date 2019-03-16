@@ -11,7 +11,7 @@
 #include "Lab/ThreadLab.hpp"
 #include "Lab/WorldLab.hpp"
 
-I32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, I32 cmdShow)
+Int32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, Int32 cmdShow)
 {
 	WorldLab(instance);
 	return 0;

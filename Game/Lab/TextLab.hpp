@@ -12,11 +12,11 @@ struct TextLabState
 	Camera camera;
 	Canvas canvas;
 
-	B32 running;
+	Bool32 running;
 };
 static TextLabState gTextLabState;
 
-static void func TextLabResize(TextLabState* labState, I32 width, I32 height)
+static void func TextLabResize(TextLabState* labState, Int32 width, Int32 height)
 {
 	Camera* camera = &labState->camera;
 	ResizeCamera(camera, width, height);
@@ -29,8 +29,8 @@ static void func TextLabResize(TextLabState* labState, I32 width, I32 height)
 
 static void func TextLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
-	I32 width = rect.right - rect.left;
-	I32 height = rect.bottom - rect.top;
+	Int32 width = rect.right - rect.left;
+	Int32 height = rect.bottom - rect.top;
 
 	Bitmap bitmap = canvas->bitmap;
 	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
@@ -44,7 +44,7 @@ static void func TextLabBlit(Canvas* canvas, HDC context, RECT rect)
 	);
 }
 
-static void func TextLabInit(TextLabState* labState, I32 windowWidth, I32 windowHeight)
+static void func TextLabInit(TextLabState* labState, Int32 windowWidth, Int32 windowHeight)
 {
 	labState->running = true;
 	TextLabResize(labState, windowWidth, windowHeight);
@@ -62,50 +62,50 @@ static void func DrawTestToolTip(Canvas* canvas)
 		"to the first enemy hit.",
 		"Generates 20 Energy if it hits anything."
 	};
-	I32 lineN = sizeof(lines) / sizeof(char*);
+	Int32 lineN = sizeof(lines) / sizeof(char*);
 
 	Bitmap* bitmap = &canvas->bitmap;
-	I32 tooltipLeft = (bitmap->width / 2) - (TooltipWidth / 2);
-	I32 tooltipTop = (bitmap->height / 2) - (GetTooltipHeight(lineN) / 2);
+	Int32 tooltipLeft = (bitmap->width / 2) - (TooltipWidth / 2);
+	Int32 tooltipTop = (bitmap->height / 2) - (GetTooltipHeight(lineN) / 2);
 	DrawBitmapTooltip(bitmap, lines, lineN, canvas->glyphData, tooltipTop, tooltipLeft);
 }
 
 static void func TextLabUpdate(TextLabState* labState)
 {
 	Canvas* canvas = &labState->canvas;
-	V4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
-	V4 topLeftColor     = MakeColor(1.0f, 0.0f, 0.0f);
-	V4 topRightColor    = MakeColor(0.0f, 1.0f, 0.0f);
-	V4 bottomLeftColor  = MakeColor(0.0f, 0.0f, 1.0f);
-	V4 bottomRightColor = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 topLeftColor     = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 topRightColor    = MakeColor(0.0f, 1.0f, 0.0f);
+	Vec4 bottomLeftColor  = MakeColor(0.0f, 0.0f, 1.0f);
+	Vec4 bottomRightColor = MakeColor(1.0f, 0.0f, 0.0f);
 
 	Bitmap* bitmap = &canvas->bitmap;
-	U32* pixel = bitmap->memory;
-	for(I32 row = 0; row < bitmap->height; row++)
+	UInt32* pixel = bitmap->memory;
+	for(Int32 row = 0; row < bitmap->height; row++)
 	{
-		F32 yRatio = F32(row) / F32(bitmap->height - 1);
+		Real32 yRatio = Real32(row) / Real32(bitmap->height - 1);
 
-		V4 leftColor = InterpolateColors(topLeftColor, yRatio, bottomLeftColor);
-		V4 rightColor = InterpolateColors(topRightColor, yRatio, bottomRightColor);
+		Vec4 leftColor = InterpolateColors(topLeftColor, yRatio, bottomLeftColor);
+		Vec4 rightColor = InterpolateColors(topRightColor, yRatio, bottomRightColor);
 
-		for(I32 col = 0; col < bitmap->width; col++)
+		for(Int32 col = 0; col < bitmap->width; col++)
 		{
-			F32 xRatio = F32(col) / F32(bitmap->width - 1);
+			Real32 xRatio = Real32(col) / Real32(bitmap->width - 1);
 
-			V4 color = InterpolateColors(leftColor, xRatio, rightColor);
+			Vec4 color = InterpolateColors(leftColor, xRatio, rightColor);
 			*pixel = GetColorCode(color);
 			pixel++;
 		}
 	}
 
 	Camera* camera = canvas->camera;
-	F32 baseLineY = 0.5f * (CameraTopSide(camera) + CameraBottomSide(camera));
-	F32 baseLineLeft = CameraLeftSide(camera);
-	F32 baseLineRight = CameraRightSide(camera);
+	Real32 baseLineY = 0.5f * (CameraTopSide(camera) + CameraBottomSide(camera));
+	Real32 baseLineLeft = CameraLeftSide(camera);
+	Real32 baseLineRight = CameraRightSide(camera);
 
-	V4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
 
 	DrawTestToolTip(canvas);
 }
@@ -121,8 +121,8 @@ static LRESULT CALLBACK func TextLabCallback(HWND window, UINT message, WPARAM w
 		{
 			RECT clientRect = {};
 			GetClientRect(window, &clientRect);
-			I32 width = clientRect.right - clientRect.left;
-			I32 height = clientRect.bottom - clientRect.top;
+			Int32 width = clientRect.right - clientRect.left;
+			Int32 height = clientRect.bottom - clientRect.top;
 			TextLabResize(labState, width, height);
 			break;
 		}
@@ -190,8 +190,8 @@ static void func TextLab(HINSTANCE instance)
 
 	RECT rect = {};
 	GetClientRect(window, &rect);
-	I32 width = rect.right - rect.left;
-	I32 height = rect.bottom - rect.top;
+	Int32 width = rect.right - rect.left;
+	Int32 height = rect.bottom - rect.top;
 	TextLabInit(labState, width, height);
 
 	MSG message = {};
