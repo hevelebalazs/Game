@@ -129,7 +129,6 @@
     <ClInclude Include="Debug.hpp" />
     <ClInclude Include="Geometry.hpp" />
     <ClInclude Include="Lab\CombatLab.hpp" />
-    <ClInclude Include="Lab\Lab.hpp" />
     <ClInclude Include="Lab\TextLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
     <ClInclude Include="Math.hpp" />
@@ -139,6 +138,7 @@
     <ClInclude Include="Text.hpp" />
     <ClInclude Include="Texture.hpp" />
     <ClInclude Include="Type.hpp" />
+    <ClInclude Include="UserInput.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

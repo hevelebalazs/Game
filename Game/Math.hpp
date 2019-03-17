@@ -16,6 +16,12 @@ struct Vec2
 	Real32 y;
 };
 
+struct IntVec2
+{
+	Int32 x;
+	Int32 y;
+};
+
 struct Vec4 
 {
 	union 

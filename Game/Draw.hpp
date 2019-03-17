@@ -284,6 +284,14 @@ static Real32 func PixelToUnitY(Camera* camera, Real32 pixelY)
 	return unitY;
 }
 
+static Vec2 func PixelToUnit(Camera* camera, IntVec2 pixel)
+{
+	Vec2 result = {};
+	result.x = PixelToUnitX(camera, (Real32)pixel.x);
+	result.y = PixelToUnitY(camera, (Real32)pixel.y);
+	return result;
+}
+
 static Vec2 func PixelToUnit(Camera* camera, Vec2 pixel)
 {
 	Vec2 result = {};

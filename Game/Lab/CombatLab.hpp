@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lab.hpp"
+#include "../UserInput.hpp"
 
 #define TileSide 10.0f
 #define TileRowN 10
@@ -107,10 +107,6 @@ struct Effect
 #define MaxDamageDisplayN 64
 struct CombatLabState
 {
-	Camera camera;
-	Canvas canvas;
-	Bool32 running;
-
 	Cooldown cooldowns[MaxCooldownN];
 	Int32 cooldownN;
 
@@ -124,42 +120,12 @@ struct CombatLabState
 
 	Int32 hoverAbilityId;
 };
-CombatLabState gCombatLabState;
 
 #define PlayerSpeed 11.0f
 
 #define EnemyAttackRadius 10.0f
 
 #define MaxMeleeAttackDistance (4.0f * EntityRadius)
-
-static void func CombatLabResize(CombatLabState* labState, Int32 width, Int32 height)
-{
-	Camera* camera = &labState->camera;
-	ResizeCamera(camera, width, height);
-
-	Canvas* canvas = &labState->canvas;
-	ResizeBitmap(&canvas->bitmap, width, height);
-	canvas->camera = camera;
-	camera->unitInPixels = 5.0f;
-	camera->center = MakePoint(0.0f, 0.0f);
-}
-
-static void func CombatLabBlit(Canvas* canvas, HDC context, RECT rect)
-{
-	Int32 width  = rect.right - rect.left;
-	Int32 height = rect.bottom - rect.top;
-
-	Bitmap* bitmap = &canvas->bitmap;
-	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
-	StretchDIBits(context,
-				  0, 0, bitmap->width, bitmap->height,
-				  0, 0, width, height,
-				  bitmap->memory,
-				  &bitmapInfo,
-				  DIB_RGB_COLORS,
-				  SRCCOPY
-	);
-}
 
 static TileIndex func MakeTileIndex(Int32 row, Int32 col)
 {
@@ -193,11 +159,13 @@ static TileIndex func GetContainingTileIndex(Vec2 point)
 	return index;
 }
 
-static void func CombatLabInit(CombatLabState* labState, Int32 windowWidth, Int32 windowHeight)
+static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
-	labState->running = true;
-	labState->canvas.glyphData = GetGlobalGlyphData();
-	CombatLabResize(labState, windowWidth, windowHeight);
+	canvas->glyphData = GetGlobalGlyphData();
+
+	Camera* camera = canvas->camera;
+	camera->unitInPixels = 5.0f;
+	camera->center = MakePoint(0.0f, 0.0f);
 
 	Real32 mapWidth = TileRowN * TileSide;
 	Real32 mapHeight = TileColN * TileSide;
@@ -941,214 +909,6 @@ static void func AttemptToUseAbilityOfIndex(CombatLabState* labState, Entity* en
 	}
 }
 
-static LRESULT CALLBACK func CombatLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	LRESULT result = 0;
-	
-	CombatLabState* labState = &gCombatLabState;
-	Entity* player = &labState->entities[0];
-	Assert(player->groupId == PlayerGroupId);
-	switch(message)
-	{
-		case WM_SIZE:
-		{
-			RECT clientRect = {};
-			GetClientRect(window, &clientRect);
-			Int32 width  = clientRect.right - clientRect.left;
-			Int32 height = clientRect.bottom - clientRect.top;
-			CombatLabResize(labState, width, height);
-			break;
-		}
-		case WM_PAINT:
-		{
-			PAINTSTRUCT paint = {};
-			HDC context = BeginPaint(window, &paint);
-
-			RECT clientRect = {};
-			GetClientRect(window, &clientRect);
-
-			CombatLabBlit(&labState->canvas, context, clientRect);
-
-			EndPaint(window, &paint);
-			break;
-		}
-		case WM_KEYDOWN:
-		{
-			WPARAM keyCode = wparam;
-			switch(keyCode)
-			{
-				case VK_TAB:
-				{
-					Entity* target = 0;
-					Real32 targetPlayerDistance = 0.0f;
-					for(Int32 i = 0; i < EntityN; i++)
-					{
-						Entity* enemy = &labState->entities[i];
-						if(enemy->groupId == player->groupId || IsDead(enemy) || enemy == player->target)
-						{
-							continue;
-						}
-						Assert(enemy != player);
-
-						Real32 enemyPlayerDistance = Distance(enemy->position, player->position);
-						if(target == 0 || enemyPlayerDistance < targetPlayerDistance)
-						{
-							target = enemy;
-							targetPlayerDistance = enemyPlayerDistance;
-						}
-					}
-
-					if(target)
-					{
-						player->target = target;
-					}
-					break;
-				}
-				case VK_LEFT:
-				case 'A':
-				{
-					player->inputDirection.x = -1.0f;
-					break;
-				}
-				case VK_RIGHT:
-				case 'D':
-				{
-					player->inputDirection.x = +1.0f;
-					break;
-				}
-				case VK_UP:
-				case 'W':
-				{
-					player->inputDirection.y = -1.0f;
-					break;
-				}
-				case VK_DOWN:
-				case 'S':
-				{
-					player->inputDirection.y = +1.0f;
-					break;
-				}
-				case '1':
-				{
-					AttemptToUseAbilityOfIndex(labState, player, 0);
-					break;
-				}
-				case '2':
-				{
-					AttemptToUseAbilityOfIndex(labState, player, 1);
-					break;
-				}
-				case '3':
-				{
-					AttemptToUseAbilityOfIndex(labState, player, 2);
-					break;
-				}
-				case '4':
-				{
-					AttemptToUseAbilityOfIndex(labState, player, 3);
-					break;
-				}
-				case '5':
-				{
-					AttemptToUseAbilityOfIndex(labState, player, 4);
-					break;
-				}
-				case '6':
-				{
-					AttemptToUseAbilityOfIndex(labState, player, 5);
-					break;
-				}
-				case '7':
-				{
-					AttemptToUseAbilityOfIndex(labState, player, 6);
-					break;
-				}
-				case 'C':
-				{
-					if(player->classId == MonkClassId)
-					{
-						player->classId = PaladinClassId;
-					}
-					else if(player->classId == PaladinClassId)
-					{
-						player->classId = MonkClassId;
-					}
-					else
-					{
-						DebugBreak();
-					}
-					break;
-				}
-			}
-			break;
-		}
-		case WM_KEYUP:
-		{
-			WPARAM keyCode = wparam;
-			switch(keyCode) 
-			{
-				case VK_LEFT:
-				case 'A':
-				case VK_RIGHT:
-				case 'D':
-				{
-					player->inputDirection.x = 0.0f;
-					break;
-				}
-				case VK_UP:
-				case 'W':
-				case VK_DOWN:
-				case 'S':
-				{
-					player->inputDirection.y = 0.0f;
-					break;
-				}
-			}
-			break;
-		}
-		case WM_LBUTTONUP:
-		{
-			if(labState->hoverAbilityId != NoAbilityId)
-			{
-				AttemptToUseAbility(labState, &labState->entities[0], labState->hoverAbilityId);
-			}
-			else
-			{
-				Vec2 mousePosition = GetMousePosition(&labState->camera, window);
-				for(Int32 i = 0; i < EntityN; i++)
-				{
-					Entity* entity = &labState->entities[i];
-					if(Distance(mousePosition, entity->position) <= EntityRadius &&
-					   !IsDead(entity) && entity->groupId != player->groupId)
-					{
-						player->target = entity;
-						break;
-					}
-				}
-			}
-			break;
-		}
-		case WM_SETCURSOR:
-		{
-			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
-			SetCursor(cursor);
-			break;
-		}
-		case WM_DESTROY:
-		case WM_CLOSE:
-		{
-			labState->running = false;
-			break;
-		}
-		default:
-		{
-			result = DefWindowProc(window, message, wparam, lparam);
-			break;
-		}
-	}
-	return result;
-}
-
 static void func DrawCircle(Canvas* canvas, Vec2 center, Real32 radius, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
@@ -1501,10 +1261,10 @@ static void func DrawEffectUIBox(Bitmap* bitmap, Effect* effect, Int32 top, Int3
 	DrawUIBox(bitmap, left, right, top, bottom, durationRatio, backgroundColor);
 }
 
-static void func DrawPlayerEffectBar(CombatLabState* labState)
+static void func DrawPlayerEffectBar(Canvas* canvas, CombatLabState* labState)
 {
-	Bitmap* bitmap = &labState->canvas.bitmap;
-	GlyphData* glyphData = labState->canvas.glyphData;
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
 
 	Entity* player = &labState->entities[0];
@@ -1526,10 +1286,10 @@ static void func DrawPlayerEffectBar(CombatLabState* labState)
 	}
 }
 
-static void func DrawTargetEffectBar(CombatLabState* labState)
+static void func DrawTargetEffectBar(Canvas* canvas, CombatLabState* labState)
 {
-	Bitmap* bitmap = &labState->canvas.bitmap;
-	GlyphData* glyphData = labState->canvas.glyphData;
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
 
 	Entity* player = &labState->entities[0];
@@ -1556,15 +1316,11 @@ static void func DrawTargetEffectBar(CombatLabState* labState)
 	}
 }
 
-static void func DrawHelpBar(CombatLabState* labState, Vec2 mousePosition)
+static void func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
 {
-	Bitmap* bitmap = &labState->canvas.bitmap;
-	GlyphData* glyphData = labState->canvas.glyphData;
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
-
-	Camera* camera = &labState->camera;
-	Int32 mouseX = UnitXtoPixel(camera, mousePosition.x);
-	Int32 mouseY = UnitYtoPixel(camera, mousePosition.y);
 
 	Int32 right  = (bitmap->width - 1) - UIBoxPadding;
 	Int32 left   = right - UIBoxSide;
@@ -1578,7 +1334,7 @@ static void func DrawHelpBar(CombatLabState* labState, Vec2 mousePosition)
 
 	DrawUIBoxWithText(bitmap, left, right, top, bottom, 0.0f, textBuffer, glyphData, boxColor);
 
-	if(IsIntBetween(mouseX, left, right) && IsIntBetween(mouseY, top, bottom))
+	if(IsIntBetween(mousePosition.x, left, right) && IsIntBetween(mousePosition.y, top, bottom))
 	{
 		Int8 tooltipBuffer[256] = {};
 		String tooltip = StartString(tooltipBuffer, 256);
@@ -1594,15 +1350,11 @@ static void func DrawHelpBar(CombatLabState* labState, Vec2 mousePosition)
 	}
 }
 
-static void func DrawAbilityBar(CombatLabState* labState, Vec2 mousePosition)
+static void func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
 {
-	Bitmap* bitmap = &labState->canvas.bitmap;
-	GlyphData* glyphData = labState->canvas.glyphData;
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
-
-	Camera* camera = &labState->camera;
-	Int32 mouseX = UnitXtoPixel(camera, mousePosition.x);
-	Int32 mouseY = UnitYtoPixel(camera, mousePosition.y);
 
 	Entity* entity = &labState->entities[0];
 	Assert(entity->groupId == PlayerGroupId);
@@ -1670,7 +1422,7 @@ static void func DrawAbilityBar(CombatLabState* labState, Vec2 mousePosition)
 
 			DrawUIBoxWithText(bitmap, boxLeft, boxRight, boxTop, boxBottom, rechargeRatio, name, glyphData, color);
 
-			if(IsIntBetween(mouseX, boxLeft, boxRight) && IsIntBetween(mouseY, boxTop, boxBottom))
+			if(IsIntBetween(mousePosition.x, boxLeft, boxRight) && IsIntBetween(mousePosition.y, boxTop, boxBottom))
 			{
 				Int32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
 				Int32 tooltipBottom = boxTop - 5;
@@ -1782,11 +1534,10 @@ static Bool32 func CanMove(CombatLabState* labState, Entity* entity)
 	return canMove;
 }
 
-static void func DrawDamageDisplays(CombatLabState* labState)
+static void func DrawDamageDisplays(Canvas* canvas, CombatLabState* labState)
 {
 	Vec4 damageColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Vec4 healColor = MakeColor(0.0f, 0.5f, 0.0f);
-	Canvas* canvas = &labState->canvas;
 	for(Int32 i = 0; i < labState->damageDisplayN; i++)
 	{
 		DamageDisplay* display = &labState->damageDisplays[i];
@@ -1810,9 +1561,8 @@ static void func DrawDamageDisplays(CombatLabState* labState)
 	}
 }
 
-static void func CombatLabUpdate(CombatLabState* labState, Vec2 mousePosition, Real32 seconds)
+static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
-	Canvas* canvas = &labState->canvas;
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
@@ -1844,9 +1594,57 @@ static void func CombatLabUpdate(CombatLabState* labState, Vec2 mousePosition, R
 	Entity* player = &labState->entities[0];
 	Assert(player->groupId == PlayerGroupId);
 
+	if(WasKeyReleased(userInput, 'C'))
+	{
+		if(player->classId == MonkClassId)
+		{
+			player->classId = PaladinClassId;
+		}
+		else if(player->classId == PaladinClassId)
+		{
+			player->classId = MonkClassId;
+		}
+		else
+		{
+			DebugBreak();
+		}
+	}
+
 	UpdateCooldowns(labState, seconds);
 	UpdateEffects(labState, seconds);
 	UpdateDamageDisplays(labState, seconds);
+
+	player->inputDirection = MakeVector(0.0f, 0.0f);
+	Bool32 inputMoveLeft  = IsKeyDown(userInput, 'A') || IsKeyDown(userInput, VK_LEFT);
+	Bool32 inputMoveRight = IsKeyDown(userInput, 'D') || IsKeyDown(userInput, VK_RIGHT);
+	Bool32 inputMoveUp    = IsKeyDown(userInput, 'W') || IsKeyDown(userInput, VK_UP);
+	Bool32 inputMoveDown  = IsKeyDown(userInput, 'S') || IsKeyDown(userInput, VK_DOWN);
+
+	if(inputMoveLeft && inputMoveRight)
+	{
+		player->inputDirection.x = 0.0f;
+	}
+	else if(inputMoveLeft)
+	{
+		player->inputDirection.x = -1.0f;
+	}
+	else if(inputMoveRight)
+	{
+		player->inputDirection.x = +1.0f;
+	}
+
+	if(inputMoveUp && inputMoveDown)
+	{
+		player->inputDirection.y = 0.0f;
+	}
+	else if(inputMoveUp)
+	{
+		player->inputDirection.y = -1.0f;
+	}
+	else if(inputMoveDown)
+	{
+		player->inputDirection.y = +1.0f;
+	}
 
 	if(IsDead(player))
 	{
@@ -1984,10 +1782,67 @@ static void func CombatLabUpdate(CombatLabState* labState, Vec2 mousePosition, R
 		enemy->position.y = Clip(enemy->position.y, EntityRadius, mapHeight - EntityRadius);
 	}
 
+	if(WasKeyPressed(userInput, VK_TAB))
+	{
+		Entity* target = 0;
+		Real32 targetPlayerDistance = 0.0f;
+		for(Int32 i = 0; i < EntityN; i++)
+		{
+			Entity* enemy = &labState->entities[i];
+			if(enemy->groupId == player->groupId || IsDead(enemy) || enemy == player->target)
+			{
+				continue;
+			}
+			Assert(enemy != player);
+
+			Real32 enemyPlayerDistance = Distance(enemy->position, player->position);
+			if(target == 0 || enemyPlayerDistance < targetPlayerDistance)
+			{
+				target = enemy;
+				targetPlayerDistance = enemyPlayerDistance;
+			}
+		}
+
+		if(target)
+		{
+			player->target = target;
+		}
+	}
+
+	if(WasKeyReleased(userInput, VK_LBUTTON))
+	{
+		if(labState->hoverAbilityId != NoAbilityId)
+		{
+			AttemptToUseAbility(labState, player, labState->hoverAbilityId);
+		}
+		else
+		{
+			Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
+			for(Int32 i = 0; i < EntityN; i++)
+			{
+				Entity* entity = &labState->entities[i];
+				if(Distance(mousePosition, entity->position) <= EntityRadius &&
+				   !IsDead(entity) && entity->groupId != player->groupId)
+				{
+					player->target = entity;
+					break;
+				}
+			}
+		}
+	}
+
 	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* entity = &labState->entities[i];
 		UpdateEntityRecharge(entity, seconds);
+	}
+
+	for(Int32 i = '1'; i <= '7'; i++)
+	{
+		if(WasKeyPressed(userInput, i))
+		{
+			AttemptToUseAbilityOfIndex(labState, player, i - '1');
+		}
 	}
 
 	for(Int32 i = 0; i < EntityN; i++)
@@ -2007,81 +1862,13 @@ static void func CombatLabUpdate(CombatLabState* labState, Vec2 mousePosition, R
 	}
 
 	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
-	Camera* camera = &labState->camera;
-	camera->center = mapCenter;
+	canvas->camera->center = mapCenter;
 
-	DrawAbilityBar(labState, mousePosition);
-	DrawHelpBar(labState, mousePosition);
-	DrawPlayerEffectBar(labState);
-	DrawTargetEffectBar(labState);
-	DrawDamageDisplays(labState);
-}
-
-static void func CombatLab(HINSTANCE instance)
-{
-	WNDCLASS winClass = {};
-	winClass.style = CS_OWNDC;
-	winClass.lpfnWndProc = CombatLabCallback;
-	winClass.hInstance = instance;
-	winClass.lpszClassName = "CombatLabWindowClass";
-
-	Verify(RegisterClass(&winClass));
-	HWND window = CreateWindowEx(
-		0,
-		winClass.lpszClassName,
-		"CombatLab",
-		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		0,
-		0,
-		instance,
-		0
-	);
-	Assert(window != 0);
-
-	CombatLabState* labState = &gCombatLabState;
-
-	RECT rect = {};
-	GetClientRect(window, &rect);
-	Int32 width  = rect.right - rect.left;
-	Int32 height = rect.bottom - rect.top;
-	CombatLabInit(labState, width, height);
-
-	LARGE_INTEGER counterFrequency;
-	QueryPerformanceFrequency(&counterFrequency);
-
-	LARGE_INTEGER lastCounter;
-	QueryPerformanceCounter(&lastCounter);
-
-	MSG message = {};
-	while(labState->running)
-	{
-		while(PeekMessage(&message, 0, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&message);
-			DispatchMessage(&message);
-		}
-
-		LARGE_INTEGER counter;
-		QueryPerformanceCounter(&counter);
-		Int64 microSeconds = counter.QuadPart - lastCounter.QuadPart;
-		Real32 milliSeconds = (Real32(microSeconds) * 1000.0f) / Real32(counterFrequency.QuadPart);
-		Real32 seconds = 0.001f * milliSeconds;
-		lastCounter = counter;
-
-		Vec2 mousePosition = GetMousePosition(&labState->camera, window);
-		CombatLabUpdate(labState, mousePosition, seconds);
-
-		RECT rect = {};
-		GetClientRect(window, &rect);
-
-		HDC context = GetDC(window);
-		CombatLabBlit(&labState->canvas, context, rect);
-		ReleaseDC(window, context);
-	}
+	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
+	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
+	DrawPlayerEffectBar(canvas, labState);
+	DrawTargetEffectBar(canvas, labState);
+	DrawDamageDisplays(canvas, labState);
 }
 
 // TODO: Computer controlled enemies shouldn't stack upon each other
