@@ -99,6 +99,14 @@ static Vec2 func MakePoint(Real32 x, Real32 y)
 	return point;
 }
 
+static IntVec2 func MakeIntPoint(Int32 x, Int32 y)
+{
+	IntVec2 point = {};
+	point.x = x;
+	point.y = y;
+	return point;
+}
+
 static Vec2 func MakeVector(Real32 x, Real32 y)
 {
 	Vec2 result = MakePoint(x, y);

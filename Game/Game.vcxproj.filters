@@ -53,9 +53,6 @@
     <ClInclude Include="Lab\CombatLab.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Lab\Lab.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Lab\TextLab.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Lab\WorldLab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserInput.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

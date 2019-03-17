@@ -2,12 +2,11 @@
 
 #include <Windows.h>
 
-#include "Lab.hpp"
-
 #include "../Bitmap.hpp"
 #include "../Debug.hpp"
 #include "../Draw.hpp"
 #include "../Geometry.hpp"
+#include "../UserInput.hpp"
 
 #define WorldLabRandomTableN 16384
 #define WorldLabLevelSwitchRatio 0.67f
@@ -22,10 +21,6 @@ struct GridBitmap
 
 struct WorldLabState
 {
-	Bool32 running;
-	Canvas canvas;
-	Camera camera;
-	
 	Real32 randomTable[WorldLabRandomTableN];
 
 	GridBitmap bitmaps[9];
@@ -33,7 +28,6 @@ struct WorldLabState
 
 	Int32 gridLevel;
 };
-WorldLabState gWorldLabState;
 
 static void func InitRandomTable(WorldLabState* labState)
 {
@@ -41,12 +35,6 @@ static void func InitRandomTable(WorldLabState* labState)
 	{
 		labState->randomTable[i] = RandomBetween(-1.0f, 0.0f);
 	}
-}
-
-static void func WorldLabResize(WorldLabState* labState, Int32 width, Int32 height)
-{
-	Bitmap* bitmap = &labState->canvas.bitmap;
-	ResizeBitmap (bitmap, width, height);
 }
 
 static Real32 func SmoothRatio(Real32 x)
@@ -231,111 +219,23 @@ static void func LoadGridBitmap(WorldLabState* labState, Int32 row, Int32 col)
 	GenerateGridBitmap(labState, labState->gridLevel, row, col, bitmap);
 }
 
-static void func WorldLabInit(WorldLabState* labState, Int32 width, Int32 height)
+static void func WorldLabInit(WorldLabState* labState, Canvas* canvas)
 {
 	InitRandom();
-
-	labState->running = true;
-	WorldLabResize(labState, width, height);
 
 	InitRandomTable(labState);
 	labState->bitmapN = 0;
 	labState->gridLevel = 0;
 	LoadGridBitmap(labState, 0, 0);
 
-	Canvas* canvas = &labState->canvas;
-	Camera* camera = &labState->camera;
+	Camera* camera = canvas->camera;
 	camera->unitInPixels = 1.0f;
-	camera->center.x = 0.0f;
-	camera->center.y = 0.0f;
-	camera->screenPixelSize.x = (Real32)width;
-	camera->screenPixelSize.y = (Real32)height;
-	canvas->camera = camera;
+	camera->center = MakePoint(0.0f, 0.0f);
 }
 
-static void func WorldLabBlit(WorldLabState* labState, HDC context, RECT rect)
+static void func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, UserInput* userInput)
 {
-	Bitmap* bitmap = &labState->canvas.bitmap;
-	Int32 width = rect.right - rect.left;
-	Int32 height = rect.bottom - rect.top;
-
-	BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
-	StretchDIBits(context,
-				  0, 0, bitmap->width, bitmap->height,
-				  0, 0, width, height,
-				  bitmap->memory,
-				  &bitmapInfo,
-				  DIB_RGB_COLORS,
-				  SRCCOPY
-	);
-}
-
-static LRESULT CALLBACK WorldLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	LRESULT result = 0;
-
-	WorldLabState* labState = &gWorldLabState;
-	switch(message)
-	{
-		case WM_SIZE:
-		{
-			RECT rect = {};
-			GetClientRect(window, &rect);
-			Int32 width = rect.right - rect.left;
-			Int32 height = rect.bottom - rect.top;
-			WorldLabResize(labState, width, height);
-			break;
-		}
-		case WM_PAINT:
-		{
-			PAINTSTRUCT paint = {};
-			HDC context = BeginPaint(window, &paint);
-
-			RECT rect = {};
-			GetClientRect(window, &rect);
-
-			WorldLabBlit(labState, context, rect);
-
-			EndPaint(window, &paint);
-			break;
-		}
-		case WM_KEYUP:
-		{
-			WPARAM keyCode = wparam;
-			switch(keyCode)
-			{
-				case 'W':
-				{
-					labState->camera.unitInPixels /= 0.9f;
-					break;
-				}
-				case 'S':
-				{
-					labState->camera.unitInPixels *= 0.9f;
-					break;
-				}
-			}
-
-			break;
-		}
-		case WM_DESTROY: 
-		case WM_CLOSE:
-		{
-			labState->running = false;
-			break;
-		}
-		default:
-		{
-			result = DefWindowProc(window, message, wparam, lparam);
-			break;
-		}
-	}
-	return result;
-}
-
-static void func WorldLabUpdate(WorldLabState* labState, Vec2 mouse)
-{
-	Bitmap* bitmap = &labState->canvas.bitmap;
+	Bitmap* bitmap = &canvas->bitmap;
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, backgroundColor);
 
@@ -348,8 +248,16 @@ static void func WorldLabUpdate(WorldLabState* labState, Vec2 mouse)
 	Real32 gridCenterX = 0.0f;
 	Real32 gridCenterY = 0.0f;
 
-	Canvas* canvas = &labState->canvas;
-	Camera* camera = &labState->camera;
+	Camera* camera = canvas->camera;
+
+	if(WasKeyReleased(userInput, 'W'))
+	{
+		camera->unitInPixels /= 0.9f;
+	}
+	if(WasKeyReleased(userInput, 'S'))
+	{
+		camera->unitInPixels *= 0.9f;
+	}
 
 	Vec4 bitmapBorderColor = MakeColor(1.0f, 1.0f, 0.0f);
 
@@ -432,60 +340,6 @@ static void func WorldLabUpdate(WorldLabState* labState, Vec2 mouse)
 				LoadGridBitmap (labState, row, col);
 			}
 		}
-	}
-}
-
-static void func WorldLab(HINSTANCE instance)
-{
-	WNDCLASS winClass = {};
-	winClass.style = CS_OWNDC;
-	winClass.lpfnWndProc = WorldLabCallback;
-	winClass.hInstance = instance;
-	winClass.lpszClassName = "WorldLabWindowClass";
-
-	Verify(RegisterClass(&winClass));
-	HWND window = CreateWindowEx(
-		0,
-		winClass.lpszClassName,
-		"WorldLab",
-		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		0,
-		0,
-		instance,
-		0
-	);
-	Assert(window != 0);
-
-	WorldLabState* labState = &gWorldLabState;
-
-	RECT rect = {};
-	GetClientRect(window, &rect);
-	Int32 width = rect.right - rect.left;
-	Int32 height = rect.bottom - rect.top;
-	WorldLabInit(labState, width, height);
-
-	MSG message = {};
-	while(labState->running)
-	{
-		while(PeekMessage(&message, 0, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&message);
-			DispatchMessage(&message);
-		}
-
-		Vec2 mouse = GetMousePosition(&labState->camera, window);
-		WorldLabUpdate(labState, mouse);
-
-		RECT rect = {};
-		GetClientRect(window, &rect);
-
-		HDC context = GetDC(window);
-		WorldLabBlit(labState, context, rect);
-		ReleaseDC(window, context);
 	}
 }
 

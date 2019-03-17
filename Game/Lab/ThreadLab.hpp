@@ -2,11 +2,10 @@
 
 #include <Windows.h>
 
-#include "Lab.hpp"
-
 #include "../Debug.hpp"
 #include "../Draw.hpp"
 #include "../Type.hpp"
+#include "../UserInput.hpp"
 
 struct RowPaintWork 
 {
@@ -28,25 +27,8 @@ struct RowPaintWorkList
 
 struct ThreadLabState 
 {
-	Camera camera;
-	Canvas canvas;
-
 	RowPaintWorkList workList;
-
-	Bool32 running;
 };
-static ThreadLabState gThreadLabState;
-
-static void func ThreadLabResize(ThreadLabState* labState, Int32 width, Int32 height)
-{
-	Camera* camera = &labState->camera;
-	ResizeCamera(camera, width, height);
-
-	Canvas* canvas = &labState->canvas;
-	ResizeBitmap(&canvas->bitmap, width, height);
-	canvas->camera = camera;
-	camera->unitInPixels = 1.0f;
-}
 
 static void func ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
 {
@@ -97,10 +79,11 @@ static void func PushRowPaintWork(RowPaintWorkList* workList, RowPaintWork work)
 	ReleaseSemaphore(workList->semaphore, 1, 0);
 }
 
-static void func ThreadLabInit(ThreadLabState* labState, Int32 windowWidth, Int32 windowHeight)
+static void func ThreadLabInit(ThreadLabState* labState, Canvas* canvas)
 {
-	labState->running = true;
-	ThreadLabResize(labState, windowWidth, windowHeight);
+	Camera* camera = canvas->camera;
+	camera->unitInPixels = 1.0f;
+
 	labState->workList.semaphore = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
 	labState->workList.semaphoreDone = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
 	for(Int32 i = 0; i < 5; i++)
@@ -109,11 +92,10 @@ static void func ThreadLabInit(ThreadLabState* labState, Int32 windowWidth, Int3
 	}
 }
 
-static void func ThreadLabUpdate(ThreadLabState* labState)
+static void func ThreadLabUpdate(ThreadLabState* labState, Canvas* canvas)
 {
-	Canvas canvas = labState->canvas;
 	Vec4 backgroundColor = MakeColor(0.8f, 1.0f, 1.0f);
-	Bitmap* bitmap = &canvas.bitmap;
+	Bitmap* bitmap = &canvas->bitmap;
 
 	UInt32 paintColorCode = GetRandomColorCode();
 
@@ -132,109 +114,5 @@ static void func ThreadLabUpdate(ThreadLabState* labState)
 	for(Int32 row = 0; row < bitmap->height; row++)
 	{
 		WaitForSingleObjectEx(workList->semaphoreDone, INFINITE, FALSE);
-	}
-}
-
-static LRESULT CALLBACK func ThreadLabCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	ThreadLabState* labState = &gThreadLabState;
-	LRESULT result = 0;
-	
-	switch(message) 
-	{
-		case WM_SIZE: 
-		{
-			RECT clientRect = {};
-			GetClientRect(window, &clientRect);
-			Int32 width = clientRect.right - clientRect.left;
-			Int32 height = clientRect.bottom - clientRect.top;
-			ThreadLabResize(labState, width, height);
-			break;
-		}
-		case WM_PAINT: 
-		{
-			PAINTSTRUCT paint = {};
-			HDC context = BeginPaint(window, &paint);
-
-			RECT clientRect = {};
-			GetClientRect(window, &clientRect);
-
-			ThreadLabBlit(&labState->canvas, context, clientRect);
-
-			EndPaint(window, &paint);
-			break;
-		}
-		case WM_SETCURSOR: 
-		{
-			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
-			SetCursor(cursor);
-			break;
-		}
-		case WM_DESTROY:
-		case WM_CLOSE: 
-		{
-			labState->running = false;
-			break;
-		}
-		default: 
-		{
-			result = DefWindowProc(window, message, wparam, lparam);
-			break;
-		}
-	}
-
-	return result;
-}
-
-static void func ThreadLab(HINSTANCE instance)
-{
-	ThreadLabState* labState = &gThreadLabState;
-
-	WNDCLASS winClass = {};
-	winClass.style = CS_OWNDC;
-	winClass.lpfnWndProc = ThreadLabCallback;
-	winClass.hInstance = instance;
-	winClass.lpszClassName = "ThreadLabWindowClass";
-
-	Verify(RegisterClass(&winClass));
-	HWND window = CreateWindowEx(
-		0,
-		winClass.lpszClassName,
-		"ThreadLab",
-		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		0,
-		0,
-		instance,
-		0
-	);
-	Assert(window != 0);
-
-	RECT rect = {};
-	GetClientRect(window, &rect);
-	Int32 width = rect.right - rect.left;
-	Int32 height = rect.bottom - rect.top;
-	ThreadLabInit(labState, width, height);
-
-	MSG message = {};
-	while(labState->running) 
-	{
-		while(PeekMessage(&message, 0, 0, 0, PM_REMOVE)) 
-		{
-			TranslateMessage(&message);
-			DispatchMessage(&message);
-		}
-
-		ThreadLabUpdate(labState);
-
-		RECT rect = {};
-		GetClientRect(window, &rect);
-
-		HDC context = GetDC(window);
-		ThreadLabBlit(&labState->canvas, context, rect);
-		ReleaseDC(window, context);
 	}
 }

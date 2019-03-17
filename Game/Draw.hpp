@@ -49,7 +49,7 @@ static void func ResizeCamera(Camera* camera, Int32 width, Int32 height)
 {
 	camera->screenPixelSize.x = (Real32)width;
 	camera->screenPixelSize.y = (Real32)height;
-	camera->center = (0.5f * camera->screenPixelSize);
+	// camera->center = (0.5f * camera->screenPixelSize);
 }
 
 static UInt32* func GetPixelAddress(Bitmap bitmap, Int32 row, Int32 col)
@@ -282,6 +282,14 @@ static Real32 func PixelToUnitY(Camera* camera, Real32 pixelY)
 	Real32 pixelInUnits = Invert(camera->unitInPixels);
 	Real32 unitY = camera->center.y + (pixelY - camera->screenPixelSize.y * 0.5f) * pixelInUnits;
 	return unitY;
+}
+
+static Vec2 func PixelToUnit(Camera* camera, IntVec2 pixel)
+{
+	Vec2 result = {};
+	result.x = PixelToUnitX(camera, (Real32)pixel.x);
+	result.y = PixelToUnitY(camera, (Real32)pixel.y);
+	return result;
 }
 
 static Vec2 func PixelToUnit(Camera* camera, Vec2 pixel)
