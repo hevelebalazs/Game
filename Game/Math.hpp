@@ -121,6 +121,12 @@ static Int32 func Floor(Real32 x)
 	return result;
 }
 
+static Real32 func Fraction (Real32 x)
+{
+    Real32 fraction = x - (Int32)x;
+	return fraction;
+}
+
 static Int32 func RandMod(Int32 mod)
 {
 	Int32 result = (rand() % mod);

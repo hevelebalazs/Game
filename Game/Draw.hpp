@@ -49,7 +49,7 @@ static void func ResizeCamera(Camera* camera, Int32 width, Int32 height)
 {
 	camera->screenPixelSize.x = (Real32)width;
 	camera->screenPixelSize.y = (Real32)height;
-	camera->center = (0.5f * camera->screenPixelSize);
+	// camera->center = (0.5f * camera->screenPixelSize);
 }
 
 static UInt32* func GetPixelAddress(Bitmap bitmap, Int32 row, Int32 col)

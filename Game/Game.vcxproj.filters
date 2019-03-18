@@ -62,6 +62,9 @@
     <ClInclude Include="String.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Lab\WorldLab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="UserInput.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

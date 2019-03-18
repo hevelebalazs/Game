@@ -10,22 +10,23 @@
 #include "Lab/CombatLab.hpp"
 #include "Lab/TextLab.hpp"
 #include "Lab/ThreadLab.hpp"
+#include "Lab/WorldLab.hpp"
 
 Camera gCamera;
 Canvas gCanvas;
 UserInput gUserInput;
 Bool32 gRunning;
-CombatLabState gLabState;
+WorldLabState gLabState;
 
 static void func WinInit()
 {
 	gCanvas.camera = &gCamera;
-	CombatLabInit(&gLabState, &gCanvas);
+	WorldLabInit(&gLabState, &gCanvas);
 }
 
 static void func WinUpdate(Real32 seconds, UserInput* userInput)
 {
-	CombatLabUpdate(&gLabState, &gCanvas, seconds, userInput);
+	WorldLabUpdate(&gLabState, &gCanvas, seconds, userInput);
 }
 
 static LRESULT CALLBACK func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
@@ -203,6 +204,5 @@ Int32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cm
 		);
 		ReleaseDC(window, context);
 	}
-
 	return 0;
 }
