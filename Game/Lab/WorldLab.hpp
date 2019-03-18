@@ -12,21 +12,10 @@
 #define WorldLabLevelSwitchRatio 0.67f
 #define WorldLabMaxValue (1.0f / (1.0f - WorldLabLevelSwitchRatio))
 
-struct GridBitmap
-{
-	Int32 row;
-	Int32 col;
-	Bitmap bitmap;
-};
-
 struct WorldLabState
 {
 	Real32 randomTable[WorldLabRandomTableN];
-
-	GridBitmap bitmaps[9];
-	Int32 bitmapN;
-
-	Int32 gridLevel;
+	Bitmap bitmap;
 };
 
 static void func InitRandomTable(WorldLabState* labState)
@@ -57,7 +46,7 @@ static Real32 func GetGridPointValue(WorldLabState* labState, Int32 gridLevel, I
 	Assert(IsIntBetween(col, 0, gridN));
 
 	Int32 firstIndexOnLevel = 0;
-	for(Int32 i = 0; i < gridLevel; ++i)
+	for(Int32 i = 0; i < gridLevel; i++)
 	{
 		firstIndexOnLevel += IntSquare ((1 << i) + 1);
 	}
@@ -72,9 +61,9 @@ static Real32 func GetPointValue(WorldLabState* labState, Int32 gridLevel, Real3
 	Assert(IsBetween(x, 0.0f, 1.0f));
 	Assert(IsBetween(y, 0.0f, 1.0f));
 
-	Int32 left = Floor(x * gridN);
-	Int32 right = left + 1;
-	Int32 top = Floor(y * gridN);
+	Int32 left   = Floor(x * gridN);
+	Int32 right  = left + 1;
+	Int32 top    = Floor(y * gridN);
 	Int32 bottom = top + 1;
 
 	Real32 ratioX = SmoothRatio(Fraction(x * gridN));
@@ -93,41 +82,41 @@ static Real32 func GetPointValue(WorldLabState* labState, Int32 gridLevel, Real3
 	return value;
 }
 
-static void func GenerateGridBitmap(WorldLabState* labState, Int32 gridLevel, Int32 row, Int32 col, Bitmap* bitmap)
+static void func GenerateGridBitmap(WorldLabState* labState, Bitmap* bitmap)
 {
+	Assert(bitmap != 0);
 	ResizeBitmap(bitmap, 512, 512);
 
-	// TODO: Use a memory arena!
 	Real32* values = new Real32[bitmap->width * bitmap->height];
 	Int32 valueIndex = 0;
-	for(Int32 row = 0; row < bitmap->height; ++row)
+	for(Int32 row = 0; row < bitmap->height; row++)
 	{
-		for(Int32 col = 0; col < bitmap->width; ++col)
+		for(Int32 col = 0; col < bitmap->width; col++)
 		{
 			values[valueIndex] = 0.0f;
 			valueIndex++;
 		}
 	}
 
-	Real32 gridWidth = 1.0f / (1 << gridLevel);
-	Real32 left = col * gridWidth;
-	Real32 right = (col + 1) * gridWidth;
-	Real32 top = row * gridWidth;
-	Real32 bottom = (row + 1) * gridWidth;
+	Real32 left   = 0.0f;
+	Real32 right  = 1.0f;
+	Real32 top    = 0.0f;
+	Real32 bottom = 1.0f;
 
 	Real32 valueRatio = 1.0f;
 	for(Int32 level = 2; level <= 8; level++)
 	{
-		Vec4 color1 = MakeColor(0.0f, 0.0f, 0.0f);
-		Vec4 color2 = MakeColor(1.0f, 1.0f, 1.0f);
-
 		Int32 valueIndex = 0;
 		for(Int32 row = 0; row < bitmap->height; row++)
 		{
 			for(Int32 col = 0; col < bitmap->width; col++)
 			{
-				Real32 x = left + ((Real32)col / (Real32)bitmap->width) * (right - left);
-				Real32 y = top + ((Real32)row / (Real32)bitmap->height) * (bottom - top);
+				Real32 xRatio = ((Real32)col / (Real32)bitmap->width);
+				Real32 x = Lerp(left, xRatio, right);
+
+				Real32 yRatio = ((Real32)row / (Real32)bitmap->height);
+				Real32 y = Lerp(top, yRatio, bottom);
+
 				Real32 value = GetPointValue(labState, level, x, y);
 
 				values[valueIndex] += value * valueRatio;
@@ -153,14 +142,14 @@ static void func GenerateGridBitmap(WorldLabState* labState, Int32 gridLevel, In
 	}
 
 	UInt32* pixel = bitmap->memory;
-	Vec4 darkBlue = MakeColor(0.0f, 0.0f, 0.3f);
-	Vec4 lightBlue = MakeColor(0.0f, 0.0f, 0.8f);
-	Vec4 darkGreen = MakeColor(0.0f, 0.3f, 0.0f);
+	Vec4 darkBlue   = MakeColor(0.0f, 0.0f, 0.1f);
+	Vec4 lightBlue  = MakeColor(0.0f, 0.0f, 1.0f);
+	Vec4 darkGreen  = MakeColor(0.8f, 0.8f, 0.0f);
 	Vec4 lightGreen = MakeColor(0.0f, 0.8f, 0.0f);
-	Vec4 lightBrown = MakeColor(0.3f, 0.4f, 0.0f);
-	Vec4 darkBrown = MakeColor(0.2f, 0.3f, 0.0f);
-	Vec4 lightWhite = MakeColor(0.8f, 0.8f, 0.8f);
-	Vec4 darkWhite = MakeColor(0.3f, 0.3f, 0.3f);
+	Vec4 lightBrown = MakeColor(0.4f, 0.4f, 0.0f);
+	Vec4 darkBrown  = MakeColor(0.8f, 0.8f, 0.0f);
+	Vec4 lightWhite = MakeColor(0.1f, 0.1f, 0.0f);
+	Vec4 darkWhite  = MakeColor(0.4f, 0.4f, 0.0f);
 
 	valueIndex = 0;
 	for(Int32 row = 0; row < bitmap->height; row++)
@@ -174,7 +163,7 @@ static void func GenerateGridBitmap(WorldLabState* labState, Int32 gridLevel, In
 			Vec4 color = {};
 
 			Real32 seaLevel = 0.18f;
-			Real32 hillLevel = 0.35f;
+			Real32 hillLevel = 0.3f;
 			Real32 mountainLevel = 0.4f;
 			Real32 topLevel = 0.5f;
 
@@ -207,144 +196,131 @@ static void func GenerateGridBitmap(WorldLabState* labState, Int32 gridLevel, In
 	delete[] values;
 }
 
-static void func LoadGridBitmap(WorldLabState* labState, Int32 row, Int32 col)
-{
-	Assert(labState->bitmapN < 9);
-	GridBitmap* gridBitmap = &labState->bitmaps[labState->bitmapN];
-	labState->bitmapN++;
-	gridBitmap->row = row;
-	gridBitmap->col = col;
-
-	Bitmap* bitmap = &gridBitmap->bitmap;
-	GenerateGridBitmap(labState, labState->gridLevel, row, col, bitmap);
-}
-
 static void func WorldLabInit(WorldLabState* labState, Canvas* canvas)
 {
 	InitRandom();
 
 	InitRandomTable(labState);
-	labState->bitmapN = 0;
-	labState->gridLevel = 0;
-	LoadGridBitmap(labState, 0, 0);
+	GenerateGridBitmap(labState, &labState->bitmap);
 
 	Camera* camera = canvas->camera;
-	camera->unitInPixels = 1.0f;
+	camera->unitInPixels = 10.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 }
 
-static void func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, UserInput* userInput)
+static void func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, backgroundColor);
 
-	Real32 gridSize = 500.0f;
-	Real32 gridLeft   = -gridSize * 0.5f;
-	Real32 gridRight  = +gridSize * 0.5f;
-	Real32 gridTop    = -gridSize * 0.5f;
-	Real32 gridBottom = +gridSize * 0.5f;
+	Real32 tileSide = 1.0f;
+	Int32 tileRowN = 512;
+	Int32 tileColN = 512;
 
-	Real32 gridCenterX = 0.0f;
-	Real32 gridCenterY = 0.0f;
+	Real32 worldLeft   = 0.0f;
+	Real32 worldRight  = tileSide * tileColN;
+	Real32 worldTop    = 0.0f;
+	Real32 worldBottom = tileSide * tileRowN;
 
+	Real32 cameraMoveSpeed = seconds * 50.0f;
 	Camera* camera = canvas->camera;
 
-	if(WasKeyReleased(userInput, 'W'))
+	if(IsKeyDown(userInput, 'A'))
 	{
-		camera->unitInPixels /= 0.9f;
+		camera->center.x -= cameraMoveSpeed;
 	}
-	if(WasKeyReleased(userInput, 'S'))
+	if(IsKeyDown(userInput, 'D'))
 	{
-		camera->unitInPixels *= 0.9f;
-	}
-
-	Vec4 bitmapBorderColor = MakeColor(1.0f, 1.0f, 0.0f);
-
-	for(Int32 i = 0; i < labState->bitmapN; i++)
-	{
-		GridBitmap* gridBitmap = &labState->bitmaps[i];
-		Real32 gridCellSize = (gridSize) / (1 << labState->gridLevel);
-
-		Real32 left   = gridLeft + gridCellSize * gridBitmap->col;
-		Real32 right  = left + gridCellSize;
-		Real32 top    = gridTop + gridCellSize * gridBitmap->row;
-		Real32 bottom = top + gridCellSize;
-
-		DrawStretchedBitmap(canvas, &gridBitmap->bitmap, left, right, top, bottom);
-		DrawRectLRTBOutline(canvas, left, right, top, bottom, bitmapBorderColor);
+		camera->center.x += cameraMoveSpeed;
 	}
 
-	Real32 screenPixelSize = 600.0f;
-	Real32 halfScreenSize = (screenPixelSize * 0.5f) / camera->unitInPixels;
-
-	Real32 centerX = (CameraLeftSide(camera) + CameraRightSide(camera)) * 0.5f;
-	Real32 centerY = (CameraTopSide(camera) + CameraBottomSide(camera)) * 0.5f;
-	Real32 left   = centerX - halfScreenSize;
-	Real32 right  = centerX + halfScreenSize;
-	Real32 top    = centerY - halfScreenSize;
-	Real32 bottom = centerY + halfScreenSize;
-
-	Vec4 screenBorderColor = MakeColor(1.0f, 0.0f, 0.0f);
-	DrawRectLRTBOutline(canvas, left, right, top, bottom, screenBorderColor);
-
-	Real32 screenUnitSize = screenPixelSize / camera->unitInPixels;
-	Real32 bitmapUnitSize = (gridRight - gridLeft) / (1 << labState->gridLevel);
-
-	Bool32 reloadBitmaps = false;
-	if(2.0f * bitmapUnitSize < screenUnitSize)
+	if(IsKeyDown(userInput, 'W'))
 	{
-		if(labState->gridLevel > 0)
+		camera->center.y -= cameraMoveSpeed;
+	}
+	if(IsKeyDown(userInput, 'S'))
+	{
+		camera->center.y += cameraMoveSpeed;
+	}
+
+	Real32 cameraLeft   = CameraLeftSide(camera);
+	Real32 cameraRight  = CameraRightSide(camera);
+	Real32 cameraTop    = CameraTopSide(camera);
+	Real32 cameraBottom = CameraBottomSide(camera);
+
+	for(Int32 row = 0; row < tileRowN; row++)
+	{
+		Real32 tileTop    = worldTop + tileSide * row;
+		Real32 tileBottom = tileTop + tileSide;
+		if(tileBottom < cameraTop || tileTop > cameraBottom)
 		{
-			labState->gridLevel--;
-			reloadBitmaps = true;
+			continue;
 		}
-	} 
-	else if(bitmapUnitSize > screenUnitSize)
-	{
-		labState->gridLevel++;
-		reloadBitmaps = true;
-	}
 
-	if(reloadBitmaps)
-	{
-		Real32 screenLeft   = -screenUnitSize * 0.5f;
-		Real32 screenRight  = +screenUnitSize * 0.5f;
-		Real32 screenTop    = -screenUnitSize * 0.5f;
-		Real32 screenBottom = +screenUnitSize * 0.5f;
-
-		Real32 leftRatio   = (screenLeft - gridLeft) / gridSize;
-		Real32 rightRatio  = (screenRight - gridLeft) / gridSize;
-		Real32 topRatio    = (screenTop - gridTop) / gridSize;
-		Real32 bottomRatio = (screenBottom - gridTop) / gridSize;
-
-		Int32 gridN = (1 << labState->gridLevel);
-		Int32 leftCol   = Floor(leftRatio * gridN);
-		Int32 rightCol  = Floor(rightRatio * gridN);
-		Int32 topRow    = Floor(topRatio * gridN);
-		Int32 bottomRow = Floor(bottomRatio * gridN);
-
-		leftCol   = IntMax2(leftCol, 0);
-		rightCol  = IntMin2(rightCol, gridN - 1);
-		topRow    = IntMax2(topRow, 0);
-		bottomRow = IntMin2(bottomRow, gridN - 1);
-
-		Int32 bitmapN = (rightCol - leftCol + 1) * (bottomRow - topRow + 1);
-		Assert (bitmapN <= 9);
-
-		labState->bitmapN = 0;
-		for(Int32 row = topRow; row <= bottomRow; row++)
+		for(Int32 col = 0; col < tileColN; col++)
 		{
-			for(Int32 col = leftCol; col <= rightCol; col++)
+			Real32 tileLeft  = worldLeft + tileSide * col;
+			Real32 tileRight = tileLeft + tileSide;
+			if(tileRight < cameraLeft || tileLeft > cameraRight)
 			{
-				LoadGridBitmap (labState, row, col);
+				continue;
 			}
+
+			Vec4 color = GetBitmapPixelColor(&labState->bitmap, row, col);
+			DrawRectLRTB(canvas, tileLeft, tileRight, tileTop, tileBottom, color);
 		}
 	}
-}
 
-// [TODO: Make map zoomable!]
-// TODO: Optimize bitmap generation for speed!
-// TODO: Make water-ground edges look better!
-// TODO: Remove inline functions from project!
-// TODO: Pass canvas by address in project!
+	/*
+	Vec4 gridColor = MakeColor(1.0f, 1.0f, 0.0f);
+
+	Real32 gridLeft  = Max2(worldLeft, cameraLeft);
+	Real32 gridRight = Min2(worldRight, cameraRight);
+	for(Int32 row = 0; row < tileRowN; row++)
+	{
+		Real32 tileTop    = worldTop + tileSide * row;
+		Real32 tileBottom = tileTop + tileSide;
+
+		if(tileBottom < cameraTop)
+		{
+			continue;
+		}
+		if(tileTop > cameraBottom)
+		{
+			break;
+		}
+
+		if(row == 0)
+		{
+			Bresenham(canvas, MakePoint(gridLeft, tileTop), MakePoint(gridRight, tileTop), gridColor);
+		}
+
+		Bresenham(canvas, MakePoint(gridLeft, tileBottom), MakePoint(gridRight, tileBottom), gridColor);
+	}
+
+	Real32 gridTop    = Max2(worldTop, cameraTop);
+	Real32 gridBottom = Min2(worldBottom, cameraBottom);
+	for(Int32 col = 0; col < tileColN; col++)
+	{
+		Real32 tileLeft  = worldLeft + tileSide * col;
+		Real32 tileRight = tileLeft + tileSide;
+
+		if(tileRight < cameraLeft)
+		{
+			continue;
+		}
+		if(tileLeft > cameraRight)
+		{
+			break;
+		}
+
+		if(col == 0)
+		{
+			Bresenham(canvas, MakePoint(tileLeft, gridTop), MakePoint(tileLeft, gridBottom), gridColor);
+		}
+		
+		Bresenham(canvas, MakePoint(tileRight, gridTop), MakePoint(tileRight, gridBottom), gridColor);
+	}
+	*/
+}

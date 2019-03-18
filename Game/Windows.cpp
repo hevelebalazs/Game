@@ -26,7 +26,7 @@ static void func WinInit()
 
 static void func WinUpdate(Real32 seconds, UserInput* userInput)
 {
-	WorldLabUpdate(&gLabState, &gCanvas, userInput);
+	WorldLabUpdate(&gLabState, &gCanvas, seconds, userInput);
 }
 
 static LRESULT CALLBACK func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
