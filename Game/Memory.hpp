@@ -73,6 +73,11 @@ static void func ArenaPopTo(MemArena* arena, void* address)
 	arena->usedSize = (UInt32)((Int8*)address - arena->baseAddress);
 }
 
+static Int8* func GetArenaTop(MemArena* arena)
+{
+	Int8* top = arena->baseAddress + arena->usedSize;
+	return top;
+}
 
 #define ArenaPushType(arena, type) ((type*)ArenaAlloc((arena), sizeof(type)))
 #define ArenaPushArray(arena, type, size) ((type*)ArenaAlloc((arena), (size) * sizeof(type)))

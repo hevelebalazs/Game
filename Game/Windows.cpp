@@ -16,17 +16,17 @@ Camera gCamera;
 Canvas gCanvas;
 UserInput gUserInput;
 Bool32 gRunning;
-WorldLabState gLabState;
+CombatLabState gLabState;
 
 static void func WinInit()
 {
 	gCanvas.camera = &gCamera;
-	WorldLabInit(&gLabState, &gCanvas);
+	CombatLabInit(&gLabState, &gCanvas);
 }
 
 static void func WinUpdate(Real32 seconds, UserInput* userInput)
 {
-	WorldLabUpdate(&gLabState, &gCanvas, seconds, userInput);
+	CombatLabUpdate(&gLabState, &gCanvas, seconds, userInput);
 }
 
 static LRESULT CALLBACK func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)

@@ -1,10 +1,7 @@
 #pragma once
 
+#include "../Map.hpp"
 #include "../UserInput.hpp"
-
-#define TileSide 10.0f
-#define TileRowN 10
-#define TileColN 10
 
 enum AbilityId
 {
@@ -54,7 +51,7 @@ struct TileIndex
 	Int32 col;
 };
 
-#define EntityRadius (0.25f * TileSide)
+#define EntityRadius (2.0f)
 #define EntityMaxHealth 100
 
 enum EntityGroupId
@@ -105,8 +102,14 @@ struct Effect
 #define MaxCooldownN 64
 #define MaxEffectN 64
 #define MaxDamageDisplayN 64
+#define CombatLabArenaSize (1 * MegaByte)
 struct CombatLabState
 {
+	Int8 arenaMemory[CombatLabArenaSize];
+	MemArena arena;
+
+	Map map;
+
 	Cooldown cooldowns[MaxCooldownN];
 	Int32 cooldownN;
 
@@ -135,40 +138,43 @@ static TileIndex func MakeTileIndex(Int32 row, Int32 col)
 	return index;
 }
 
-static Bool32 func IsValidTileIndex(TileIndex index)
+static Bool32 func IsValidTileIndex(Map* map, TileIndex index)
 {
-	Bool32 result = (IsIntBetween(index.row, 0, TileRowN - 1) &&
-					 IsIntBetween(index.col, 0, TileColN - 1));
+	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN - 1) &&
+					 IsIntBetween(index.col, 0, map->tileColN - 1));
 	return result;
 }
 
-static Vec2 func GetTileCenter(TileIndex index)
+static Vec2 func GetTileCenter(Map* map, TileIndex index)
 {
-	Assert(IsValidTileIndex(index));
-	Real32 x = (Real32)index.col * TileSide + TileSide * 0.5f;
-	Real32 y = (Real32)index.row * TileSide + TileSide * 0.5f;
+	Assert(IsValidTileIndex(map, index));
+	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
+	Real32 y = (Real32)index.row * map->tileSide + map->tileSide * 0.5f;
 	Vec2 position = MakePoint(x, y);
 	return position;
 }
 
-static TileIndex func GetContainingTileIndex(Vec2 point)
+static TileIndex func GetContainingTileIndex(Map* map, Vec2 point)
 {
-	Int32 row = Floor(point.y / TileSide);
-	Int32 col = Floor(point.x / TileSide);
+	Int32 row = Floor(point.y / map->tileSide);
+	Int32 col = Floor(point.x / map->tileSide);
 	TileIndex index = MakeTileIndex(row, col);
 	return index;
 }
 
 static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
+	labState->arena = CreateMemArena(labState->arenaMemory, CombatLabArenaSize);
+	labState->map = GenerateForestMap(&labState->arena);
+
 	canvas->glyphData = GetGlobalGlyphData();
 
 	Camera* camera = canvas->camera;
 	camera->unitInPixels = 5.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 
-	Real32 mapWidth = TileRowN * TileSide;
-	Real32 mapHeight = TileColN * TileSide;
+	Real32 mapWidth  = GetMapWidth(&labState->map);
+	Real32 mapHeight = GetMapHeight(&labState->map);
 	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 
 	Entity* player = &labState->entities[0];
@@ -206,16 +212,6 @@ static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 		enemy->classId = EnemyClassId;
 		enemy->groupId = EnemyGroupId;
 	}
-}
-
-static Int32 func GetTileDistance(TileIndex tileIndex1, TileIndex tileIndex2)
-{
-	Assert(IsValidTileIndex(tileIndex1));
-	Assert(IsValidTileIndex(tileIndex2));
-	Int32 rowDistance = IntAbs(tileIndex1.row - tileIndex2.row);
-	Int32 colDistance = IntAbs(tileIndex1.col - tileIndex2.col);
-	Int32 distance = IntMax2(rowDistance, colDistance);
-	return distance;
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -1566,30 +1562,10 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
 
-	Vec4 tileColor = MakeColor(0.5f, 0.5f, 0.5f);
-	Vec4 hoverTileColor = MakeColor(0.6f, 0.6f, 0.6f);
+	DrawMap(canvas, &labState->map);
 
-	Vec4 moveTileColor = MakeColor(0.8f, 0.8f, 0.8f);
-	Vec4 hoverMoveTileColor = MakeColor(0.9f, 0.9f, 0.9f);
-
-	Vec4 attackTileColor = MakeColor(0.8f, 0.5f, 0.5f);
-	Vec4 hoverAttackTileColor = MakeColor(0.9f, 0.6f, 0.6f);
-
-	for(Int32 row = 0; row < TileRowN; row++)
-	{
-		for(Int32 col = 0; col < TileColN; col++)
-		{
-			TileIndex tileIndex = MakeTileIndex(row, col);
-			Vec4 color = tileColor;
-			Vec2 tileCenter = GetTileCenter(tileIndex);
-			Rect tileRect = MakeSquareRect(tileCenter, TileSide);
-			DrawRect(canvas, tileRect, color);
-			DrawRectOutline(canvas, tileRect, TileGridColor);
-		}
-	}
-
-	Real32 mapWidth = TileColN * TileSide;
-	Real32 mapHeight = TileRowN * TileSide;
+	Real32 mapWidth  = GetMapWidth(&labState->map);
+	Real32 mapHeight = GetMapHeight(&labState->map);
 
 	Entity* player = &labState->entities[0];
 	Assert(player->groupId == PlayerGroupId);
@@ -1619,6 +1595,8 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	Bool32 inputMoveRight = IsKeyDown(userInput, 'D') || IsKeyDown(userInput, VK_RIGHT);
 	Bool32 inputMoveUp    = IsKeyDown(userInput, 'W') || IsKeyDown(userInput, VK_UP);
 	Bool32 inputMoveDown  = IsKeyDown(userInput, 'S') || IsKeyDown(userInput, VK_DOWN);
+
+	Map* map = &labState->map;
 
 	if(inputMoveLeft && inputMoveRight)
 	{
@@ -1714,7 +1692,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 
 			Vec2 targetDirection = {};
 			Vec2 targetPosition = {};
-			TileIndex playerTileIndex = GetContainingTileIndex(target->position);
+			TileIndex playerTileIndex = GetContainingTileIndex(map, target->position);
 
 			for(Int32 row = playerTileIndex.row - 1; row <= playerTileIndex.row + 1; row++)
 			{
@@ -1732,7 +1710,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 
 					Real32 attackDistance = 2.5f * EntityRadius;
 					TileIndex tileIndex = MakeTileIndex(row, col);
-					if(IsValidTileIndex(tileIndex))
+					if(IsValidTileIndex(map, tileIndex))
 					{
 						Vec2 position = target->position + attackDistance * direction;
 						Real32 enemyDistance = MaxDistance(enemy->position, position);
@@ -1862,7 +1840,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	}
 
 	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
-	canvas->camera->center = mapCenter;
+	canvas->camera->center = player->position;
 
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);

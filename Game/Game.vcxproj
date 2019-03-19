@@ -132,6 +132,7 @@
     <ClInclude Include="Lab\TextLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
     <ClInclude Include="Lab\WorldLab.hpp" />
+    <ClInclude Include="Map.hpp" />
     <ClInclude Include="Math.hpp" />
     <ClInclude Include="Memory.hpp" />
     <ClInclude Include="Draw.hpp" />
