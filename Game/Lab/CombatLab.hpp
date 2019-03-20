@@ -45,12 +45,6 @@ enum ClassId
 	EnemyClassId
 };
 
-struct TileIndex
-{
-	Int32 row;
-	Int32 col;
-};
-
 #define EntityRadius (2.0f)
 #define EntityMaxHealth 100
 
@@ -129,38 +123,6 @@ struct CombatLabState
 #define EnemyAttackRadius 10.0f
 
 #define MaxMeleeAttackDistance (4.0f * EntityRadius)
-
-static TileIndex func MakeTileIndex(Int32 row, Int32 col)
-{
-	TileIndex index = {};
-	index.row = row;
-	index.col = col;
-	return index;
-}
-
-static Bool32 func IsValidTileIndex(Map* map, TileIndex index)
-{
-	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN - 1) &&
-					 IsIntBetween(index.col, 0, map->tileColN - 1));
-	return result;
-}
-
-static Vec2 func GetTileCenter(Map* map, TileIndex index)
-{
-	Assert(IsValidTileIndex(map, index));
-	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
-	Real32 y = (Real32)index.row * map->tileSide + map->tileSide * 0.5f;
-	Vec2 position = MakePoint(x, y);
-	return position;
-}
-
-static TileIndex func GetContainingTileIndex(Map* map, Vec2 point)
-{
-	Int32 row = Floor(point.y / map->tileSide);
-	Int32 col = Floor(point.x / map->tileSide);
-	TileIndex index = MakeTileIndex(row, col);
-	return index;
-}
 
 static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {

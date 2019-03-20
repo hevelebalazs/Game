@@ -11,12 +11,19 @@ struct RandomValueTable
 	Int32 valueN;
 };
 
+struct TileIndex
+{
+	Int32 row;
+	Int32 col;
+};
+
 struct Map
 {
 	Real32 tileSide;
 	Int32 tileRowN;
 	Int32 tileColN;
-	Bitmap bitmap;
+	Real32* terrain;
+	Bool8* isTree;
 };
 
 static func RandomValueTable CreateRandomValueTable(Int32 valueN, MemArena* arena)
@@ -112,27 +119,172 @@ static void func InitRandomValueTable(RandomValueTable* table)
 	}
 }
 
+static TileIndex func MakeTileIndex(Int32 row, Int32 col)
+{
+	TileIndex index = {};
+	index.row = row;
+	index.col = col;
+	return index;
+}
+
+static Bool32 func IsValidTileIndex(Map* map, TileIndex index)
+{
+	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN - 1) &&
+					 IsIntBetween(index.col, 0, map->tileColN - 1));
+	return result;
+}
+
+static Vec2 func GetTileCenter(Map* map, TileIndex index)
+{
+	Assert(IsValidTileIndex(map, index));
+	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
+	Real32 y = (Real32)index.row * map->tileSide + map->tileSide * 0.5f;
+	Vec2 position = MakePoint(x, y);
+	return position;
+}
+
+static TileIndex func GetContainingTileIndex(Map* map, Vec2 point)
+{
+	Int32 row = Floor(point.y / map->tileSide);
+	Int32 col = Floor(point.x / map->tileSide);
+	TileIndex index = MakeTileIndex(row, col);
+	return index;
+}
+
+#define MinTreeSide 5
+#define MaxTreeSide 8
+struct TreeShape
+{
+	Bool8 isTree[MaxTreeSide][MaxTreeSide];
+};
+
+static TreeShape func GenerateTreeShape()
+{
+	TreeShape shape = {};
+
+	Int32 treeWidth  = IntRandom(MinTreeSide, MaxTreeSide);
+	Int32 treeHeight = IntRandom(MinTreeSide, MaxTreeSide);
+
+	for(Int32 row = 0; row < MaxTreeSide; row++)
+	{
+		for(Int32 col = 0; col < MaxTreeSide; col++)
+		{
+			shape.isTree[row][col] = (row < treeHeight && col < treeWidth);
+		}
+	}
+
+	Int32 maxVerticalSlice   = treeHeight / 2 - 1;
+	Int32 maxHorizontalSlice = treeWidth / 2 - 1;
+
+	Int32 sliceN = IntRandom(3, 7);
+	for(Int32 i = 0; i < sliceN; i++)
+	{
+		Int32 minRow = 0;
+		Int32 maxRow = treeHeight - 1;
+		Int32 minCol = 0;
+		Int32 maxCol = treeWidth - 1;
+		
+		Bool32 sliceTopOrBottom = (IntRandom(0, 1) == 0);
+		if(sliceTopOrBottom)
+		{
+			Bool32 sliceTop = (IntRandom(0, 1) == 0);
+			if(sliceTop)
+			{
+				maxRow = minRow;
+			}
+			else
+			{
+				minRow = maxRow;
+			}
+
+			Bool32 sliceLeft = (IntRandom(0, 1) == 0);
+			if(sliceLeft)
+			{
+				maxCol = minCol + IntRandom(0, maxHorizontalSlice - 1);
+			}
+			else
+			{
+				minCol = maxCol - IntRandom(0, maxHorizontalSlice - 1);
+			}
+		}
+		else
+		{
+			Bool32 sliceLeft = (IntRandom(0, 1) == 0);
+			if(sliceLeft)
+			{
+				maxCol = minCol;
+			}
+			else
+			{
+				minCol = maxCol;
+			}
+
+			Bool32 sliceTop = (IntRandom(0, 1) == 0);
+			if(sliceTop)
+			{
+				maxRow = minRow + IntRandom(0, maxVerticalSlice - 1);
+			}
+			else
+			{
+				minRow = maxRow - IntRandom(0, maxVerticalSlice - 1);
+			}
+		}
+
+		Assert(minRow <= maxRow);
+		Assert(IsIntBetween(minRow, 0, MaxTreeSide - 1));
+		Assert(IsIntBetween(maxRow, 0, MaxTreeSide - 1));
+
+		Assert(minCol <= maxCol);
+		Assert(IsIntBetween(minCol, 0, MaxTreeSide - 1));
+		Assert(IsIntBetween(maxCol, 0, MaxTreeSide - 1));
+
+		for(Int32 row = minRow; row <= maxRow; row++)
+		{
+			for(Int32 col = minCol; col <= maxCol; col++)
+			{
+				shape.isTree[row][col] = false;
+			}
+		}
+	}
+
+	return shape;
+}
+
+static void func ApplyTreeShape(Map* map, TreeShape* shape, Int32 leftCol, Int32 topRow)
+{
+	Int32 bottomRow = ClipInt(topRow + MaxTreeSide - 1, 0, map->tileRowN - 1);
+	Int32 rightCol  = ClipInt(leftCol + MaxTreeSide - 1, 0, map->tileColN - 1);
+	for(Int32 row = topRow; row <= bottomRow; row++)
+	{
+		for(Int32 col = leftCol; col <= rightCol; col++)
+		{
+			if(shape->isTree[row - topRow][col - leftCol])
+			{
+				Int32 tileIndex = map->tileColN * row + col;
+				map->isTree[tileIndex] = true;
+			}
+		}
+	}
+}
+
 static Map func GenerateForestMap(MemArena* arena)
 {
 	Map map = {};
-	map.tileSide = 1.0f;
+	map.tileSide = 3.0f;
 	map.tileRowN = 512;
 	map.tileColN = 512;
-	ResizeBitmap(&map.bitmap, map.tileRowN, map.tileColN);
+	Int32 tileN = (map.tileRowN * map.tileColN);
+	map.isTree = ArenaPushArray(arena, Bool8, tileN);
+	map.terrain = ArenaPushArray(arena, Real32, tileN);
 
 	Int8* arenaTop = GetArenaTop(arena);
 	RandomValueTable randomValueTable = CreateRandomValueTable(65536, arena);
 	InitRandomValueTable(&randomValueTable);
 
-	Real32* values = ArenaPushArray(arena, Real32, map.tileRowN * map.tileColN);
-	Int32 valueIndex = 0;
-	for(Int32 row = 0; row < map.tileRowN; row++)
+	for(Int32 i = 0; i < tileN; i++)
 	{
-		for(Int32 col = 0; col < map.tileColN; col++)
-		{
-			values[valueIndex] = 0.0f;
-			valueIndex++;
-		}
+		map.terrain[i] = 0.0f;
+		map.isTree[i] = false;
 	}
 
 	Real32 gridLevelSwitchRatio = 0.67f;
@@ -140,7 +292,7 @@ static Map func GenerateForestMap(MemArena* arena)
 	Real32 valueRatio = 1.0f;
 	for(Int32 level = MinGridLevel; level <= MaxGridLevel; level++)
 	{
-		Int32 valueIndex = 0;
+		Int32 tileIndex = 0;
 		for(Int32 row = 0; row < map.tileRowN; row++)
 		{
 			for(Int32 col = 0; col < map.tileColN; col++)
@@ -150,41 +302,97 @@ static Map func GenerateForestMap(MemArena* arena)
 
 				Real32 value = GetPointValue(&randomValueTable, level, xRatio, yRatio);
 
-				values[valueIndex] += value * valueRatio;
-				valueIndex++;
+				map.terrain[tileIndex] += value * valueRatio;
+				tileIndex++;
 			}
 		}
 
 		valueRatio *= gridLevelSwitchRatio;
 	}
 
-	Real32 minValue = values[0];
-	Real32 maxValue = values[0];
-	valueIndex = 0;
-	for(Int32 row = 0; row < map.tileRowN; row++)
+	Real32 minValue = map.terrain[0];
+	Real32 maxValue = map.terrain[0];
+	for(Int32 i = 0; i < tileN; i++)
 	{
-		for(Int32 col = 0; col < map.tileColN; col++)
-		{
-			minValue = Min2(minValue, values[valueIndex]);
-			maxValue = Max2(maxValue, values[valueIndex]);
-			valueIndex++;
-		}
+		minValue = Min2(minValue, map.terrain[i]);
+		maxValue = Max2(maxValue, map.terrain[i]);
 	}
 
 	Assert(minValue < maxValue);
-	valueIndex = 0;
-	for(Int32 row = 0; row < map.tileRowN; row++)
+
+	for(Int32 i = 0; i < tileN; i++)
 	{
-		for(Int32 col = 0; col < map.tileColN; col++)
-		{
-			Assert(IsBetween(values[valueIndex], minValue, maxValue));
-			values[valueIndex] = (values[valueIndex] - minValue) / (maxValue - minValue);
-			values[valueIndex] = SmoothRatio(values[valueIndex]);
-			valueIndex++;
-		}
+		Assert(IsBetween(map.terrain[i], minValue, maxValue));
+		map.terrain[i] = (map.terrain[i] - minValue) / (maxValue - minValue);
+		map.terrain[i] = SmoothRatio(map.terrain[i]);
 	}
 
-	UInt32* pixel = map.bitmap.memory;
+	Int32* lowestTreeRow = ArenaPushArray(arena, Int32, map.tileColN);
+	for(Int32 i = 0; i < map.tileColN; i++)
+	{
+		lowestTreeRow[i] = 0;
+	}
+
+	Int32 treeSide = 5;
+	Int32 minTreeDistance = 8;
+	Int32 maxTreeDistance = 12;
+	Int32 finishedColN = 0;
+	while(finishedColN < map.tileColN)
+	{
+		Int32 leftCol  = IntRandom(0, map.tileColN - 1);
+		Int32 rightCol = ClipInt(leftCol + treeSide, 0, map.tileColN - 1);
+
+		Int32 minRow = 0;
+		Int32 leftCheckCol  = ClipInt(leftCol  - minTreeDistance, 0, map.tileColN - 1);
+		Int32 rightCheckCol = ClipInt(rightCol + minTreeDistance, 0, map.tileColN - 1);
+		for(Int32 col = leftCheckCol; col <= rightCheckCol; col++)
+		{
+			minRow = IntMax2(minRow, lowestTreeRow[col]);
+		}
+
+		Int32 topRow = minRow + IntRandom(minTreeDistance, maxTreeDistance);
+		topRow = ClipInt(topRow, 0, map.tileRowN - 1);
+		if(topRow == map.tileRowN - 1)
+		{
+			for(Int32 col = leftCol; col <= rightCol; col++)
+			{
+				if(lowestTreeRow[col] < map.tileRowN)
+				{
+					finishedColN++;
+				}
+				lowestTreeRow[col] = map.tileRowN - 1;
+			}
+			continue;
+		}
+
+		Int32 bottomRow = ClipInt(topRow + treeSide, 0, map.tileRowN - 1);
+		for(Int32 col = leftCol; col <= rightCol; col++)
+		{
+			Assert(lowestTreeRow[col] < bottomRow);
+			if(bottomRow == map.tileRowN - 1)
+			{
+				finishedColN++;
+			}
+			lowestTreeRow[col] = bottomRow;
+		}
+
+		TreeShape shape = GenerateTreeShape();
+		ApplyTreeShape(&map, &shape, leftCol, topRow);
+	}
+
+	ArenaPopTo(arena, arenaTop);
+
+	return map;
+}
+
+static Vec4 func GetTileColor(Map* map, Int32 row, Int32 col)
+{
+	Assert(IsIntBetween(row, 0, map->tileRowN - 1));
+	Assert(IsIntBetween(col, 0, map->tileColN - 1));
+
+	Int32 tileIndex = row * map->tileColN + col;
+	
+	Vec4 treeColor		 = MakeColor(0.0f, 0.0f, 0.0f);
 	Vec4 waterLowColor   = MakeColor(0.0f, 0.0f, 0.1f);
 	Vec4 waterHighColor  = MakeColor(0.0f, 0.0f, 1.0f);
 	Vec4 groundLowColor  = MakeColor(0.0f, 1.0f, 0.0f);
@@ -192,31 +400,27 @@ static Map func GenerateForestMap(MemArena* arena)
 
 	Real32 waterLevel = 0.05f;
 
-	valueIndex = 0;
-	for(Int32 row = 0; row < map.tileRowN; row++)
+	Vec4 color = {};
+	if(map->isTree[tileIndex])
 	{
-		for(Int32 col = 0; col < map.tileColN; col++)
+		color = treeColor;
+	}
+	else
+	{
+		Real32 height = map->terrain[tileIndex];
+		Assert(IsBetween(height, 0.0f, 1.0f));
+
+		if(IsBetween(height, 0.0f, waterLevel))
 		{
-			Real32 value = values[valueIndex];
-			valueIndex++;
-			Assert(IsBetween(value, 0.0f, 1.0f));
-
-			Vec4 color = {};
-			if(IsBetween(value, 0.0f, waterLevel))
-			{
-				color = InterpolateColors(waterLowColor, value / waterLevel, waterHighColor); 
-			}
-			else
-			{
-				color = InterpolateColors(groundLowColor, (value - waterLevel) / (1.0f - waterLevel), groundHighColor);
-			}
-
-			*pixel = GetColorCode(color);
-			pixel++;
+			color = InterpolateColors(waterLowColor, height / waterLevel, waterHighColor); 
+		}
+		else
+		{
+			color = InterpolateColors(groundLowColor, (height - waterLevel) / (1.0f - waterLevel), groundHighColor);
 		}
 	}
 
-	return map;
+	return color;
 }
 
 static void func DrawMap(Canvas* canvas, Map* map)
@@ -250,10 +454,8 @@ static void func DrawMap(Canvas* canvas, Map* map)
 				continue;
 			}
 
-			Vec4 color = GetBitmapPixelColor(&map->bitmap, row, col);
+			Vec4 color = GetTileColor(map, row, col);
 			DrawRectLRTB(canvas, tileLeft, tileRight, tileTop, tileBottom, color);
 		}
 	}
 }
-
-// TODO: Save only values, GetTileColor function!

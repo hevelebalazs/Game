@@ -62,9 +62,16 @@ static Int32 func IntAbs(Int32 i)
 	return result;
 }
 
+static Bool32 func IsIntBetween(Int32 test, Int32 min, Int32 max)
+{
+	Bool32 isBetween = (min <= test && test <= max);
+	return isBetween;
+}
+
 static Int32 func IntRandom(Int32 min, Int32 max)
 {
 	Int32 result = min + (rand() % (max - min + 1));
+	Assert(IsIntBetween(result, min, max));
 	return result;
 }
 
@@ -333,12 +340,6 @@ static Vec2 func PointLerp(Vec2 point1, Real32 ratio, Vec2 point2)
 	result.x = Lerp(point1.x, ratio, point2.x);
 	result.y = Lerp(point1.y, ratio, point2.y);
 	return result;
-}
-
-static Bool32 func IsIntBetween(Int32 test, Int32 min, Int32 max)
-{
-	Bool32 isBetween = (min <= test && test <= max);
-	return isBetween;
 }
 
 static Bool32 func IsPointInRect(Vec2 point, Real32 left, Real32 right, Real32 top, Real32 bottom)
