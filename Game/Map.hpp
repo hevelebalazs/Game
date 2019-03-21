@@ -17,6 +17,12 @@ struct TileIndex
 	Int32 col;
 };
 
+struct GridIndex
+{
+	Int32 row;
+	Int32 col;
+};
+
 struct Map
 {
 	Real32 tileSide;
@@ -127,6 +133,14 @@ static TileIndex func MakeTileIndex(Int32 row, Int32 col)
 	return index;
 }
 
+static GridIndex func MakeGridIndex(Int32 row, Int32 col)
+{
+	GridIndex index = {};
+	index.row = row;
+	index.col = col;
+	return index;
+}
+
 static Bool32 func IsValidTileIndex(Map* map, TileIndex index)
 {
 	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN - 1) &&
@@ -134,11 +148,32 @@ static Bool32 func IsValidTileIndex(Map* map, TileIndex index)
 	return result;
 }
 
+static Bool32 func TileHasTree(Map* map, TileIndex index)
+{
+	Assert(IsValidTileIndex(map, index));
+	Bool32 hasTree = map->isTree[index.row * map->tileColN + index.col];
+	return hasTree;
+}
+
+static Bool32 func IsPassableTile(Map* map, TileIndex index)
+{
+	Bool32 isPassable = !TileHasTree(map, index);
+	return isPassable;
+}
+
 static Vec2 func GetTileCenter(Map* map, TileIndex index)
 {
 	Assert(IsValidTileIndex(map, index));
 	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
 	Real32 y = (Real32)index.row * map->tileSide + map->tileSide * 0.5f;
+	Vec2 position = MakePoint(x, y);
+	return position;
+}
+
+static Vec2 func GetGridPosition(Map* map, GridIndex index)
+{
+	Real32 x = (Real32)index.col * map->tileSide;
+	Real32 y = (Real32)index.row * map->tileSide;
 	Vec2 position = MakePoint(x, y);
 	return position;
 }
@@ -421,6 +456,87 @@ static Vec4 func GetTileColor(Map* map, Int32 row, Int32 col)
 	}
 
 	return color;
+}
+
+static GridIndex func GetTopLeftGridIndex(TileIndex tileIndex)
+{
+	GridIndex gridIndex = MakeGridIndex(tileIndex.row, tileIndex.col);
+	return gridIndex;
+}
+
+static TileIndex func GetTopRightTileIndex(GridIndex gridIndex)
+{
+	TileIndex tileIndex = MakeTileIndex(gridIndex.row - 1, gridIndex.col);
+	return tileIndex;
+}
+
+static TileIndex func GetBottomRightTileIndex(GridIndex gridIndex)
+{
+	TileIndex tileIndex = MakeTileIndex(gridIndex.row, gridIndex.col);
+	return tileIndex;
+}
+
+static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
+{
+	Assert(IsValidTileIndex(map, tile));
+	Assert(TileHasTree(map, tile));
+
+	Int32 topRow = tile.row;
+	while(topRow > 0)
+	{
+		TileIndex tileTop = MakeTileIndex(topRow - 1, tile.col);
+		Assert(IsValidTileIndex(map, tileTop));
+		if(!TileHasTree(map, tileTop))
+		{
+			break;
+		}
+		topRow--;
+	}
+
+	Int32 topLeftCol = tile.col;
+	while(topLeftCol > 0)
+	{
+		if(topRow > 0)
+		{
+			TileIndex tileLeftTop = MakeTileIndex(topRow - 1, topLeftCol - 1);
+			if(TileHasTree(map, tileLeftTop))
+			{
+				break;
+			}
+		}
+
+		TileIndex tileLeft = MakeTileIndex(topRow, topLeftCol - 1);
+		Assert(IsValidTileIndex(map, tileLeft));
+		if(!TileHasTree(map, tileLeft))
+		{
+			break;
+		}
+		topLeftCol--;
+	}
+
+
+	TileIndex topLeftTile = MakeTileIndex(topRow, topLeftCol);
+	GridIndex gridIndex = GetTopLeftGridIndex(topLeftTile);
+	Vec2 startPoint = GetGridPosition(map, gridIndex);
+
+	while(1)
+	{
+		TileIndex topRightTile = GetTopRightTileIndex(gridIndex);
+		TileIndex bottomRightTile = GetBottomRightTileIndex(gridIndex);
+		if(!TileHasTree(map, topRightTile) && TileHasTree(map, bottomRightTile))
+		{
+			gridIndex.col++;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	Vec2 endPoint = GetGridPosition(map, gridIndex);
+
+	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
+	Bresenham(canvas, startPoint, endPoint, color);
 }
 
 static void func DrawMap(Canvas* canvas, Map* map)

@@ -342,7 +342,7 @@ static Vec2 func PointLerp(Vec2 point1, Real32 ratio, Vec2 point2)
 	return result;
 }
 
-static Bool32 func IsPointInRect(Vec2 point, Real32 left, Real32 right, Real32 top, Real32 bottom)
+static Bool32 func IsPointInRectLRTB(Vec2 point, Real32 left, Real32 right, Real32 top, Real32 bottom)
 {
 	Bool32 result = true;
 	if(point.x < left || point.x > right)

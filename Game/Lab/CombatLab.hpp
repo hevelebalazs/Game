@@ -1519,6 +1519,82 @@ static void func DrawDamageDisplays(Canvas* canvas, CombatLabState* labState)
 	}
 }
 
+static Vec2 func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
+{
+	Vec2 result = {};
+
+	Assert(IsPointInRect(point, rect));
+
+	Real32 leftDistance = (point.x - rect.left);
+	Assert(leftDistance >= 0.0f);
+
+	Real32 minDistance = leftDistance;
+	result = MakePoint(rect.left, point.y);;
+
+	Real32 rightDistance = (rect.right - point.x);
+	Assert(rightDistance >= 0.0f);
+	if(rightDistance < minDistance)
+	{
+		minDistance = rightDistance;
+		result = MakePoint(rect.right, point.y);
+	}
+
+	Real32 topDistance = (point.y - rect.top);
+	Assert(topDistance >= 0.0f);
+	if(topDistance < minDistance)
+	{
+		minDistance = topDistance;
+		result = MakePoint(point.x, rect.top);
+	}
+
+	Real32 bottomDistance = (rect.bottom - point.y);
+	Assert(bottomDistance >= 0.0f);
+	if(bottomDistance < minDistance)
+	{
+		minDistance = bottomDistance;
+		result = MakePoint(point.x, rect.bottom);
+	}
+
+	return result;
+}
+
+/*
+static void func HandleEntityMapCollisions(Entity* entity, Map* map)
+{
+	Real32 mapWidth  = map->tileColN * map->tileSide;
+	Real32 mapHeight = map->tileRowN * map->tileSide;
+	entity->position.x = Clip(entity->position.x, EntityRadius, mapWidth - EntityRadius);
+	entity->position.y = Clip(entity->position.y, EntityRadius, mapHeight - EntityRadius);
+
+	Vec2 left   = entity->position + MakeVector(-EntityRadius, 0.0f);
+	Vec2 right  = entity->position + MakeVector(+EntityRadius, 0.0f);
+	Vec2 top    = entity->position + MakeVector(0.0f, -EntityRadius);
+	Vec2 bottom = entity->position + MakeVector(0.0f, +EntityRadius);
+
+	TileIndex leftTile   = GetContainingTileIndex(map, left);
+	TileIndex rightTile  = GetContainingTileIndex(map, right);
+	TileIndex topTile    = GetContainingTileIndex(map, top);
+	TileIndex bottomTile = GetContainingTileIndex(map, bottom);
+
+	for(Int32 row = topTile.row; row <= bottomTile.row; row++)
+	{
+		for(Int32 col = leftTile.col; col <= rightTile.col; col++)
+		{
+			TileIndex tile = MakeTileIndex(row, col);
+			if(!IsPassableTile(map, tile))
+			{
+				Vec2 tileCenter = GetTileCenter(map, tile);
+				Rect rect = MakeSquareRect(tileCenter, map->tileSide + 2.0f * EntityRadius);
+				if(IsPointInRect(entity->position, rect))
+				{
+					entity->position = GetClosestRectOutlinePosition(rect, entity->position);
+				}
+			}
+		}
+	}
+}
+*/
+
 static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -1595,8 +1671,14 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 		player->velocity = PlayerSpeed * player->inputDirection;
 	}
 	player->position = player->position + seconds * player->velocity;
-	player->position.x = Clip(player->position.x, EntityRadius, mapWidth - EntityRadius);
-	player->position.y = Clip(player->position.y, EntityRadius, mapHeight - EntityRadius);
+	//HandleEntityMapCollisions(player, map);
+	{
+		TileIndex playerTile = GetContainingTileIndex(map, player->position);
+		if(!IsPassableTile(map, playerTile))
+		{
+			DrawTreeOutline(canvas, map, playerTile);
+		}
+	}
 
 	Vec4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
 	DrawEntity(canvas, player, playerColor);
@@ -1811,6 +1893,14 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	DrawDamageDisplays(canvas, labState);
 }
 
+// [TODO: Player-tree collision]
+	// TODO: Tree outline
+		// TODO: With offset
+	// TODO: Handle together movement and collision!
+	// TODO: When initializing, move player to a tile with no tree!
+// TODO: Tree shadows
+// TODO: Enemy-tree collision
+	// TODO: Pathfinding
 // TODO: Computer controlled enemies shouldn't stack upon each other
 // TODO: Momentum and acceleration
 // TODO: Remove limitation of 8 directions!

@@ -51,6 +51,12 @@ struct Rect
 	Real32 bottom;
 };
 
+static Bool32 func IsPointInRect(Vec2 point, Rect rect)
+{
+	Bool32 result = IsPointInRectLRTB(point, rect.left, rect.right, rect.top, rect.bottom);
+	return result;
+}
+
 Rect func MakeSquareRect(Vec2 center, Real32 size)
 {
 	Rect rect = {};
