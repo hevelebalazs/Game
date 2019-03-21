@@ -148,6 +148,13 @@ static Bool32 func IsValidTileIndex(Map* map, TileIndex index)
 	return result;
 }
 
+static Bool32 func IsValidGridIndex(Map* map, GridIndex index)
+{
+	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN) &&
+					 IsIntBetween(index.col, 0, map->tileColN));
+	return result;
+}
+
 static Bool32 func TileHasTree(Map* map, TileIndex index)
 {
 	Assert(IsValidTileIndex(map, index));
@@ -464,9 +471,21 @@ static GridIndex func GetTopLeftGridIndex(TileIndex tileIndex)
 	return gridIndex;
 }
 
+static TileIndex func GetTopLeftTileIndex(GridIndex gridIndex)
+{
+	TileIndex tileIndex = MakeTileIndex(gridIndex.row - 1, gridIndex.col - 1);
+	return tileIndex;
+}
+
 static TileIndex func GetTopRightTileIndex(GridIndex gridIndex)
 {
 	TileIndex tileIndex = MakeTileIndex(gridIndex.row - 1, gridIndex.col);
+	return tileIndex;
+}
+
+static TileIndex func GetBottomLeftTileIndex(GridIndex gridIndex)
+{
+	TileIndex tileIndex = MakeTileIndex(gridIndex.row, gridIndex.col - 1);
 	return tileIndex;
 }
 
@@ -516,27 +535,138 @@ static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
 
 
 	TileIndex topLeftTile = MakeTileIndex(topRow, topLeftCol);
-	GridIndex gridIndex = GetTopLeftGridIndex(topLeftTile);
-	Vec2 startPoint = GetGridPosition(map, gridIndex);
+	GridIndex startGridIndex = GetTopLeftGridIndex(topLeftTile);
+	GridIndex gridIndex = startGridIndex;
 
-	while(1)
+	enum GridDirection
 	{
-		TileIndex topRightTile = GetTopRightTileIndex(gridIndex);
-		TileIndex bottomRightTile = GetBottomRightTileIndex(gridIndex);
-		if(!TileHasTree(map, topRightTile) && TileHasTree(map, bottomRightTile))
+		GridLeft,
+		GridRight,
+		GridUp,
+		GridDown
+	};
+	GridDirection direction = GridRight;
+
+	while (1)
+	{
+		Vec2 startPoint = GetGridPosition(map, gridIndex);
+		if(direction == GridRight)
 		{
-			gridIndex.col++;
+			while(1)
+			{
+				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col + 1);
+				if(!IsValidGridIndex(map, nextGridIndex))
+				{
+					break;
+				}
+
+				TileIndex topTile = GetTopRightTileIndex(gridIndex);
+				TileIndex bottomTile = GetBottomRightTileIndex(gridIndex);
+				Bool32 topTileOk = (!IsValidTileIndex(map, topTile) || !TileHasTree(map, topTile));
+				Bool32 bottomTileOk = (IsValidTileIndex(map, topTile) && TileHasTree(map, bottomTile));
+				if(topTileOk && bottomTileOk)
+				{
+					gridIndex = nextGridIndex;
+				}
+				else
+				{
+					break;
+				}
+			}
+			direction = GridUp;
+		}
+		else if(direction == GridLeft)
+		{
+			while(1)
+			{
+				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col - 1);
+				if(!IsValidGridIndex(map, nextGridIndex))
+				{
+					break;
+				}
+
+				TileIndex topTile = GetTopLeftTileIndex(gridIndex);
+				TileIndex bottomTile = GetBottomLeftTileIndex(gridIndex);
+				Bool32 topTileOk = (IsValidTileIndex(map, topTile) && TileHasTree(map, topTile));
+				Bool32 bottomTileOk = (!IsValidTileIndex(map, bottomTile) || !TileHasTree(map, bottomTile));
+				if(topTileOk && bottomTileOk)
+				{
+					gridIndex = nextGridIndex;
+				}
+				else
+				{
+					break;
+				}
+			}
+			direction = GridDown;
+		}
+		else if(direction == GridUp)
+		{
+			while(1)
+			{
+				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row - 1, gridIndex.col);
+				if(!IsValidGridIndex(map, nextGridIndex))
+				{
+					break;
+				}
+
+				TileIndex leftTile = GetTopLeftTileIndex(gridIndex);
+				TileIndex rightTile = GetTopRightTileIndex(gridIndex);
+				Bool32 leftTileOk = (!IsValidTileIndex(map, leftTile) || !TileHasTree(map, leftTile));
+				Bool32 rightTileOk = (IsValidTileIndex(map, rightTile) && TileHasTree(map, rightTile));
+				if(leftTileOk && rightTileOk)
+				{
+					gridIndex = nextGridIndex;
+				}
+				else
+				{
+					break;
+				}
+			}
+			direction = GridLeft;
+		}
+		else if(direction == GridDown)
+		{
+			while(1)
+			{
+				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row + 1, gridIndex.col);
+				if(!IsValidGridIndex(map, nextGridIndex))
+				{
+					break;
+				}
+
+				TileIndex leftTile = GetBottomLeftTileIndex(gridIndex);
+				TileIndex rightTile = GetBottomRightTileIndex(gridIndex);
+				Bool32 leftTileOk = (IsValidTileIndex(map, leftTile) && TileHasTree(map, leftTile));
+				Bool32 rightTileOk = (!IsValidTileIndex(map, rightTile) || !TileHasTree(map, rightTile));
+				if(leftTileOk && rightTileOk)
+				{
+					gridIndex = nextGridIndex;
+				}
+				else
+				{
+					break;
+				}
+			}
+			direction = GridRight;
 		}
 		else
+		{
+			DebugBreak();
+		}
+
+		Vec2 endPoint = GetGridPosition(map, gridIndex);
+		if(startPoint != endPoint)
+		{
+			Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
+			Bresenham(canvas, startPoint, endPoint, color);
+		}
+
+		if(gridIndex.row == startGridIndex.row && gridIndex.col == startGridIndex.col)
 		{
 			break;
 		}
 	}
-
-	Vec2 endPoint = GetGridPosition(map, gridIndex);
-
-	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
-	Bresenham(canvas, startPoint, endPoint, color);
 }
 
 static void func DrawMap(Canvas* canvas, Map* map)
