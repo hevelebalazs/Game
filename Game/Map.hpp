@@ -495,10 +495,13 @@ static TileIndex func GetBottomRightTileIndex(GridIndex gridIndex)
 	return tileIndex;
 }
 
-static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
+static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radius)
 {
 	Assert(IsValidTileIndex(map, tile));
 	Assert(TileHasTree(map, tile));
+
+	Poly16 poly = {};
+	poly.pointN = 0;
 
 	Int32 topRow = tile.row;
 	while(topRow > 0)
@@ -550,15 +553,12 @@ static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
 	while (1)
 	{
 		Vec2 startPoint = GetGridPosition(map, gridIndex);
+		Vec2 pointOffset = {};
 		if(direction == GridRight)
 		{
 			while(1)
 			{
 				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col + 1);
-				if(!IsValidGridIndex(map, nextGridIndex))
-				{
-					break;
-				}
 
 				TileIndex topTile = GetTopRightTileIndex(gridIndex);
 				TileIndex bottomTile = GetBottomRightTileIndex(gridIndex);
@@ -570,20 +570,25 @@ static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
 				}
 				else
 				{
+					if(bottomTileOk)
+					{
+						pointOffset = MakeVector(-radius, -radius);
+						direction = GridUp;
+					}
+					else
+					{
+						pointOffset = MakeVector(+radius, -radius);
+						direction = GridDown;
+					}
 					break;
 				}
 			}
-			direction = GridUp;
 		}
 		else if(direction == GridLeft)
 		{
 			while(1)
 			{
 				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col - 1);
-				if(!IsValidGridIndex(map, nextGridIndex))
-				{
-					break;
-				}
 
 				TileIndex topTile = GetTopLeftTileIndex(gridIndex);
 				TileIndex bottomTile = GetBottomLeftTileIndex(gridIndex);
@@ -595,20 +600,25 @@ static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
 				}
 				else
 				{
+					if(topTileOk)
+					{
+						pointOffset = MakeVector(+radius, +radius);
+						direction = GridDown;
+					}
+					else
+					{
+						pointOffset = MakeVector(-radius, +radius);
+						direction = GridUp;
+					}
 					break;
 				}
 			}
-			direction = GridDown;
 		}
 		else if(direction == GridUp)
 		{
 			while(1)
 			{
 				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row - 1, gridIndex.col);
-				if(!IsValidGridIndex(map, nextGridIndex))
-				{
-					break;
-				}
 
 				TileIndex leftTile = GetTopLeftTileIndex(gridIndex);
 				TileIndex rightTile = GetTopRightTileIndex(gridIndex);
@@ -620,20 +630,25 @@ static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
 				}
 				else
 				{
+					if(rightTileOk)
+					{
+						pointOffset = MakeVector(-radius, +radius);
+						direction = GridLeft;
+					}
+					else
+					{
+						pointOffset = MakeVector(-radius, -radius);
+						direction = GridRight;
+					}
 					break;
 				}
 			}
-			direction = GridLeft;
 		}
 		else if(direction == GridDown)
 		{
 			while(1)
 			{
 				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row + 1, gridIndex.col);
-				if(!IsValidGridIndex(map, nextGridIndex))
-				{
-					break;
-				}
 
 				TileIndex leftTile = GetBottomLeftTileIndex(gridIndex);
 				TileIndex rightTile = GetBottomRightTileIndex(gridIndex);
@@ -645,28 +660,54 @@ static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
 				}
 				else
 				{
+					if(leftTileOk)
+					{
+						pointOffset = MakePoint(+radius, -radius);
+						direction = GridRight;
+					}
+					else
+					{
+						pointOffset = MakePoint(+radius, +radius);
+						direction = GridLeft;
+					}
 					break;
 				}
 			}
-			direction = GridRight;
 		}
 		else
 		{
 			DebugBreak();
 		}
 
-		Vec2 endPoint = GetGridPosition(map, gridIndex);
-		if(startPoint != endPoint)
-		{
-			Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
-			Bresenham(canvas, startPoint, endPoint, color);
-		}
+		Vec2 point = GetGridPosition(map, gridIndex) + pointOffset;
+		Poly16Add(&poly, point);
 
 		if(gridIndex.row == startGridIndex.row && gridIndex.col == startGridIndex.col)
 		{
 			break;
 		}
 	}
+	return poly;
+}
+
+static Poly16 func GetTreeOutline(Map* map, TileIndex tile)
+{
+	Poly16 poly = GetExtendedTreeOutline(map, tile, 0.0f);
+	return poly; 
+}
+
+static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
+{
+	Poly16 poly = GetTreeOutline(map, tile);
+	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
+	DrawPolyOutline(canvas, poly.points, poly.pointN, color);
+}
+
+static void func DrawExtendedTreeOutline(Canvas* canvas, Map* map, TileIndex tile, Real32 radius)
+{
+	Poly16 poly = GetExtendedTreeOutline(map, tile, radius);
+	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
+	DrawPolyOutline(canvas, poly.points, poly.pointN, color);
 }
 
 static void func DrawMap(Canvas* canvas, Map* map)
@@ -705,3 +746,5 @@ static void func DrawMap(Canvas* canvas, Map* map)
 		}
 	}
 }
+
+// TODO: Handle tree on the side of map!

@@ -1558,42 +1558,137 @@ static Vec2 func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
 	return result;
 }
 
-/*
-static void func HandleEntityMapCollisions(Entity* entity, Map* map)
+static Vec2 func GetEntityLeft(Entity* entity)
 {
-	Real32 mapWidth  = map->tileColN * map->tileSide;
-	Real32 mapHeight = map->tileRowN * map->tileSide;
-	entity->position.x = Clip(entity->position.x, EntityRadius, mapWidth - EntityRadius);
-	entity->position.y = Clip(entity->position.y, EntityRadius, mapHeight - EntityRadius);
+	Vec2 left = entity->position + MakeVector(-EntityRadius, 0.0f);
+	return left;
+}
 
-	Vec2 left   = entity->position + MakeVector(-EntityRadius, 0.0f);
-	Vec2 right  = entity->position + MakeVector(+EntityRadius, 0.0f);
-	Vec2 top    = entity->position + MakeVector(0.0f, -EntityRadius);
+static Vec2 func GetEntityRight(Entity* entity)
+{
+	Vec2 right = entity->position + MakeVector(+EntityRadius, 0.0f);
+	return right;
+}
+
+static Vec2 func GetEntityTop(Entity* entity)
+{
+	Vec2 top = entity->position + MakeVector(0.0f, -EntityRadius);
+	return top;
+}
+
+static Vec2 func GetEntityBottom(Entity* entity)
+{
 	Vec2 bottom = entity->position + MakeVector(0.0f, +EntityRadius);
+	return bottom;
+}
 
-	TileIndex leftTile   = GetContainingTileIndex(map, left);
-	TileIndex rightTile  = GetContainingTileIndex(map, right);
-	TileIndex topTile    = GetContainingTileIndex(map, top);
-	TileIndex bottomTile = GetContainingTileIndex(map, bottom);
+static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
+{
+	Vec2 moveVector = seconds * entity->velocity;
+	Vec2 oldPosition = entity->position;
+	Vec2 newPosition = entity->position + moveVector;
 
+	Poly16 collisionPoly = {};
+
+	TileIndex topTile = GetContainingTileIndex(map, GetEntityTop(entity));
+	topTile.row--;
+
+	TileIndex bottomTile = GetContainingTileIndex(map, GetEntityBottom(entity));
+	bottomTile.row++;
+
+	TileIndex leftTile = GetContainingTileIndex(map, GetEntityLeft(entity));
+	leftTile.col--;
+
+	TileIndex rightTile = GetContainingTileIndex(map, GetEntityRight(entity));
+	rightTile.col++;
+
+	Bool32 treeFound = false;
 	for(Int32 row = topTile.row; row <= bottomTile.row; row++)
 	{
 		for(Int32 col = leftTile.col; col <= rightTile.col; col++)
 		{
 			TileIndex tile = MakeTileIndex(row, col);
-			if(!IsPassableTile(map, tile))
+			if(IsValidTileIndex(map, tile))
 			{
-				Vec2 tileCenter = GetTileCenter(map, tile);
-				Rect rect = MakeSquareRect(tileCenter, map->tileSide + 2.0f * EntityRadius);
-				if(IsPointInRect(entity->position, rect))
+				if(TileHasTree(map, tile))
 				{
-					entity->position = GetClosestRectOutlinePosition(rect, entity->position);
+					collisionPoly = GetExtendedTreeOutline(map, tile, EntityRadius);
+					treeFound = true;
+					break;
 				}
 			}
 		}
+
+		if(treeFound)
+		{
+			break;
+		}
 	}
+
+	if(treeFound)
+	{
+		Assert(collisionPoly.pointN >= 2);
+		Int32 index1 = collisionPoly.pointN - 1;
+		for(Int32 index2 = 0; index2 < collisionPoly.pointN; index2++)
+		{
+			Vec2 point1 = collisionPoly.points[index1];
+			Vec2 point2 = collisionPoly.points[index2];
+			if(point1.x == point2.x)
+			{
+				Real32 x = point1.x;
+				if(point1.y < point2.y)
+				{
+					if(IsBetween(oldPosition.y, point1.y, point2.y) && (oldPosition.x >= x && newPosition.x < x))
+					{
+						newPosition.x = x;
+					}
+				}
+				else if(point2.y < point1.y)
+				{
+					if(IsBetween(oldPosition.y, point2.y, point1.y) && (oldPosition.x <= x && newPosition.x > x))
+					{
+						newPosition.x = x;
+					}
+				}
+				else
+				{
+					DebugBreak();
+				}
+			}
+			else if(point1.y == point2.y)
+			{
+				Real32 y = point1.y;
+				if(point1.x < point2.x)
+				{
+					if(IsBetween(oldPosition.x, point1.x, point2.x) && (oldPosition.y <= y && newPosition.y > y))
+					{
+						newPosition.y = y;
+					}
+				}
+				else if(point2.x < point1.x)
+				{
+					if(IsBetween(oldPosition.x, point2.x, point1.x) && (oldPosition.y >= y && newPosition.y < y))
+					{
+						newPosition.y = y;
+					}
+				}
+			}
+			else
+			{
+				DebugBreak();
+			}
+
+			index1 = index2;
+		}
+	}
+
+	Real32 mapWidth  = GetMapWidth(map);
+	Real32 mapHeight = GetMapHeight(map);
+	newPosition.x = Clip(newPosition.x, +EntityRadius, mapWidth  - EntityRadius);
+	newPosition.y = Clip(newPosition.y, +EntityRadius, mapHeight - EntityRadius);
+
+	entity->position = newPosition;
 }
-*/
 
 static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
@@ -1670,15 +1765,8 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	{
 		player->velocity = PlayerSpeed * player->inputDirection;
 	}
-	player->position = player->position + seconds * player->velocity;
-	//HandleEntityMapCollisions(player, map);
-	{
-		TileIndex playerTile = GetContainingTileIndex(map, player->position);
-		if(!IsPassableTile(map, playerTile))
-		{
-			DrawTreeOutline(canvas, map, playerTile);
-		}
-	}
+
+	UpdateEntityMovement(player, map, seconds);
 
 	Vec4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
 	DrawEntity(canvas, player, playerColor);
