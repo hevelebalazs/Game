@@ -495,13 +495,10 @@ static TileIndex func GetBottomRightTileIndex(GridIndex gridIndex)
 	return tileIndex;
 }
 
-static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radius)
+static TileIndex func GetTreeTopLeftTileIndex(Map* map, TileIndex tile)
 {
 	Assert(IsValidTileIndex(map, tile));
 	Assert(TileHasTree(map, tile));
-
-	Poly16 poly = {};
-	poly.pointN = 0;
 
 	Int32 topRow = tile.row;
 	while(topRow > 0)
@@ -538,6 +535,15 @@ static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radiu
 
 
 	TileIndex topLeftTile = MakeTileIndex(topRow, topLeftCol);
+	return topLeftTile;
+}
+
+static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radius)
+{
+	Poly16 poly = {};
+	poly.pointN = 0;
+
+	TileIndex topLeftTile = GetTreeTopLeftTileIndex(map, tile);
 	GridIndex startGridIndex = GetTopLeftGridIndex(topLeftTile);
 	GridIndex gridIndex = startGridIndex;
 

@@ -255,7 +255,7 @@ static Vec2 func NormalVector(Vec2 vector)
 	}
 	else
 	{
-		Vec2 result = (1.0f / length) * vector;
+		result = (1.0f / length) * vector;
 	}
 	return result;
 }
@@ -263,9 +263,9 @@ static Vec2 func NormalVector(Vec2 vector)
 static Vec2 func PointDirection(Vec2 startPoint, Vec2 endPoint)
 {
 	Vec2 vector = MakeVector(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
-	vector = NormalVector(vector);
+	Vec2 normal = NormalVector(vector);
 
-	return vector;
+	return normal;
 }
 
 static Bool32 func IsPointInQuad(Quad quad, Vec2 point)

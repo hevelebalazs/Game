@@ -96,11 +96,13 @@ struct Effect
 #define MaxCooldownN 64
 #define MaxEffectN 64
 #define MaxDamageDisplayN 64
-#define CombatLabArenaSize (1 * MegaByte)
+#define CombatLabArenaSize (2 * MegaByte)
 struct CombatLabState
 {
 	Int8 arenaMemory[CombatLabArenaSize];
 	MemArena arena;
+
+	Canvas shadowCanvas;
 
 	Map map;
 
@@ -1690,6 +1692,72 @@ static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 	entity->position = newPosition;
 }
 
+static void func DrawTreeShadows(Canvas* canvas, Map* map, CombatLabState* labState)
+{
+	Canvas* shadowCanvas = &labState->shadowCanvas;
+	Bitmap* bitmap = &canvas->bitmap;
+	Bitmap* shadowBitmap = &shadowCanvas->bitmap;
+	if(shadowBitmap->width != bitmap->width || shadowBitmap->height != bitmap->height)
+	{
+		ResizeBitmap(shadowBitmap, bitmap->width, bitmap->height);
+	}
+	shadowCanvas->camera = canvas->camera;
+
+	Camera* camera = canvas->camera;
+	Vec2 topLeftCorner = GetCameraTopLeftCorner(camera);
+	Vec2 bottomRightCorner = GetCameraBottomRightCorner(camera);
+
+	Real32 diagonalLength = 0.5f * Distance(topLeftCorner, bottomRightCorner);
+
+	Vec2 center = camera->center;
+
+	TileIndex topLeftTile = GetContainingTileIndex(map, topLeftCorner);
+	TileIndex bottomRightTile = GetContainingTileIndex(map, bottomRightCorner);
+
+	Vec4 baseColor = MakeColor(0.0f, 0.0f, 0.0f);
+	ClearScreen(shadowCanvas, baseColor);
+
+	for(Int32 row = topLeftTile.row - MaxTreeSide; row <= bottomRightTile.row + MaxTreeSide; row++)
+	{
+		for(Int32 col = topLeftTile.col - MaxTreeSide; col <= bottomRightTile.col + MaxTreeSide; col++)
+		{
+			TileIndex tile = MakeTileIndex(row, col);
+			if(IsValidTileIndex(map, tile) && TileHasTree(map, tile))
+			{
+				TileIndex topLeftTile = GetTreeTopLeftTileIndex(map, tile);
+				if(tile.row == topLeftTile.row && tile.col == topLeftTile.col)
+				{
+					Poly16 poly = GetTreeOutline(map, tile);
+					Vec4 lineColor = MakeColor(1.0f, 0.0f, 0.0f);
+					DrawPolyOutline(shadowCanvas, poly.points, poly.pointN, lineColor);
+
+					for(Int32 i = 0; i < poly.pointN; i++)
+					{
+						Vec2 point = poly.points[i];
+						Vec2 direction = PointDirection(center, point);
+						
+						Vec2 sidePoint = center + diagonalLength * direction;
+						Bresenham(shadowCanvas, point, sidePoint, lineColor);
+					}
+				}
+			}
+		}
+	}
+
+	Vec4 fillColor = MakeColor(1.0f, 1.0f, 1.0f);
+	FloodFill(shadowCanvas, center, fillColor, &labState->arena);
+	UInt32 fillColorCode = GetColorCode(fillColor);
+
+	Int32 pixelN = (bitmap->height * bitmap->width);
+	for(Int32 i = 0; i < pixelN; i++)
+	{
+		if(shadowBitmap->memory[i] != fillColorCode)
+		{
+			bitmap->memory[i] = 0;
+		}
+	}
+}
+
 static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -1973,6 +2041,8 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 
 	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 	canvas->camera->center = player->position;
+
+	DrawTreeShadows(canvas, map, labState);
 
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
