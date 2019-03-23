@@ -1692,69 +1692,57 @@ static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 	entity->position = newPosition;
 }
 
-static void func DrawTreeShadows(Canvas* canvas, Map* map, CombatLabState* labState)
+static void func DrawEntityPathToTile(Canvas* canvas, Map* map, Entity* entity, TileIndex endTile)
 {
-	Canvas* shadowCanvas = &labState->shadowCanvas;
-	Bitmap* bitmap = &canvas->bitmap;
-	Bitmap* shadowBitmap = &shadowCanvas->bitmap;
-	if(shadowBitmap->width != bitmap->width || shadowBitmap->height != bitmap->height)
+	Assert(IsValidTileIndex(map, endTile));
+	Assert(!TileHasTree(map, endTile));
+	TileIndex tile = GetContainingTileIndex(map, entity->position);
+	Vec2 previousPosition = entity->position;
+	Bool32 previousTileHasTree = false;
+	TileIndex previousNonTreeTile = tile;
+	while(tile != endTile)
 	{
-		ResizeBitmap(shadowBitmap, bitmap->width, bitmap->height);
-	}
-	shadowCanvas->camera = canvas->camera;
-
-	Camera* camera = canvas->camera;
-	Vec2 topLeftCorner = GetCameraTopLeftCorner(camera);
-	Vec2 bottomRightCorner = GetCameraBottomRightCorner(camera);
-
-	Real32 diagonalLength = 0.5f * Distance(topLeftCorner, bottomRightCorner);
-
-	Vec2 center = camera->center;
-
-	TileIndex topLeftTile = GetContainingTileIndex(map, topLeftCorner);
-	TileIndex bottomRightTile = GetContainingTileIndex(map, bottomRightCorner);
-
-	Vec4 baseColor = MakeColor(0.0f, 0.0f, 0.0f);
-	ClearScreen(shadowCanvas, baseColor);
-
-	for(Int32 row = topLeftTile.row - MaxTreeSide; row <= bottomRightTile.row + MaxTreeSide; row++)
-	{
-		for(Int32 col = topLeftTile.col - MaxTreeSide; col <= bottomRightTile.col + MaxTreeSide; col++)
+		Assert(IsValidTileIndex(map, tile));
+		TileIndex previousTile = tile;
+		if(endTile.row < tile.row)
 		{
-			TileIndex tile = MakeTileIndex(row, col);
-			if(IsValidTileIndex(map, tile) && TileHasTree(map, tile))
-			{
-				TileIndex topLeftTile = GetTreeTopLeftTileIndex(map, tile);
-				if(tile.row == topLeftTile.row && tile.col == topLeftTile.col)
-				{
-					Poly16 poly = GetTreeOutline(map, tile);
-					Vec4 lineColor = MakeColor(1.0f, 0.0f, 0.0f);
-					DrawPolyOutline(shadowCanvas, poly.points, poly.pointN, lineColor);
-
-					for(Int32 i = 0; i < poly.pointN; i++)
-					{
-						Vec2 point = poly.points[i];
-						Vec2 direction = PointDirection(center, point);
-						
-						Vec2 sidePoint = center + diagonalLength * direction;
-						Bresenham(shadowCanvas, point, sidePoint, lineColor);
-					}
-				}
-			}
+			tile.row--;
 		}
-	}
-
-	Vec4 fillColor = MakeColor(1.0f, 1.0f, 1.0f);
-	FloodFill(shadowCanvas, center, fillColor, &labState->arena);
-	UInt32 fillColorCode = GetColorCode(fillColor);
-
-	Int32 pixelN = (bitmap->height * bitmap->width);
-	for(Int32 i = 0; i < pixelN; i++)
-	{
-		if(shadowBitmap->memory[i] != fillColorCode)
+		else if(endTile.row > tile.row)
 		{
-			bitmap->memory[i] = 0;
+			tile.row++;
 		}
+
+		if(endTile.col < tile.col)
+		{
+			tile.col--;
+		}
+		else if(endTile.col > tile.col)
+		{
+			tile.col++;
+		}
+
+		Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
+		Vec2 position = GetTileCenter(map, tile);
+
+		Bool32 tileHasTree = TileHasTree(map, tile);
+		if(!tileHasTree && !previousTileHasTree)
+		{
+			Bresenham(canvas, previousPosition, position, color);
+		}
+		if(tileHasTree && !previousTileHasTree)
+		{
+			previousNonTreeTile = previousTile;
+		}
+		else if(!tileHasTree && previousTileHasTree)
+		{
+			Vec4 treePathColor = MakeColor(1.0f, 1.0f, 0.0f);
+			Vec2 previousPosition = GetTileCenter(map, previousNonTreeTile);
+			DrawPathAroundTree(canvas, map, previousNonTreeTile, tile, treePathColor);
+		}
+
+		previousTileHasTree = tileHasTree;
+		previousPosition = position;
 	}
 }
 
@@ -1987,6 +1975,8 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 		}
 	}
 
+	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
+
 	if(WasKeyReleased(userInput, VK_LBUTTON))
 	{
 		if(labState->hoverAbilityId != NoAbilityId)
@@ -1995,7 +1985,6 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 		}
 		else
 		{
-			Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
 			for(Int32 i = 0; i < EntityN; i++)
 			{
 				Entity* entity = &labState->entities[i];
@@ -2042,7 +2031,11 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 	canvas->camera->center = player->position;
 
-	DrawTreeShadows(canvas, map, labState);
+	TileIndex mouseTile = GetContainingTileIndex(map, mousePosition);
+	if(IsValidTileIndex(map, mouseTile) && !TileHasTree(map, mouseTile))
+	{
+		DrawEntityPathToTile(canvas, map, player, mouseTile);
+	}
 
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
@@ -2051,14 +2044,10 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	DrawDamageDisplays(canvas, labState);
 }
 
-// [TODO: Player-tree collision]
-	// TODO: Tree outline
-		// TODO: With offset
-	// TODO: Handle together movement and collision!
-	// TODO: When initializing, move player to a tile with no tree!
-// TODO: Tree shadows
+// TODO: Pathfinding
+// TODO: TileIndex and GridIndex: use IntVec2 instead?
+// TODO: When initializing, move player to a tile with no tree!
 // TODO: Enemy-tree collision
-	// TODO: Pathfinding
 // TODO: Computer controlled enemies shouldn't stack upon each other
 // TODO: Momentum and acceleration
 // TODO: Remove limitation of 8 directions!

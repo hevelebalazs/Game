@@ -32,6 +32,18 @@ struct Map
 	Bool8* isTree;
 };
 
+static Bool32 operator==(TileIndex tile1, TileIndex tile2)
+{
+	Bool32 equal = (tile1.row == tile2.row && tile1.col == tile2.col);
+	return equal;
+}
+
+static Bool32 operator!=(TileIndex tile1, TileIndex tile2)
+{
+	Bool32 different = (tile1.row != tile2.row || tile1.col != tile2.col);
+	return different;
+}
+
 static func RandomValueTable CreateRandomValueTable(Int32 valueN, MemArena* arena)
 {
 	Assert(valueN > 0);
@@ -538,6 +550,14 @@ static TileIndex func GetTreeTopLeftTileIndex(Map* map, TileIndex tile)
 	return topLeftTile;
 }
 
+enum GridDirection
+{
+	GridLeft,
+	GridRight,
+	GridUp,
+	GridDown
+};
+
 static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radius)
 {
 	Poly16 poly = {};
@@ -547,13 +567,6 @@ static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radiu
 	GridIndex startGridIndex = GetTopLeftGridIndex(topLeftTile);
 	GridIndex gridIndex = startGridIndex;
 
-	enum GridDirection
-	{
-		GridLeft,
-		GridRight,
-		GridUp,
-		GridDown
-	};
 	GridDirection direction = GridRight;
 
 	while (1)
@@ -716,6 +729,236 @@ static void func DrawExtendedTreeOutline(Canvas* canvas, Map* map, TileIndex til
 	DrawPolyOutline(canvas, poly.points, poly.pointN, color);
 }
 
+static Rect func GetTileRect(Canvas* canvas, Map* map, TileIndex tileIndex)
+{
+	Assert(IsValidTileIndex(map, tileIndex));
+	Vec2 tileCenter = GetTileCenter(map, tileIndex);
+	Rect tileRect = MakeSquareRect(tileCenter, map->tileSide);
+	return tileRect;
+}
+
+static void func HighlightTile(Canvas* canvas, Map* map, TileIndex tileIndex, Vec4 color)
+{
+	Assert(IsValidTileIndex(map, tileIndex));
+	Rect rect = GetTileRect(canvas, map, tileIndex);
+	DrawRect(canvas, rect, color);
+}
+
+static TileIndex func GetNextTileInDirection(Map* map, TileIndex tile, GridDirection direction)
+{
+	TileIndex nextTile = tile;
+	switch(direction)
+	{
+		case GridLeft:
+		{
+			nextTile.col--;
+			break;
+		}
+		case GridRight:
+		{
+			nextTile.col++;
+			break;
+		}
+		case GridUp:
+		{
+			nextTile.row--;
+			break;
+		}
+		case GridDown:
+		{
+			nextTile.row++;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return nextTile;
+}
+
+static Bool32 TilesAreAdjacent(TileIndex tile1, TileIndex tile2)
+{
+	Int32 rowAbs = IntAbs(tile1.row - tile2.row);
+	Int32 colAbs = IntAbs(tile1.col - tile2.col);
+	Bool32 areAdjacent = ((rowAbs == 0 && colAbs == 1) || (rowAbs == 1 && colAbs == 0));
+	return areAdjacent;
+}
+
+static GridDirection func GetLeftDirection(GridDirection direction)
+{
+	GridDirection leftDirection = direction;
+	switch(direction)
+	{
+		case GridLeft:
+		{
+			leftDirection = GridDown;
+			break;
+		}
+		case GridRight:
+		{
+			leftDirection = GridUp;
+			break;
+		}
+		case GridUp:
+		{
+			leftDirection = GridLeft;
+			break;
+		}
+		case GridDown:
+		{
+			leftDirection = GridRight;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return leftDirection;
+}
+
+static GridDirection func GetRightDirection(GridDirection direction)
+{
+	GridDirection rightDirection = direction;
+	switch(direction)
+	{
+		case GridLeft:
+		{
+			rightDirection = GridUp;
+			break;
+		}
+		case GridRight:
+		{
+			rightDirection = GridDown;
+			break;
+		}
+		case GridUp:
+		{
+			rightDirection = GridRight;
+			break;
+		}
+		case GridDown:
+		{
+			rightDirection = GridLeft;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return rightDirection;
+}
+
+static void func DrawPathAroundTree(Canvas* canvas, Map* map, TileIndex startTile, TileIndex endTile, Vec4 color)
+{
+	Assert(IsValidTileIndex(map, startTile));
+	Assert(IsValidTileIndex(map, endTile));
+	Assert(startTile != endTile);
+
+	TileIndex startTreeTile = startTile;
+	startTreeTile.row += IntSign(endTile.row - startTile.row);
+	startTreeTile.col += IntSign(endTile.col - startTile.col);
+	Assert(TileHasTree(map, startTreeTile));
+
+	Bool32 canGoRight = true;
+	Int32 rightDistance = 0;
+	{
+		TileIndex treeTile = startTreeTile;
+		GridDirection direction = GridLeft;
+		if(startTile.col < treeTile.col && startTile.row <= treeTile.row)
+		{
+			direction = GridDown;
+		}
+		else if(startTile.row > treeTile.row && startTile.col <= treeTile.col)
+		{
+			direction = GridRight;
+		}
+		else if(startTile.col > treeTile.col && startTile.row >= treeTile.row)
+		{
+			direction = GridUp;
+		}
+		else if(startTile.row < treeTile.row && startTile.col >= treeTile.col)
+		{
+			direction = GridLeft;
+		}
+		else
+		{
+			DebugBreak();
+		}
+
+		TileIndex tile = startTile;
+		Int32 count = 0;
+		while(tile != endTile)
+		{
+			TileIndex previousTile = tile;
+			Assert(!TileHasTree(map, tile));
+			Assert(TileHasTree(map, treeTile));
+
+			if(!IsValidTileIndex(map, tile))
+			{
+				canGoRight = false;
+				break;
+			}
+
+			TileIndex nextTile = GetNextTileInDirection(map, tile, direction);
+			TileIndex nextTreeTile = GetNextTileInDirection(map, treeTile, direction);
+			if(!IsValidTileIndex(map, nextTile) || !IsValidTileIndex(map, nextTreeTile))
+			{
+				canGoRight = false;
+				break;
+			}
+
+			if(TilesAreAdjacent(tile, treeTile))
+			{
+				if(TileHasTree(map, nextTile))
+				{
+					treeTile = nextTile;
+					direction = GetRightDirection(direction);
+				}
+				else if(TileHasTree(map, nextTreeTile))
+				{
+					treeTile = nextTreeTile;
+					tile = nextTile;
+				}
+				else
+				{
+					tile = nextTile;
+					direction = GetLeftDirection(direction);
+				}
+			}
+			else
+			{
+				if(TileHasTree(map, nextTile))
+				{
+					treeTile = nextTile;
+					direction = GetRightDirection(direction);
+				}
+				else
+				{
+					tile = nextTile;
+				}
+			}
+
+			if(tile != previousTile)
+			{
+				Vec2 previousPosition = GetTileCenter(map, previousTile);
+				Vec2 position = GetTileCenter(map, tile);
+				Bresenham(canvas, previousPosition, position, color);
+			}
+			
+			count++;
+			if(count >= 100)
+			{
+				DebugBreak();
+			}
+		}
+	}
+
+	Assert(canGoRight);
+}
+
 static void func DrawMap(Canvas* canvas, Map* map)
 {
 	Camera* camera = canvas->camera;
@@ -752,5 +995,3 @@ static void func DrawMap(Canvas* canvas, Map* map)
 		}
 	}
 }
-
-// TODO: Handle tree on the side of map!
