@@ -921,10 +921,11 @@ static NearTreePosition func GetNextLeftNearTreePosition(Map* map, NearTreePosit
 	IntVec2 nextTreeTile = GetNextTileInDirection(map, position.treeTile, position.direction);
 
 	NearTreePosition nextPosition = position;
-	if(IsValidTileIndex(map, nextTile) && IsValidTileIndex(map, nextTreeTile))
+	if(IsValidTileIndex(map, nextTile))
 	{
 		if(TilesAreAdjacent(position.tile, position.treeTile))
 		{
+			Assert(IsValidTileIndex(map, nextTreeTile));
 			if(TileHasTree(map, nextTile))
 			{
 				nextPosition.treeTile = nextTile;
@@ -975,10 +976,11 @@ static NearTreePosition func GetNextRightNearTreePosition(Map* map, NearTreePosi
 	IntVec2 nextTreeTile = GetNextTileInDirection(map, position.treeTile, position.direction);
 
 	NearTreePosition nextPosition = position;
-	if(IsValidTileIndex(map, nextTile) && IsValidTileIndex(map, nextTreeTile))
+	if(IsValidTileIndex(map, nextTile))
 	{
 		if(TilesAreAdjacent(position.tile, position.treeTile))
 		{
+			Assert(IsValidTileIndex(map, nextTreeTile));
 			if(TileHasTree(map, nextTile))
 			{
 				nextPosition.treeTile = nextTile;

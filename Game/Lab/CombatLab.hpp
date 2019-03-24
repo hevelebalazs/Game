@@ -2050,7 +2050,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 // TODO: Computer controlled enemies shouldn't stack upon each other
 // TODO: Momentum and acceleration
 // TODO: Remove limitation of 8 directions!
-// TODO: Heal othersf
+// TODO: Heal others
 // TODO: Target friendly entity
 // TODO: Damage types
 // TODO: Text display for effects
