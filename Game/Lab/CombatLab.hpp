@@ -1294,7 +1294,7 @@ static void func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 m
 
 	DrawUIBoxWithText(bitmap, left, right, top, bottom, 0.0f, textBuffer, glyphData, boxColor);
 
-	if(IsIntBetween(mousePosition.x, left, right) && IsIntBetween(mousePosition.y, top, bottom))
+	if(IsIntBetween(mousePosition.col, left, right) && IsIntBetween(mousePosition.row, top, bottom))
 	{
 		Int8 tooltipBuffer[256] = {};
 		String tooltip = StartString(tooltipBuffer, 256);
@@ -1382,7 +1382,7 @@ static void func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec
 
 			DrawUIBoxWithText(bitmap, boxLeft, boxRight, boxTop, boxBottom, rechargeRatio, name, glyphData, color);
 
-			if(IsIntBetween(mousePosition.x, boxLeft, boxRight) && IsIntBetween(mousePosition.y, boxTop, boxBottom))
+			if(IsIntBetween(mousePosition.col, boxLeft, boxRight) && IsIntBetween(mousePosition.row, boxTop, boxBottom))
 			{
 				Int32 tooltipLeft = (boxLeft + boxRight) / 2 - TooltipWidth / 2;
 				Int32 tooltipBottom = boxTop - 5;
@@ -1592,16 +1592,16 @@ static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 
 	Poly16 collisionPoly = {};
 
-	TileIndex topTile = GetContainingTileIndex(map, GetEntityTop(entity));
+	IntVec2 topTile = GetContainingTileIndex(map, GetEntityTop(entity));
 	topTile.row--;
 
-	TileIndex bottomTile = GetContainingTileIndex(map, GetEntityBottom(entity));
+	IntVec2 bottomTile = GetContainingTileIndex(map, GetEntityBottom(entity));
 	bottomTile.row++;
 
-	TileIndex leftTile = GetContainingTileIndex(map, GetEntityLeft(entity));
+	IntVec2 leftTile = GetContainingTileIndex(map, GetEntityLeft(entity));
 	leftTile.col--;
 
-	TileIndex rightTile = GetContainingTileIndex(map, GetEntityRight(entity));
+	IntVec2 rightTile = GetContainingTileIndex(map, GetEntityRight(entity));
 	rightTile.col++;
 
 	Bool32 treeFound = false;
@@ -1609,7 +1609,7 @@ static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 	{
 		for(Int32 col = leftTile.col; col <= rightTile.col; col++)
 		{
-			TileIndex tile = MakeTileIndex(row, col);
+			IntVec2 tile = MakeTileIndex(row, col);
 			if(IsValidTileIndex(map, tile))
 			{
 				if(TileHasTree(map, tile))
@@ -1692,18 +1692,18 @@ static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 	entity->position = newPosition;
 }
 
-static void func DrawEntityPathToTile(Canvas* canvas, Map* map, Entity* entity, TileIndex endTile)
+static void func DrawEntityPathToTile(Canvas* canvas, Map* map, Entity* entity, IntVec2 endTile)
 {
 	Assert(IsValidTileIndex(map, endTile));
 	Assert(!TileHasTree(map, endTile));
-	TileIndex tile = GetContainingTileIndex(map, entity->position);
+	IntVec2 tile = GetContainingTileIndex(map, entity->position);
 	Vec2 previousPosition = entity->position;
 	Bool32 previousTileHasTree = false;
-	TileIndex previousNonTreeTile = tile;
+	IntVec2 previousNonTreeTile = tile;
 	while(tile != endTile)
 	{
 		Assert(IsValidTileIndex(map, tile));
-		TileIndex previousTile = tile;
+		IntVec2 previousTile = tile;
 		if(endTile.row < tile.row)
 		{
 			tile.row--;
@@ -1880,7 +1880,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 
 			Vec2 targetDirection = {};
 			Vec2 targetPosition = {};
-			TileIndex playerTileIndex = GetContainingTileIndex(map, target->position);
+			IntVec2 playerTileIndex = GetContainingTileIndex(map, target->position);
 
 			for(Int32 row = playerTileIndex.row - 1; row <= playerTileIndex.row + 1; row++)
 			{
@@ -1897,7 +1897,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 					}
 
 					Real32 attackDistance = 2.5f * EntityRadius;
-					TileIndex tileIndex = MakeTileIndex(row, col);
+					IntVec2 tileIndex = MakeTileIndex(row, col);
 					if(IsValidTileIndex(map, tileIndex))
 					{
 						Vec2 position = target->position + attackDistance * direction;
@@ -2031,7 +2031,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 	canvas->camera->center = player->position;
 
-	TileIndex mouseTile = GetContainingTileIndex(map, mousePosition);
+	IntVec2 mouseTile = GetContainingTileIndex(map, mousePosition);
 	if(IsValidTileIndex(map, mouseTile) && !TileHasTree(map, mouseTile))
 	{
 		DrawEntityPathToTile(canvas, map, player, mouseTile);
@@ -2044,15 +2044,13 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	DrawDamageDisplays(canvas, labState);
 }
 
-// TODO: Pathfinding
-// TODO: TileIndex and GridIndex: use IntVec2 instead?
+// TODO: Move with mouse
 // TODO: When initializing, move player to a tile with no tree!
 // TODO: Enemy-tree collision
 // TODO: Computer controlled enemies shouldn't stack upon each other
 // TODO: Momentum and acceleration
 // TODO: Remove limitation of 8 directions!
-// TODO: Move with mouse?
-// TODO: Heal others
+// TODO: Heal othersf
 // TODO: Target friendly entity
 // TODO: Damage types
 // TODO: Text display for effects

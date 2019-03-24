@@ -11,18 +11,6 @@ struct RandomValueTable
 	Int32 valueN;
 };
 
-struct TileIndex
-{
-	Int32 row;
-	Int32 col;
-};
-
-struct GridIndex
-{
-	Int32 row;
-	Int32 col;
-};
-
 struct Map
 {
 	Real32 tileSide;
@@ -31,18 +19,6 @@ struct Map
 	Real32* terrain;
 	Bool8* isTree;
 };
-
-static Bool32 operator==(TileIndex tile1, TileIndex tile2)
-{
-	Bool32 equal = (tile1.row == tile2.row && tile1.col == tile2.col);
-	return equal;
-}
-
-static Bool32 operator!=(TileIndex tile1, TileIndex tile2)
-{
-	Bool32 different = (tile1.row != tile2.row || tile1.col != tile2.col);
-	return different;
-}
 
 static func RandomValueTable CreateRandomValueTable(Int32 valueN, MemArena* arena)
 {
@@ -137,50 +113,46 @@ static void func InitRandomValueTable(RandomValueTable* table)
 	}
 }
 
-static TileIndex func MakeTileIndex(Int32 row, Int32 col)
+static IntVec2 func MakeTileIndex(Int32 row, Int32 col)
 {
-	TileIndex index = {};
-	index.row = row;
-	index.col = col;
+	IntVec2 index = MakeIntPoint(row, col);
 	return index;
 }
 
-static GridIndex func MakeGridIndex(Int32 row, Int32 col)
+static IntVec2 func MakeGridIndex(Int32 row, Int32 col)
 {
-	GridIndex index = {};
-	index.row = row;
-	index.col = col;
+	IntVec2 index = MakeIntPoint(row, col);
 	return index;
 }
 
-static Bool32 func IsValidTileIndex(Map* map, TileIndex index)
+static Bool32 func IsValidTileIndex(Map* map, IntVec2 index)
 {
 	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN - 1) &&
 					 IsIntBetween(index.col, 0, map->tileColN - 1));
 	return result;
 }
 
-static Bool32 func IsValidGridIndex(Map* map, GridIndex index)
+static Bool32 func IsValidGridIndex(Map* map, IntVec2 index)
 {
 	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN) &&
 					 IsIntBetween(index.col, 0, map->tileColN));
 	return result;
 }
 
-static Bool32 func TileHasTree(Map* map, TileIndex index)
+static Bool32 func TileHasTree(Map* map, IntVec2 index)
 {
 	Assert(IsValidTileIndex(map, index));
 	Bool32 hasTree = map->isTree[index.row * map->tileColN + index.col];
 	return hasTree;
 }
 
-static Bool32 func IsPassableTile(Map* map, TileIndex index)
+static Bool32 func IsPassableTile(Map* map, IntVec2 index)
 {
 	Bool32 isPassable = !TileHasTree(map, index);
 	return isPassable;
 }
 
-static Vec2 func GetTileCenter(Map* map, TileIndex index)
+static Vec2 func GetTileCenter(Map* map, IntVec2 index)
 {
 	Assert(IsValidTileIndex(map, index));
 	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
@@ -189,7 +161,7 @@ static Vec2 func GetTileCenter(Map* map, TileIndex index)
 	return position;
 }
 
-static Vec2 func GetGridPosition(Map* map, GridIndex index)
+static Vec2 func GetGridPosition(Map* map, IntVec2 index)
 {
 	Real32 x = (Real32)index.col * map->tileSide;
 	Real32 y = (Real32)index.row * map->tileSide;
@@ -197,11 +169,11 @@ static Vec2 func GetGridPosition(Map* map, GridIndex index)
 	return position;
 }
 
-static TileIndex func GetContainingTileIndex(Map* map, Vec2 point)
+static IntVec2 func GetContainingTileIndex(Map* map, Vec2 point)
 {
 	Int32 row = Floor(point.y / map->tileSide);
 	Int32 col = Floor(point.x / map->tileSide);
-	TileIndex index = MakeTileIndex(row, col);
+	IntVec2 index = MakeTileIndex(row, col);
 	return index;
 }
 
@@ -477,37 +449,37 @@ static Vec4 func GetTileColor(Map* map, Int32 row, Int32 col)
 	return color;
 }
 
-static GridIndex func GetTopLeftGridIndex(TileIndex tileIndex)
+static IntVec2 func GetTopLeftGridIndex(IntVec2 tileIndex)
 {
-	GridIndex gridIndex = MakeGridIndex(tileIndex.row, tileIndex.col);
+	IntVec2 gridIndex = MakeGridIndex(tileIndex.row, tileIndex.col);
 	return gridIndex;
 }
 
-static TileIndex func GetTopLeftTileIndex(GridIndex gridIndex)
+static IntVec2 func GetTopLeftTileIndex(IntVec2 gridIndex)
 {
-	TileIndex tileIndex = MakeTileIndex(gridIndex.row - 1, gridIndex.col - 1);
+	IntVec2 tileIndex = MakeTileIndex(gridIndex.row - 1, gridIndex.col - 1);
 	return tileIndex;
 }
 
-static TileIndex func GetTopRightTileIndex(GridIndex gridIndex)
+static IntVec2 func GetTopRightTileIndex(IntVec2 gridIndex)
 {
-	TileIndex tileIndex = MakeTileIndex(gridIndex.row - 1, gridIndex.col);
+	IntVec2 tileIndex = MakeTileIndex(gridIndex.row - 1, gridIndex.col);
 	return tileIndex;
 }
 
-static TileIndex func GetBottomLeftTileIndex(GridIndex gridIndex)
+static IntVec2 func GetBottomLeftTileIndex(IntVec2 gridIndex)
 {
-	TileIndex tileIndex = MakeTileIndex(gridIndex.row, gridIndex.col - 1);
+	IntVec2 tileIndex = MakeTileIndex(gridIndex.row, gridIndex.col - 1);
 	return tileIndex;
 }
 
-static TileIndex func GetBottomRightTileIndex(GridIndex gridIndex)
+static IntVec2 func GetBottomRightTileIndex(IntVec2 gridIndex)
 {
-	TileIndex tileIndex = MakeTileIndex(gridIndex.row, gridIndex.col);
+	IntVec2 tileIndex = MakeTileIndex(gridIndex.row, gridIndex.col);
 	return tileIndex;
 }
 
-static TileIndex func GetTreeTopLeftTileIndex(Map* map, TileIndex tile)
+static IntVec2 func GetTreeTopLeftTileIndex(Map* map, IntVec2 tile)
 {
 	Assert(IsValidTileIndex(map, tile));
 	Assert(TileHasTree(map, tile));
@@ -515,7 +487,7 @@ static TileIndex func GetTreeTopLeftTileIndex(Map* map, TileIndex tile)
 	Int32 topRow = tile.row;
 	while(topRow > 0)
 	{
-		TileIndex tileTop = MakeTileIndex(topRow - 1, tile.col);
+		IntVec2 tileTop = MakeTileIndex(topRow - 1, tile.col);
 		Assert(IsValidTileIndex(map, tileTop));
 		if(!TileHasTree(map, tileTop))
 		{
@@ -529,14 +501,14 @@ static TileIndex func GetTreeTopLeftTileIndex(Map* map, TileIndex tile)
 	{
 		if(topRow > 0)
 		{
-			TileIndex tileLeftTop = MakeTileIndex(topRow - 1, topLeftCol - 1);
+			IntVec2 tileLeftTop = MakeTileIndex(topRow - 1, topLeftCol - 1);
 			if(TileHasTree(map, tileLeftTop))
 			{
 				break;
 			}
 		}
 
-		TileIndex tileLeft = MakeTileIndex(topRow, topLeftCol - 1);
+		IntVec2 tileLeft = MakeTileIndex(topRow, topLeftCol - 1);
 		Assert(IsValidTileIndex(map, tileLeft));
 		if(!TileHasTree(map, tileLeft))
 		{
@@ -546,7 +518,7 @@ static TileIndex func GetTreeTopLeftTileIndex(Map* map, TileIndex tile)
 	}
 
 
-	TileIndex topLeftTile = MakeTileIndex(topRow, topLeftCol);
+	IntVec2 topLeftTile = MakeTileIndex(topRow, topLeftCol);
 	return topLeftTile;
 }
 
@@ -558,14 +530,14 @@ enum GridDirection
 	GridDown
 };
 
-static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radius)
+static Poly16 func GetExtendedTreeOutline(Map* map, IntVec2 tile, Real32 radius)
 {
 	Poly16 poly = {};
 	poly.pointN = 0;
 
-	TileIndex topLeftTile = GetTreeTopLeftTileIndex(map, tile);
-	GridIndex startGridIndex = GetTopLeftGridIndex(topLeftTile);
-	GridIndex gridIndex = startGridIndex;
+	IntVec2 topLeftTile = GetTreeTopLeftTileIndex(map, tile);
+	IntVec2 startGridIndex = GetTopLeftGridIndex(topLeftTile);
+	IntVec2 gridIndex = startGridIndex;
 
 	GridDirection direction = GridRight;
 
@@ -577,10 +549,10 @@ static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radiu
 		{
 			while(1)
 			{
-				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col + 1);
+				IntVec2 nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col + 1);
 
-				TileIndex topTile = GetTopRightTileIndex(gridIndex);
-				TileIndex bottomTile = GetBottomRightTileIndex(gridIndex);
+				IntVec2 topTile = GetTopRightTileIndex(gridIndex);
+				IntVec2 bottomTile = GetBottomRightTileIndex(gridIndex);
 				Bool32 topTileOk = (!IsValidTileIndex(map, topTile) || !TileHasTree(map, topTile));
 				Bool32 bottomTileOk = (IsValidTileIndex(map, topTile) && TileHasTree(map, bottomTile));
 				if(topTileOk && bottomTileOk)
@@ -607,10 +579,10 @@ static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radiu
 		{
 			while(1)
 			{
-				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col - 1);
+				IntVec2 nextGridIndex = MakeGridIndex(gridIndex.row, gridIndex.col - 1);
 
-				TileIndex topTile = GetTopLeftTileIndex(gridIndex);
-				TileIndex bottomTile = GetBottomLeftTileIndex(gridIndex);
+				IntVec2 topTile = GetTopLeftTileIndex(gridIndex);
+				IntVec2 bottomTile = GetBottomLeftTileIndex(gridIndex);
 				Bool32 topTileOk = (IsValidTileIndex(map, topTile) && TileHasTree(map, topTile));
 				Bool32 bottomTileOk = (!IsValidTileIndex(map, bottomTile) || !TileHasTree(map, bottomTile));
 				if(topTileOk && bottomTileOk)
@@ -637,10 +609,10 @@ static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radiu
 		{
 			while(1)
 			{
-				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row - 1, gridIndex.col);
+				IntVec2 nextGridIndex = MakeGridIndex(gridIndex.row - 1, gridIndex.col);
 
-				TileIndex leftTile = GetTopLeftTileIndex(gridIndex);
-				TileIndex rightTile = GetTopRightTileIndex(gridIndex);
+				IntVec2 leftTile = GetTopLeftTileIndex(gridIndex);
+				IntVec2 rightTile = GetTopRightTileIndex(gridIndex);
 				Bool32 leftTileOk = (!IsValidTileIndex(map, leftTile) || !TileHasTree(map, leftTile));
 				Bool32 rightTileOk = (IsValidTileIndex(map, rightTile) && TileHasTree(map, rightTile));
 				if(leftTileOk && rightTileOk)
@@ -667,10 +639,10 @@ static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radiu
 		{
 			while(1)
 			{
-				GridIndex nextGridIndex = MakeGridIndex(gridIndex.row + 1, gridIndex.col);
+				IntVec2 nextGridIndex = MakeGridIndex(gridIndex.row + 1, gridIndex.col);
 
-				TileIndex leftTile = GetBottomLeftTileIndex(gridIndex);
-				TileIndex rightTile = GetBottomRightTileIndex(gridIndex);
+				IntVec2 leftTile = GetBottomLeftTileIndex(gridIndex);
+				IntVec2 rightTile = GetBottomRightTileIndex(gridIndex);
 				Bool32 leftTileOk = (IsValidTileIndex(map, leftTile) && TileHasTree(map, leftTile));
 				Bool32 rightTileOk = (!IsValidTileIndex(map, rightTile) || !TileHasTree(map, rightTile));
 				if(leftTileOk && rightTileOk)
@@ -709,27 +681,27 @@ static Poly16 func GetExtendedTreeOutline(Map* map, TileIndex tile, Real32 radiu
 	return poly;
 }
 
-static Poly16 func GetTreeOutline(Map* map, TileIndex tile)
+static Poly16 func GetTreeOutline(Map* map, IntVec2 tile)
 {
 	Poly16 poly = GetExtendedTreeOutline(map, tile, 0.0f);
 	return poly; 
 }
 
-static void func DrawTreeOutline(Canvas* canvas, Map* map, TileIndex tile)
+static void func DrawTreeOutline(Canvas* canvas, Map* map, IntVec2 tile)
 {
 	Poly16 poly = GetTreeOutline(map, tile);
 	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
 	DrawPolyOutline(canvas, poly.points, poly.pointN, color);
 }
 
-static void func DrawExtendedTreeOutline(Canvas* canvas, Map* map, TileIndex tile, Real32 radius)
+static void func DrawExtendedTreeOutline(Canvas* canvas, Map* map, IntVec2 tile, Real32 radius)
 {
 	Poly16 poly = GetExtendedTreeOutline(map, tile, radius);
 	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
 	DrawPolyOutline(canvas, poly.points, poly.pointN, color);
 }
 
-static Rect func GetTileRect(Canvas* canvas, Map* map, TileIndex tileIndex)
+static Rect func GetTileRect(Canvas* canvas, Map* map, IntVec2 tileIndex)
 {
 	Assert(IsValidTileIndex(map, tileIndex));
 	Vec2 tileCenter = GetTileCenter(map, tileIndex);
@@ -737,16 +709,16 @@ static Rect func GetTileRect(Canvas* canvas, Map* map, TileIndex tileIndex)
 	return tileRect;
 }
 
-static void func HighlightTile(Canvas* canvas, Map* map, TileIndex tileIndex, Vec4 color)
+static void func HighlightTile(Canvas* canvas, Map* map, IntVec2 tileIndex, Vec4 color)
 {
 	Assert(IsValidTileIndex(map, tileIndex));
 	Rect rect = GetTileRect(canvas, map, tileIndex);
 	DrawRect(canvas, rect, color);
 }
 
-static TileIndex func GetNextTileInDirection(Map* map, TileIndex tile, GridDirection direction)
+static IntVec2 func GetNextTileInDirection(Map* map, IntVec2 tile, GridDirection direction)
 {
-	TileIndex nextTile = tile;
+	IntVec2 nextTile = tile;
 	switch(direction)
 	{
 		case GridLeft:
@@ -777,7 +749,7 @@ static TileIndex func GetNextTileInDirection(Map* map, TileIndex tile, GridDirec
 	return nextTile;
 }
 
-static Bool32 TilesAreAdjacent(TileIndex tile1, TileIndex tile2)
+static Bool32 TilesAreAdjacent(IntVec2 tile1, IntVec2 tile2)
 {
 	Int32 rowAbs = IntAbs(tile1.row - tile2.row);
 	Int32 colAbs = IntAbs(tile1.col - tile2.col);
@@ -851,112 +823,287 @@ static GridDirection func GetRightDirection(GridDirection direction)
 	return rightDirection;
 }
 
-static void func DrawPathAroundTree(Canvas* canvas, Map* map, TileIndex startTile, TileIndex endTile, Vec4 color)
+struct NearTreePosition
+{
+	IntVec2 tile;
+	IntVec2 treeTile;
+	GridDirection direction;
+};
+
+static NearTreePosition func GetLeftNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile)
 {
 	Assert(IsValidTileIndex(map, startTile));
 	Assert(IsValidTileIndex(map, endTile));
 	Assert(startTile != endTile);
 
-	TileIndex startTreeTile = startTile;
-	startTreeTile.row += IntSign(endTile.row - startTile.row);
-	startTreeTile.col += IntSign(endTile.col - startTile.col);
-	Assert(TileHasTree(map, startTreeTile));
+	NearTreePosition position = {};
+	position.tile = startTile;
+	Assert(!TileHasTree(map, position.tile));
 
-	Bool32 canGoRight = true;
-	Int32 rightDistance = 0;
+	position.treeTile = startTile;
+	position.treeTile.row += IntSign(endTile.row - startTile.row);
+	position.treeTile.col += IntSign(endTile.col - startTile.col);
+	Assert(TileHasTree(map, position.treeTile));
+
+	position.direction = GridRight;
+	if(position.tile.row < position.treeTile.row && position.tile.col <= position.treeTile.col)
 	{
-		TileIndex treeTile = startTreeTile;
-		GridDirection direction = GridLeft;
-		if(startTile.col < treeTile.col && startTile.row <= treeTile.row)
-		{
-			direction = GridDown;
-		}
-		else if(startTile.row > treeTile.row && startTile.col <= treeTile.col)
-		{
-			direction = GridRight;
-		}
-		else if(startTile.col > treeTile.col && startTile.row >= treeTile.row)
-		{
-			direction = GridUp;
-		}
-		else if(startTile.row < treeTile.row && startTile.col >= treeTile.col)
-		{
-			direction = GridLeft;
-		}
-		else
-		{
-			DebugBreak();
-		}
+		position.direction = GridRight;
+	}
+	else if(position.tile.col > position.treeTile.col && position.tile.row <= position.treeTile.row)
+	{
+		position.direction = GridDown;
+	}
+	else if(position.tile.row > position.treeTile.row && position.tile.col >= position.treeTile.col)
+	{
+		position.direction = GridLeft;
+	}
+	else if(position.tile.col < position.treeTile.col && position.tile.row >= position.treeTile.row)
+	{
+		position.direction = GridUp;
+	}
+	else
+	{
+		DebugBreak();
+	}
 
-		TileIndex tile = startTile;
-		Int32 count = 0;
-		while(tile != endTile)
-		{
-			TileIndex previousTile = tile;
-			Assert(!TileHasTree(map, tile));
-			Assert(TileHasTree(map, treeTile));
+	return position;
 
-			if(!IsValidTileIndex(map, tile))
+}
+
+static NearTreePosition func GetRightNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile)
+{
+	Assert(IsValidTileIndex(map, startTile));
+	Assert(IsValidTileIndex(map, endTile));
+	Assert(startTile != endTile);
+
+	NearTreePosition position = {};
+
+	position.tile = startTile;
+	Assert(!TileHasTree(map, position.tile));
+
+	position.treeTile = startTile;
+	position.treeTile.row += IntSign(endTile.row - startTile.row);
+	position.treeTile.col += IntSign(endTile.col - startTile.col);
+	Assert(TileHasTree(map, position.treeTile));
+
+	position.direction = GridLeft;
+	if(startTile.col < position.treeTile.col && startTile.row <= position.treeTile.row)
+	{
+		position.direction = GridDown;
+	}
+	else if(startTile.row > position.treeTile.row && startTile.col <= position.treeTile.col)
+	{
+		position.direction = GridRight;
+	}
+	else if(startTile.col > position.treeTile.col && startTile.row >= position.treeTile.row)
+	{
+		position.direction = GridUp;
+	}
+	else if(startTile.row < position.treeTile.row && startTile.col >= position.treeTile.col)
+	{
+		position.direction = GridLeft;
+	}
+	else
+	{
+		DebugBreak();
+	}
+
+	return position;
+}
+
+static NearTreePosition func GetNextLeftNearTreePosition(Map* map, NearTreePosition position)
+{
+	Assert(!TileHasTree(map, position.tile));
+	Assert(TileHasTree(map, position.treeTile));
+
+	IntVec2 nextTile = GetNextTileInDirection(map, position.tile, position.direction);
+	IntVec2 nextTreeTile = GetNextTileInDirection(map, position.treeTile, position.direction);
+
+	NearTreePosition nextPosition = position;
+	if(IsValidTileIndex(map, nextTile) && IsValidTileIndex(map, nextTreeTile))
+	{
+		if(TilesAreAdjacent(position.tile, position.treeTile))
+		{
+			if(TileHasTree(map, nextTile))
 			{
-				canGoRight = false;
-				break;
+				nextPosition.treeTile = nextTile;
+				nextPosition.direction = GetLeftDirection(position.direction);
 			}
-
-			TileIndex nextTile = GetNextTileInDirection(map, tile, direction);
-			TileIndex nextTreeTile = GetNextTileInDirection(map, treeTile, direction);
-			if(!IsValidTileIndex(map, nextTile) || !IsValidTileIndex(map, nextTreeTile))
+			else if(TileHasTree(map, nextTreeTile))
 			{
-				canGoRight = false;
-				break;
-			}
-
-			if(TilesAreAdjacent(tile, treeTile))
-			{
-				if(TileHasTree(map, nextTile))
-				{
-					treeTile = nextTile;
-					direction = GetRightDirection(direction);
-				}
-				else if(TileHasTree(map, nextTreeTile))
-				{
-					treeTile = nextTreeTile;
-					tile = nextTile;
-				}
-				else
-				{
-					tile = nextTile;
-					direction = GetLeftDirection(direction);
-				}
+				nextPosition.tile = nextTile;
+				nextPosition.treeTile = nextTreeTile;
 			}
 			else
 			{
-				if(TileHasTree(map, nextTile))
-				{
-					treeTile = nextTile;
-					direction = GetRightDirection(direction);
-				}
-				else
-				{
-					tile = nextTile;
-				}
+				nextPosition.tile = nextTile;
+				nextPosition.direction = GetRightDirection(position.direction);
 			}
+		}
+		else
+		{
+			if(TileHasTree(map, nextTile))
+			{
+				nextPosition.treeTile = nextTile;
+				nextPosition.direction = GetLeftDirection(position.direction);
+			}
+			else
+			{
+				nextPosition.tile = nextTile;
+			}
+		}
 
-			if(tile != previousTile)
+		Assert(!TileHasTree(map, nextPosition.tile));
+		Assert(TileHasTree(map, nextPosition.treeTile));
+	}
+	else
+	{
+		nextPosition.tile = nextTile;
+		nextPosition.treeTile = nextTreeTile;
+	}
+
+	return nextPosition;
+}
+
+static NearTreePosition func GetNextRightNearTreePosition(Map* map, NearTreePosition position)
+{
+	Assert(!TileHasTree(map, position.tile));
+	Assert(TileHasTree(map, position.treeTile));
+
+	IntVec2 nextTile = GetNextTileInDirection(map, position.tile, position.direction);
+	IntVec2 nextTreeTile = GetNextTileInDirection(map, position.treeTile, position.direction);
+
+	NearTreePosition nextPosition = position;
+	if(IsValidTileIndex(map, nextTile) && IsValidTileIndex(map, nextTreeTile))
+	{
+		if(TilesAreAdjacent(position.tile, position.treeTile))
+		{
+			if(TileHasTree(map, nextTile))
 			{
-				Vec2 previousPosition = GetTileCenter(map, previousTile);
-				Vec2 position = GetTileCenter(map, tile);
-				Bresenham(canvas, previousPosition, position, color);
+				nextPosition.treeTile = nextTile;
+				nextPosition.direction = GetRightDirection(position.direction);
 			}
-			
-			count++;
-			if(count >= 100)
+			else if(TileHasTree(map, nextTreeTile))
 			{
-				DebugBreak();
+				nextPosition.tile = nextTile;
+				nextPosition.treeTile = nextTreeTile;
 			}
+			else
+			{
+				nextPosition.tile = nextTile;
+				nextPosition.direction = GetLeftDirection(position.direction);
+			}
+		}
+		else
+		{
+			if(TileHasTree(map, nextTile))
+			{
+				nextPosition.treeTile = nextTile;
+				nextPosition.direction = GetRightDirection(position.direction);
+			}
+			else
+			{
+				nextPosition.tile = nextTile;
+			}
+		}
+
+		Assert(!TileHasTree(map, nextPosition.tile));
+		Assert(TileHasTree(map, nextPosition.treeTile));
+	}
+	else
+	{
+		nextPosition.tile = nextTile;
+		nextPosition.treeTile = nextTreeTile;
+	}
+
+	return nextPosition;
+}
+
+static void func DrawPathAroundTree(Canvas* canvas, Map* map, IntVec2 startTile, IntVec2 endTile, Vec4 color)
+{
+	NearTreePosition rightPosition = GetRightNearTreePosition(map, startTile, endTile);
+	Bool32 canGoRight = true;
+	Int32 rightDistance = 0;
+	while(rightPosition.tile != endTile)
+	{
+		NearTreePosition nextPosition = GetNextRightNearTreePosition(map, rightPosition);
+		if(!IsValidTileIndex(map, nextPosition.tile) || !IsValidTileIndex(map, nextPosition.treeTile))
+		{
+			canGoRight = false;
+			break;
+		}
+		else
+		{
+			rightPosition = nextPosition;
+		}
+
+		rightDistance++;
+		if(rightDistance >= 100)
+		{
+			DebugBreak();
 		}
 	}
 
-	Assert(canGoRight);
+	NearTreePosition leftPosition = GetLeftNearTreePosition(map, startTile, endTile);
+	Bool32 canGoLeft = true;
+	Int32 leftDistance = 0;
+	while(leftPosition.tile != endTile)
+	{
+		NearTreePosition nextPosition = GetNextLeftNearTreePosition(map, leftPosition);
+		if(!IsValidTileIndex(map, nextPosition.tile) || !IsValidTileIndex(map, nextPosition.treeTile))
+		{
+			canGoLeft = false;
+			break;
+		}
+		else
+		{
+			leftPosition = nextPosition;
+		}
+
+		leftDistance++;
+		if(leftDistance >= 100)
+		{
+			DebugBreak();
+		}
+	}
+
+	Assert(canGoRight || canGoLeft);
+
+	Bool32 goLeft = (canGoLeft && !canGoRight) || (canGoLeft && canGoRight && leftDistance < rightDistance);
+	NearTreePosition position = {};
+	if(goLeft)
+	{
+		position = GetLeftNearTreePosition(map, startTile, endTile);
+	}
+	else
+	{
+		position = GetRightNearTreePosition(map, startTile, endTile);
+	}
+
+	while(position.tile != endTile)
+	{
+		IntVec2 previousTile = position.tile;
+		if(goLeft)
+		{
+			position = GetNextLeftNearTreePosition(map, position);
+		}
+		else
+		{
+			position = GetNextRightNearTreePosition(map, position);
+		}
+
+		Assert(IsValidTileIndex(map, position.tile));
+		Assert(IsValidTileIndex(map, position.treeTile));
+
+		if(previousTile != position.tile)
+		{
+			Vec2 point1 = GetTileCenter(map, previousTile);
+			Vec2 point2 = GetTileCenter(map, position.tile);
+			Vec4 color = MakeColor(1.0f, 1.0f, 0.0f);
+			Bresenham(canvas, point1, point2, color);
+		}
+	}
 }
 
 static void func DrawMap(Canvas* canvas, Map* map)
@@ -995,3 +1142,5 @@ static void func DrawMap(Canvas* canvas, Map* map)
 		}
 	}
 }
+
+// TODO: IsValidNearTreePosition function

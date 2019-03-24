@@ -18,8 +18,8 @@ struct Vec2
 
 struct IntVec2
 {
-	Int32 x;
-	Int32 y;
+	Int32 row;
+	Int32 col;
 };
 
 struct Vec4 
@@ -179,6 +179,18 @@ static Bool32 func operator!=(Vec2 point1, Vec2 point2)
 {
 	Bool32 result = ((point1.x != point2.x) || (point1.y != point2.y));
 	return result;
+}
+
+static Bool32 func operator==(IntVec2 point1, IntVec2 point2)
+{
+	Bool32 equal = ((point1.row == point2.row) && (point1.col == point2.col));
+	return equal;
+}
+
+static Bool32 func operator!=(IntVec2 point1, IntVec2 point2)
+{
+	Bool32 different = ((point1.row != point2.row) || (point1.col != point2.col));
+	return different;
 }
 
 static Real32 func Min2(Real32 x, Real32 y)

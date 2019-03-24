@@ -121,7 +121,7 @@ static IntVec2 func GetMousePixelPosition(HWND window)
 	GetCursorPos(&cursorPoint);
 	ScreenToClient(window, &cursorPoint);
 
-	IntVec2 mousePosition = MakeIntPoint(cursorPoint.x, cursorPoint.y);
+	IntVec2 mousePosition = MakeIntPoint(cursorPoint.y, cursorPoint.x);
 	return mousePosition;
 }
 

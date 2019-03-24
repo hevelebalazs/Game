@@ -105,11 +105,11 @@ static Vec2 func MakePoint(Real32 x, Real32 y)
 	return point;
 }
 
-static IntVec2 func MakeIntPoint(Int32 x, Int32 y)
+static IntVec2 func MakeIntPoint(Int32 row, Int32 col)
 {
 	IntVec2 point = {};
-	point.x = x;
-	point.y = y;
+	point.row = row;
+	point.col = col;
 	return point;
 }
 
