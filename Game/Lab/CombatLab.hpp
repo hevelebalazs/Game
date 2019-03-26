@@ -92,7 +92,7 @@ struct Effect
 	Real32 timeRemaining;
 };
 
-#define EntityN 5
+#define EntityN 256
 #define MaxCooldownN 64
 #define MaxEffectN 64
 #define MaxDamageDisplayN 64
@@ -148,7 +148,7 @@ static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	canvas->glyphData = GetGlobalGlyphData();
 
 	Camera* camera = canvas->camera;
-	camera->unitInPixels = 5.0f;
+	camera->unitInPixels = 10.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 
 	Real32 mapWidth  = GetMapWidth(map);
@@ -164,30 +164,10 @@ static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->classId = MonkClassId;
 	player->groupId = PlayerGroupId;
 
+	for(Int32 i = 1; i < EntityN; i++)
 	{
-		Entity* enemy = &labState->entities[1];
-		enemy->position = FindEntityStartPosition(map, EntityRadius, EntityRadius);
-		enemy->health = EntityMaxHealth;
-		enemy->classId = EnemyClassId;
-		enemy->groupId = EnemyGroupId;
-	}
-	{
-		Entity* enemy = &labState->entities[2];
-		enemy->position = FindEntityStartPosition(map, mapWidth - EntityRadius, EntityRadius);
-		enemy->health = EntityMaxHealth;
-		enemy->classId = EnemyClassId;
-		enemy->groupId = EnemyGroupId;
-	}
-	{
-		Entity* enemy = &labState->entities[3];
-		enemy->position = FindEntityStartPosition(map, mapWidth - EntityRadius, mapHeight - EntityRadius);
-		enemy->health = EntityMaxHealth;
-		enemy->classId = EnemyClassId;
-		enemy->groupId = EnemyGroupId;
-	}
-	{
-		Entity* enemy = &labState->entities[4];
-		enemy->position = FindEntityStartPosition(map, EntityRadius, mapHeight - EntityRadius);
+		Entity* enemy = &labState->entities[i];
+		enemy->position = GetRandomNonTreeTileCenter(map);
 		enemy->health = EntityMaxHealth;
 		enemy->classId = EnemyClassId;
 		enemy->groupId = EnemyGroupId;
@@ -1745,40 +1725,44 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 
 	Map* map = &labState->map;
 
-	/*
 	Bool32 inputMoveLeft  = IsKeyDown(userInput, 'A') || IsKeyDown(userInput, VK_LEFT);
 	Bool32 inputMoveRight = IsKeyDown(userInput, 'D') || IsKeyDown(userInput, VK_RIGHT);
 	Bool32 inputMoveUp    = IsKeyDown(userInput, 'W') || IsKeyDown(userInput, VK_UP);
 	Bool32 inputMoveDown  = IsKeyDown(userInput, 'S') || IsKeyDown(userInput, VK_DOWN);	
 
+	IntVec2 playerTile = GetContainingTile(map, player->position);
 	if(inputMoveLeft && inputMoveRight)
 	{
 		player->inputDirection.x = 0.0f;
+		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveLeft)
 	{
 		player->inputDirection.x = -1.0f;
+		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveRight)
 	{
 		player->inputDirection.x = +1.0f;
+		labState->moveToTile = playerTile;
 	}
 
 	if(inputMoveUp && inputMoveDown)
 	{
 		player->inputDirection.y = 0.0f;
+		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveUp)
 	{
 		player->inputDirection.y = -1.0f;
+		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveDown)
 	{
 		player->inputDirection.y = +1.0f;
+		labState->moveToTile = playerTile;
 	}
-	*/
 
-	IntVec2 playerTile = GetContainingTile(map, player->position);
 	if(playerTile != labState->moveToTile)
 	{
 		Vec4 color = MakeColor(1.0f, 1.0f, 0.0f);
@@ -1786,9 +1770,6 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 
 		IntVec2 nextTile = GetNextTileOnPath(map, playerTile, labState->moveToTile);
 		Assert(IsValidTile(map, nextTile) && !TileHasTree(map, nextTile));
-	
-		Vec4 nextTileColor = MakeColor(1.0f, 0.0f, 1.0f);
-		HighlightTile(canvas, map, nextTile, nextTileColor);
 
 		Vec2 nextPoint = GetTileCenter(map, nextTile);
 		player->inputDirection = PointDirection(player->position, nextPoint);
@@ -1847,6 +1828,10 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 		}
 
 		Entity* target = enemy->target;
+		if(IsDead(enemy))
+		{
+			enemy->velocity = MakeVector(0.0f, 0.0f);
+		}
 		if(target == 0)
 		{
 			if(CanMove(labState, enemy))
@@ -1854,79 +1839,22 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 				enemy->velocity = MakeVector(0.0f, 0.0f);
 			}
 		}
-		else
+		else if(CanMove(labState, enemy))
 		{
-			Bool32 foundTargetTile = false;
-			Real32 enemyTargetDistance = 0.0f;
-
-			Vec2 targetDirection = {};
-			Vec2 targetPosition = {};
-			IntVec2 playerTile = GetContainingTile(map, target->position);
-
-			for(Int32 row = playerTile.row - 1; row <= playerTile.row + 1; row++)
-			{
-				Vec2 direction = {};
-				direction.y = (Real32)(row - playerTile.row);
-
-				for(Int32 col = playerTile.col - 1; col <= playerTile.col + 1; col++)
-				{
-					direction.x = (Real32)(col - playerTile.col);
-
-					if(row == playerTile.row && col == playerTile.col)
-					{
-						continue;
-					}
-
-					Real32 attackDistance = 2.5f * EntityRadius;
-					IntVec2 tile = MakeTile(row, col);
-					if(IsValidTile(map, tile))
-					{
-						Vec2 position = target->position + attackDistance * direction;
-						Real32 enemyDistance = MaxDistance(enemy->position, position);
-						if(!foundTargetTile || enemyDistance < enemyTargetDistance)
-						{
-							targetDirection = direction;
-							targetPosition = position;
-							enemyTargetDistance = enemyDistance;
-							foundTargetTile = true;
-						}
-					}
-
-				}
-			}
-
-			Assert(foundTargetTile);
-			Real32 enemyMoveSpeed = 10.0f;
-
-			if(IsDead(enemy))
+			IntVec2 enemyTile = GetContainingTile(map, enemy->position);
+			if(enemyTile == playerTile)
 			{
 				enemy->velocity = MakeVector(0.0f, 0.0f);
 			}
-			if(CanMove(labState, enemy))
+			else
 			{
-				enemy->velocity = MakeVector(0.0f, 0.0f);
-				if(enemy->position.x < targetPosition.x)
-				{
-					enemy->velocity.x = Min2(+enemyMoveSpeed, (targetPosition.x - enemy->position.x) / seconds);
-				}
-				else
-				{
-					enemy->velocity.x = Max2(-enemyMoveSpeed, (targetPosition.x - enemy->position.x) / seconds);
-				}
-
-				if(enemy->position.y < targetPosition.y)
-				{
-					enemy->velocity.y = Min2(+enemyMoveSpeed, (targetPosition.y - enemy->position.y) / seconds);
-				}
-				else
-				{
-					enemy->velocity.y = Max2(-enemyMoveSpeed, (targetPosition.y - enemy->position.y) / seconds);
-				}
+				Real32 enemyMoveSpeed = 10.0f;
+				IntVec2 nextTile = GetNextTileOnPath(map, enemyTile, playerTile);
+				enemy->velocity = enemyMoveSpeed * PointDirection(enemy->position, GetTileCenter(map, nextTile));
 			}
 		}
-		enemy->position = enemy->position + seconds * enemy->velocity;
-		enemy->position.x = Clip(enemy->position.x, EntityRadius, mapWidth - EntityRadius);
-		enemy->position.y = Clip(enemy->position.y, EntityRadius, mapHeight - EntityRadius);
+
+		UpdateEntityMovement(enemy, map, seconds);
 	}
 
 	if(WasKeyPressed(userInput, VK_TAB))
@@ -2031,9 +1959,9 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	DrawDamageDisplays(canvas, labState);
 }
 
-// TODO: Random enemy spawn tile!
+// TODO: Simplify pathfinding!
+// TODO: Smooth automatic movement around trees!
 // TODO: Handle entities bigger than a tile!
-// TODO: Enemy-tree collision
 // TODO: Computer controlled enemies shouldn't stack upon each other
 // TODO: Momentum and acceleration
 // TODO: Remove limitation of 8 directions!

@@ -149,6 +149,38 @@ static Bool32 func TileHasTree(Map* map, IntVec2 index)
 	return hasTree;
 }
 
+static IntVec2 func GetRandomNonTreeTile(Map* map)
+{
+	IntVec2 tile = {};
+	while(1)
+	{
+		tile.row = IntRandom(0, map->tileRowN - 1);
+		tile.col = IntRandom(0, map->tileColN - 1);
+		Assert(IsValidTile(map, tile));
+		if(!TileHasTree(map, tile))
+		{
+			break;
+		}
+	}
+	return tile;
+}
+
+static Vec2 func GetTileCenter(Map* map, IntVec2 index)
+{
+	Assert(IsValidTile(map, index));
+	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
+	Real32 y = (Real32)index.row * map->tileSide + map->tileSide * 0.5f;
+	Vec2 position = MakePoint(x, y);
+	return position;
+}
+
+static Vec2 func GetRandomNonTreeTileCenter(Map* map)
+{
+	IntVec2 tile = GetRandomNonTreeTile(map);
+	Vec2 center = GetTileCenter(map, tile);
+	return center;
+}
+
 static Bool32 func IsPassableTile(Map* map, IntVec2 index)
 {
 	Bool32 isPassable = !TileHasTree(map, index);
@@ -186,15 +218,6 @@ static IntVec2 func FindNearbyNonTreeTile(Map* map, IntVec2 tile)
 
 	Assert(found);
 	return result;
-}
-
-static Vec2 func GetTileCenter(Map* map, IntVec2 index)
-{
-	Assert(IsValidTile(map, index));
-	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
-	Real32 y = (Real32)index.row * map->tileSide + map->tileSide * 0.5f;
-	Vec2 position = MakePoint(x, y);
-	return position;
 }
 
 static Vec2 func GetGridPosition(Map* map, IntVec2 index)
@@ -322,6 +345,8 @@ static void func ApplyTreeShape(Map* map, TreeShape* shape, Int32 leftCol, Int32
 			{
 				Int32 tileIndex = map->tileColN * row + col;
 				map->isTree[tileIndex] = true;
+				Assert(IsIntBetween(col, 1, map->tileColN - 1 - 1));
+				Assert(IsIntBetween(row, 1, map->tileRowN - 1 - 1));
 			}
 		}
 	}
@@ -393,7 +418,7 @@ static Map func GenerateForestMap(MemArena* arena)
 		lowestTreeRow[i] = 0;
 	}
 
-	Int32 treeSide = 5;
+	Int32 treeSide = MaxTreeSide;
 	Int32 minTreeDistance = 8;
 	Int32 maxTreeDistance = 12;
 	Int32 finishedColN = 0;
@@ -437,7 +462,11 @@ static Map func GenerateForestMap(MemArena* arena)
 		}
 
 		TreeShape shape = GenerateTreeShape();
-		ApplyTreeShape(&map, &shape, leftCol, topRow);
+		if(leftCol > 0 && rightCol < map.tileRowN - 1 &&
+		   topRow > 0 && bottomRow < map.tileColN - 1)
+		{
+			ApplyTreeShape(&map, &shape, leftCol, topRow);
+		}
 	}
 
 	ArenaPopTo(arena, arenaTop);
