@@ -21,7 +21,8 @@ enum AbilityId
 	BlessingOfTheSunAbilityId,
 	MercyOfTheSunAbilityId,
 
-	EnemyAbilityId,
+	SnakeStrikeAbilityId,
+
 	AbilityN
 };
 
@@ -34,7 +35,8 @@ enum EffectId
 	ShieldRaisedEffectId,
 	BurningEffectId,
 	BlessingOfTheSunEffectId,
-	BlindEffectId
+	BlindEffectId,
+	PoisonedEffectId
 };
 
 enum ClassId
@@ -42,7 +44,8 @@ enum ClassId
 	NoClassId,
 	MonkClassId,
 	PaladinClassId,
-	EnemyClassId
+	DruidClassId,
+	SnakeClassId
 };
 
 #define EntityRadius (1.0f)
@@ -169,7 +172,7 @@ static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 		Entity* enemy = &labState->entities[i];
 		enemy->position = GetRandomNonTreeTileCenter(map);
 		enemy->health = EntityMaxHealth;
-		enemy->classId = EnemyClassId;
+		enemy->classId = SnakeClassId;
 		enemy->groupId = EnemyGroupId;
 	}
 }
@@ -223,9 +226,9 @@ static Int32 func GetAbilityClass(Int32 abilityId)
 			classId = PaladinClassId;
 			break;
 		}
-		case EnemyAbilityId:
+		case SnakeStrikeAbilityId:
 		{
-			classId = EnemyClassId;
+			classId = SnakeClassId;
 			break;
 		}
 		default:
@@ -275,7 +278,7 @@ static Bool32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, In
 			case BigPunchAbilityId:
 			case KickAbilityId:
 			case SwordStabAbilityId:
-			case EnemyAbilityId:
+			case SnakeStrikeAbilityId:
 			{
 				canUse = ((target != 0) && (!IsDead(target)) &&
 					      (MaxDistance(entity->position, target->position) <= MaxMeleeAttackDistance));
@@ -450,7 +453,7 @@ static Real32 func GetAbilityCooldownDuration(Int32 abilityId)
 		case SpinningKickAbilityId:
 		case SwordStabAbilityId:
 		case SwordSwingAbilityId:
-		case EnemyAbilityId:
+		case SnakeStrikeAbilityId:
 		{
 			cooldown = 0.0f;
 			break;
@@ -597,6 +600,11 @@ static Real32 func GetEffectTotalDuration(Int32 effectId)
 			duration = 5.0f;
 			break;
 		}
+		case PoisonedEffectId:
+		{
+			duration = 60.0f;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -654,7 +662,7 @@ static Real32 func GetAbilityRechargeDuration(Int32 abilityId)
 			recharge = 1.0f;
 			break;
 		}
-		case EnemyAbilityId:
+		case SnakeStrikeAbilityId:
 		{
 			recharge = 3.0f;
 			break;
@@ -805,10 +813,14 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, Int32 abil
 			}
 			break;
 		}
-		case EnemyAbilityId:
+		case SnakeStrikeAbilityId:
 		{
 			Assert(target != 0);
 			DealDamage(labState, target, 10);
+			if(RandomBetween(0.0f, 1.0f) < 0.3f)
+			{
+				AddEffect(labState, target, PoisonedEffectId);
+			}
 			break;
 		}
 		default:
@@ -1031,7 +1043,11 @@ static Int8* func GetAbilityName(Int32 abilityId)
 			name = "Mercy of the Sun";
 			break;
 		}
-		case EnemyAbilityId:
+		case SnakeStrikeAbilityId:
+		{
+			name = "Snake strike";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -1168,7 +1184,12 @@ static String func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bu
 			AddLine(text, "use abilities while it lasts.");
 			break;
 		}
-		case EnemyAbilityId:
+		case SnakeStrikeAbilityId:
+		{
+			AddLine(text, "Strike your target enemy dealing 10 damage,");
+			AddLine(text, "having a 30% chance to poison them.");
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -1443,6 +1464,14 @@ static void func UpdateEffects(CombatLabState* labState, Real32 seconds)
 			case BurningEffectId:
 			{
 				if(Floor(time) != Floor(previousTime))
+				{
+					DealDamage(labState, effect->entity, 2);
+				}
+				break;
+			}
+			case PoisonedEffectId:
+			{
+				if(Floor(time * (1.0f / 3.0f)) != Floor(previousTime * (1.0f / 3.0f)))
 				{
 					DealDamage(labState, effect->entity, 2);
 				}
@@ -1928,7 +1957,7 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 		{
 			continue;
 		}
-		AttemptToUseAbility(labState, enemy, EnemyAbilityId);
+		AttemptToUseAbility(labState, enemy, SnakeStrikeAbilityId);
 	}
 
 	for(Int32 i = 0; i < EntityN; i++)
@@ -1959,6 +1988,12 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	DrawDamageDisplays(canvas, labState);
 }
 
+// TODO: Druid
+	// TODO: Basic abilities
+	// TODO: Pet controls
+	// TODO: Nature interaction
+// TODO: Remove double poisoning?
+// TODO: Remove effects on death?
 // TODO: Simplify pathfinding!
 // TODO: Smooth automatic movement around trees!
 // TODO: Handle entities bigger than a tile!
