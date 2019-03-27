@@ -1,5 +1,6 @@
 #pragma once
 
+typedef char Bool8;
 typedef int Bool32;
 
 typedef char Int8;

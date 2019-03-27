@@ -18,8 +18,8 @@ struct Vec2
 
 struct IntVec2
 {
-	Int32 x;
-	Int32 y;
+	Int32 row;
+	Int32 col;
 };
 
 struct Vec4 
@@ -62,9 +62,16 @@ static Int32 func IntAbs(Int32 i)
 	return result;
 }
 
+static Bool32 func IsIntBetween(Int32 test, Int32 min, Int32 max)
+{
+	Bool32 isBetween = (min <= test && test <= max);
+	return isBetween;
+}
+
 static Int32 func IntRandom(Int32 min, Int32 max)
 {
 	Int32 result = min + (rand() % (max - min + 1));
+	Assert(IsIntBetween(result, min, max));
 	return result;
 }
 
@@ -172,6 +179,18 @@ static Bool32 func operator!=(Vec2 point1, Vec2 point2)
 {
 	Bool32 result = ((point1.x != point2.x) || (point1.y != point2.y));
 	return result;
+}
+
+static Bool32 func operator==(IntVec2 point1, IntVec2 point2)
+{
+	Bool32 equal = ((point1.row == point2.row) && (point1.col == point2.col));
+	return equal;
+}
+
+static Bool32 func operator!=(IntVec2 point1, IntVec2 point2)
+{
+	Bool32 different = ((point1.row != point2.row) || (point1.col != point2.col));
+	return different;
 }
 
 static Real32 func Min2(Real32 x, Real32 y)
@@ -335,13 +354,7 @@ static Vec2 func PointLerp(Vec2 point1, Real32 ratio, Vec2 point2)
 	return result;
 }
 
-static Bool32 func IsIntBetween(Int32 test, Int32 min, Int32 max)
-{
-	Bool32 isBetween = (min <= test && test <= max);
-	return isBetween;
-}
-
-static Bool32 func IsPointInRect(Vec2 point, Real32 left, Real32 right, Real32 top, Real32 bottom)
+static Bool32 func IsPointInRectLRTB(Vec2 point, Real32 left, Real32 right, Real32 top, Real32 bottom)
 {
 	Bool32 result = true;
 	if(point.x < left || point.x > right)

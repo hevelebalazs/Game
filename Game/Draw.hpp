@@ -116,6 +116,10 @@ struct PixelPosition
 
 static void func FloodFill(Canvas* canvas, Vec2 start, Vec4 color, MemArena* tmpArena) 
 {
+	Bitmap* bitmap = &canvas->bitmap;
+	Vec2 startPixel = UnitToPixel(canvas->camera, start);
+	FloodfillBitmap(bitmap, (Int32)startPixel.y, (Int32)startPixel.x, color, tmpArena);
+	/*
 	UInt32 colorCode = GetColorCode(color);
 
 	Bitmap bitmap = canvas->bitmap;
@@ -225,6 +229,7 @@ static void func FloodFill(Canvas* canvas, Vec2 start, Vec4 color, MemArena* tmp
 	}
 
 	ArenaPopTo(tmpArena, positions);
+	*/
 }
 
 static void func SmoothZoom(Camera* camera, Real32 pixelPerUnit)
@@ -287,8 +292,8 @@ static Real32 func PixelToUnitY(Camera* camera, Real32 pixelY)
 static Vec2 func PixelToUnit(Camera* camera, IntVec2 pixel)
 {
 	Vec2 result = {};
-	result.x = PixelToUnitX(camera, (Real32)pixel.x);
-	result.y = PixelToUnitY(camera, (Real32)pixel.y);
+	result.x = PixelToUnitX(camera, (Real32)pixel.col);
+	result.y = PixelToUnitY(camera, (Real32)pixel.row);
 	return result;
 }
 
@@ -322,6 +327,22 @@ static Real32 func CameraBottomSide(Camera* camera)
 {
 	Real32 bottomSide = PixelToUnitY(camera, camera->screenPixelSize.y - 1);
 	return bottomSide;
+}
+
+static Vec2 func GetCameraTopLeftCorner(Camera* camera)
+{
+	Vec2 corner = {};
+	corner.x = CameraLeftSide(camera);
+	corner.y = CameraTopSide(camera);
+	return corner;
+}
+
+static Vec2 func GetCameraBottomRightCorner(Camera* camera)
+{
+	Vec2 corner = {};
+	corner.x = CameraRightSide(camera);
+	corner.y = CameraBottomSide(camera);
+	return corner;
 }
 
 static void func ClearScreen(Canvas* canvas, Vec4 color)

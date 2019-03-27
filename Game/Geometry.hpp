@@ -51,6 +51,12 @@ struct Rect
 	Real32 bottom;
 };
 
+static Bool32 func IsPointInRect(Vec2 point, Rect rect)
+{
+	Bool32 result = IsPointInRectLRTB(point, rect.left, rect.right, rect.top, rect.bottom);
+	return result;
+}
+
 Rect func MakeSquareRect(Vec2 center, Real32 size)
 {
 	Rect rect = {};
@@ -99,11 +105,11 @@ static Vec2 func MakePoint(Real32 x, Real32 y)
 	return point;
 }
 
-static IntVec2 func MakeIntPoint(Int32 x, Int32 y)
+static IntVec2 func MakeIntPoint(Int32 row, Int32 col)
 {
 	IntVec2 point = {};
-	point.x = x;
-	point.y = y;
+	point.row = row;
+	point.col = col;
 	return point;
 }
 
@@ -249,7 +255,7 @@ static Vec2 func NormalVector(Vec2 vector)
 	}
 	else
 	{
-		Vec2 result = (1.0f / length) * vector;
+		result = (1.0f / length) * vector;
 	}
 	return result;
 }
@@ -257,9 +263,9 @@ static Vec2 func NormalVector(Vec2 vector)
 static Vec2 func PointDirection(Vec2 startPoint, Vec2 endPoint)
 {
 	Vec2 vector = MakeVector(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
-	vector = NormalVector(vector);
+	Vec2 normal = NormalVector(vector);
 
-	return vector;
+	return normal;
 }
 
 static Bool32 func IsPointInQuad(Quad quad, Vec2 point)
