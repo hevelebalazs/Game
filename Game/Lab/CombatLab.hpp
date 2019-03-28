@@ -99,6 +99,8 @@ struct Effect
 #define MaxCooldownN 64
 #define MaxEffectN 64
 #define MaxDamageDisplayN 64
+#define MaxCombatLogLineN 32
+#define MaxCombatLogLineLength 32
 #define CombatLabArenaSize (2 * MegaByte)
 struct CombatLabState
 {
@@ -120,6 +122,10 @@ struct CombatLabState
 	DamageDisplay damageDisplays[MaxDamageDisplayN];
 	Int32 damageDisplayN;
 
+	Int8 combatLogLines[MaxCombatLogLineN][MaxCombatLogLineLength + 1];
+	Int32 combatLogLastLineIndex;
+	Int32 combatLogLineN;
+
 	Int32 hoverAbilityId;
 
 	IntVec2 moveToTile;
@@ -130,6 +136,38 @@ struct CombatLabState
 #define EnemyAttackRadius 10.0f
 
 #define MaxMeleeAttackDistance (4.0f * EntityRadius)
+
+static Int32 func GetNextCombatLogLineIndex(Int32 index)
+{
+	Int32 nextIndex = (index < MaxCombatLogLineN - 1) ? (index + 1) : 0;
+	return nextIndex;
+}
+
+static void func AddCombatLogLine(CombatLabState* labState, Int8* line)
+{
+	Int32 lastIndex = labState->combatLogLastLineIndex;
+	Int32 nextIndex = GetNextCombatLogLineIndex(lastIndex);
+
+	Bool32 hasZeroByte = false;
+	for(Int32 i = 0; i < MaxCombatLogLineLength; i++)
+	{
+		labState->combatLogLines[nextIndex][i] = line[i];
+		if(line[i] == 0)
+		{
+			hasZeroByte = true;
+			break;
+		}
+	}
+	Assert(hasZeroByte);
+
+	labState->combatLogLastLineIndex = nextIndex;
+	labState->combatLogLineN++;
+}
+
+static void func AddCombatLogStringLine(CombatLabState* labState, String line)
+{
+	AddCombatLogLine(labState, line.buffer);
+}
 
 static Vec2 func FindEntityStartPosition(Map* map, Real32 x, Real32 y)
 {
@@ -643,6 +681,29 @@ static void func AddEffect(CombatLabState* labState, Entity* entity, Int32 effec
 	effect->timeRemaining = duration;
 }
 
+static void func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+{
+	Real32 duration = GetEffectTotalDuration(effectId);
+	Assert(duration > 0.0f);
+
+	Bool32 foundEffect = false;
+	for(Int32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		if(effect->entity == entity && effect->effectId == effectId)
+		{
+			effect->timeRemaining = duration;
+			foundEffect = true;
+			break;
+		}
+	}
+
+	if(!foundEffect)
+	{
+		AddEffect(labState, entity, effectId);
+	}
+}
+
 static Real32 func GetAbilityRechargeDuration(Int32 abilityId)
 {
 	Real32 recharge = 0.0f;
@@ -680,6 +741,90 @@ static Real32 func GetAbilityRechargeDuration(Int32 abilityId)
 		}
 	}
 	return recharge;
+}
+
+static Int8* func GetAbilityName(Int32 abilityId)
+{
+	Int8* name = 0;
+	switch(abilityId)
+	{
+		case SmallPunchAbilityId:
+		{
+			name = "Small Punch";
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			name = "Big Punch";
+			break;
+		}
+		case KickAbilityId:
+		{
+			name = "Kick";
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			name = "Spinning Kick";
+			break;
+		}
+		case RollAbilityId:
+		{
+			name = "Roll";
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			name = "Avoidance";
+			break;
+		}
+		case SwordStabAbilityId:
+		{
+			name = "Sword Stab";
+			break;
+		}
+		case SwordSwingAbilityId:
+		{
+			name = "Sword Swing";
+			break;
+		}
+		case RaiseShieldAbilityId:
+		{
+			name = "Raise Shield";
+			break;
+		}
+		case BurnAbilityId:
+		{
+			name = "Burn";
+			break;
+		}
+		case LightOfTheSunAbilityId:
+		{
+			name = "Light of the Sun";
+			break;
+		}
+		case BlessingOfTheSunAbilityId:
+		{
+			name = "Blessing of the Sun";
+			break;
+		}
+		case MercyOfTheSunAbilityId:
+		{
+			name = "Mercy of the Sun";
+			break;
+		}
+		case SnakeStrikeAbilityId:
+		{
+			name = "Snake strike";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	Assert(name != 0);
+	return name;
 }
 
 static void func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
@@ -819,7 +964,7 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, Int32 abil
 			DealDamage(labState, target, 10);
 			if(RandomBetween(0.0f, 1.0f) < 0.3f)
 			{
-				AddEffect(labState, target, PoisonedEffectId);
+				ResetOrAddEffect(labState, target, PoisonedEffectId);
 			}
 			break;
 		}
@@ -828,6 +973,12 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, Int32 abil
 			DebugBreak();
 		}
 	}
+
+	Int8* abilityName = GetAbilityName(abilityId);
+
+	Int8 combatLogLine[MaxCombatLogLineLength + 1];
+	OneLineString(combatLogLine, MaxCombatLogLineLength + 1, "Ability " + abilityName + " used.");
+	AddCombatLogLine(labState, combatLogLine);
 
 	Real32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
 	if(rechargeDuration > 0.0f)
@@ -971,90 +1122,6 @@ static void func DrawEntityBars(Canvas* canvas, Entity* entity)
 	healthBarFilledRect.right = Lerp(healthBarFilledRect.left, healthRatio, healthBarFilledRect.right);
 	DrawRect(canvas, healthBarFilledRect, healthBarFilledColor);
 	DrawRectOutline(canvas, healthBarBackgroundRect, healthBarOutlineColor);
-}
-
-static Int8* func GetAbilityName(Int32 abilityId)
-{
-	Int8* name = 0;
-	switch(abilityId)
-	{
-		case SmallPunchAbilityId:
-		{
-			name = "Small Punch";
-			break;
-		}
-		case BigPunchAbilityId:
-		{
-			name = "Big Punch";
-			break;
-		}
-		case KickAbilityId:
-		{
-			name = "Kick";
-			break;
-		}
-		case SpinningKickAbilityId:
-		{
-			name = "Spinning Kick";
-			break;
-		}
-		case RollAbilityId:
-		{
-			name = "Roll";
-			break;
-		}
-		case AvoidanceAbilityId:
-		{
-			name = "Avoidance";
-			break;
-		}
-		case SwordStabAbilityId:
-		{
-			name = "Sword Stab";
-			break;
-		}
-		case SwordSwingAbilityId:
-		{
-			name = "Sword Swing";
-			break;
-		}
-		case RaiseShieldAbilityId:
-		{
-			name = "Raise Shield";
-			break;
-		}
-		case BurnAbilityId:
-		{
-			name = "Burn";
-			break;
-		}
-		case LightOfTheSunAbilityId:
-		{
-			name = "Light of the Sun";
-			break;
-		}
-		case BlessingOfTheSunAbilityId:
-		{
-			name = "Blessing of the Sun";
-			break;
-		}
-		case MercyOfTheSunAbilityId:
-		{
-			name = "Mercy of the Sun";
-			break;
-		}
-		case SnakeStrikeAbilityId:
-		{
-			name = "Snake strike";
-			break;
-		}
-		default:
-		{
-			DebugBreak();
-		}
-	}
-	Assert(name != 0);
-	return name;
 }
 
 static String func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
@@ -1438,6 +1505,63 @@ static void func UpdateCooldowns(CombatLabState* labState, Real32 seconds)
 	labState->cooldownN = remainingCooldownN;
 }
 
+static void func DrawCombatLog(Canvas* canvas, CombatLabState* labState)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+	Int32 width  = 300;
+	Int32 height = 200;
+
+	Int32 left   = UIBoxPadding;
+	Int32 right  = left + width;
+	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	Int32 top    = bottom - height;
+
+	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 outlineColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	Int32 textLeft   = left + UIBoxPadding;
+	Int32 textRight  = right - UIBoxPadding;
+	Int32 textTop    = top + UIBoxPadding;
+	Int32 textBottom = bottom + UIBoxPadding;
+
+	Int32 textHeight = textBottom - textTop;
+
+	Int32 lastIndex = labState->combatLogLastLineIndex;
+	Int32 firstIndex = GetNextCombatLogLineIndex(lastIndex);
+
+	Int32 logHeight = labState->combatLogLineN * TextHeightInPixels;
+	if(logHeight > textHeight)
+	{
+		firstIndex = lastIndex - (textHeight / TextHeightInPixels - 1);
+		if(firstIndex < 0)
+		{
+			firstIndex += MaxCombatLogLineN;
+		}
+		Assert(IsIntBetween(firstIndex, 0, MaxCombatLogLineN + 1));
+	}
+
+	Int32 index = firstIndex;
+	while(1)
+	{
+		Int8* text = labState->combatLogLines[index];
+		if(text[0] != 0)
+		{
+			DrawBitmapTextLineTopLeft(bitmap, text, canvas->glyphData, textLeft, textTop, textColor);
+			textTop += TextHeightInPixels;
+		}
+
+		if(index == lastIndex)
+		{
+			break;
+		}
+		index = GetNextCombatLogLineIndex(index);
+	}
+}
+
 static void func UpdateEffects(CombatLabState* labState, Real32 seconds)
 {
 	Int32 remainingEffectN = 0;
@@ -1717,6 +1841,21 @@ static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 	entity->position = newPosition;
 }
 
+static void func RemoveEffectsOfDeadEntities(CombatLabState* labState)
+{
+	Int32 remainingEffectN = 0;
+	for(Int32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		if(!IsDead(effect->entity))
+		{
+			labState->effects[remainingEffectN] = *effect;
+			remainingEffectN++;
+		}
+	}
+	labState->effectN = remainingEffectN;
+}
+
 static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -1960,6 +2099,8 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 		AttemptToUseAbility(labState, enemy, SnakeStrikeAbilityId);
 	}
 
+	RemoveEffectsOfDeadEntities(labState);
+
 	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* entity = &labState->entities[i];
@@ -1986,14 +2127,15 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 	DrawPlayerEffectBar(canvas, labState);
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
+	DrawCombatLog(canvas, labState);
 }
 
+// [TODO: Combat log]
 // TODO: Druid
 	// TODO: Basic abilities
 	// TODO: Pet controls
 	// TODO: Nature interaction
-// TODO: Remove double poisoning?
-// TODO: Remove effects on death?
+// TODO: Effect tooltips
 // TODO: Simplify pathfinding!
 // TODO: Smooth automatic movement around trees!
 // TODO: Handle entities bigger than a tile!
@@ -2006,4 +2148,3 @@ static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real3
 // TODO: Text display for effects
 // TODO: Sword swing should only damage enemies in front of the paladin!
 // TODO: Entity facing direction!
-// TODO: Combat log
