@@ -19,7 +19,8 @@ struct WorldLabState
 	Bitmap bitmap;
 };
 
-static void func WorldLabInit(WorldLabState* labState, Canvas* canvas)
+static void
+func WorldLabInit(WorldLabState* labState, Canvas* canvas)
 {
 	labState->arena = CreateMemArena(labState->arenaMemory, WorldLabArenaSize);
 	labState->map = GenerateForestMap(&labState->arena);
@@ -29,7 +30,8 @@ static void func WorldLabInit(WorldLabState* labState, Canvas* canvas)
 	camera->center = MakePoint(0.0f, 0.0f);
 }
 
-static void func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
+static void
+func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);

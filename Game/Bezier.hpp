@@ -10,7 +10,8 @@ struct Bezier4
 	Vec2 points[4];
 };
 
-static Bezier4 func TurnBezier4(Vec4 startPoint, Vec4 endPoint)
+static Bezier4
+func TurnBezier4(Vec4 startPoint, Vec4 endPoint)
 {
 	Bezier4 result = {};
 
@@ -24,13 +25,15 @@ static Bezier4 func TurnBezier4(Vec4 startPoint, Vec4 endPoint)
 	return result;
 }
 
-static Vec2 func Bezier4Interpolation(Vec2 point1, Real32 ratio1, Vec2 point2, Real32 ratio2)
+static Vec2
+func Bezier4Interpolation(Vec2 point1, Real32 ratio1, Vec2 point2, Real32 ratio2)
 {
 	Vec2 result = (ratio1 * point1) + (ratio2 * point2);
 	return result;
 }
 
-static Vec2 func Bezier4Point(Bezier4 bezier4, Real32 ratio)
+static Vec2
+func Bezier4Point(Bezier4 bezier4, Real32 ratio)
 {
 	Real32 ratio2 = (1.0f - ratio);
 
@@ -46,7 +49,8 @@ static Vec2 func Bezier4Point(Bezier4 bezier4, Real32 ratio)
 	return p1234;
 }
 
-static Vec4 func Bezier4DirectedPoint(Bezier4 bezier4, Real32 ratio)
+static Vec4
+func Bezier4DirectedPoint(Bezier4 bezier4, Real32 ratio)
 {
 	Real32 ratio2 = (1.0f - ratio);
 
@@ -69,7 +73,8 @@ static Vec4 func Bezier4DirectedPoint(Bezier4 bezier4, Real32 ratio)
 #define Bezier4SegmentN 10
 #define Bezier4PointN (Bezier4SegmentN + 1)
 
-static Real32 func MoveOnBezier4(Bezier4 bezier4, Real32 startRatio, Real32 moveDistance)
+static Real32
+func MoveOnBezier4(Bezier4 bezier4, Real32 startRatio, Real32 moveDistance)
 {
 	Assert(IsBetween(startRatio, 0.0f, 1.0f));
 	Assert(moveDistance >= 0.0f);
@@ -99,7 +104,8 @@ static Real32 func MoveOnBezier4(Bezier4 bezier4, Real32 startRatio, Real32 move
 	return ratio;
 }
 
-static Real32 func GetBezier4DistanceFromEnd(Bezier4 bezier4, Real32 ratio)
+static Real32
+func GetBezier4DistanceFromEnd(Bezier4 bezier4, Real32 ratio)
 {
 	Real32 result = 0;
 	Vec2 position = Bezier4Point(bezier4, ratio);
@@ -115,7 +121,8 @@ static Real32 func GetBezier4DistanceFromEnd(Bezier4 bezier4, Real32 ratio)
 	return result;
 }
 
-static void func DrawBezier4(Canvas* canvas, Bezier4 bezier4, Vec4 color, Real32 lineWidth, Int32 segmentCount)
+static void
+func DrawBezier4(Canvas* canvas, Bezier4 bezier4, Vec4 color, Real32 lineWidth, Int32 segmentCount)
 {
 	Vec2 point = bezier4.points[0];
 

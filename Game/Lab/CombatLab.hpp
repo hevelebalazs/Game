@@ -137,13 +137,15 @@ struct CombatLabState
 
 #define MaxMeleeAttackDistance (4.0f * EntityRadius)
 
-static Int32 func GetNextCombatLogLineIndex(Int32 index)
+static Int32
+func GetNextCombatLogLineIndex(Int32 index)
 {
 	Int32 nextIndex = (index < MaxCombatLogLineN - 1) ? (index + 1) : 0;
 	return nextIndex;
 }
 
-static void func AddCombatLogLine(CombatLabState* labState, Int8* line)
+static void
+func AddCombatLogLine(CombatLabState* labState, Int8* line)
 {
 	Int32 lastIndex = labState->combatLogLastLineIndex;
 	Int32 nextIndex = GetNextCombatLogLineIndex(lastIndex);
@@ -164,12 +166,14 @@ static void func AddCombatLogLine(CombatLabState* labState, Int8* line)
 	labState->combatLogLineN++;
 }
 
-static void func AddCombatLogStringLine(CombatLabState* labState, String line)
+static void
+func AddCombatLogStringLine(CombatLabState* labState, String line)
 {
 	AddCombatLogLine(labState, line.buffer);
 }
 
-static Vec2 func FindEntityStartPosition(Map* map, Real32 x, Real32 y)
+static Vec2
+func FindEntityStartPosition(Map* map, Real32 x, Real32 y)
 {
 	Vec2 initialPosition = MakePoint(x, y);
 	IntVec2 initialTile = GetContainingTile(map, initialPosition);
@@ -178,7 +182,8 @@ static Vec2 func FindEntityStartPosition(Map* map, Real32 x, Real32 y)
 	return startPosition;
 }
 
-static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
+static void
+func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
 	labState->arena = CreateMemArena(labState->arenaMemory, CombatLabArenaSize);
 	labState->map = GenerateForestMap(&labState->arena);
@@ -217,7 +222,8 @@ static void func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
 
-static Bool32 func IsOnCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static Bool32
+func IsOnCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Bool32 isOnCooldown = false;
 	for(Int32 i = 0; i < labState->cooldownN; i++)
@@ -232,13 +238,15 @@ static Bool32 func IsOnCooldown(CombatLabState* labState, Entity* entity, Int32 
 	return isOnCooldown;
 }
 
-static Bool32 func IsDead(Entity* entity)
+static Bool32
+func IsDead(Entity* entity)
 {
 	Bool32 isDead = (entity->health == 0);
 	return isDead;
 }
 
-static Int32 func GetAbilityClass(Int32 abilityId)
+static Int32
+func GetAbilityClass(Int32 abilityId)
 {
 	Int32 classId = NoClassId;
 	switch(abilityId)
@@ -277,7 +285,8 @@ static Int32 func GetAbilityClass(Int32 abilityId)
 	return classId;
 }
 
-static Bool32 func HasEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+static Bool32
+func HasEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
 	Bool32 hasEffect = false;
 	for(Int32 i = 0; i < labState->effectN; i++)
@@ -292,7 +301,8 @@ static Bool32 func HasEffect(CombatLabState* labState, Entity* entity, Int32 eff
 	return hasEffect;
 }
 
-static Bool32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static Bool32
+func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Bool32 canUse = false;
 	Entity* target = entity->target;
@@ -366,14 +376,16 @@ static Bool32 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, In
 	return canUse;
 }
 
-static Bool32 func CanUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static Bool32
+func CanUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Bool32 canUseAbility = (entity->recharge == 0.0f && !IsOnCooldown(labState, entity, abilityId) &&
 							AbilityIsEnabled(labState, entity, abilityId));
 	return canUseAbility;
 }
 
-static void func PutOnRecharge(Entity* entity, Real32 rechargeTime)
+static void
+func PutOnRecharge(Entity* entity, Real32 rechargeTime)
 {
 	Assert(rechargeTime > 0.0f);
 	Assert(entity->recharge == 0.0f);
@@ -381,7 +393,8 @@ static void func PutOnRecharge(Entity* entity, Real32 rechargeTime)
 	entity->recharge = rechargeTime;
 }
 
-static Bool32 func CanDamage(CombatLabState* labState, Entity* entity)
+static Bool32
+func CanDamage(CombatLabState* labState, Entity* entity)
 {
 	Bool32 canDamage = false;
 	if(IsDead(entity))
@@ -399,7 +412,8 @@ static Bool32 func CanDamage(CombatLabState* labState, Entity* entity)
 	return canDamage;
 }
 
-static void func AddDamageDisplay(CombatLabState* labState, Vec2 position, Int32 damage)
+static void
+func AddDamageDisplay(CombatLabState* labState, Vec2 position, Int32 damage)
 {
 	Assert(labState->damageDisplayN < MaxDamageDisplayN);
 	DamageDisplay* display = &labState->damageDisplays[labState->damageDisplayN];
@@ -409,13 +423,15 @@ static void func AddDamageDisplay(CombatLabState* labState, Vec2 position, Int32
 	display->timeRemaining = DamageDisplayDuration;
 }
 
-static void func DealFinalDamage(Entity* entity, Int32 damage)
+static void
+func DealFinalDamage(Entity* entity, Int32 damage)
 {
 	Assert(damage > 0);
 	entity->health = IntMax2(entity->health - damage, 0);
 }
 
-static void func DealDamage(CombatLabState* labState, Entity* entity, Int32 damage)
+static void
+func DealDamage(CombatLabState* labState, Entity* entity, Int32 damage)
 {
 	if(CanDamage(labState, entity))
 	{
@@ -430,14 +446,16 @@ static void func DealDamage(CombatLabState* labState, Entity* entity, Int32 dama
 	}
 }
 
-static void func Heal(CombatLabState* labState, Entity* entity, Int32 damage)
+static void
+func Heal(CombatLabState* labState, Entity* entity, Int32 damage)
 {
 	Assert(!IsDead(entity));
 	entity->health = IntMin2(entity->health + damage, EntityMaxHealth);
 	AddDamageDisplay(labState, entity->position, -damage);
 }
 
-static Real32 func GetAbilityCooldownDuration(Int32 abilityId)
+static Real32
+func GetAbilityCooldownDuration(Int32 abilityId)
 {
 	Real32 cooldown = 0.0f;
 	switch(abilityId)
@@ -504,14 +522,16 @@ static Real32 func GetAbilityCooldownDuration(Int32 abilityId)
 	return cooldown;
 }
 
-static Bool32 func HasCooldown(Int32 abilityId)
+static Bool32
+func HasCooldown(Int32 abilityId)
 {
 	Real32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
 	Bool32 hasCooldown = (cooldownDuration > 0.0f);
 	return hasCooldown;
 }
 
-static void func AddCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static void
+func AddCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Assert(HasCooldown(abilityId));
 	Real32 duration = GetAbilityCooldownDuration(abilityId);
@@ -526,7 +546,8 @@ static void func AddCooldown(CombatLabState* labState, Entity* entity, Int32 abi
 	cooldown->timeRemaining = duration;
 }
 
-static Cooldown* func GetCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static Cooldown*
+func GetCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Cooldown* result = 0;
 	for(Int32 i = 0; i < labState->cooldownN; i++)
@@ -541,7 +562,8 @@ static Cooldown* func GetCooldown(CombatLabState* labState, Entity* entity, Int3
 	return result;
 }
 
-static Vec2 func GetClosestMoveDirection(Vec2 distance)
+static Vec2
+func GetClosestMoveDirection(Vec2 distance)
 {
 	Vec2 left  = MakeVector(-1.0f, 0.0f);
 	Vec2 right = MakeVector(+1.0f, 0.0f);
@@ -598,7 +620,8 @@ static Vec2 func GetClosestMoveDirection(Vec2 distance)
 	return direction;
 }
 
-static Real32 func GetEffectTotalDuration(Int32 effectId)
+static Real32
+func GetEffectTotalDuration(Int32 effectId)
 {
 	Real32 duration = 0.0f;
 	switch(effectId)
@@ -652,7 +675,8 @@ static Real32 func GetEffectTotalDuration(Int32 effectId)
 	return duration;
 }
 
-static void func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+static void
+func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
 	Int32 remainingEffectN = 0;
 	for(Int32 i = 0; i < labState->effectN; i++)
@@ -667,7 +691,8 @@ static void func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 ef
 	labState->effectN = remainingEffectN;
 }
 
-static void func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+static void
+func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
 	Assert(labState->effectN < MaxEffectN);
 	Effect* effect = &labState->effects[labState->effectN];
@@ -681,7 +706,8 @@ static void func AddEffect(CombatLabState* labState, Entity* entity, Int32 effec
 	effect->timeRemaining = duration;
 }
 
-static void func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+static void
+func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
 	Real32 duration = GetEffectTotalDuration(effectId);
 	Assert(duration > 0.0f);
@@ -704,7 +730,8 @@ static void func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int3
 	}
 }
 
-static Real32 func GetAbilityRechargeDuration(Int32 abilityId)
+static Real32
+func GetAbilityRechargeDuration(Int32 abilityId)
 {
 	Real32 recharge = 0.0f;
 	switch(abilityId)
@@ -743,7 +770,8 @@ static Real32 func GetAbilityRechargeDuration(Int32 abilityId)
 	return recharge;
 }
 
-static Int8* func GetAbilityName(Int32 abilityId)
+static Int8*
+func GetAbilityName(Int32 abilityId)
 {
 	Int8* name = 0;
 	switch(abilityId)
@@ -827,7 +855,8 @@ static Int8* func GetAbilityName(Int32 abilityId)
 	return name;
 }
 
-static void func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static void
+func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Assert(CanUseAbility(labState, entity, abilityId));
 	Entity* target = entity->target;
@@ -992,7 +1021,8 @@ static void func UseAbility(CombatLabState* labState, Entity* entity, Int32 abil
 	}
 }
 
-static void func AttemptToUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static void
+func AttemptToUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	if(CanUseAbility(labState, entity, abilityId))
 	{
@@ -1000,7 +1030,8 @@ static void func AttemptToUseAbility(CombatLabState* labState, Entity* entity, I
 	}
 }
 
-static Int32 func GetClassAbilityOfIndex(Int32 classId, Int32 abilityIndex)
+static Int32
+func GetClassAbilityOfIndex(Int32 classId, Int32 abilityIndex)
 {
 	Int32 result = NoAbilityId;
 	Int32 classAbilityIndex = 0;
@@ -1019,7 +1050,8 @@ static Int32 func GetClassAbilityOfIndex(Int32 classId, Int32 abilityIndex)
 	return result;
 }
 
-static void func AttemptToUseAbilityOfIndex(CombatLabState* labState, Entity* entity, Int32 abilityIndex)
+static void
+func AttemptToUseAbilityOfIndex(CombatLabState* labState, Entity* entity, Int32 abilityIndex)
 {
 	Int32 abilityId = GetClassAbilityOfIndex(entity->classId, abilityIndex);
 	if(abilityId != NoAbilityId)
@@ -1028,7 +1060,8 @@ static void func AttemptToUseAbilityOfIndex(CombatLabState* labState, Entity* en
 	}
 }
 
-static void func DrawCircle(Canvas* canvas, Vec2 center, Real32 radius, Vec4 color)
+static void
+func DrawCircle(Canvas* canvas, Vec2 center, Real32 radius, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 
@@ -1075,7 +1108,8 @@ static void func DrawCircle(Canvas* canvas, Vec2 center, Real32 radius, Vec4 col
 	}
 }
 
-static void func DrawCircleOutline(Canvas* canvas, Vec2 center, Real32 radius, Vec4 color)
+static void
+func DrawCircleOutline(Canvas* canvas, Vec2 center, Real32 radius, Vec4 color)
 {
 	Int32 lineN = 20;
 	Real32 angleAdvance = (2.0f * PI) / Real32(lineN);
@@ -1092,21 +1126,24 @@ static void func DrawCircleOutline(Canvas* canvas, Vec2 center, Real32 radius, V
 	}
 }
 
-static void func DrawEntity(Canvas* canvas, Entity* entity, Vec4 color)
+static void
+func DrawEntity(Canvas* canvas, Entity* entity, Vec4 color)
 {
 	Vec4 entityOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
 	DrawCircle(canvas, entity->position, EntityRadius, color);
 	DrawCircleOutline(canvas, entity->position, EntityRadius, entityOutlineColor);
 }
 
-static void func DrawSelectedEntity(Canvas* canvas, Entity* entity, Vec4 color)
+static void
+func DrawSelectedEntity(Canvas* canvas, Entity* entity, Vec4 color)
 {
 	Vec4 selectionOutlineColor = MakeColor(1.0f, 1.0f, 1.0f);
 	DrawCircle(canvas, entity->position, EntityRadius, color);
 	DrawCircleOutline(canvas, entity->position, EntityRadius, selectionOutlineColor);	
 }
 
-static void func DrawEntityBars(Canvas* canvas, Entity* entity)
+static void
+func DrawEntityBars(Canvas* canvas, Entity* entity)
 {
 	Vec2 healthBarCenter = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
 	Real32 healthBarWidth = 2.0f * EntityRadius;
@@ -1124,7 +1161,8 @@ static void func DrawEntityBars(Canvas* canvas, Entity* entity)
 	DrawRectOutline(canvas, healthBarBackgroundRect, healthBarOutlineColor);
 }
 
-static String func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
+static String
+func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 {
 	String text = StartString(buffer, bufferSize);
 
@@ -1267,7 +1305,8 @@ static String func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bu
 
 #define UIBoxSide 40
 #define UIBoxPadding 5
-static void func DrawUIBox(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 rechargeRatio, Vec4 color)
+static void
+func DrawUIBox(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 rechargeRatio, Vec4 color)
 {
 	Vec4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
 	Vec4 rechargeColor = MakeColor(0.5f, 0.5f, 0.5f);
@@ -1281,7 +1320,8 @@ static void func DrawUIBox(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, I
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
 }
 
-static void func DrawUIBoxWithText(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 rechargeRatio,
+static void
+func DrawUIBoxWithText(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 rechargeRatio,
 								   Int8* text, GlyphData* glyphData, Vec4 color)
 {
 	DrawUIBox(bitmap, left, right, top, bottom, rechargeRatio, color);
@@ -1290,7 +1330,8 @@ static void func DrawUIBoxWithText(Bitmap* bitmap, Int32 left, Int32 right, Int3
 	DrawBitmapTextLineCentered(bitmap, text, glyphData, left, right, top, bottom, textColor);
 }
 
-static void func DrawEffectUIBox(Bitmap* bitmap, Effect* effect, Int32 top, Int32 left)
+static void
+func DrawEffectUIBox(Bitmap* bitmap, Effect* effect, Int32 top, Int32 left)
 {
 	Int32 right = left + UIBoxSide;
 	Int32 bottom = top + UIBoxSide;
@@ -1305,7 +1346,8 @@ static void func DrawEffectUIBox(Bitmap* bitmap, Effect* effect, Int32 top, Int3
 	DrawUIBox(bitmap, left, right, top, bottom, durationRatio, backgroundColor);
 }
 
-static void func DrawPlayerEffectBar(Canvas* canvas, CombatLabState* labState)
+static void
+func DrawPlayerEffectBar(Canvas* canvas, CombatLabState* labState)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
@@ -1330,7 +1372,8 @@ static void func DrawPlayerEffectBar(Canvas* canvas, CombatLabState* labState)
 	}
 }
 
-static void func DrawTargetEffectBar(Canvas* canvas, CombatLabState* labState)
+static void
+func DrawTargetEffectBar(Canvas* canvas, CombatLabState* labState)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
@@ -1360,7 +1403,8 @@ static void func DrawTargetEffectBar(Canvas* canvas, CombatLabState* labState)
 	}
 }
 
-static void func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
+static void
+func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
@@ -1394,7 +1438,8 @@ static void func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 m
 	}
 }
 
-static void func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
+static void
+func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
@@ -1484,12 +1529,14 @@ static void func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec
 	}
 }
 
-static void func UpdateEntityRecharge(Entity* entity, Real32 seconds)
+static void
+func UpdateEntityRecharge(Entity* entity, Real32 seconds)
 {
 	entity->recharge = Max2(entity->recharge - seconds, 0.0f);
 }
 
-static void func UpdateCooldowns(CombatLabState* labState, Real32 seconds)
+static void
+func UpdateCooldowns(CombatLabState* labState, Real32 seconds)
 {
 	Int32 remainingCooldownN = 0;
 	for(Int32 i = 0; i < labState->cooldownN; i++)
@@ -1505,7 +1552,8 @@ static void func UpdateCooldowns(CombatLabState* labState, Real32 seconds)
 	labState->cooldownN = remainingCooldownN;
 }
 
-static void func DrawCombatLog(Canvas* canvas, CombatLabState* labState)
+static void
+func DrawCombatLog(Canvas* canvas, CombatLabState* labState)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	Int32 width  = 300;
@@ -1562,7 +1610,8 @@ static void func DrawCombatLog(Canvas* canvas, CombatLabState* labState)
 	}
 }
 
-static void func UpdateEffects(CombatLabState* labState, Real32 seconds)
+static void
+func UpdateEffects(CombatLabState* labState, Real32 seconds)
 {
 	Int32 remainingEffectN = 0;
 	for(Int32 i = 0; i < labState->effectN; i++)
@@ -1605,7 +1654,8 @@ static void func UpdateEffects(CombatLabState* labState, Real32 seconds)
 	}
 }
 
-static void func UpdateDamageDisplays(CombatLabState* labState, Real32 seconds)
+static void
+func UpdateDamageDisplays(CombatLabState* labState, Real32 seconds)
 {
 	Real32 scrollUpSpeed = 1.0f;
 
@@ -1625,7 +1675,8 @@ static void func UpdateDamageDisplays(CombatLabState* labState, Real32 seconds)
 	labState->damageDisplayN = remainingDisplayN;
 }
 
-static Bool32 func CanMove(CombatLabState* labState, Entity* entity)
+static Bool32
+func CanMove(CombatLabState* labState, Entity* entity)
 {
 	Bool32 canMove = false;
 	if(IsDead(entity))
@@ -1643,7 +1694,8 @@ static Bool32 func CanMove(CombatLabState* labState, Entity* entity)
 	return canMove;
 }
 
-static void func DrawDamageDisplays(Canvas* canvas, CombatLabState* labState)
+static void
+func DrawDamageDisplays(Canvas* canvas, CombatLabState* labState)
 {
 	Vec4 damageColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Vec4 healColor = MakeColor(0.0f, 0.5f, 0.0f);
@@ -1670,7 +1722,8 @@ static void func DrawDamageDisplays(Canvas* canvas, CombatLabState* labState)
 	}
 }
 
-static Vec2 func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
+static Vec2
+func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
 {
 	Vec2 result = {};
 
@@ -1709,31 +1762,36 @@ static Vec2 func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
 	return result;
 }
 
-static Vec2 func GetEntityLeft(Entity* entity)
+static Vec2
+func GetEntityLeft(Entity* entity)
 {
 	Vec2 left = entity->position + MakeVector(-EntityRadius, 0.0f);
 	return left;
 }
 
-static Vec2 func GetEntityRight(Entity* entity)
+static Vec2
+func GetEntityRight(Entity* entity)
 {
 	Vec2 right = entity->position + MakeVector(+EntityRadius, 0.0f);
 	return right;
 }
 
-static Vec2 func GetEntityTop(Entity* entity)
+static Vec2
+func GetEntityTop(Entity* entity)
 {
 	Vec2 top = entity->position + MakeVector(0.0f, -EntityRadius);
 	return top;
 }
 
-static Vec2 func GetEntityBottom(Entity* entity)
+static Vec2
+func GetEntityBottom(Entity* entity)
 {
 	Vec2 bottom = entity->position + MakeVector(0.0f, +EntityRadius);
 	return bottom;
 }
 
-static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
+static void
+func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 {
 	Vec2 moveVector = seconds * entity->velocity;
 	Vec2 oldPosition = entity->position;
@@ -1841,7 +1899,8 @@ static void func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 	entity->position = newPosition;
 }
 
-static void func RemoveEffectsOfDeadEntities(CombatLabState* labState)
+static void
+func RemoveEffectsOfDeadEntities(CombatLabState* labState)
 {
 	Int32 remainingEffectN = 0;
 	for(Int32 i = 0; i < labState->effectN; i++)
@@ -1856,7 +1915,8 @@ static void func RemoveEffectsOfDeadEntities(CombatLabState* labState)
 	labState->effectN = remainingEffectN;
 }
 
-static void func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
+static void
+func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);

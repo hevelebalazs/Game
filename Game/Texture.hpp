@@ -11,7 +11,8 @@ struct Texture
 	UInt32* memory;
 };
 
-static Texture func CopyTexture(Texture* texture) 
+static Texture
+func CopyTexture(Texture* texture) 
 {
 	Texture result = {};
 	result.side = texture->side;
@@ -35,14 +36,16 @@ static Texture func CopyTexture(Texture* texture)
 	return result;
 }
 
-static void func Swap2(UInt32* i1, UInt32* i2)
+static void
+func Swap2(UInt32* i1, UInt32* i2)
 {
 	UInt32 tmp = *i1;
 	*i1 = *i2;
 	*i2 = tmp;
 }
 
-static void func Swap4(UInt32* i1, UInt32* i2, UInt32* i3, UInt32* i4)
+static void
+func Swap4(UInt32* i1, UInt32* i2, UInt32* i3, UInt32* i4)
 {
 	UInt32 tmp = *i1;
 	*i1 = *i2;
@@ -51,19 +54,22 @@ static void func Swap4(UInt32* i1, UInt32* i2, UInt32* i3, UInt32* i4)
 	*i4 = tmp;
 }
 
-static UInt32* func TextureAddress(Texture* texture, Int32 row, Int32 col)
+static UInt32*
+func TextureAddress(Texture* texture, Int32 row, Int32 col)
 {
 	UInt32* result = texture->memory + (row * texture->side) + col;
 	return result;
 }
 
-static UInt32 func TextureValue(Texture* texture, Int32 row, Int32 col)
+static UInt32
+func TextureValue(Texture* texture, Int32 row, Int32 col)
 {
 	UInt32 result = *TextureAddress(texture, row, col);
 	return result;
 }
 
-static void func RotateTextureUpsideDown(Texture* texture)
+static void
+func RotateTextureUpsideDown(Texture* texture)
 {
 	Int32 side = texture->side;
 	Int32 halfSide = (side / 2);
@@ -79,7 +85,8 @@ static void func RotateTextureUpsideDown(Texture* texture)
 	}
 }
 
-static void func RotateTextureLeft(Texture* texture)
+static void
+func RotateTextureLeft(Texture* texture)
 {
 	Int32 side = texture->side;
 	Int32 halfSide = (side / 2);
@@ -97,7 +104,8 @@ static void func RotateTextureLeft(Texture* texture)
 	}
 }
 
-static void func RotateTextureRight(Texture* texture)
+static void
+func RotateTextureRight(Texture* texture)
 {
 	Int32 side = texture->side;
 	Int32 halfSide = (side / 2);
@@ -115,7 +123,8 @@ static void func RotateTextureRight(Texture* texture)
 	}
 }
 
-static Texture func RoofTexture(Int32 logSide) 
+static Texture
+func RoofTexture(Int32 logSide) 
 {
 	Texture result = {};
 	result.logSide = logSide;
@@ -164,7 +173,8 @@ static Texture func RoofTexture(Int32 logSide)
 	return result;
 }
 
-static Texture func GrassTexture(Int32 logSide, MemArena* tmpArena)
+static Texture
+func GrassTexture(Int32 logSide, MemArena* tmpArena)
 {
 	Texture result = {};
 	result.logSide = logSide;
@@ -265,7 +275,8 @@ static Texture func GrassTexture(Int32 logSide, MemArena* tmpArena)
 	return result;
 }
 
-static Texture func RandomGreyTexture(Int32 logSide, Int32 minRatio, Int32 maxRatio)
+static Texture
+func RandomGreyTexture(Int32 logSide, Int32 minRatio, Int32 maxRatio)
 {
 	Texture result = {};
 	result.logSide = logSide;
@@ -288,20 +299,23 @@ static Texture func RandomGreyTexture(Int32 logSide, Int32 minRatio, Int32 maxRa
 	return result;
 }
 
-static UInt32 func TextureColorCodeInt(Texture texture, Int32 row, Int32 col)
+static UInt32
+func TextureColorCodeInt(Texture texture, Int32 row, Int32 col)
 {
 	UInt32 result = *(texture.memory + (row << texture.logSide) + (col));
 	return result;
 }
 
-static Vec4 func TextureColorInt(Texture texture, Int32 row, Int32 col)
+static Vec4
+func TextureColorInt(Texture texture, Int32 row, Int32 col)
 {
 	Int32 colorCode = TextureColorCodeInt(texture, row, col);
 	Vec4 result = GetColorFromColorCode(colorCode);
 	return result;
 }
 
-static Vec4 func TextureColor(Texture texture, Real32 x, Real32 y)
+static Vec4
+func TextureColor(Texture texture, Real32 x, Real32 y)
 {
 	Int32 row = ((Int32)y & (texture.side - 1));
 	Int32 col = ((Int32)x & (texture.side - 1));
@@ -309,14 +323,16 @@ static Vec4 func TextureColor(Texture texture, Real32 x, Real32 y)
 	return color;
 }
 
-static UInt32 func TextureColorCode(Texture texture, Real32 x, Real32 y)
+static UInt32
+func TextureColorCode(Texture texture, Real32 x, Real32 y)
 {
 	Vec4 color = TextureColor(texture, x, y);
 	UInt32 colorCode = GetColorCode(color);
 	return colorCode;
 }
 
-static UInt32 func ColorCodeLerp(UInt32 colorCode1, UInt8 ratio, UInt32 colorCode2)
+static UInt32
+func ColorCodeLerp(UInt32 colorCode1, UInt8 ratio, UInt32 colorCode2)
 {
 	struct ColorCode 
 	{
@@ -351,7 +367,8 @@ static UInt32 func ColorCodeLerp(UInt32 colorCode1, UInt8 ratio, UInt32 colorCod
 	return result.u;
 }
 
-static UInt32 func TextureColorCode(Texture texture, Int32 x, UInt8 subx, Int32 y, UInt8 suby)
+static UInt32
+func TextureColorCode(Texture texture, Int32 x, UInt8 subx, Int32 y, UInt8 suby)
 {
 	Int32 row1 = y;
 	Int32 row2 = (row1 + 1) & (texture.side - 1);

@@ -17,7 +17,8 @@ struct MemArena
 	UInt32 maxSize;
 };
 
-static MemArena func CreateMemArena(void* memory, UInt32 size)
+static MemArena
+func CreateMemArena(void* memory, UInt32 size)
 {
 	MemArena arena = {};
 	arena.baseAddress = (Int8*)memory;
@@ -26,7 +27,8 @@ static MemArena func CreateMemArena(void* memory, UInt32 size)
 	return arena;
 }
 
-static MemArena func CreateMemArena(UInt32 maxSize)
+static MemArena
+func CreateMemArena(UInt32 maxSize)
 {
 	MemArena result = {};
 	result.baseAddress = new Int8[maxSize];
@@ -36,12 +38,14 @@ static MemArena func CreateMemArena(UInt32 maxSize)
 	return result;
 }
 
-static void func ArenaReset(MemArena* arena)
+static void
+func ArenaReset(MemArena* arena)
 {
 	arena->usedSize = 0;
 }
 
-static void* func ArenaAlloc(MemArena* arena, UInt32 size)
+static void*
+func ArenaAlloc(MemArena* arena, UInt32 size)
 {
 	Assert(arena->usedSize + size <= arena->maxSize);
 	if(arena->usedSize + size <= arena->maxSize) 
@@ -56,24 +60,28 @@ static void* func ArenaAlloc(MemArena* arena, UInt32 size)
 	}
 }
 
-static UInt32 func GetArenaSize(MemArena* arena)
+static UInt32
+func GetArenaSize(MemArena* arena)
 {
 	UInt32 result = arena->usedSize;
 	return result;
 }
 
-static void func SetArenaSize(MemArena* arena, UInt32 size)
+static void
+func SetArenaSize(MemArena* arena, UInt32 size)
 {
 	arena->usedSize = size;
 }
 
 // TODO: only pop if the address is smaller than the current one?
-static void func ArenaPopTo(MemArena* arena, void* address)
+static void
+func ArenaPopTo(MemArena* arena, void* address)
 {
 	arena->usedSize = (UInt32)((Int8*)address - arena->baseAddress);
 }
 
-static Int8* func GetArenaTop(MemArena* arena)
+static Int8*
+func GetArenaTop(MemArena* arena)
 {
 	Int8* top = arena->baseAddress + arena->usedSize;
 	return top;

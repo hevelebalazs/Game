@@ -18,18 +18,21 @@ UserInput gUserInput;
 Bool32 gRunning;
 CombatLabState gLabState;
 
-static void func WinInit()
+static void
+func WinInit()
 {
 	gCanvas.camera = &gCamera;
 	CombatLabInit(&gLabState, &gCanvas);
 }
 
-static void func WinUpdate(Real32 seconds, UserInput* userInput)
+static void
+func WinUpdate(Real32 seconds, UserInput* userInput)
 {
 	CombatLabUpdate(&gLabState, &gCanvas, seconds, userInput);
 }
 
-static LRESULT CALLBACK func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK
+func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
 
@@ -115,7 +118,8 @@ static LRESULT CALLBACK func WinCallback(HWND window, UINT message, WPARAM wpara
 	return result;
 }
 
-static IntVec2 func GetMousePixelPosition(HWND window)
+static IntVec2
+func GetMousePixelPosition(HWND window)
 {
 	POINT cursorPoint = {};
 	GetCursorPos(&cursorPoint);
@@ -125,7 +129,8 @@ static IntVec2 func GetMousePixelPosition(HWND window)
 	return mousePosition;
 }
 
-Int32 CALLBACK func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, Int32 cmdShow)
+Int32 CALLBACK
+func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, Int32 cmdShow)
 {
 	gRunning = true;
 
