@@ -13,7 +13,8 @@ struct UserInput
 	IntVec2 mousePixelPosition;
 };
 
-static void func ResetKeyToggleCounts(UserInput* userInput)
+static void
+func ResetKeyToggleCounts(UserInput* userInput)
 {
 	for(Int32 i = 0; i < 256; i++)
 	{
@@ -21,25 +22,29 @@ static void func ResetKeyToggleCounts(UserInput* userInput)
 	}
 }
 
-static Bool32 func IsKeyDown(UserInput* userInput, UInt8 keyCode)
+static Bool32
+func IsKeyDown(UserInput* userInput, UInt8 keyCode)
 {
 	Bool32 isDown = userInput->isKeyDown[keyCode];
 	return isDown;
 }
 
-static Bool32 func WasKeyToggled(UserInput* userInput, UInt8 keyCode)
+static Bool32
+func WasKeyToggled(UserInput* userInput, UInt8 keyCode)
 {
 	Bool32 wasToggled = (userInput->keyToggleCount[keyCode] > 0);
 	return wasToggled;
 }
 
-static Bool32 func WasKeyPressed(UserInput* userInput, UInt8 keyCode)
+static Bool32
+func WasKeyPressed(UserInput* userInput, UInt8 keyCode)
 {
 	Bool32 wasPressed = IsKeyDown(userInput, keyCode) && WasKeyToggled(userInput, keyCode);
 	return wasPressed;
 }
 
-static Bool32 func WasKeyReleased(UserInput* userInput, UInt8 keyCode)
+static Bool32
+func WasKeyReleased(UserInput* userInput, UInt8 keyCode)
 {
 	Bool32 wasReleased = !IsKeyDown(userInput, keyCode) && WasKeyToggled(userInput, keyCode);
 	return wasReleased;

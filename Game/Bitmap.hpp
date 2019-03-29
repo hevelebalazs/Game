@@ -19,7 +19,8 @@ struct Bitmap
 
 #define BitmapBytesPerPixel 4
 
-static BITMAPINFO func GetBitmapInfo(Bitmap* bitmap)
+static BITMAPINFO
+func GetBitmapInfo(Bitmap* bitmap)
 {
 	BITMAPINFO info = {};
 	BITMAPINFOHEADER* header = &info.bmiHeader;
@@ -32,7 +33,8 @@ static BITMAPINFO func GetBitmapInfo(Bitmap* bitmap)
 	return info;
 }
 
-static void func ResizeBitmap(Bitmap* bitmap, Int32 width, Int32 height)
+static void
+func ResizeBitmap(Bitmap* bitmap, Int32 width, Int32 height)
 {
 	if(bitmap->memory)
 	{
@@ -46,7 +48,8 @@ static void func ResizeBitmap(Bitmap* bitmap, Int32 width, Int32 height)
 	bitmap->memory = new UInt32[bitmapMemorySize];
 }
 
-static Vec4 func MakeColor(Real32 red, Real32 green, Real32 blue)
+static Vec4
+func MakeColor(Real32 red, Real32 green, Real32 blue)
 {
 	Vec4 color = {};
 	color.red   = red;
@@ -56,7 +59,8 @@ static Vec4 func MakeColor(Real32 red, Real32 green, Real32 blue)
 	return color;
 }
 
-static UInt32 func GetColorCode(Vec4 color)
+static UInt32
+func GetColorCode(Vec4 color)
 {
 	UInt8 alpha = (UInt8)(color.alpha * 255);
 	UInt8 red   = (UInt8)(color.red * 255);
@@ -67,14 +71,16 @@ static UInt32 func GetColorCode(Vec4 color)
 	return colorCode;
 }
 
-static UInt32 func MakeColorCode(Real32 red, Real32 green, Real32 blue)
+static UInt32
+func MakeColorCode(Real32 red, Real32 green, Real32 blue)
 {
 	Vec4 color = MakeColor(red, green, blue);
 	UInt32 colorCode = GetColorCode(color);
 	return colorCode;
 }
 
-static Vec4 func GetRandomColor()
+static Vec4
+func GetRandomColor()
 {
 	Vec4 randomColor = MakeColor(RandomBetween(0.0f, 1.0f),
 								 RandomBetween(0.0f, 1.0f),
@@ -83,14 +89,16 @@ static Vec4 func GetRandomColor()
 	return randomColor;
 }
 
-static UInt32 func GetRandomColorCode()
+static UInt32
+func GetRandomColorCode()
 {
 	Vec4 color = GetRandomColor ();
 	Int32 colorCode = GetColorCode(color);
 	return colorCode;
 }
 
-static Vec4 func MakeAlphaColor(Real32 red, Real32 green, Real32 blue, Real32 alpha)
+static Vec4
+func MakeAlphaColor(Real32 red, Real32 green, Real32 blue, Real32 alpha)
 {
 	Vec4 color = {};
 	color.red   = red;
@@ -100,14 +108,16 @@ static Vec4 func MakeAlphaColor(Real32 red, Real32 green, Real32 blue, Real32 al
 	return color;
 }
 
-static UInt32 func MakeAlphaColorCode(Real32 red, Real32 green, Real32 blue, Real32 alpha)
+static UInt32
+func MakeAlphaColorCode(Real32 red, Real32 green, Real32 blue, Real32 alpha)
 {
 	Vec4 color = MakeAlphaColor(red, green, blue, alpha);
 	UInt32 colorCode = GetColorCode(color);
 	return colorCode;
 }
 
-static Vec4 func GetColorFromColorCode(UInt32 colorCode)
+static Vec4
+func GetColorFromColorCode(UInt32 colorCode)
 {
 	Vec4 color = {};
 	color.alpha = (Real32)((colorCode & 0xff000000) >> 24) * (1.0f / 255.0f);
@@ -117,7 +127,8 @@ static Vec4 func GetColorFromColorCode(UInt32 colorCode)
 	return color;
 }
 
-static Vec4 func AddColors(Vec4 color1, Vec4 color2)
+static Vec4
+func AddColors(Vec4 color1, Vec4 color2)
 {
 	Vec4 result = {};
 	result.red   = (color1.red   + color2.red);
@@ -126,7 +137,8 @@ static Vec4 func AddColors(Vec4 color1, Vec4 color2)
 	return result;
 }
 
-static Vec4 func MixColors(Vec4 baseColor, Vec4 colorToAdd)
+static Vec4
+func MixColors(Vec4 baseColor, Vec4 colorToAdd)
 {
 	Vec4 result = {};
 	Assert(IsBetween(baseColor.alpha, 0.0f, 1.0f));
@@ -139,7 +151,8 @@ static Vec4 func MixColors(Vec4 baseColor, Vec4 colorToAdd)
 	return result;
 }
 
-static UInt32 func MixColorCodes(UInt32 baseColorCode, UInt32 colorCodeToAdd)
+static UInt32
+func MixColorCodes(UInt32 baseColorCode, UInt32 colorCodeToAdd)
 {
 	Vec4 baseColor = GetColorFromColorCode(baseColorCode);
 	Vec4 colorToAdd = GetColorFromColorCode(colorCodeToAdd);
@@ -148,7 +161,8 @@ static UInt32 func MixColorCodes(UInt32 baseColorCode, UInt32 colorCodeToAdd)
 	return resultColorCode;
 }
 
-static Vec4 func InterpolateColors(Vec4 color1, Real32 ratio, Vec4 color2)
+static Vec4
+func InterpolateColors(Vec4 color1, Real32 ratio, Vec4 color2)
 {
 	Assert(IsBetween(ratio, 0.0f, 1.0f));
 	Vec4 result = {};
@@ -158,7 +172,8 @@ static Vec4 func InterpolateColors(Vec4 color1, Real32 ratio, Vec4 color2)
 	return result;
 }
 
-static UInt32* func GetBitmapPixelAddress(Bitmap* bitmap, Int32 row, Int32 col)
+static UInt32*
+func GetBitmapPixelAddress(Bitmap* bitmap, Int32 row, Int32 col)
 {
 	Assert(row >= 0 && row < bitmap->height);
 	Assert(col >= 0 && col < bitmap->width);
@@ -166,7 +181,8 @@ static UInt32* func GetBitmapPixelAddress(Bitmap* bitmap, Int32 row, Int32 col)
 	return pixelAddress;
 }
 
-static Vec4 func GetBitmapPixelColor(Bitmap* bitmap, Int32 row, Int32 col)
+static Vec4
+func GetBitmapPixelColor(Bitmap* bitmap, Int32 row, Int32 col)
 {
 	UInt32* address = GetBitmapPixelAddress(bitmap, row, col);
 	UInt32 colorCode = *address;
@@ -174,7 +190,8 @@ static Vec4 func GetBitmapPixelColor(Bitmap* bitmap, Int32 row, Int32 col)
 	return color;
 }
 
-static UInt32 func GetClosestBitmapColorCode(Bitmap* bitmap, Real32 heightRatio, Real32 widthRatio)
+static UInt32
+func GetClosestBitmapColorCode(Bitmap* bitmap, Real32 heightRatio, Real32 widthRatio)
 {
 	Int32 row = Floor(heightRatio * (bitmap->height - 1));
 	Int32 col = Floor(widthRatio * (bitmap->width - 1));
@@ -185,14 +202,16 @@ static UInt32 func GetClosestBitmapColorCode(Bitmap* bitmap, Real32 heightRatio,
 	return colorCode;
 }
 
-static Bool32 func IsValidBitmapPixel(Bitmap* bitmap, Int32 row, Int32 col)
+static Bool32
+func IsValidBitmapPixel(Bitmap* bitmap, Int32 row, Int32 col)
 {
 	Bool32 isValid = (IsIntBetween(row, 0, bitmap->height - 1) && 
 					  IsIntBetween(col, 0, bitmap->width - 1));
 	return isValid;
 }
 
-static void func PaintBitmapPixel(Bitmap* bitmap, Int32 row, Int32 col, UInt32 colorCode)
+static void
+func PaintBitmapPixel(Bitmap* bitmap, Int32 row, Int32 col, UInt32 colorCode)
 {
 	Assert(IsValidBitmapPixel(bitmap, row, col));
 
@@ -200,7 +219,8 @@ static void func PaintBitmapPixel(Bitmap* bitmap, Int32 row, Int32 col, UInt32 c
 	*pixelAddress = colorCode;
 }
 
-static void func MixBitmapPixel(Bitmap* bitmap, Int32 row, Int32 col, Vec4 newColor)
+static void
+func MixBitmapPixel(Bitmap* bitmap, Int32 row, Int32 col, Vec4 newColor)
 {
 	Assert(IsValidBitmapPixel(bitmap, row, col));
 	Vec4 oldColor = GetBitmapPixelColor(bitmap, row, col);
@@ -217,7 +237,8 @@ struct BresenhamData
 	Int32 error1, error2;
 };
 
-static BresenhamData func InitBresenham(Int32 row1, Int32 col1, Int32 row2, Int32 col2)
+static BresenhamData
+func InitBresenham(Int32 row1, Int32 col1, Int32 row2, Int32 col2)
 {
 	BresenhamData data = {};
 	data.col1 = col1;
@@ -254,7 +275,8 @@ static BresenhamData func InitBresenham(Int32 row1, Int32 col1, Int32 row2, Int3
 	return data;
 }
 
-static void func AdvanceBresenham(BresenhamData* data)
+static void
+func AdvanceBresenham(BresenhamData* data)
 {
 	data->error2 = data->error1;
 	if(data->error2 > -data->colAbs) 
@@ -270,7 +292,8 @@ static void func AdvanceBresenham(BresenhamData* data)
 	}
 }
 
-static void func DrawBitmapBresenhamLine(Bitmap* bitmap, Int32 row1, Int32 col1, Int32 row2, Int32 col2, Vec4 color)
+static void
+func DrawBitmapBresenhamLine(Bitmap* bitmap, Int32 row1, Int32 col1, Int32 row2, Int32 col2, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 	BresenhamData data = InitBresenham(row1, col1, row2, col2);
@@ -290,7 +313,8 @@ static void func DrawBitmapBresenhamLine(Bitmap* bitmap, Int32 row1, Int32 col1,
 	}
 }
 
-static void func FloodfillBitmap(Bitmap* bitmap, Int32 row, Int32 col, Vec4 color, MemArena* tmpArena)
+static void
+func FloodfillBitmap(Bitmap* bitmap, Int32 row, Int32 col, Vec4 color, MemArena* tmpArena)
 {
 	UInt32 paintColorCode = GetColorCode(color);
 	UInt32 baseColorCode  = *GetBitmapPixelAddress(bitmap, row, col);
@@ -388,7 +412,8 @@ static void func FloodfillBitmap(Bitmap* bitmap, Int32 row, Int32 col, Vec4 colo
 	ArenaPopTo(tmpArena, positions);
 }
 
-static void func FillBitmapWithColor(Bitmap* bitmap, Vec4 color)
+static void
+func FillBitmapWithColor(Bitmap* bitmap, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 	UInt32* pixel = bitmap->memory;
@@ -402,7 +427,8 @@ static void func FillBitmapWithColor(Bitmap* bitmap, Vec4 color)
 	}
 }
 
-static void func CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32 toCenterRow, Int32 toCenterCol, Real32 width, Real32 height, Real32 rotationAngle)
+static void
+func CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32 toCenterRow, Int32 toCenterCol, Real32 width, Real32 height, Real32 rotationAngle)
 {
 	Vec2 center = {};
 	center.x = (Real32)toCenterCol;
@@ -477,7 +503,8 @@ static void func CopyScaledRotatedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, I
 	}
 }
 
-static void func CopyBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32 toLeft, Int32 toTop)
+static void
+func CopyBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32 toLeft, Int32 toTop)
 {
 	Int32 toRight = toLeft + fromBitmap->width - 1;
 	Int32 toBottom = toTop + fromBitmap->height - 1;
@@ -521,7 +548,8 @@ static void func CopyBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32 toLeft, 
 	}
 }
 
-static void func CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32 toLeft, Int32 toRight, Int32 toTop, Int32 toBottom)
+static void
+func CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32 toLeft, Int32 toRight, Int32 toTop, Int32 toBottom)
 {
 	Real32 toWidth  = (Real32)(toRight - toLeft);
 	Real32 toHeight = (Real32)(toBottom - toTop);
@@ -573,7 +601,8 @@ static void func CopyStretchedBitmap(Bitmap* fromBitmap, Bitmap* toBitmap, Int32
 	}
 }
 
-static void func DrawBitmapPolyOutline(Bitmap* bitmap, Int32 polyN, Int32* polyColRow, Vec4 color)
+static void
+func DrawBitmapPolyOutline(Bitmap* bitmap, Int32 polyN, Int32* polyColRow, Vec4 color)
 {
 	for(Int32 i = 0; i < polyN; i++) 
 	{
@@ -594,7 +623,8 @@ static void func DrawBitmapPolyOutline(Bitmap* bitmap, Int32 polyN, Int32* polyC
 	}
 }
 
-static void func DrawBitmapRect(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
+static void
+func DrawBitmapRect(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 	left   = ClipInt(left, 0, bitmap->width - 1);
@@ -611,7 +641,8 @@ static void func DrawBitmapRect(Bitmap* bitmap, Int32 left, Int32 right, Int32 t
 	}
 }
 
-static void func DrawBitmapRectOutline(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
+static void
+func DrawBitmapRectOutline(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
 {
 	DrawBitmapBresenhamLine(bitmap, top, left, top, right, color);
 	DrawBitmapBresenhamLine(bitmap, top, right, bottom, right, color);
@@ -619,7 +650,8 @@ static void func DrawBitmapRectOutline(Bitmap* bitmap, Int32 left, Int32 right, 
 	DrawBitmapBresenhamLine(bitmap, bottom, left, top, left, color);
 }
 
-static void func DrawBitmapGlyph(Bitmap* bitmap, Glyph* glyph, Int32 x, Int32 baseLineY, Vec4 color)
+static void
+func DrawBitmapGlyph(Bitmap* bitmap, Glyph* glyph, Int32 x, Int32 baseLineY, Vec4 color)
 {
 	Int32 startCol = x + (Int32)glyph->offsetX;
 	Int32 startRow = baseLineY + (Int32)glyph->offsetY;
@@ -652,7 +684,8 @@ static void func DrawBitmapGlyph(Bitmap* bitmap, Glyph* glyph, Int32 x, Int32 ba
 	}
 }
 
-static void func DrawBitmapTextLine(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 left, Int32 baseLineY, Vec4 color)
+static void
+func DrawBitmapTextLine(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 left, Int32 baseLineY, Vec4 color)
 {
 	Real32 textX = (Real32)left;
 	Real32 textY = (Real32)baseLineY;
@@ -679,7 +712,8 @@ static void func DrawBitmapTextLine(Bitmap* bitmap, Int8* text, GlyphData* glyph
 	}
 }
 
-static Real32 func GetTextPixelWidth(Int8* text, GlyphData* glyphData)
+static Real32
+func GetTextPixelWidth(Int8* text, GlyphData* glyphData)
 {
 	Assert(glyphData != 0);
 
@@ -700,7 +734,8 @@ static Real32 func GetTextPixelWidth(Int8* text, GlyphData* glyphData)
 	return width;
 }
 
-static void func DrawBitmapTextLineCentered(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
+static void
+func DrawBitmapTextLineCentered(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
 {
 	Int32 textHeight = TextHeightInPixels;
 	Int32 textWidth = (Int32)GetTextPixelWidth(text, glyphData);
@@ -714,13 +749,15 @@ static void func DrawBitmapTextLineCentered(Bitmap* bitmap, Int8* text, GlyphDat
 #define TooltipPadding 3
 #define TooltipTopPadding 5
 
-static Int32 func GetTooltipHeight(Int32 lineN)
+static Int32
+func GetTooltipHeight(Int32 lineN)
 {
 	Int32 height = TooltipTopPadding + lineN * (TextHeightInPixels) + TooltipPadding;
 	return height;
 }
 
-static void func DrawBitmapStringTooltip(Bitmap* bitmap, String string, GlyphData* glyphData, Int32 top, Int32 left)
+static void
+func DrawBitmapStringTooltip(Bitmap* bitmap, String string, GlyphData* glyphData, Int32 top, Int32 left)
 {
 	Int32 lineN = GetNumberOfLines(string);
 
@@ -776,14 +813,16 @@ static void func DrawBitmapStringTooltip(Bitmap* bitmap, String string, GlyphDat
 	}
 }
 
-static void func DrawBitmapStringTooltipBottom(Bitmap* bitmap, String string, GlyphData* glyphData, Int32 bottom, Int32 left)
+static void
+func DrawBitmapStringTooltipBottom(Bitmap* bitmap, String string, GlyphData* glyphData, Int32 bottom, Int32 left)
 {
 	Int32 lineN = GetNumberOfLines(string);
 	Int32 top = bottom - GetTooltipHeight(lineN);
 	DrawBitmapStringTooltip(bitmap, string, glyphData, top, left);
 }
 
-static void func DrawBitmapStringTooltipBottomRight(Bitmap* bitmap, String string, GlyphData* glyphData, Int32 bottom, Int32 right)
+static void
+func DrawBitmapStringTooltipBottomRight(Bitmap* bitmap, String string, GlyphData* glyphData, Int32 bottom, Int32 right)
 {
 	Int32 lineN = GetNumberOfLines(string);
 	Int32 top = bottom - GetTooltipHeight(lineN);
@@ -791,7 +830,8 @@ static void func DrawBitmapStringTooltipBottomRight(Bitmap* bitmap, String strin
 	DrawBitmapStringTooltip(bitmap, string, glyphData, top, left);
 }
 
-static void func DrawBitmapTooltip(Bitmap* bitmap, Int8** lines, Int32 lineN, GlyphData* glyphData, Int32 top, Int32 left)
+static void
+func DrawBitmapTooltip(Bitmap* bitmap, Int8** lines, Int32 lineN, GlyphData* glyphData, Int32 top, Int32 left)
 {
 	Assert(glyphData != 0);
 
@@ -819,13 +859,15 @@ static void func DrawBitmapTooltip(Bitmap* bitmap, Int8** lines, Int32 lineN, Gl
 	}
 }
 
-static void func DrawBitmapTooltipBottom(Bitmap* bitmap, Int8** lines, Int32 lineN, GlyphData* glyphData, Int32 bottom, Int32 left)
+static void
+func DrawBitmapTooltipBottom(Bitmap* bitmap, Int8** lines, Int32 lineN, GlyphData* glyphData, Int32 bottom, Int32 left)
 {
 	Int32 top = bottom - GetTooltipHeight(lineN);
 	DrawBitmapTooltip(bitmap, lines, lineN, glyphData, top, left);
 }
 
-static void func DrawBitmapTooltipBottomRight(Bitmap* bitmap, Int8** lines, Int32 lineN, GlyphData* glyphData, Int32 bottom, Int32 right)
+static void
+func DrawBitmapTooltipBottomRight(Bitmap* bitmap, Int8** lines, Int32 lineN, GlyphData* glyphData, Int32 bottom, Int32 right)
 {
 	Int32 top = bottom - GetTooltipHeight(lineN);
 	Int32 left = right - TooltipWidth;

@@ -6,13 +6,15 @@
 #include "../Text.hpp"
 #include "../UserInput.hpp"
 
-static void func TextLabInit(Canvas* canvas)
+static void
+func TextLabInit(Canvas* canvas)
 {
 	canvas->glyphData = GetGlobalGlyphData();
 	canvas->camera->unitInPixels = 2.0f;
 }
 
-static void func DrawTestToolTip(Canvas* canvas)
+static void
+func DrawTestToolTip(Canvas* canvas)
 {
 	Int8* lines[] =
 	{
@@ -30,7 +32,8 @@ static void func DrawTestToolTip(Canvas* canvas)
 	DrawBitmapTooltip(bitmap, lines, lineN, canvas->glyphData, tooltipTop, tooltipLeft);
 }
 
-static void func TextLabUpdate(Canvas* canvas)
+static void
+func TextLabUpdate(Canvas* canvas)
 {
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);

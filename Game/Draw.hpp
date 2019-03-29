@@ -25,19 +25,22 @@ struct Canvas
 	GlyphData* glyphData;
 };
 
-static Int32 func UnitXtoPixel(Camera* camera, Real32 unitX)
+static Int32
+func UnitXtoPixel(Camera* camera, Real32 unitX)
 {
 	Int32 pixelX = Floor((camera->screenPixelSize.x * 0.5f) + ((unitX - camera->center.x) * camera->unitInPixels));
 	return pixelX;
 }
 
-static Int32 func UnitYtoPixel(Camera* camera, Real32 unitY)
+static Int32
+func UnitYtoPixel(Camera* camera, Real32 unitY)
 {
 	Int32 pixelY = Floor((camera->screenPixelSize.y * 0.5f) + ((unitY - camera->center.y) * camera->unitInPixels));
 	return pixelY;
 }
 
-static Vec2 func UnitToPixel(Camera* camera, Vec2 unit)
+static Vec2
+func UnitToPixel(Camera* camera, Vec2 unit)
 {
 	Real32 x = (Real32)UnitXtoPixel(camera, unit.x);
 	Real32 y = (Real32)UnitYtoPixel(camera, unit.y);
@@ -45,32 +48,36 @@ static Vec2 func UnitToPixel(Camera* camera, Vec2 unit)
 	return result;
 }
 
-static void func ResizeCamera(Camera* camera, Int32 width, Int32 height)
+static void
+func ResizeCamera(Camera* camera, Int32 width, Int32 height)
 {
 	camera->screenPixelSize.x = (Real32)width;
 	camera->screenPixelSize.y = (Real32)height;
-	// camera->center = (0.5f * camera->screenPixelSize);
 }
 
-static UInt32* func GetPixelAddress(Bitmap bitmap, Int32 row, Int32 col)
+static UInt32*
+func GetPixelAddress(Bitmap bitmap, Int32 row, Int32 col)
 {
 	UInt32* address = bitmap.memory + row * bitmap.width + col;
 	return address;
 }
 
-static UInt32 func GetPixel(Bitmap bitmap, Int32 row, Int32 col)
+static UInt32
+func GetPixel(Bitmap bitmap, Int32 row, Int32 col)
 {
 	UInt32* pixelAddress = GetPixelAddress(bitmap, row, col);
 	return *pixelAddress;
 }
 
-static void func SetPixel(Bitmap bitmap, Int32 row, Int32 col, UInt32 colorCode)
+static void
+func SetPixel(Bitmap bitmap, Int32 row, Int32 col, UInt32 colorCode)
 {
 	UInt32* pixelAddress = GetPixelAddress(bitmap, row, col);
 	*pixelAddress = colorCode;
 }
 
-static void func SetPixelCheck(Bitmap bitmap, Int32 row, Int32 col, Int32 colorCode)
+static void
+func SetPixelCheck(Bitmap bitmap, Int32 row, Int32 col, Int32 colorCode)
 {
 	if((row >= 0 && row < bitmap.height) && (col >= 0 && col < bitmap.width))
 	{
@@ -78,7 +85,8 @@ static void func SetPixelCheck(Bitmap bitmap, Int32 row, Int32 col, Int32 colorC
 	}
 }
 
-static Vec4 func ColorProd(Vec4 color1, Vec4 color2)
+static Vec4
+func ColorProd(Vec4 color1, Vec4 color2)
 {
 	Vec4 result = {};
 	result.red   = color1.red   * color2.red;
@@ -87,7 +95,8 @@ static Vec4 func ColorProd(Vec4 color1, Vec4 color2)
 	return result;
 }
 
-static void func ApplyBitmapMask(Bitmap bitmap, Bitmap mask)
+static void
+func ApplyBitmapMask(Bitmap bitmap, Bitmap mask)
 {
 	UInt32* pixel = bitmap.memory;
 	UInt32* maskPixel = mask.memory;
@@ -114,132 +123,24 @@ struct PixelPosition
 	Int32 col;
 };
 
-static void func FloodFill(Canvas* canvas, Vec2 start, Vec4 color, MemArena* tmpArena) 
+static void
+func FloodFill(Canvas* canvas, Vec2 start, Vec4 color, MemArena* tmpArena) 
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	Vec2 startPixel = UnitToPixel(canvas->camera, start);
 	FloodfillBitmap(bitmap, (Int32)startPixel.y, (Int32)startPixel.x, color, tmpArena);
-	/*
-	UInt32 colorCode = GetColorCode(color);
-
-	Bitmap bitmap = canvas->bitmap;
-	Camera* camera = canvas->camera;
-
-	Int32 positionCount = 0;
-	PixelPosition* positions = ArenaPushArray(tmpArena, PixelPosition, 0);
-	
-	Int32 row = UnitYtoPixel(camera, start.y);
-	Int32 col = UnitXtoPixel(camera, start.x);
-
-	ArenaPush(tmpArena, Int32, row);
-	ArenaPush(tmpArena, Int32, col);
-	positionCount++;
-
-	Bool32 fillHorizontally = true;
-	Int32 directionSwitchPosition = 1;
-
-	ArenaPush(tmpArena, Int32, row);
-	ArenaPush(tmpArena, Int32, col);
-	positionCount++;
-
-	SetPixel(bitmap, positions[0].row, positions[0].col, colorCode);
-
-	for(Int32 i = 0; i < positionCount; i++) 
-	{
-		if(i == directionSwitchPosition) 
-		{
-			fillHorizontally = (!fillHorizontally);
-			directionSwitchPosition = positionCount + 1;
-		}
-
-		Int32 row = positions[i].row;
-		Int32 col = positions[i].col;
-
-		UInt32* pixelStart = GetPixelAddress(bitmap, row, col);
-		UInt32* pixel = 0;
-
-		if(fillHorizontally) 
-		{
-			pixel = pixelStart;
-			for(Int32 left = col - 1; left >= 0; left--) 
-			{
-				pixel--;
-
-				if(*pixel == colorCode)
-				{
-					break;
-				}
-				*pixel = colorCode;
-
-				ArenaPush(tmpArena, Int32, row);
-				ArenaPush(tmpArena, Int32, left);
-				positionCount++;
-			}
-
-			pixel = pixelStart;
-			for(Int32 right = col + 1; right < bitmap.width; right++) 
-			{
-				pixel++;
-
-				if(*pixel == colorCode) 
-				{
-					break;
-				}
-				*pixel = colorCode;
-
-				ArenaPush(tmpArena, Int32, row);
-				ArenaPush(tmpArena, Int32, right);
-				positionCount++;
-			}
-		}
-		else 
-		{
-			pixel = pixelStart;
-			for(Int32 top = row - 1; top >= 0; top--) 
-			{
-				pixel -= bitmap.width;
-
-				if(*pixel == colorCode) 
-				{
-					break;
-				}
-				*pixel = colorCode;
-
-				ArenaPush(tmpArena, Int32, top);
-				ArenaPush(tmpArena, Int32, col);
-				positionCount++;
-			}
-
-			pixel = pixelStart;
-			for(Int32 bottom = row + 1; bottom < bitmap.height; bottom++) 
-			{
-				pixel += bitmap.width;
-			
-				if(*pixel == colorCode)
-				{
-					break;
-				}
-				*pixel = colorCode;
-
-				ArenaPush(tmpArena, Int32, bottom);
-				ArenaPush(tmpArena, Int32, col);
-				positionCount++;
-			}
-		}
-	}
-
-	ArenaPopTo(tmpArena, positions);
-	*/
 }
 
-static void func SmoothZoom(Camera* camera, Real32 pixelPerUnit)
+static void
+func SmoothZoom(Camera* camera, Real32 pixelPerUnit)
 {
 	camera->targetUnitInPixels = pixelPerUnit;
 }
 
 #define PixelPerUnitChangeSpeed 10.0f
 
-static void func UpdateCamera(Camera* camera, Real32 seconds)
+static void
+func UpdateCamera(Camera* camera, Real32 seconds)
 {
 	if(camera->unitInPixels != camera->targetUnitInPixels) 
 	{
@@ -262,34 +163,39 @@ static void func UpdateCamera(Camera* camera, Real32 seconds)
 	}
 }
 
-static Real32 func GetUnitDistanceInPixel(Camera* camera, Real32 unitDistance)
+static Real32
+func GetUnitDistanceInPixel(Camera* camera, Real32 unitDistance)
 {
 	Real32 pixelDistance = unitDistance * camera->unitInPixels;
 	return pixelDistance;
 }
 
-static Real32 func GetPixelDistanceInUnit(Camera* camera, Real32 pixelDistance)
+static Real32
+func GetPixelDistanceInUnit(Camera* camera, Real32 pixelDistance)
 {
 	Assert(camera->unitInPixels > 0.0f);
 	Real32 unitDistance = pixelDistance / camera->unitInPixels;
 	return unitDistance;
 }
 
-static Real32 func PixelToUnitX(Camera* camera, Real32 pixelX)
+static Real32
+func PixelToUnitX(Camera* camera, Real32 pixelX)
 {
 	Real32 pixelInUnits = Invert(camera->unitInPixels);
 	Real32 unitX = camera->center.x + (pixelX - camera->screenPixelSize.x * 0.5f) * pixelInUnits;
 	return unitX;
 }
 
-static Real32 func PixelToUnitY(Camera* camera, Real32 pixelY) 
+static Real32
+func PixelToUnitY(Camera* camera, Real32 pixelY) 
 {
 	Real32 pixelInUnits = Invert(camera->unitInPixels);
 	Real32 unitY = camera->center.y + (pixelY - camera->screenPixelSize.y * 0.5f) * pixelInUnits;
 	return unitY;
 }
 
-static Vec2 func PixelToUnit(Camera* camera, IntVec2 pixel)
+static Vec2
+func PixelToUnit(Camera* camera, IntVec2 pixel)
 {
 	Vec2 result = {};
 	result.x = PixelToUnitX(camera, (Real32)pixel.col);
@@ -297,7 +203,8 @@ static Vec2 func PixelToUnit(Camera* camera, IntVec2 pixel)
 	return result;
 }
 
-static Vec2 func PixelToUnit(Camera* camera, Vec2 pixel)
+static Vec2
+func PixelToUnit(Camera* camera, Vec2 pixel)
 {
 	Vec2 result = {};
 	result.x = PixelToUnitX(camera, pixel.x);
@@ -305,31 +212,36 @@ static Vec2 func PixelToUnit(Camera* camera, Vec2 pixel)
 	return result;
 }
 
-static Real32 func CameraLeftSide(Camera* camera)
+static Real32
+func CameraLeftSide(Camera* camera)
 {
 	Real32 leftSide = PixelToUnitX(camera, 0);
 	return leftSide;
 }
 
-static Real32 func CameraRightSide(Camera* camera)
+static Real32
+func CameraRightSide(Camera* camera)
 {
 	Real32 rightSide = PixelToUnitX(camera, camera->screenPixelSize.x - 1);
 	return rightSide;
 }
 
-static Real32 func CameraTopSide(Camera* camera)
+static Real32
+func CameraTopSide(Camera* camera)
 {
 	Real32 topSide = PixelToUnitY(camera, 0);
 	return topSide;
 }
 
-static Real32 func CameraBottomSide(Camera* camera)
+static Real32
+func CameraBottomSide(Camera* camera)
 {
 	Real32 bottomSide = PixelToUnitY(camera, camera->screenPixelSize.y - 1);
 	return bottomSide;
 }
 
-static Vec2 func GetCameraTopLeftCorner(Camera* camera)
+static Vec2
+func GetCameraTopLeftCorner(Camera* camera)
 {
 	Vec2 corner = {};
 	corner.x = CameraLeftSide(camera);
@@ -337,7 +249,8 @@ static Vec2 func GetCameraTopLeftCorner(Camera* camera)
 	return corner;
 }
 
-static Vec2 func GetCameraBottomRightCorner(Camera* camera)
+static Vec2
+func GetCameraBottomRightCorner(Camera* camera)
 {
 	Vec2 corner = {};
 	corner.x = CameraRightSide(camera);
@@ -345,7 +258,8 @@ static Vec2 func GetCameraBottomRightCorner(Camera* camera)
 	return corner;
 }
 
-static void func ClearScreen(Canvas* canvas, Vec4 color)
+static void
+func ClearScreen(Canvas* canvas, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 
@@ -370,7 +284,8 @@ struct BresenhamContext
 	Int32 error, error2;
 };
 
-static BresenhamContext func BresenhamInitPixel(Vec2 pixelPoint1, Vec2 pixelPoint2)
+static BresenhamContext
+func BresenhamInitPixel(Vec2 pixelPoint1, Vec2 pixelPoint2)
 {
 	BresenhamContext context = {};
 
@@ -409,7 +324,8 @@ static BresenhamContext func BresenhamInitPixel(Vec2 pixelPoint1, Vec2 pixelPoin
 	return context;
 }
 
-static BresenhamContext func BresenhamInitUnit(Canvas* canvas, Vec2 point1, Vec2 point2)
+static BresenhamContext
+func BresenhamInitUnit(Canvas* canvas, Vec2 point1, Vec2 point2)
 {
 	Camera* camera = canvas->camera;
 	Vec2 pixelPoint1 = UnitToPixel(camera, point1);
@@ -418,7 +334,8 @@ static BresenhamContext func BresenhamInitUnit(Canvas* canvas, Vec2 point1, Vec2
 	return context;
 }
 
-static void func BresenhamAdvance(BresenhamContext* context)
+static void
+func BresenhamAdvance(BresenhamContext* context)
 {
 	context->error2 = context->error;
 	if(context->error2 > -context->absX) 
@@ -433,7 +350,8 @@ static void func BresenhamAdvance(BresenhamContext* context)
 	}
 }
 
-static void func Bresenham(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color)
+static void
+func Bresenham(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color)
 {
 	Bitmap bitmap = canvas->bitmap;
 	UInt32 colorCode = GetColorCode(color);
@@ -452,7 +370,8 @@ static void func Bresenham(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color)
 	}
 }
 
-static Vec2 func LineAtX(Vec2 linePoint1, Vec2 linePoint2, Real32 x)
+static Vec2
+func LineAtX(Vec2 linePoint1, Vec2 linePoint2, Real32 x)
 {
 	Real32 minX = Min2(linePoint1.x, linePoint2.x);
 	Real32 maxX = Max2(linePoint1.x, linePoint2.x);
@@ -470,7 +389,8 @@ static Vec2 func LineAtX(Vec2 linePoint1, Vec2 linePoint2, Real32 x)
 	return result;
 }
 
-static Vec2 func LineAtY(Vec2 linePoint1, Vec2 linePoint2, Real32 y)
+static Vec2
+func LineAtY(Vec2 linePoint1, Vec2 linePoint2, Real32 y)
 {
 	Real32 minY = Min2(linePoint1.y, linePoint2.y);
 	Real32 maxY = Max2(linePoint1.y, linePoint2.y);
@@ -488,7 +408,8 @@ static Vec2 func LineAtY(Vec2 linePoint1, Vec2 linePoint2, Real32 y)
 	return result;
 }
 
-static void func DrawHorizontalTrapezoid(Canvas* canvas, Vec2 topLeft, Vec2 topRight, Vec2 bottomLeft, Vec2 bottomRight, Vec4 color)
+static void
+func DrawHorizontalTrapezoid(Canvas* canvas, Vec2 topLeft, Vec2 topRight, Vec2 bottomLeft, Vec2 bottomRight, Vec4 color)
 {
 	Camera* camera = canvas->camera;
 	Real32 cameraTop    = CameraTopSide(camera);
@@ -582,7 +503,8 @@ static void func DrawHorizontalTrapezoid(Canvas* canvas, Vec2 topLeft, Vec2 topR
 	}
 }
 
-static void func DrawVerticalTrapezoid(Canvas* canvas, Vec2 topLeft, Vec2 topRight, Vec2 bottomLeft, Vec2 bottomRight, Vec4 color)
+static void
+func DrawVerticalTrapezoid(Canvas* canvas, Vec2 topLeft, Vec2 topRight, Vec2 bottomLeft, Vec2 bottomRight, Vec4 color)
 {
 	Camera* camera = canvas->camera;
 	Real32 cameraLeft  = CameraLeftSide(camera);
@@ -677,7 +599,8 @@ static void func DrawVerticalTrapezoid(Canvas* canvas, Vec2 topLeft, Vec2 topRig
 	}
 }
 
-static void func DrawRectLRTB(Canvas* canvas, Real32 left, Real32 right, Real32 top, Real32 bottom, Vec4 color)
+static void
+func DrawRectLRTB(Canvas* canvas, Real32 left, Real32 right, Real32 top, Real32 bottom, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 
@@ -713,12 +636,14 @@ static void func DrawRectLRTB(Canvas* canvas, Real32 left, Real32 right, Real32 
 	}
 }
 
-static void func DrawRect(Canvas* canvas, Rect rect, Vec4 color)
+static void
+func DrawRect(Canvas* canvas, Rect rect, Vec4 color)
 {
 	DrawRectLRTB(canvas, rect.left, rect.right, rect.top, rect.bottom, color);
 }
 
-static void func DrawGridLine(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color, Real32 lineWidth)
+static void
+func DrawGridLine(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color, Real32 lineWidth)
 {
 	Real32 left   = 0.0f;
 	Real32 right  = 0.0f;
@@ -745,7 +670,8 @@ static void func DrawGridLine(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 col
 	DrawRectLRTB(canvas, left, right, top, bottom, color);
 }
 
-static void func DrawQuad(Canvas* canvas, Quad quad, Vec4 color)
+static void
+func DrawQuad(Canvas* canvas, Quad quad, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 
@@ -813,7 +739,8 @@ static void func DrawQuad(Canvas* canvas, Quad quad, Vec4 color)
 	}
 }
 
-static void func DrawLine(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color, Real32 lineWidth)
+static void
+func DrawLine(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color, Real32 lineWidth)
 {
 	Vec2 direction = PointDirection(point2, point1);
 
@@ -832,7 +759,8 @@ static void func DrawLine(Canvas* canvas, Vec2 point1, Vec2 point2, Vec4 color, 
 
 #define WorldTextureScale 20.0f
 
-static void func FillScreenWithWorldTexture(Canvas* canvas, Texture texture)
+static void
+func FillScreenWithWorldTexture(Canvas* canvas, Texture texture)
 {
 	Bitmap bitmap = canvas->bitmap;
 	Camera* camera = canvas->camera;
@@ -884,7 +812,8 @@ static void func FillScreenWithWorldTexture(Canvas* canvas, Texture texture)
 	}
 }
 
-static void func DrawWorldTextureQuad(Canvas* canvas, Quad quad, Texture texture)
+static void
+func DrawWorldTextureQuad(Canvas* canvas, Quad quad, Texture texture)
 {
     Bitmap bitmap = canvas->bitmap;
 	Camera* camera = canvas->camera;
@@ -995,7 +924,8 @@ static void func DrawWorldTextureQuad(Canvas* canvas, Quad quad, Texture texture
 	}
 }
 
-static void func DrawWorldTextureLine(Canvas* canvas, Vec2 point1, Vec2 point2, Real32 lineWidth, Texture texture)
+static void
+func DrawWorldTextureLine(Canvas* canvas, Vec2 point1, Vec2 point2, Real32 lineWidth, Texture texture)
 {
 	Vec2 direction = PointDirection(point2, point1);
 	Vec2 turnedDirection = TurnVectorToRight(direction);
@@ -1010,7 +940,8 @@ static void func DrawWorldTextureLine(Canvas* canvas, Vec2 point1, Vec2 point2, 
 	DrawWorldTextureQuad(canvas, quad, texture);
 }
 
-static void func DrawRectLRTBOutline(Canvas* canvas, Real32 left, Real32 right, Real32 top, Real32 bottom, Vec4 color)
+static void
+func DrawRectLRTBOutline(Canvas* canvas, Real32 left, Real32 right, Real32 top, Real32 bottom, Vec4 color)
 {
 	Vec2 topLeft     = MakePoint(left,  top);
 	Vec2 topRight    = MakePoint(right, top);
@@ -1023,12 +954,14 @@ static void func DrawRectLRTBOutline(Canvas* canvas, Real32 left, Real32 right, 
 	Bresenham(canvas, bottomLeft,  topLeft,     color);
 }
 
-static void func DrawRectOutline(Canvas* canvas, Rect rect, Vec4 color)
+static void
+func DrawRectOutline(Canvas* canvas, Rect rect, Vec4 color)
 {
 	DrawRectLRTBOutline(canvas, rect.left, rect.right, rect.top, rect.bottom, color);
 }
 
-static void func WorldTextureRect(Canvas* canvas, Real32 left, Real32 right, Real32 top, Real32 bottom, Texture texture)
+static void
+func WorldTextureRect(Canvas* canvas, Real32 left, Real32 right, Real32 top, Real32 bottom, Texture texture)
 {
 	Camera* camera = canvas->camera;
 	Int32 topPixel =    UnitYtoPixel(camera, top);
@@ -1115,7 +1048,8 @@ static void func WorldTextureRect(Canvas* canvas, Real32 left, Real32 right, Rea
 	}
 }
 
-static void func WorldTextureGridLine(Canvas* canvas, Vec2 point1, Vec2 point2, Real32 width, Texture texture)
+static void
+func WorldTextureGridLine(Canvas* canvas, Vec2 point1, Vec2 point2, Real32 width, Texture texture)
 {
 	Real32 left   = Min2(point1.x, point2.x);
 	Real32 right  = Max2(point1.x, point2.x);
@@ -1138,7 +1072,8 @@ static void func WorldTextureGridLine(Canvas* canvas, Vec2 point1, Vec2 point2, 
 	WorldTextureRect(canvas, left, right, top, bottom, texture);
 }
 
-static void func DrawPolyOutline(Canvas* canvas, Vec2* points, Int32 pointN, Vec4 color)
+static void
+func DrawPolyOutline(Canvas* canvas, Vec2* points, Int32 pointN, Vec4 color)
 {
 	Int32 prev = pointN - 1;
 	for(Int32 i = 0; i < pointN; i++) 
@@ -1148,7 +1083,8 @@ static void func DrawPolyOutline(Canvas* canvas, Vec2* points, Int32 pointN, Vec
 	}
 }
 
-static void func DrawPoly(Canvas* canvas, Vec2* points, Int32 pointN, Vec4 color)
+static void
+func DrawPoly(Canvas* canvas, Vec2* points, Int32 pointN, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);
 
@@ -1215,7 +1151,8 @@ static void func DrawPoly(Canvas* canvas, Vec2* points, Int32 pointN, Vec4 color
 	}
 }
 
-static void func DrawWorldTexturePoly(Canvas* canvas, Vec2* points, Int32 pointN, Texture texture)
+static void
+func DrawWorldTexturePoly(Canvas* canvas, Vec2* points, Int32 pointN, Texture texture)
 {
 	Bitmap bitmap = canvas->bitmap;
 	Camera* camera = canvas->camera;
@@ -1321,13 +1258,15 @@ static void func DrawWorldTexturePoly(Canvas* canvas, Vec2* points, Int32 pointN
 	}
 }
 
-static void func DrawQuadPoints(Canvas* canvas, Vec2 point1, Vec2 point2, Vec2 point3, Vec2 point4, Vec4 color)
+static void
+func DrawQuadPoints(Canvas* canvas, Vec2 point1, Vec2 point2, Vec2 point3, Vec2 point4, Vec4 color)
 {
 	Quad quad = MakeQuad(point1, point2, point3, point4);
 	DrawQuad(canvas, quad, color);
 }
 
-static void func DrawBitmap(Canvas* canvas, Bitmap* bitmap, Real32 left, Real32 top)
+static void
+func DrawBitmap(Canvas* canvas, Bitmap* bitmap, Real32 left, Real32 top)
 {
 	Camera* camera = canvas->camera;
 	Int32 pixelLeft = UnitXtoPixel(camera, left);
@@ -1335,7 +1274,8 @@ static void func DrawBitmap(Canvas* canvas, Bitmap* bitmap, Real32 left, Real32 
 	CopyBitmap(bitmap, &canvas->bitmap, pixelLeft, pixelTop);
 }
 
-static void func DrawScaledRotatedBitmap(Canvas* canvas, Bitmap* bitmap, Vec2 position, Real32 width, Real32 height, Real32 rotationAngle)
+static void
+func DrawScaledRotatedBitmap(Canvas* canvas, Bitmap* bitmap, Vec2 position, Real32 width, Real32 height, Real32 rotationAngle)
 {
 	Camera* camera = canvas->camera;
 	Int32 col = UnitXtoPixel(camera, position.x);
@@ -1347,7 +1287,8 @@ static void func DrawScaledRotatedBitmap(Canvas* canvas, Bitmap* bitmap, Vec2 po
 	CopyScaledRotatedBitmap(bitmap, &canvas->bitmap, row, col, pixelWidth, pixelHeight, rotationAngle);
 }
 
-static void func DrawStretchedBitmap(Canvas* canvas, Bitmap* bitmap, Real32 left, Real32 right, Real32 top, Real32 bottom)
+static void
+func DrawStretchedBitmap(Canvas* canvas, Bitmap* bitmap, Real32 left, Real32 right, Real32 top, Real32 bottom)
 {
 	Camera* camera = canvas->camera;
 	Int32 pixelLeft   = UnitXtoPixel(camera, left);
@@ -1357,7 +1298,8 @@ static void func DrawStretchedBitmap(Canvas* canvas, Bitmap* bitmap, Real32 left
 	CopyStretchedBitmap(bitmap, &canvas->bitmap, pixelLeft, pixelRight, pixelTop, pixelBottom);
 }
 
-static Real32 func GetTextHeight(Canvas* canvas, Int8* text)
+static Real32
+func GetTextHeight(Canvas* canvas, Int8* text)
 {
 	Camera* camera = canvas->camera;
 	Assert(camera->unitInPixels > 0.0f);
@@ -1365,7 +1307,8 @@ static Real32 func GetTextHeight(Canvas* canvas, Int8* text)
 	return height;
 }
 
-static Real32 func GetTextWidth(Canvas* canvas, Int8* text)
+static Real32
+func GetTextWidth(Canvas* canvas, Int8* text)
 {
 	Assert(canvas->glyphData != 0);
 	Real32 pixelWidth = GetTextPixelWidth(text, canvas->glyphData);
@@ -1376,7 +1319,8 @@ static Real32 func GetTextWidth(Canvas* canvas, Int8* text)
 	return width;
 }
 
-static void func DrawTextLine(Canvas* canvas, Int8* text, Real32 baseLineY, Real32 left, Vec4 textColor)
+static void
+func DrawTextLine(Canvas* canvas, Int8* text, Real32 baseLineY, Real32 left, Vec4 textColor)
 {
 	Assert(canvas->glyphData != 0);
 	Int32 leftPixel = UnitXtoPixel(canvas->camera, left);
@@ -1384,14 +1328,16 @@ static void func DrawTextLine(Canvas* canvas, Int8* text, Real32 baseLineY, Real
 	DrawBitmapTextLine(&canvas->bitmap, text, canvas->glyphData, leftPixel, baseLineYPixel, textColor);
 }
 
-static void func DrawTextLineXCentered(Canvas* canvas, Int8* text, Real32 baseLineY, Real32 centerX, Vec4 textColor)
+static void
+func DrawTextLineXCentered(Canvas* canvas, Int8* text, Real32 baseLineY, Real32 centerX, Vec4 textColor)
 {
 	Assert(canvas->glyphData != 0);
 	Real32 left = centerX - GetTextWidth(canvas, text) * 0.5f;
 	DrawTextLine(canvas, text, baseLineY, left, textColor);
 }
 
-static void func DrawTextLineXYCentered(Canvas* canvas, Int8* text, Real32 centerY, Real32 centerX, Vec4 textColor)
+static void
+func DrawTextLineXYCentered(Canvas* canvas, Int8* text, Real32 centerY, Real32 centerX, Vec4 textColor)
 {
 	Assert(canvas->glyphData != 0);
 	Camera* camera = canvas->camera;
