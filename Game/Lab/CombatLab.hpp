@@ -59,6 +59,8 @@ enum EntityGroupId
 
 struct Entity
 {
+	Int8* name;
+
 	Vec2 position;
 	Vec2 velocity;
 
@@ -100,7 +102,7 @@ struct Effect
 #define MaxEffectN 64
 #define MaxDamageDisplayN 64
 #define MaxCombatLogLineN 32
-#define MaxCombatLogLineLength 32
+#define MaxCombatLogLineLength 64
 #define CombatLabArenaSize (2 * MegaByte)
 struct CombatLabState
 {
@@ -201,6 +203,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Real32 mapHeight = GetMapHeight(map);
 
 	Entity* player = &labState->entities[0];
+	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	labState->moveToTile = GetContainingTile(map, player->position);
 	Assert(IsValidTile(map, labState->moveToTile));
@@ -213,6 +216,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	for(Int32 i = 1; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
+		enemy->name = "Snake";
 		enemy->position = GetRandomNonTreeTileCenter(map);
 		enemy->health = EntityMaxHealth;
 		enemy->classId = SnakeClassId;
@@ -443,6 +447,16 @@ func DealDamage(CombatLabState* labState, Entity* entity, Int32 damage)
 
 		DealFinalDamage(entity, finalDamage);
 		AddDamageDisplay(labState, entity->position, finalDamage);
+
+		Int8 logLine[MaxCombatLogLineLength + 1];
+		OneLineString(logLine, MaxCombatLogLineLength + 1, entity->name + " takes " + damage + " damage.");
+		AddCombatLogLine(labState, logLine);
+
+		if(IsDead(entity))
+		{
+			OneLineString(logLine, MaxCombatLogLineLength + 1, entity->name + " dies.");
+			AddCombatLogLine(labState, logLine);
+		}
 	}
 }
 
@@ -691,6 +705,60 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 	labState->effectN = remainingEffectN;
 }
 
+static Int8*
+func GetEffectName(Int32 effectId)
+{
+	Int8* name = 0;
+	switch(effectId)
+	{
+		case KickedEffectId:
+		{
+			name = "Kicked";
+			break;
+		}
+		case RollingEffectId:
+		{
+			name = "Rolling";
+			break;
+		}
+		case InvulnerableEffectId:
+		{
+			name = "Invulnerable";
+			break;
+		}
+		case ShieldRaisedEffectId:
+		{
+			name = "Shield raised";
+			break;
+		}
+		case BurningEffectId:
+		{
+			name = "Burning";
+			break;
+		}
+		case BlessingOfTheSunEffectId:
+		{
+			name = "Sun's Blessing";
+			break;
+		}
+		case BlindEffectId:
+		{
+			name = "Blind";
+			break;
+		}
+		case PoisonedEffectId:
+		{
+			name = "Poisoned";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
 static void
 func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
@@ -704,6 +772,11 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 	Real32 duration = GetEffectTotalDuration(effectId);
 	Assert(duration > 0.0f);
 	effect->timeRemaining = duration;
+
+	Int8* effectName = GetEffectName(effectId);
+	Int8 logLine[MaxCombatLogLineLength + 1] = {};
+	OneLineString(logLine, MaxCombatLogLineLength + 1, entity->name + " gets " + effectName + ".");
+	AddCombatLogLine(labState, logLine);
 }
 
 static void
@@ -859,6 +932,13 @@ static void
 func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Assert(CanUseAbility(labState, entity, abilityId));
+
+	Int8* abilityName = GetAbilityName(abilityId);
+
+	Int8 combatLogLine[MaxCombatLogLineLength + 1];
+	OneLineString(combatLogLine, MaxCombatLogLineLength + 1, entity->name + " uses ability " + abilityName + ".");
+	AddCombatLogLine(labState, combatLogLine);
+
 	Entity* target = entity->target;
 	switch(abilityId)
 	{
@@ -1002,12 +1082,6 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			DebugBreak();
 		}
 	}
-
-	Int8* abilityName = GetAbilityName(abilityId);
-
-	Int8 combatLogLine[MaxCombatLogLineLength + 1];
-	OneLineString(combatLogLine, MaxCombatLogLineLength + 1, "Ability " + abilityName + " used.");
-	AddCombatLogLine(labState, combatLogLine);
 
 	Real32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
 	if(rechargeDuration > 0.0f)
@@ -2190,10 +2264,12 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
 
-// [TODO: Combat log]
 // TODO: Druid
-	// TODO: Basic abilities
 	// TODO: Pet controls
+		// TODO: Pet that follows the player
+		// TODO: Pet ability
+	// TODO: Basic abilities
+		// TODO: Basic heal near trees
 	// TODO: Nature interaction
 // TODO: Effect tooltips
 // TODO: Simplify pathfinding!
