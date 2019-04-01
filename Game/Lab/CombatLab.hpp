@@ -205,7 +205,8 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Entity* player = &labState->entities[0];
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
-	labState->moveToTile = GetContainingTile(map, player->position);
+	IntVec2 playerTile = GetContainingTile(map, player->position);
+	labState->moveToTile = playerTile;
 	Assert(IsValidTile(map, labState->moveToTile));
 	Assert(!TileHasTree(map, labState->moveToTile));
 	player->health = EntityMaxHealth;
@@ -213,7 +214,17 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->classId = MonkClassId;
 	player->groupId = PlayerGroupId;
 
-	for(Int32 i = 1; i < EntityN; i++)
+	Entity* pet = &labState->entities[1];
+	pet->name = "Pet";
+	IntVec2 petTile = FindNearbyNonTreeTile(map, playerTile);
+	pet->position = GetTileCenter(map, petTile);
+	pet->health = EntityMaxHealth;
+	pet->inputDirection = MakePoint(0.0f, 0.0f);
+	pet->classId = SnakeClassId;
+	pet->groupId = PlayerGroupId;
+	pet->target = player;
+
+	for(Int32 i = 2; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
 		enemy->name = "Snake";
@@ -1505,6 +1516,8 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[Tab] - Target closest enemy");
 		AddLine(tooltip, "[1]-[7] - Use Ability");
 		AddLine(tooltip, "[C] - Switch between classes Monk/Paladin");
+		AddLine(tooltip, "[Q] - Order pet to follow you");
+		AddLine(tooltip, "[E] - Order pet to follow target");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
 		Int32 tooltipRight = (bitmap->width - 1);
@@ -2088,11 +2101,40 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	UpdateEntityMovement(player, map, seconds);
 
+	Real32 petMoveSpeed = PlayerSpeed;
+	Entity* pet = &labState->entities[1];
+
+	if(WasKeyPressed(userInput, 'Q'))
+	{
+		pet->target = player;
+	}
+	if(WasKeyPressed(userInput, 'E'))
+	{
+		pet->target = (player->target != 0) ? player->target : player;
+	}
+
+	pet->velocity = MakeVector(0.0f, 0.0f);
+	if(CanMove(labState, pet))
+	{
+		IntVec2 petTile = GetContainingTile(map, pet->position);
+		Assert(pet->target != 0);
+		IntVec2 targetTile = GetContainingTile(map, pet->target->position);
+		if(petTile != targetTile)
+		{
+			IntVec2 nextTile = GetNextTileOnPath(map, petTile, targetTile);
+			Vec2 tileCenter = GetTileCenter(map, nextTile);
+			pet->velocity = petMoveSpeed * PointDirection(pet->position, tileCenter);
+		}
+	}
+	UpdateEntityMovement(pet, map, seconds);
+
 	Vec4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
 	DrawEntity(canvas, player, playerColor);
 
-	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 petColor = MakeColor(0.0f, 0.5f, 0.5f);
+	DrawEntity(canvas, pet, petColor);
 
+	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
 	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
@@ -2187,7 +2229,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	}
 
 	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
-
 	if(WasKeyReleased(userInput, VK_LBUTTON))
 	{
 		if(labState->hoverAbilityId != NoAbilityId)
@@ -2263,14 +2304,14 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawDamageDisplays(canvas, labState);
 	DrawCombatLog(canvas, labState);
 }
-
+ 
 // TODO: Druid
 	// TODO: Pet controls
-		// TODO: Pet that follows the player
 		// TODO: Pet ability
 	// TODO: Basic abilities
 		// TODO: Basic heal near trees
 	// TODO: Nature interaction
+// TODO: Enemy hate and aggro
 // TODO: Effect tooltips
 // TODO: Simplify pathfinding!
 // TODO: Smooth automatic movement around trees!
