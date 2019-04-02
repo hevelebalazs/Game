@@ -6,6 +6,10 @@
 enum AbilityId
 {
 	NoAbilityId,
+
+	PetAttackAbilityId,
+	HealAbilityId,
+
 	SmallPunchAbilityId,
 	BigPunchAbilityId,
 	KickAbilityId,
@@ -42,13 +46,13 @@ enum EffectId
 enum ClassId
 {
 	NoClassId,
+	DruidClassId,
 	MonkClassId,
 	PaladinClassId,
-	DruidClassId,
 	SnakeClassId
 };
 
-#define EntityRadius (1.0f)
+#define EntityRadius 1.0f
 #define EntityMaxHealth 100
 
 enum EntityGroupId
@@ -211,7 +215,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Assert(!TileHasTree(map, labState->moveToTile));
 	player->health = EntityMaxHealth;
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = MonkClassId;
+	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
 
 	Entity* pet = &labState->entities[1];
@@ -266,6 +270,12 @@ func GetAbilityClass(Int32 abilityId)
 	Int32 classId = NoClassId;
 	switch(abilityId)
 	{
+		case PetAttackAbilityId:
+		case HealAbilityId:
+		{
+			classId = DruidClassId;
+			break;
+		}
 		case SmallPunchAbilityId:
 		case BigPunchAbilityId:
 		case KickAbilityId:
@@ -337,6 +347,12 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 	{
 		switch(abilityId)
 		{
+			case PetAttackAbilityId:
+			{
+				Entity* pet = &labState->entities[1];
+				canUse = AbilityIsEnabled(labState, pet, SnakeStrikeAbilityId);
+				break;
+			}
 			case SmallPunchAbilityId:
 			case BigPunchAbilityId:
 			case KickAbilityId:
@@ -356,6 +372,13 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			{
 				canUse = ((target != 0) && (!IsDead(target)) &&
 						  (MaxDistance(entity->position, target->position) <= 30.0f));
+				break;
+			}
+			case HealAbilityId:
+			{
+				Map* map = &labState->map;
+				IntVec2 entityTile = GetContainingTile(map, entity->position);
+				canUse = TileIsNearTree(map, entityTile);
 				break;
 			}
 			case SpinningKickAbilityId:
@@ -530,6 +553,12 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 			cooldown = 60.0f;
 			break;
 		}
+		case HealAbilityId:
+		{
+			cooldown = 30.0f;
+			break;
+		}
+		case PetAttackAbilityId:
 		case SmallPunchAbilityId:
 		case SpinningKickAbilityId:
 		case SwordStabAbilityId:
@@ -834,11 +863,13 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 			recharge = 1.0f;
 			break;
 		}
+		case PetAttackAbilityId:
 		case SnakeStrikeAbilityId:
 		{
 			recharge = 3.0f;
 			break;
 		}
+		case HealAbilityId:
 		case BurnAbilityId:
 		case BlessingOfTheSunAbilityId:
 		case MercyOfTheSunAbilityId:
@@ -860,6 +891,16 @@ func GetAbilityName(Int32 abilityId)
 	Int8* name = 0;
 	switch(abilityId)
 	{
+		case PetAttackAbilityId:
+		{
+			name = "Pet Attack";
+			break;
+		}
+		case HealAbilityId:
+		{
+			name = "Heal";
+			break;
+		}
 		case SmallPunchAbilityId:
 		{
 			name = "Small Punch";
@@ -953,6 +994,17 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 	Entity* target = entity->target;
 	switch(abilityId)
 	{
+		case PetAttackAbilityId:
+		{
+			Entity* pet = &labState->entities[1];
+			UseAbility(labState, pet, SnakeStrikeAbilityId);
+			break;
+		}
+		case HealAbilityId:
+		{
+			Heal(labState, entity, 20);
+			break;
+		}
 		case SmallPunchAbilityId:
 		{
 			Assert(target != 0);
@@ -1280,6 +1332,16 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 
 	switch(abilityId)
 	{
+		case PetAttackAbilityId:
+		{
+			AddLine(text, "Order your pet to attack target enemy.");
+			break;
+		}
+		case HealAbilityId:
+		{
+			AddLine(text, "Heal yourself for 20. Must be near a tree.");
+			break;
+		}
 		case SmallPunchAbilityId:
 		{
 			AddLine(text, "Melee range")
@@ -2080,9 +2142,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	if(playerTile != labState->moveToTile)
 	{
-		Vec4 color = MakeColor(1.0f, 1.0f, 0.0f);
-		HighlightTile(canvas, map, labState->moveToTile, color);
-
 		IntVec2 nextTile = GetNextTileOnPath(map, playerTile, labState->moveToTile);
 		Assert(IsValidTile(map, nextTile) && !TileHasTree(map, nextTile));
 
@@ -2288,9 +2347,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	IntVec2 mouseTile = GetContainingTile(map, mousePosition);
 	if(IsValidTile(map, mouseTile) && !TileHasTree(map, mouseTile))
 	{
-		Vec4 color = MakeColor(0.8f, 0.8f, 0.0f);
-		HighlightTile(canvas, map, mouseTile, color);
-
 		if(IsKeyDown(userInput, VK_LBUTTON))
 		{
 			labState->moveToTile = mouseTile;
@@ -2305,13 +2361,12 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
  
-// TODO: Druid
-	// TODO: Pet controls
-		// TODO: Pet ability
-	// TODO: Basic abilities
-		// TODO: Basic heal near trees
-	// TODO: Nature interaction
+// TODO: Heal combat log
+// TODO: Heal others
+// TODO: Target friendly entity
 // TODO: Enemy hate and aggro
+// TODO: Pet attack ability - better description
+// TODO: General pet handling code
 // TODO: Effect tooltips
 // TODO: Simplify pathfinding!
 // TODO: Smooth automatic movement around trees!
@@ -2319,8 +2374,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 // TODO: Computer controlled enemies shouldn't stack upon each other
 // TODO: Momentum and acceleration
 // TODO: Remove limitation of 8 directions!
-// TODO: Heal others
-// TODO: Target friendly entity
 // TODO: Damage types
 // TODO: Text display for effects
 // TODO: Sword swing should only damage enemies in front of the paladin!
