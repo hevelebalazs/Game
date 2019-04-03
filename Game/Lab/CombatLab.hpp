@@ -113,8 +113,6 @@ struct CombatLabState
 	Int8 arenaMemory[CombatLabArenaSize];
 	MemArena arena;
 
-	Canvas shadowCanvas;
-
 	Map map;
 
 	Cooldown cooldowns[MaxCooldownN];
@@ -133,8 +131,6 @@ struct CombatLabState
 	Int32 combatLogLineN;
 
 	Int32 hoverAbilityId;
-
-	IntVec2 moveToTile;
 };
 
 #define PlayerSpeed 11.0f
@@ -171,6 +167,10 @@ func AddCombatLogLine(CombatLabState* labState, Int8* line)
 	labState->combatLogLastLineIndex = nextIndex;
 	labState->combatLogLineN++;
 }
+
+#define CombatLog(labState, line) {Int8 logLine[MaxCombatLogLineLength + 1]; \
+								   OneLineString(logLine, MaxCombatLogLineLength + 1, line); \
+								   AddCombatLogLine(labState, logLine);}
 
 static void
 func AddCombatLogStringLine(CombatLabState* labState, String line)
@@ -210,9 +210,6 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
-	labState->moveToTile = playerTile;
-	Assert(IsValidTile(map, labState->moveToTile));
-	Assert(!TileHasTree(map, labState->moveToTile));
 	player->health = EntityMaxHealth;
 	player->inputDirection = MakePoint(0.0f, 0.0f);
 	player->classId = DruidClassId;
@@ -377,8 +374,10 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			case HealAbilityId:
 			{
 				Map* map = &labState->map;
+				Bool32 targetIsFriendly = (entity->target != 0 && entity->target->groupId == entity->groupId);
 				IntVec2 entityTile = GetContainingTile(map, entity->position);
-				canUse = TileIsNearTree(map, entityTile);
+				Bool32 isNearTree = TileIsNearTree(map, entityTile);
+				canUse = (targetIsFriendly && isNearTree);
 				break;
 			}
 			case SpinningKickAbilityId:
@@ -482,14 +481,10 @@ func DealDamage(CombatLabState* labState, Entity* entity, Int32 damage)
 		DealFinalDamage(entity, finalDamage);
 		AddDamageDisplay(labState, entity->position, finalDamage);
 
-		Int8 logLine[MaxCombatLogLineLength + 1];
-		OneLineString(logLine, MaxCombatLogLineLength + 1, entity->name + " takes " + damage + " damage.");
-		AddCombatLogLine(labState, logLine);
-
+		CombatLog(labState, entity->name + " takes " + damage + " damage.");
 		if(IsDead(entity))
 		{
-			OneLineString(logLine, MaxCombatLogLineLength + 1, entity->name + " dies.");
-			AddCombatLogLine(labState, logLine);
+			CombatLog(labState, entity->name + " dies.");
 		}
 	}
 }
@@ -500,6 +495,8 @@ func Heal(CombatLabState* labState, Entity* entity, Int32 damage)
 	Assert(!IsDead(entity));
 	entity->health = IntMin2(entity->health + damage, EntityMaxHealth);
 	AddDamageDisplay(labState, entity->position, -damage);
+
+	CombatLog(labState, entity->name + " heals for " + damage + ".");
 }
 
 static Real32
@@ -814,9 +811,7 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 	effect->timeRemaining = duration;
 
 	Int8* effectName = GetEffectName(effectId);
-	Int8 logLine[MaxCombatLogLineLength + 1] = {};
-	OneLineString(logLine, MaxCombatLogLineLength + 1, entity->name + " gets " + effectName + ".");
-	AddCombatLogLine(labState, logLine);
+	CombatLog(labState, entity->name + " gets " + effectName);
 }
 
 static void
@@ -986,10 +981,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 	Assert(CanUseAbility(labState, entity, abilityId));
 
 	Int8* abilityName = GetAbilityName(abilityId);
-
-	Int8 combatLogLine[MaxCombatLogLineLength + 1];
-	OneLineString(combatLogLine, MaxCombatLogLineLength + 1, entity->name + " uses ability " + abilityName + ".");
-	AddCombatLogLine(labState, combatLogLine);
+	CombatLog(labState, entity->name + " uses ability " + abilityName + ".");
 
 	Entity* target = entity->target;
 	switch(abilityId)
@@ -1002,7 +994,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 		}
 		case HealAbilityId:
 		{
-			Heal(labState, entity, 20);
+			Heal(labState, target, 20);
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -1339,7 +1331,8 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case HealAbilityId:
 		{
-			AddLine(text, "Heal yourself for 20. Must be near a tree.");
+			AddLine(text, "Heal friendly target for 20.");
+			AddLine(text, "You must be standing near a tree.");
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -1576,8 +1569,9 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "Key binds");
 		AddLine(tooltip, "[W][A][S][D] or Arrows - Move");
 		AddLine(tooltip, "[Tab] - Target closest enemy");
+		AddLine(tooltip, "[F1] - Target player");
+		AddLine(tooltip, "[F2] - Target pet");
 		AddLine(tooltip, "[1]-[7] - Use Ability");
-		AddLine(tooltip, "[C] - Switch between classes Monk/Paladin");
 		AddLine(tooltip, "[Q] - Order pet to follow you");
 		AddLine(tooltip, "[E] - Order pet to follow target");
 
@@ -2078,22 +2072,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	Entity* player = &labState->entities[0];
 	Assert(player->groupId == PlayerGroupId);
 
-	if(WasKeyReleased(userInput, 'C'))
-	{
-		if(player->classId == MonkClassId)
-		{
-			player->classId = PaladinClassId;
-		}
-		else if(player->classId == PaladinClassId)
-		{
-			player->classId = MonkClassId;
-		}
-		else
-		{
-			DebugBreak();
-		}
-	}
-
 	UpdateCooldowns(labState, seconds);
 	UpdateEffects(labState, seconds);
 	UpdateDamageDisplays(labState, seconds);
@@ -2111,42 +2089,27 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	if(inputMoveLeft && inputMoveRight)
 	{
 		player->inputDirection.x = 0.0f;
-		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveLeft)
 	{
 		player->inputDirection.x = -1.0f;
-		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveRight)
 	{
 		player->inputDirection.x = +1.0f;
-		labState->moveToTile = playerTile;
 	}
 
 	if(inputMoveUp && inputMoveDown)
 	{
 		player->inputDirection.y = 0.0f;
-		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveUp)
 	{
 		player->inputDirection.y = -1.0f;
-		labState->moveToTile = playerTile;
 	}
 	else if(inputMoveDown)
 	{
 		player->inputDirection.y = +1.0f;
-		labState->moveToTile = playerTile;
-	}
-
-	if(playerTile != labState->moveToTile)
-	{
-		IntVec2 nextTile = GetNextTileOnPath(map, playerTile, labState->moveToTile);
-		Assert(IsValidTile(map, nextTile) && !TileHasTree(map, nextTile));
-
-		Vec2 nextPoint = GetTileCenter(map, nextTile);
-		player->inputDirection = PointDirection(player->position, nextPoint);
 	}
 
 	if(IsDead(player))
@@ -2188,16 +2151,30 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateEntityMovement(pet, map, seconds);
 
 	Vec4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
-	DrawEntity(canvas, player, playerColor);
+	if(player == player->target)
+	{
+		DrawSelectedEntity(canvas, player, playerColor);
+	}
+	else
+	{
+		DrawEntity(canvas, player, playerColor);
+	}
 
 	Vec4 petColor = MakeColor(0.0f, 0.5f, 0.5f);
-	DrawEntity(canvas, pet, petColor);
+	if(pet == player->target)
+	{
+		DrawSelectedEntity(canvas, pet, petColor);
+	}
+	else
+	{	
+		DrawEntity(canvas, pet, petColor);
+	}
 
 	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
 	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
-		if (enemy->groupId != EnemyGroupId)
+		if(enemy->groupId != EnemyGroupId)
 		{
 			continue;
 		}
@@ -2287,6 +2264,16 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 
+	if(WasKeyPressed(userInput, VK_F1))
+	{
+		player->target = player;
+	}
+
+	if(WasKeyPressed(userInput, VK_F2))
+	{
+		player->target = pet;
+	}
+
 	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
 	if(WasKeyReleased(userInput, VK_LBUTTON))
 	{
@@ -2299,8 +2286,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			for(Int32 i = 0; i < EntityN; i++)
 			{
 				Entity* entity = &labState->entities[i];
-				if(Distance(mousePosition, entity->position) <= EntityRadius &&
-				   !IsDead(entity) && entity->groupId != player->groupId)
+				Real32 distanceFromMouse = Distance(mousePosition, entity->position);
+				if(!IsDead(entity) && distanceFromMouse <= EntityRadius)
 				{
 					player->target = entity;
 					break;
@@ -2344,15 +2331,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
 	canvas->camera->center = player->position;
 
-	IntVec2 mouseTile = GetContainingTile(map, mousePosition);
-	if(IsValidTile(map, mouseTile) && !TileHasTree(map, mouseTile))
-	{
-		if(IsKeyDown(userInput, VK_LBUTTON))
-		{
-			labState->moveToTile = mouseTile;
-		}
-	}
-
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
 	DrawPlayerEffectBar(canvas, labState);
@@ -2361,9 +2339,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
  
-// TODO: Heal combat log
-// TODO: Heal others
-// TODO: Target friendly entity
+// TODO: Damage source - do not allow friendly damage!
+// TODO: Heal source
 // TODO: Enemy hate and aggro
 // TODO: Pet attack ability - better description
 // TODO: General pet handling code
