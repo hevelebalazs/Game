@@ -331,6 +331,9 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 
 	Int32 abilityClassId = GetAbilityClass(abilityId);
 
+	Bool32 hasLivingEnemyTarget = (target != 0) && (!IsDead(target)) && (entity->groupId != target->groupId);
+	Real32 distanceFromTarget = (target != 0) ? MaxDistance(entity->position, target->position) : 0.0f;
+
 	if(IsDead(entity))
 	{
 		canUse = false;
@@ -356,8 +359,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			case SwordStabAbilityId:
 			case SnakeStrikeAbilityId:
 			{
-				canUse = ((target != 0) && (!IsDead(target)) &&
-					      (MaxDistance(entity->position, target->position) <= MaxMeleeAttackDistance));
+				canUse = hasLivingEnemyTarget && (distanceFromTarget <= MaxMeleeAttackDistance);
 				break;
 			}
 			case RollAbilityId:
@@ -367,8 +369,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			}
 			case BurnAbilityId:
 			{
-				canUse = ((target != 0) && (!IsDead(target)) &&
-						  (MaxDistance(entity->position, target->position) <= 30.0f));
+				canUse = hasLivingEnemyTarget && (distanceFromTarget <= 30.0f);
 				break;
 			}
 			case HealAbilityId:
@@ -431,7 +432,7 @@ func PutOnRecharge(Entity* entity, Real32 rechargeTime)
 }
 
 static Bool32
-func CanDamage(CombatLabState* labState, Entity* entity)
+func CanTakeDamage(CombatLabState* labState, Entity* entity)
 {
 	Bool32 canDamage = false;
 	if(IsDead(entity))
@@ -468,35 +469,116 @@ func DealFinalDamage(Entity* entity, Int32 damage)
 }
 
 static void
-func DealDamage(CombatLabState* labState, Entity* entity, Int32 damage)
+func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* target, Int32 damage)
 {
-	if(CanDamage(labState, entity))
+	Assert(source->groupId != target->groupId);
+	if(CanTakeDamage(labState, target))
 	{
 		Int32 finalDamage = damage;
-		if(HasEffect(labState, entity, ShieldRaisedEffectId))
+		if(HasEffect(labState, target, ShieldRaisedEffectId))
 		{
 			finalDamage = damage / 2;
 		}
 
-		DealFinalDamage(entity, finalDamage);
-		AddDamageDisplay(labState, entity->position, finalDamage);
+		DealFinalDamage(target, finalDamage);
+		AddDamageDisplay(labState, target->position, finalDamage);
 
-		CombatLog(labState, entity->name + " takes " + damage + " damage.");
-		if(IsDead(entity))
+		CombatLog(labState, source->name + " deals " + damage + " damage to " + target->name + ".");
+		if(IsDead(target))
 		{
-			CombatLog(labState, entity->name + " dies.");
+			CombatLog(labState, target->name + " dies.");
+		}
+	}
+}
+
+static Int8*
+func GetEffectName(Int32 effectId)
+{
+	Int8* name = 0;
+	switch(effectId)
+	{
+		case KickedEffectId:
+		{
+			name = "Kicked";
+			break;
+		}
+		case RollingEffectId:
+		{
+			name = "Rolling";
+			break;
+		}
+		case InvulnerableEffectId:
+		{
+			name = "Invulnerable";
+			break;
+		}
+		case ShieldRaisedEffectId:
+		{
+			name = "Shield raised";
+			break;
+		}
+		case BurningEffectId:
+		{
+			name = "Burning";
+			break;
+		}
+		case BlessingOfTheSunEffectId:
+		{
+			name = "Sun's Blessing";
+			break;
+		}
+		case BlindEffectId:
+		{
+			name = "Blind";
+			break;
+		}
+		case PoisonedEffectId:
+		{
+			name = "Poisoned";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+static void
+func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* target, Int32 damage)
+{
+	if(CanTakeDamage(labState, target))
+	{
+		DealFinalDamage(target, damage);
+		AddDamageDisplay(labState, target->position, damage);
+
+		Int8* effectName = GetEffectName(effectId);
+		CombatLog(labState, effectName + " deals " + damage + " damage to " + target->name + ".");
+		if(IsDead(target))
+		{
+			CombatLog(labState, target->name + " dies.");
 		}
 	}
 }
 
 static void
-func Heal(CombatLabState* labState, Entity* entity, Int32 damage)
+func Heal(CombatLabState* labState, Entity* source, Entity* target, Int32 damage)
 {
-	Assert(!IsDead(entity));
-	entity->health = IntMin2(entity->health + damage, EntityMaxHealth);
-	AddDamageDisplay(labState, entity->position, -damage);
+	Assert(!IsDead(source));
+	Assert(!IsDead(target));
+	Assert(source->groupId == target->groupId);
+	target->health = IntMin2(target->health + damage, EntityMaxHealth);
+	AddDamageDisplay(labState, target->position, -damage);
 
-	CombatLog(labState, entity->name + " heals for " + damage + ".");
+	if(source == target)
+	{
+		CombatLog(labState, target->name + " heals for " + damage + ".");
+	}
+	else
+	{
+		CombatLog(labState, source->name + " heals " + target->name + " for " + damage + ".");
+	}
 }
 
 static Real32
@@ -742,60 +824,6 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 	labState->effectN = remainingEffectN;
 }
 
-static Int8*
-func GetEffectName(Int32 effectId)
-{
-	Int8* name = 0;
-	switch(effectId)
-	{
-		case KickedEffectId:
-		{
-			name = "Kicked";
-			break;
-		}
-		case RollingEffectId:
-		{
-			name = "Rolling";
-			break;
-		}
-		case InvulnerableEffectId:
-		{
-			name = "Invulnerable";
-			break;
-		}
-		case ShieldRaisedEffectId:
-		{
-			name = "Shield raised";
-			break;
-		}
-		case BurningEffectId:
-		{
-			name = "Burning";
-			break;
-		}
-		case BlessingOfTheSunEffectId:
-		{
-			name = "Sun's Blessing";
-			break;
-		}
-		case BlindEffectId:
-		{
-			name = "Blind";
-			break;
-		}
-		case PoisonedEffectId:
-		{
-			name = "Poisoned";
-			break;
-		}
-		default:
-		{
-			DebugBreak();
-		}
-	}
-	return name;
-}
-
 static void
 func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
@@ -811,7 +839,7 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 	effect->timeRemaining = duration;
 
 	Int8* effectName = GetEffectName(effectId);
-	CombatLog(labState, entity->name + " gets " + effectName);
+	CombatLog(labState, entity->name + " gets " + effectName + ".");
 }
 
 static void
@@ -994,19 +1022,19 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 		}
 		case HealAbilityId:
 		{
-			Heal(labState, target, 20);
+			Heal(labState, entity, target, 20);
 			break;
 		}
 		case SmallPunchAbilityId:
 		{
 			Assert(target != 0);
-			DealDamage(labState, target, 10);
+			DealDamageFromEntity(labState, entity, target, 10);
 			break;
 		}
 		case BigPunchAbilityId:
 		{
 			Assert(target != 0);
-			DealDamage(labState, target, 30);
+			DealDamageFromEntity(labState, entity, target, 30);
 			break;
 		}
 		case KickAbilityId:
@@ -1027,7 +1055,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 					Real32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
-						DealDamage(labState, target, 10);
+						DealDamageFromEntity(labState, entity, target, 10);
 					}
 				}
 			}
@@ -1054,7 +1082,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			}
 
 			Assert(target != 0);
-			DealDamage(labState, target, damage);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		case SwordSwingAbilityId:
@@ -1073,7 +1101,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 					Real32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
-						DealDamage(labState, target, damage);
+						DealDamageFromEntity(labState, entity, target, damage);
 					}
 				}
 			}
@@ -1084,7 +1112,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			AddEffect(labState, entity, ShieldRaisedEffectId);
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
-				Heal(labState, entity, 10);
+				Heal(labState, entity, entity, 10);
 			}
 			break;
 		}
@@ -1096,7 +1124,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 		}
 		case LightOfTheSunAbilityId:
 		{
-			Heal(labState, entity, 20);
+			Heal(labState, entity, entity, 20);
 			break;
 		}
 		case BlessingOfTheSunAbilityId:
@@ -1107,7 +1135,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 		}
 		case MercyOfTheSunAbilityId:
 		{
-			Heal(labState, entity, 30);
+			Heal(labState, entity, entity, 30);
 			for(Int32 i = 0; i < EntityN; i++)
 			{
 				Entity* target = &labState->entities[i];
@@ -1125,7 +1153,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 		case SnakeStrikeAbilityId:
 		{
 			Assert(target != 0);
-			DealDamage(labState, target, 10);
+			DealDamageFromEntity(labState, entity, target, 10);
 			if(RandomBetween(0.0f, 1.0f) < 0.3f)
 			{
 				ResetOrAddEffect(labState, target, PoisonedEffectId);
@@ -1781,7 +1809,7 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 			{
 				if(Floor(time) != Floor(previousTime))
 				{
-					DealDamage(labState, effect->entity, 2);
+					DealDamageFromEffect(labState, effect->effectId, effect->entity, 2);
 				}
 				break;
 			}
@@ -1789,7 +1817,7 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 			{
 				if(Floor(time * (1.0f / 3.0f)) != Floor(previousTime * (1.0f / 3.0f)))
 				{
-					DealDamage(labState, effect->entity, 2);
+					DealDamageFromEffect(labState, effect->effectId, effect->entity, 2);
 				}
 				break;
 			}
@@ -2339,8 +2367,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
  
-// TODO: Damage source - do not allow friendly damage!
-// TODO: Heal source
 // TODO: Enemy hate and aggro
 // TODO: Pet attack ability - better description
 // TODO: General pet handling code
