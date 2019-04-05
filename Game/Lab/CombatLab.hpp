@@ -101,6 +101,20 @@ struct Effect
 	Real32 timeRemaining;
 };
 
+struct HateTableEntry
+{
+	Entity* source;
+	Entity* target;
+	Int32 value;
+};
+
+#define MaxHateTableEntryN 64
+struct HateTable
+{
+	HateTableEntry entries[MaxHateTableEntryN];
+	Int32 entryN;
+};
+
 #define EntityN 256
 #define MaxCooldownN 64
 #define MaxEffectN 64
@@ -129,6 +143,8 @@ struct CombatLabState
 	Int8 combatLogLines[MaxCombatLogLineN][MaxCombatLogLineLength + 1];
 	Int32 combatLogLastLineIndex;
 	Int32 combatLogLineN;
+
+	HateTable hateTable;
 
 	Int32 hoverAbilityId;
 };
@@ -375,7 +391,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			case HealAbilityId:
 			{
 				Map* map = &labState->map;
-				Bool32 targetIsFriendly = (entity->target != 0 && entity->target->groupId == entity->groupId);
+				Bool32 targetIsFriendly = (target != 0 && !IsDead(target) && target->groupId == entity->groupId);
 				IntVec2 entityTile = GetContainingTile(map, entity->position);
 				Bool32 isNearTree = TileIsNearTree(map, entityTile);
 				canUse = (targetIsFriendly && isNearTree);
@@ -461,6 +477,50 @@ func AddDamageDisplay(CombatLabState* labState, Vec2 position, Int32 damage)
 	display->timeRemaining = DamageDisplayDuration;
 }
 
+static HateTableEntry*
+func GetHateTableEntry(HateTable* hateTable, Entity* source, Entity* target)
+{
+	HateTableEntry* result = 0;
+	for(Int32 i = 0; i < hateTable->entryN; i++)
+	{
+		HateTableEntry* entry = &hateTable->entries[i];
+		if(entry->source == source && entry->target == target)
+		{
+			result = entry;
+			break;
+		}
+	}
+	return result;
+}
+
+static HateTableEntry*
+func AddEmptyHateTableEntry(HateTable* hateTable, Entity* source, Entity* target)
+{
+	Assert(GetHateTableEntry(hateTable, source, target) == 0);
+	Assert(hateTable->entryN < MaxHateTableEntryN);
+	HateTableEntry* entry = &hateTable->entries[hateTable->entryN];
+	hateTable->entryN++;
+
+	entry->source = source;
+	entry->target = target;
+	entry->value = 0;
+	return entry;
+}
+
+static void
+func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 value)
+{
+	Assert(value >= 0);
+	HateTableEntry* entry = GetHateTableEntry(hateTable, source, target);
+	if(entry == 0)
+	{
+		entry = AddEmptyHateTableEntry(hateTable, source, target);
+	}
+
+	Assert(entry != 0);
+	entry->value += value;
+}
+
 static void
 func DealFinalDamage(Entity* entity, Int32 damage)
 {
@@ -482,6 +542,8 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 
 		DealFinalDamage(target, finalDamage);
 		AddDamageDisplay(labState, target->position, finalDamage);
+
+		GenerateHate(&labState->hateTable, target, source, damage);
 
 		CombatLog(labState, source->name + " deals " + damage + " damage to " + target->name + ".");
 		if(IsDead(target))
@@ -634,7 +696,7 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 		}
 		case HealAbilityId:
 		{
-			cooldown = 30.0f;
+			cooldown = 10.0f;
 			break;
 		}
 		case PetAttackAbilityId:
@@ -1188,7 +1250,7 @@ func AttemptToUseAbility(CombatLabState* labState, Entity* entity, Int32 ability
 }
 
 static Int32
-func GetClassAbilityOfIndex(Int32 classId, Int32 abilityIndex)
+func GetClassAbilityAtIndex(Int32 classId, Int32 abilityIndex)
 {
 	Int32 result = NoAbilityId;
 	Int32 classAbilityIndex = 0;
@@ -1208,9 +1270,9 @@ func GetClassAbilityOfIndex(Int32 classId, Int32 abilityIndex)
 }
 
 static void
-func AttemptToUseAbilityOfIndex(CombatLabState* labState, Entity* entity, Int32 abilityIndex)
+func AttemptToUseAbilityAtIndex(CombatLabState* labState, Entity* entity, Int32 abilityIndex)
 {
-	Int32 abilityId = GetClassAbilityOfIndex(entity->classId, abilityIndex);
+	Int32 abilityId = GetClassAbilityAtIndex(entity->classId, abilityIndex);
 	if(abilityId != NoAbilityId)
 	{
 		AttemptToUseAbility(labState, entity, abilityId);
@@ -1781,6 +1843,156 @@ func DrawCombatLog(Canvas* canvas, CombatLabState* labState)
 	}
 }
 
+static Int32
+GetHateTableEntityEntryN(HateTable* hateTable, Entity* source)
+{
+	Assert(source != 0);
+	Int32 entryN = 0;
+	for(Int32 i = 0; i < hateTable->entryN; i++)
+	{
+		HateTableEntry* entry = &hateTable->entries[i];
+		if(entry->source == source)
+		{
+			entryN++;
+		}
+	}
+	return entryN;
+}
+
+static void
+func RemoveDeadEntitiesFromHateTable(HateTable* hateTable)
+{
+	Int32 remainingEntryN = 0;
+	for(Int32 i = 0; i < hateTable->entryN; i++)
+	{
+		HateTableEntry* entry = &hateTable->entries[i];
+		if(!IsDead(entry->source) && !IsDead(entry->target))
+		{
+			hateTable->entries[remainingEntryN] = *entry;
+			remainingEntryN++;
+		}
+	}
+	hateTable->entryN = remainingEntryN;
+}
+
+static void
+func SortHateTable(HateTable* hateTable)
+{
+	for(Int32 index = 0; index < hateTable->entryN; index++)
+	{
+		HateTableEntry* entry = &hateTable->entries[index];
+		for(Int32 previousIndex = index - 1; previousIndex >= 0; previousIndex--)
+		{
+			HateTableEntry* previousEntry = &hateTable->entries[previousIndex];
+			Bool32 needSwap = false;
+			if(previousEntry->source > entry->source)
+			{
+				needSwap = true;
+			}
+			else if(previousEntry->source == entry->source && previousEntry->value < entry->value)
+			{
+				needSwap = true;
+			}
+
+			if(needSwap)
+			{
+				HateTableEntry tempEntry = *previousEntry;
+				*previousEntry = *entry;
+				*entry = tempEntry;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+}
+
+static void
+func UpdateEnemyTargets(CombatLabState* labState)
+{
+	HateTable* hateTable = &labState->hateTable;
+	HateTableEntry* previousEntry = 0;
+	for(Int32 i = 0; i < hateTable->entryN; i++)
+	{
+		HateTableEntry* entry = &hateTable->entries[i];
+		if(entry->source->groupId == EnemyGroupId)
+		{
+			if(previousEntry != 0)
+			{
+				Assert(previousEntry->source <= entry->source);
+				if(previousEntry->source != entry->source)
+				{
+					entry->source->target = entry->target;
+				}
+				else
+				{
+					Assert(previousEntry->value >= entry->value);
+				}
+			}
+			else
+			{
+				entry->source->target = entry->target;
+			}
+		}
+		previousEntry = entry;
+	}
+}
+
+static void
+func DrawHateTable(Canvas* canvas, CombatLabState* labState)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+	
+	Entity* player = &labState->entities[0];
+	Entity* target = player->target;
+
+	HateTable* hateTable = &labState->hateTable;
+
+	if(target != 0 && target->groupId != player->groupId)
+	{
+		Int32 lineN = GetHateTableEntityEntryN(hateTable, target);
+		if(lineN > 0)
+		{
+			Int32 width = 200;
+			Int32 height = UIBoxPadding + TextHeightInPixels + lineN * TextHeightInPixels + UIBoxPadding;
+			Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+			Vec4 outlineColor = MakeColor(0.5f, 0.5f, 0.5f);
+			Vec4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
+			Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+			Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+			Int32 left   = right - width;
+			Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+			Int32 top    = bottom - height;
+
+			DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+			DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+			Int32 textLeft = left + UIBoxPadding;
+			Int32 textRight = right - UIBoxPadding;
+			Int32 textTop  = top + UIBoxPadding;
+
+			DrawBitmapTextLineTopLeft(bitmap, "Hate", canvas->glyphData, textLeft, textTop, textColor);
+			textTop += TextHeightInPixels;
+
+			for(Int32 i = 0; i < hateTable->entryN; i++)
+			{
+				HateTableEntry* entry = &hateTable->entries[i];
+				if(entry->source == target)
+				{
+					Int8* name = entry->target->name;
+					Int8 value[8];
+					OneLineString(value, 8, entry->value);
+					DrawBitmapTextLineTopLeft(bitmap, name, canvas->glyphData, textLeft, textTop, textColor);
+					DrawBitmapTextLineTopRight(bitmap, value, canvas->glyphData, textRight, textTop, textColor);
+					textTop += TextHeightInPixels;
+				}
+			}
+		}
+	}
+}
+
 static void
 func UpdateEffects(CombatLabState* labState, Real32 seconds)
 {
@@ -2228,10 +2440,18 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 		if(enemy->target == 0)
 		{
-			Real32 distance = MaxDistance(player->position, enemy->position);
-			if(distance <= enemyPullDistance)
+			Real32 distanceFromPlayer = MaxDistance(player->position, enemy->position);
+			if(distanceFromPlayer <= enemyPullDistance)
 			{
 				enemy->target = player;
+				AddEmptyHateTableEntry(&labState->hateTable, enemy, player);
+			}
+
+			Real32 distanceFromPet = MaxDistance(pet->position, enemy->position);
+			if(distanceFromPet <= enemyPullDistance)
+			{
+				enemy->target = pet;
+				AddEmptyHateTableEntry(&labState->hateTable, enemy, pet);
 			}
 		}
 
@@ -2250,14 +2470,16 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		else if(CanMove(labState, enemy))
 		{
 			IntVec2 enemyTile = GetContainingTile(map, enemy->position);
-			if(enemyTile == playerTile)
+			Assert(enemy->groupId != enemy->target->groupId);
+			IntVec2 targetTile = GetContainingTile(map, enemy->target->position);
+			if(enemyTile == targetTile)
 			{
 				enemy->velocity = MakeVector(0.0f, 0.0f);
 			}
 			else
 			{
 				Real32 enemyMoveSpeed = 10.0f;
-				IntVec2 nextTile = GetNextTileOnPath(map, enemyTile, playerTile);
+				IntVec2 nextTile = GetNextTileOnPath(map, enemyTile, targetTile);
 				enemy->velocity = enemyMoveSpeed * PointDirection(enemy->position, GetTileCenter(map, nextTile));
 			}
 		}
@@ -2334,7 +2556,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	{
 		if(WasKeyPressed(userInput, i))
 		{
-			AttemptToUseAbilityOfIndex(labState, player, i - '1');
+			AttemptToUseAbilityAtIndex(labState, player, i - '1');
 		}
 	}
 
@@ -2348,6 +2570,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		AttemptToUseAbility(labState, enemy, SnakeStrikeAbilityId);
 	}
 
+	RemoveDeadEntitiesFromHateTable(&labState->hateTable);
+	SortHateTable(&labState->hateTable);
+	UpdateEnemyTargets(labState);
 	RemoveEffectsOfDeadEntities(labState);
 
 	for(Int32 i = 0; i < EntityN; i++)
@@ -2365,9 +2590,14 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
 	DrawCombatLog(canvas, labState);
+	DrawHateTable(canvas, labState);
 }
  
-// TODO: Enemy hate and aggro
+// TODO: Offensive and defensive target
+// TODO: Entities attacking each other get too close
+// TODO: Druid tame ability?
+// TODO: Druid: debuff/buff abilities?
+// TODO: Druid: attack ability?
 // TODO: Pet attack ability - better description
 // TODO: General pet handling code
 // TODO: Effect tooltips

@@ -745,8 +745,18 @@ func DrawBitmapTextLineCentered(Bitmap* bitmap, Int8* text, GlyphData* glyphData
 	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, color);
 }
 
-static void func DrawBitmapTextLineTopLeft(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 left, Int32 top, Vec4 color)
+static void
+func DrawBitmapTextLineTopLeft(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 left, Int32 top, Vec4 color)
 {
+	Int32 baseLineY = top + TextPixelsAboveBaseLine;
+	DrawBitmapTextLine(bitmap, text, glyphData, left, baseLineY, color);
+}
+
+static void
+func DrawBitmapTextLineTopRight(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 right, Int32 top, Vec4 color)
+{
+	Int32 textWidth = (Int32)GetTextPixelWidth(text, glyphData);
+	Int32 left = right - textWidth;
 	Int32 baseLineY = top + TextPixelsAboveBaseLine;
 	DrawBitmapTextLine(bitmap, text, glyphData, left, baseLineY, color);
 }
