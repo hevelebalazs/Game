@@ -643,22 +643,38 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 	}
 }
 
-static void
-func Heal(CombatLabState* labState, Entity* source, Entity* target, Int32 damage)
+static Bool32
+func CanBeHealed(Entity* entity)
 {
+	Bool32 canBeHealed = !IsDead(entity);
+	return canBeHealed;
+}
+
+static void
+func Heal(CombatLabState* labState, Entity* source, Entity* target, Int32 healing)
+{
+	Assert(CanBeHealed(target));
 	Assert(!IsDead(source));
-	Assert(!IsDead(target));
 	Assert(source->groupId == target->groupId);
-	target->health = IntMin2(target->health + damage, EntityMaxHealth);
-	AddDamageDisplay(labState, target->position, -damage);
+	target->health = IntMin2(target->health + healing, EntityMaxHealth);
+	AddDamageDisplay(labState, target->position, -healing);
 
 	if(source == target)
 	{
-		CombatLog(labState, target->name + " heals for " + damage + ".");
+		CombatLog(labState, target->name + " heals for " + healing + ".");
 	}
 	else
 	{
-		CombatLog(labState, source->name + " heals " + target->name + " for " + damage + ".");
+		CombatLog(labState, source->name + " heals " + target->name + " for " + healing + ".");
+	}
+}
+
+static void
+func AttemptToHeal(CombatLabState* labState, Entity* source, Entity* target, Int32 healing)
+{
+	if(CanBeHealed(target))
+	{
+		Heal(labState, source, target, healing);
 	}
 }
 
@@ -1301,7 +1317,7 @@ func FinishCasting(CombatLabState* labState, Entity* entity)
 		}
 		case HealAbilityId:
 		{
-			Heal(labState, entity, target, 20);
+			AttemptToHeal(labState, entity, target, 20);
 			break;
 		}
 		default:
@@ -2125,7 +2141,7 @@ func DrawHateTable(Canvas* canvas, CombatLabState* labState)
 			Int32 textRight = right - UIBoxPadding;
 			Int32 textTop  = top + UIBoxPadding;
 
-			DrawBitmapTextLineTopLeft(bitmap, "Hate", canvas->glyphData, textLeft, textTop, textColor);
+			DrawBitmapTextLineTopLeft(bitmap, "Hate", canvas->glyphData, textLeft, textTop, titleColor);
 			textTop += TextHeightInPixels;
 
 			for(Int32 i = 0; i < hateTable->entryN; i++)
@@ -2794,9 +2810,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Entities attacking each other get too close
-// TODO: Druid tame ability?
-// TODO: Druid: debuff/buff abilities?
-// TODO: Pet attack ability - better description
+// TODO: Druid: Tame ability?
+// TODO: Druid: Debuff/buff abilities?
 // TODO: General pet handling code
 // TODO: Effect tooltips
 // TODO: Simplify pathfinding!
