@@ -7,7 +7,7 @@ enum AbilityId
 {
 	NoAbilityId,
 
-	PetAttackAbilityId,
+	VenomBoltAbilityId,
 	HealAbilityId,
 
 	SmallPunchAbilityId,
@@ -71,6 +71,11 @@ struct Entity
 	Real32 recharge;
 	Real32 rechargeFrom;
 	Int32 health;
+
+	Int32 castedAbility;
+	Real32 castTimeTotal;
+	Real32 castTimeRemaining;
+	Entity* castTarget;
 
 	Int32 classId;
 	Int32 groupId;
@@ -216,7 +221,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	canvas->glyphData = GetGlobalGlyphData();
 
 	Camera* camera = canvas->camera;
-	camera->unitInPixels = 10.0f;
+	camera->unitInPixels = 15.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 
 	Real32 mapWidth  = GetMapWidth(map);
@@ -283,7 +288,7 @@ func GetAbilityClass(Int32 abilityId)
 	Int32 classId = NoClassId;
 	switch(abilityId)
 	{
-		case PetAttackAbilityId:
+		case VenomBoltAbilityId:
 		case HealAbilityId:
 		{
 			classId = DruidClassId;
@@ -342,7 +347,7 @@ func HasEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 static Bool32
 func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
-	Bool32 canUse = false;
+	Bool32 enabled = false;
 	Entity* target = entity->target;
 
 	Int32 abilityClassId = GetAbilityClass(abilityId);
@@ -352,40 +357,43 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 
 	if(IsDead(entity))
 	{
-		canUse = false;
+		enabled = false;
 	}
 	else if(abilityClassId != entity->classId)
 	{
 		DebugBreak();
-		canUse = false;
+		enabled = false;
+	}
+	else if(entity->castedAbility != NoAbilityId)
+	{
+		enabled = false;
 	}
 	else
 	{
 		switch(abilityId)
 		{
-			case PetAttackAbilityId:
-			{
-				Entity* pet = &labState->entities[1];
-				canUse = AbilityIsEnabled(labState, pet, SnakeStrikeAbilityId);
-				break;
-			}
 			case SmallPunchAbilityId:
 			case BigPunchAbilityId:
 			case KickAbilityId:
 			case SwordStabAbilityId:
 			case SnakeStrikeAbilityId:
 			{
-				canUse = hasLivingEnemyTarget && (distanceFromTarget <= MaxMeleeAttackDistance);
+				enabled = hasLivingEnemyTarget && (distanceFromTarget <= MaxMeleeAttackDistance);
 				break;
 			}
 			case RollAbilityId:
 			{
-				canUse = (entity->inputDirection.x != 0.0f || entity->inputDirection.y != 0.0f);
+				enabled = (entity->inputDirection.x != 0.0f || entity->inputDirection.y != 0.0f);
+				break;
+			}
+			case VenomBoltAbilityId:
+			{
+				enabled = hasLivingEnemyTarget && (distanceFromTarget <= 20.0f);
 				break;
 			}
 			case BurnAbilityId:
 			{
-				canUse = hasLivingEnemyTarget && (distanceFromTarget <= 30.0f);
+				enabled = hasLivingEnemyTarget && (distanceFromTarget <= 30.0f);
 				break;
 			}
 			case HealAbilityId:
@@ -394,7 +402,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 				Bool32 targetIsFriendly = (target != 0 && !IsDead(target) && target->groupId == entity->groupId);
 				IntVec2 entityTile = GetContainingTile(map, entity->position);
 				Bool32 isNearTree = TileIsNearTree(map, entityTile);
-				canUse = (targetIsFriendly && isNearTree);
+				enabled = (targetIsFriendly && isNearTree);
 				break;
 			}
 			case SpinningKickAbilityId:
@@ -405,7 +413,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			case BlessingOfTheSunAbilityId:
 			case MercyOfTheSunAbilityId:
 			{
-				canUse = true;
+				enabled = true;
 				break;
 			}
 			default:
@@ -419,22 +427,33 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 	{
 		if(abilityId == SwordStabAbilityId || abilityId == SwordSwingAbilityId)
 		{
-			canUse = false;
+			enabled = false;
 		}
 	}
 	else if(HasEffect(labState, entity, BlindEffectId))
 	{
-		canUse = false;
+		enabled = false;
 	}
 
-	return canUse;
+	return enabled;
 }
 
 static Bool32
 func CanUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
-	Bool32 canUseAbility = (entity->recharge == 0.0f && !IsOnCooldown(labState, entity, abilityId) &&
-							AbilityIsEnabled(labState, entity, abilityId));
+	Bool32 canUseAbility = true;
+	if(entity->recharge > 0.0f || IsOnCooldown(labState, entity, abilityId))
+	{
+		canUseAbility = false;
+	}
+	else if(entity->castedAbility != NoAbilityId)
+	{
+		canUseAbility = false;
+	}
+	else if(!AbilityIsEnabled(labState, entity, abilityId))
+	{
+		canUseAbility = false;
+	}
 	return canUseAbility;
 }
 
@@ -644,6 +663,40 @@ func Heal(CombatLabState* labState, Entity* source, Entity* target, Int32 damage
 }
 
 static Real32
+func GetAbilityCastDuration(Int32 abilityId)
+{
+	Assert(abilityId != NoAbilityId);
+	Real32 castDuration = 0.0f;
+	switch(abilityId)
+	{
+		case VenomBoltAbilityId:
+		{
+			castDuration = 2.5f;
+			break;
+		}
+		case HealAbilityId:
+		{
+			castDuration = 1.5f;
+			break;
+		}
+		default:
+		{
+			castDuration = 0.0f;
+			break;
+		}
+	}
+	return castDuration;
+}
+
+static Bool32
+func AbilityIsCasted(Int32 abilityId)
+{
+	Real32 castDuration = GetAbilityCastDuration(abilityId);
+	Bool32 isCasted = (castDuration > 0.0f);
+	return isCasted;
+}
+
+static Real32
 func GetAbilityCooldownDuration(Int32 abilityId)
 {
 	Real32 cooldown = 0.0f;
@@ -660,6 +713,11 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 			break;
 		}
 		case RollAbilityId:
+		{
+			cooldown = 5.0f;
+			break;
+		}
+		case HealAbilityId:
 		{
 			cooldown = 5.0f;
 			break;
@@ -694,12 +752,7 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 			cooldown = 60.0f;
 			break;
 		}
-		case HealAbilityId:
-		{
-			cooldown = 10.0f;
-			break;
-		}
-		case PetAttackAbilityId:
+		case VenomBoltAbilityId:
 		case SmallPunchAbilityId:
 		case SpinningKickAbilityId:
 		case SwordStabAbilityId:
@@ -934,6 +987,8 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 	Real32 recharge = 0.0f;
 	switch(abilityId)
 	{
+		case VenomBoltAbilityId:
+		case HealAbilityId:
 		case SmallPunchAbilityId:
 		case BigPunchAbilityId:
 		case KickAbilityId:
@@ -948,13 +1003,11 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 			recharge = 1.0f;
 			break;
 		}
-		case PetAttackAbilityId:
 		case SnakeStrikeAbilityId:
 		{
 			recharge = 3.0f;
 			break;
 		}
-		case HealAbilityId:
 		case BurnAbilityId:
 		case BlessingOfTheSunAbilityId:
 		case MercyOfTheSunAbilityId:
@@ -976,9 +1029,9 @@ func GetAbilityName(Int32 abilityId)
 	Int8* name = 0;
 	switch(abilityId)
 	{
-		case PetAttackAbilityId:
+		case VenomBoltAbilityId:
 		{
-			name = "Pet Attack";
+			name = "Venom Bolt";
 			break;
 		}
 		case HealAbilityId:
@@ -1066,8 +1119,9 @@ func GetAbilityName(Int32 abilityId)
 }
 
 static void
-func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
+	Assert(!AbilityIsCasted(abilityId));
 	Assert(CanUseAbility(labState, entity, abilityId));
 
 	Int8* abilityName = GetAbilityName(abilityId);
@@ -1076,15 +1130,11 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 	Entity* target = entity->target;
 	switch(abilityId)
 	{
-		case PetAttackAbilityId:
+		case VenomBoltAbilityId:
 		{
-			Entity* pet = &labState->entities[1];
-			UseAbility(labState, pet, SnakeStrikeAbilityId);
-			break;
-		}
-		case HealAbilityId:
-		{
-			Heal(labState, entity, target, 20);
+			Assert(target != 0);
+			DealDamageFromEntity(labState, entity, target, 10);
+			ResetOrAddEffect(labState, target, PoisonedEffectId);
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -1227,6 +1277,62 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			DebugBreak();
 		}
 	}
+}
+
+static void
+func FinishCasting(CombatLabState* labState, Entity* entity)
+{
+	Int32 abilityId = entity->castedAbility;
+	Assert(abilityId != NoAbilityId);
+	Assert(AbilityIsCasted(abilityId));
+	Entity* target = entity->castTarget;
+	switch(abilityId)
+	{
+		case VenomBoltAbilityId:
+		{
+			Assert(target != 0 && target->groupId != entity->groupId);
+			Int32 damage = 10;
+			if(HasEffect(labState, target, PoisonedEffectId))
+			{
+				damage += 5;
+			}
+			DealDamageFromEntity(labState, entity, target, damage);
+			break;
+		}
+		case HealAbilityId:
+		{
+			Heal(labState, entity, target, 20);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	entity->castedAbility = NoAbilityId;
+	entity->castTarget = 0;
+	entity->castTimeTotal = 0.0f;
+	entity->castTimeRemaining = 0.0f;
+}
+
+static void
+func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+{
+	if(AbilityIsCasted(abilityId))
+	{
+		Assert(CanUseAbility(labState, entity, abilityId));
+		Real32 castDuration = GetAbilityCastDuration(abilityId);
+		Assert(castDuration > 0.0f);
+		entity->castedAbility = abilityId;
+		entity->castTimeTotal = castDuration;
+		entity->castTimeRemaining = castDuration;
+		entity->castTarget = entity->target;
+	}
+	else
+	{
+		UseInstantAbility(labState, entity, abilityId);
+	}
 
 	Real32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
 	if(rechargeDuration > 0.0f)
@@ -1367,17 +1473,46 @@ func DrawEntityBars(Canvas* canvas, Entity* entity)
 	Vec2 healthBarCenter = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
 	Real32 healthBarWidth = 2.0f * EntityRadius;
 	Real32 healthBarHeight = 0.5f * EntityRadius;
+
 	Vec4 healthBarBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 healthBarFilledColor = MakeColor(1.0f, 0.0f, 0.0f);
 	Vec4 healthBarOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+
 	Real32 healthRatio = Real32(entity->health) / Real32(EntityMaxHealth);
 	Assert(IsBetween(healthRatio, 0.0f, 1.0f));
+
 	Rect healthBarBackgroundRect = MakeRect(healthBarCenter, healthBarWidth, healthBarHeight);
 	DrawRect(canvas, healthBarBackgroundRect, healthBarBackgroundColor);
+
 	Rect healthBarFilledRect = healthBarBackgroundRect;
-	healthBarFilledRect.right = Lerp(healthBarFilledRect.left, healthRatio, healthBarFilledRect.right);
+	healthBarFilledRect.right = Lerp(healthBarBackgroundRect.left, healthRatio, healthBarBackgroundRect.right);
 	DrawRect(canvas, healthBarFilledRect, healthBarFilledColor);
+
 	DrawRectOutline(canvas, healthBarBackgroundRect, healthBarOutlineColor);
+
+	if(entity->castedAbility != NoAbilityId)
+	{
+		Real32 castBarWidth = healthBarWidth;
+		Real32 castBarHeight = 0.25f * EntityRadius;
+		Vec2 castBarCenter = healthBarCenter + MakeVector(0.0f, -healthBarHeight * 0.5f - castBarHeight * 0.5f);
+
+		Vec4 castBarBackgroundColor = MakeColor(0.0, 0.5f, 0.5f);
+		Vec4 castBarFilledColor = MakeColor(0.0f, 1.0f, 1.0f);
+		Vec4 castBarOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+
+		Rect castBarBackgroundRect = MakeRect(castBarCenter, castBarWidth, castBarHeight);
+		DrawRect(canvas, castBarBackgroundRect, castBarBackgroundColor);
+
+		Assert(entity->castTimeTotal > 0.0f);
+		Real32 castRatio = 1.0f - (entity->castTimeRemaining / entity->castTimeTotal);
+		Assert(IsBetween(castRatio, 0.0f, 1.0f));
+
+		Rect castBarFilledRect = castBarBackgroundRect;
+		castBarFilledRect.right = Lerp(castBarBackgroundRect.left, castRatio, castBarBackgroundRect.right);
+		DrawRect(canvas, castBarFilledRect, castBarFilledColor);
+
+		DrawRectOutline(canvas, castBarBackgroundRect, castBarOutlineColor);
+	}
 }
 
 static String
@@ -1387,6 +1522,23 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 
 	Int8* abilityName = GetAbilityName(abilityId);
 	AddLine(text, abilityName);
+
+	Real32 castDuration = GetAbilityCastDuration(abilityId);
+	if(castDuration > 0.0f)
+	{
+		if(castDuration == 1.0f)
+		{
+			AddLine(text, "Cast: 1 second");
+		}
+		else
+		{
+			AddLine(text, "Cast: " + castDuration + " seconds");
+		}
+	}
+	else
+	{
+		AddLine(text, "Instant");
+	}
 
 	Real32 rechargeDuration = GetAbilityRechargeDuration(abilityId);
 	if(rechargeDuration == 1.0f)
@@ -1414,9 +1566,10 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 
 	switch(abilityId)
 	{
-		case PetAttackAbilityId:
+		case VenomBoltAbilityId:
 		{
-			AddLine(text, "Order your pet to attack target enemy.");
+			AddLine(text, "Deal 10 damage to your enemy and");
+			AddLine(text, "an additional 5 if they are poisoned.");
 			break;
 		}
 		case HealAbilityId:
@@ -1661,7 +1814,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[Tab] - Target closest enemy");
 		AddLine(tooltip, "[F1] - Target player");
 		AddLine(tooltip, "[F2] - Target pet");
-		AddLine(tooltip, "[1]-[7] - Use Ability");
+		AddLine(tooltip, "[1]-[2] - Use Ability");
 		AddLine(tooltip, "[Q] - Order pet to follow you");
 		AddLine(tooltip, "[E] - Order pet to follow target");
 
@@ -1880,25 +2033,24 @@ func SortHateTable(HateTable* hateTable)
 {
 	for(Int32 index = 0; index < hateTable->entryN; index++)
 	{
-		HateTableEntry* entry = &hateTable->entries[index];
+		HateTableEntry entry = hateTable->entries[index];
 		for(Int32 previousIndex = index - 1; previousIndex >= 0; previousIndex--)
 		{
-			HateTableEntry* previousEntry = &hateTable->entries[previousIndex];
+			HateTableEntry previousEntry = hateTable->entries[previousIndex];
 			Bool32 needSwap = false;
-			if(previousEntry->source > entry->source)
+			if(previousEntry.source > entry.source)
 			{
 				needSwap = true;
 			}
-			else if(previousEntry->source == entry->source && previousEntry->value < entry->value)
+			else if(previousEntry.source == entry.source && previousEntry.value < entry.value)
 			{
 				needSwap = true;
 			}
 
 			if(needSwap)
 			{
-				HateTableEntry tempEntry = *previousEntry;
-				*previousEntry = *entry;
-				*entry = tempEntry;
+				hateTable->entries[previousIndex] = entry;
+				hateTable->entries[previousIndex + 1] = previousEntry;
 			}
 			else
 			{
@@ -2363,6 +2515,14 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	UpdateEntityMovement(player, map, seconds);
 
+	if(player->inputDirection.x != 0.0f || player->inputDirection.y != 0.0f)
+	{
+		if(player->castedAbility != NoAbilityId)
+		{
+			player->castedAbility = NoAbilityId;
+		}
+	}
+
 	Real32 petMoveSpeed = PlayerSpeed;
 	Entity* pet = &labState->entities[1];
 
@@ -2389,45 +2549,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 	UpdateEntityMovement(pet, map, seconds);
-
-	Vec4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
-	if(player == player->target)
-	{
-		DrawSelectedEntity(canvas, player, playerColor);
-	}
-	else
-	{
-		DrawEntity(canvas, player, playerColor);
-	}
-
-	Vec4 petColor = MakeColor(0.0f, 0.5f, 0.5f);
-	if(pet == player->target)
-	{
-		DrawSelectedEntity(canvas, pet, petColor);
-	}
-	else
-	{	
-		DrawEntity(canvas, pet, petColor);
-	}
-
-	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
-	for(Int32 i = 0; i < EntityN; i++)
-	{
-		Entity* enemy = &labState->entities[i];
-		if(enemy->groupId != EnemyGroupId)
-		{
-			continue;
-		}
-
-		if(enemy == player->target)
-		{
-			DrawSelectedEntity(canvas, enemy, enemyColor);
-		}
-		else
-		{
-			DrawEntity(canvas, enemy, enemyColor);
-		}
-	}
 
 	Real32 enemyPullDistance = 30.0f;
 	for(Int32 i = 0; i < EntityN; i++)
@@ -2562,12 +2683,32 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	for(Int32 i = 0; i < EntityN; i++)
 	{
-		Entity* enemy = &labState->entities[i];
-		if(enemy->groupId != EnemyGroupId)
+		Entity* entity = &labState->entities[i];
+		if(entity->classId == SnakeClassId)
 		{
-			continue;
+			AttemptToUseAbility(labState, entity, SnakeStrikeAbilityId);
 		}
-		AttemptToUseAbility(labState, enemy, SnakeStrikeAbilityId);
+	}
+
+	for(Int32 i = 0; i < EntityN; i++)
+	{
+		Entity* entity = &labState->entities[i];
+		if(entity->castedAbility != NoAbilityId)
+		{
+			if(IsDead(entity))
+			{
+				entity->castedAbility = NoAbilityId;
+			}
+			else
+			{
+				Assert(entity->castTimeTotal > 0.0f);
+				entity->castTimeRemaining -= seconds;
+				if(entity->castTimeRemaining <= 0.0f)
+				{
+					FinishCasting(labState, entity);
+				}
+			}
+		}
 	}
 
 	RemoveDeadEntitiesFromHateTable(&labState->hateTable);
@@ -2575,13 +2716,70 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateEnemyTargets(labState);
 	RemoveEffectsOfDeadEntities(labState);
 
+	Vec4 playerColor = MakeColor(0.0f, 1.0f, 1.0f);
+	if(player == player->target)
+	{
+		DrawSelectedEntity(canvas, player, playerColor);
+	}
+	else
+	{
+		DrawEntity(canvas, player, playerColor);
+	}
+
+	Vec4 petColor = MakeColor(0.0f, 0.5f, 0.5f);
+	if(pet == player->target)
+	{
+		DrawSelectedEntity(canvas, pet, petColor);
+	}
+	else
+	{	
+		DrawEntity(canvas, pet, petColor);
+	}
+
+	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
+	for(Int32 i = 0; i < EntityN; i++)
+	{
+		Entity* enemy = &labState->entities[i];
+		if(enemy->groupId != EnemyGroupId)
+		{
+			continue;
+		}
+
+		if(enemy == player->target)
+		{
+			DrawSelectedEntity(canvas, enemy, enemyColor);
+		}
+		else
+		{
+			DrawEntity(canvas, enemy, enemyColor);
+		}
+	}
+
 	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* entity = &labState->entities[i];
 		DrawEntityBars(canvas, entity);
 	}
 
-	Vec2 mapCenter = MakePoint(mapWidth * 0.5f, mapHeight * 0.5f);
+	Vec4 entityNameColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 castAbilityNameColor = MakeColor(0.0f, 1.0f, 1.0f);
+	for(Int32 i = 0; i < EntityN; i++)
+	{
+		Entity* entity = &labState->entities[i];
+		Real32 textCenterX = entity->position.x;
+		Real32 textBottom = entity->position.y - 2.0f * EntityRadius;
+
+		if(entity->castedAbility == NoAbilityId)
+		{
+			DrawTextLineBottomXCentered(canvas, entity->name, textBottom, textCenterX, entityNameColor);
+		}
+		else
+		{
+			Int8* abilityName = GetAbilityName(entity->castedAbility);
+			DrawTextLineBottomXCentered(canvas, abilityName, textBottom, textCenterX, castAbilityNameColor);
+		}
+	}
+
 	canvas->camera->center = player->position;
 
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
@@ -2592,12 +2790,12 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 	DrawHateTable(canvas, labState);
 }
- 
+
+// TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Entities attacking each other get too close
 // TODO: Druid tame ability?
 // TODO: Druid: debuff/buff abilities?
-// TODO: Druid: attack ability?
 // TODO: Pet attack ability - better description
 // TODO: General pet handling code
 // TODO: Effect tooltips

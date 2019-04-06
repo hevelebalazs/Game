@@ -1348,3 +1348,16 @@ func DrawTextLineXYCentered(Canvas* canvas, Int8* text, Real32 centerY, Real32 c
 	Real32 baseLineY = textTop + GetPixelDistanceInUnit(camera, TextPixelsAboveBaseLine);
 	DrawTextLine(canvas, text, baseLineY, left, textColor);
 }
+
+static void
+func DrawTextLineBottomXCentered(Canvas* canvas, Int8* text, Real32 bottom, Real32 centerX, Vec4 textColor)
+{
+	Assert(canvas->glyphData != 0);
+	Camera* camera = canvas->camera;
+
+	Real32 left = centerX - GetTextWidth(canvas, text) * 0.5f;
+	Real32 textHeight = GetPixelDistanceInUnit(camera, TextHeightInPixels);
+	Real32 textTop = bottom - textHeight;
+	Real32 baseLineY = textTop + GetPixelDistanceInUnit(camera, TextPixelsAboveBaseLine);
+	DrawTextLine(canvas, text, baseLineY, left, textColor);
+}
