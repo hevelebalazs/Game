@@ -120,6 +120,19 @@ struct HateTable
 	Int32 entryN;
 };
 
+enum ItemId
+{
+	NoItemId,
+	HealthPotionItemId
+};
+
+#define InventoryRowN 3
+#define InventoryColN 4
+struct Inventory
+{
+	Int32 items[InventoryRowN][InventoryColN];
+};
+
 #define EntityN 256
 #define MaxCooldownN 64
 #define MaxEffectN 64
@@ -152,6 +165,9 @@ struct CombatLabState
 	HateTable hateTable;
 
 	Int32 hoverAbilityId;
+
+	Inventory inventory;
+	Bool32 showInventory;
 };
 
 #define PlayerSpeed 11.0f
@@ -255,6 +271,9 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 		enemy->classId = SnakeClassId;
 		enemy->groupId = EnemyGroupId;
 	}
+
+	Inventory* inventory = &labState->inventory;
+	inventory->items[0][0] = HealthPotionItemId;
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -1833,6 +1852,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[1]-[2] - Use Ability");
 		AddLine(tooltip, "[Q] - Order pet to follow you");
 		AddLine(tooltip, "[E] - Order pet to follow target");
+		AddLine(tooltip, "[I] - Show/hide inventory");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
 		Int32 tooltipRight = (bitmap->width - 1);
@@ -2104,6 +2124,77 @@ func UpdateEnemyTargets(CombatLabState* labState)
 			}
 		}
 		previousEntry = entry;
+	}
+}
+
+static Int8*
+func GetItemSlotName(Int32 itemId)
+{
+	Int8* name = 0;
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			name = "HP";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+static void
+func DrawInventory(Canvas* canvas, Inventory* inventory)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+
+	Int32 slotSide = 50;
+	Int32 slotPadding = 2;
+	
+	Int32 width  = slotPadding + InventoryColN * (slotSide + slotPadding);
+	Int32 height = slotPadding + InventoryRowN * (slotSide + slotPadding);
+
+	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+	Int32 left   = right - width;
+	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	Int32 top    = bottom - height;
+
+	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 slotBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
+	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	Int32 slotTop = top + slotPadding;
+	for(Int32 row = 0; row < InventoryRowN; row++)
+	{
+		Int32 slotBottom = slotTop + slotSide;
+		Int32 slotLeft = left + slotPadding;
+		for(Int32 col = 0; col < InventoryColN; col++)
+		{
+			Int32 slotRight = slotLeft + slotSide;
+
+			Int32 itemId = inventory->items[row][col];
+			if(itemId == NoAbilityId)
+			{
+				DrawBitmapRect(bitmap, slotLeft, slotRight, slotTop, slotBottom, slotBackgroundColor);
+			}
+			else
+			{
+				DrawBitmapRect(bitmap, slotLeft, slotRight, slotTop, slotBottom, itemBackgroundColor);
+
+				Int8* name = GetItemSlotName(itemId);
+				DrawBitmapTextLineCentered(bitmap, name, canvas->glyphData,
+										   slotLeft, slotRight, slotTop, slotBottom, itemNameColor);
+			}
+
+			slotLeft = slotRight + slotPadding;
+		}
+
+		slotTop = slotBottom + slotPadding;
 	}
 }
 
@@ -2798,15 +2889,35 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	canvas->camera->center = player->position;
 
+	if(WasKeyReleased(userInput, 'I'))
+	{
+		labState->showInventory = !labState->showInventory;
+	}
+
+	if(labState->showInventory)
+	{
+		DrawInventory(canvas, &labState->inventory);
+	}
+	else
+	{
+		DrawHateTable(canvas, labState);
+	}
+
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
 	DrawPlayerEffectBar(canvas, labState);
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
 	DrawCombatLog(canvas, labState);
-	DrawHateTable(canvas, labState);
 }
 
+// TODO: Consumable items
+	// TODO: Use health potion!
+	// TODO: Item cooldown
+	// TODO: Item action bar
+	// TODO: Item tooltip
+	// TODO: Drop from monsters
+	// TODO: Gathered from plants
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Entities attacking each other get too close
