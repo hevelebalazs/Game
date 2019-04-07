@@ -155,11 +155,41 @@ func IsValidGridIndex(Map* map, IntVec2 index)
 }
 
 static Bool32
-func TileHasTree(Map* map, IntVec2 index)
+func TileHasTree(Map* map, IntVec2 tile)
 {
-	Assert(IsValidTile(map, index));
-	Bool32 hasTree = map->isTree[index.row * map->tileColN + index.col];
+	Assert(IsValidTile(map, tile));
+	Bool32 hasTree = map->isTree[tile.row * map->tileColN + tile.col];
 	return hasTree;
+}
+
+static Bool32
+func TileIsNearTree(Map* map, IntVec2 tile)
+{
+	Assert(IsValidTile(map, tile));
+	Assert(!TileHasTree(map, tile));
+	IntVec2 tilesToCheck[8] =
+	{
+		MakeTile(tile.row - 1, tile.col - 1),
+		MakeTile(tile.row - 1, tile.col),
+		MakeTile(tile.row - 1, tile.col + 1),
+		MakeTile(tile.row, tile.col - 1),
+		MakeTile(tile.row, tile.col + 1),
+		MakeTile(tile.row + 1, tile.col - 1),
+		MakeTile(tile.row + 1, tile.col),
+		MakeTile(tile.row + 1, tile.col + 1)
+	};
+
+	Bool32 isNearTree = false;
+	for(Int32 i = 0; i < 8; i++)
+	{
+		IntVec2 tileToCheck = tilesToCheck[i];
+		if(IsValidTile(map, tileToCheck) && TileHasTree(map, tileToCheck))
+		{
+			isNearTree = true;
+			break;
+		}
+	}
+	return isNearTree;
 }
 
 static IntVec2

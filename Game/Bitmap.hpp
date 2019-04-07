@@ -742,7 +742,23 @@ func DrawBitmapTextLineCentered(Bitmap* bitmap, Int8* text, GlyphData* glyphData
 	Int32 textLeft = (left + right) / 2 - textWidth / 2;
 	Int32 textTop = (bottom + top) / 2 - textHeight / 2;
 	Int32 textBaseLineY = textTop + TextPixelsAboveBaseLine;
-	DrawBitmapTextLine (bitmap, text, glyphData, textLeft, textBaseLineY, color);
+	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, color);
+}
+
+static void
+func DrawBitmapTextLineTopLeft(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 left, Int32 top, Vec4 color)
+{
+	Int32 baseLineY = top + TextPixelsAboveBaseLine;
+	DrawBitmapTextLine(bitmap, text, glyphData, left, baseLineY, color);
+}
+
+static void
+func DrawBitmapTextLineTopRight(Bitmap* bitmap, Int8* text, GlyphData* glyphData, Int32 right, Int32 top, Vec4 color)
+{
+	Int32 textWidth = (Int32)GetTextPixelWidth(text, glyphData);
+	Int32 left = right - textWidth;
+	Int32 baseLineY = top + TextPixelsAboveBaseLine;
+	DrawBitmapTextLine(bitmap, text, glyphData, left, baseLineY, color);
 }
 
 #define TooltipWidth 300
