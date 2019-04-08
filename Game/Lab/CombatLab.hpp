@@ -166,8 +166,8 @@ struct CombatLabState
 
 	Int32 hoverAbilityId;
 
-	Inventory inventory;
 	Bool32 showInventory;
+	Inventory inventory;
 };
 
 #define PlayerSpeed 11.0f
@@ -1528,7 +1528,7 @@ func DrawEntityBars(Canvas* canvas, Entity* entity)
 	if(entity->castedAbility != NoAbilityId)
 	{
 		Real32 castBarWidth = healthBarWidth;
-		Real32 castBarHeight = 0.25f * EntityRadius;
+		Real32 castBarHeight = 0.3f * EntityRadius;
 		Vec2 castBarCenter = healthBarCenter + MakeVector(0.0f, -healthBarHeight * 0.5f - castBarHeight * 0.5f);
 
 		Vec4 castBarBackgroundColor = MakeColor(0.0, 0.5f, 0.5f);
@@ -1852,7 +1852,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[1]-[2] - Use Ability");
 		AddLine(tooltip, "[Q] - Order pet to follow you");
 		AddLine(tooltip, "[E] - Order pet to follow target");
-		AddLine(tooltip, "[I] - Show/hide inventory");
+		AddLine(tooltip, "[C] - Show/hide inventory");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
 		Int32 tooltipRight = (bitmap->width - 1);
@@ -2128,14 +2128,14 @@ func UpdateEnemyTargets(CombatLabState* labState)
 }
 
 static Int8*
-func GetItemSlotName(Int32 itemId)
+func GetItemName(Int32 itemId)
 {
 	Int8* name = 0;
 	switch(itemId)
 	{
 		case HealthPotionItemId:
 		{
-			name = "HP";
+			name = "Potion";
 			break;
 		}
 		default:
@@ -2146,10 +2146,35 @@ func GetItemSlotName(Int32 itemId)
 	return name;
 }
 
+static String
+func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
+{
+	String text = StartString(buffer, bufferSize);
+
+	Int8* name = GetItemName(itemId);
+	AddLine(text, name);
+
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			AddLine(text, "Use: Heal yourself for 30.");
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	return text;
+}
+
 static void
-func DrawInventory(Canvas* canvas, Inventory* inventory)
+func DrawInventory(Canvas* canvas, Inventory* inventory, IntVec2 mousePosition)
 {
 	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
 
 	Int32 slotSide = 50;
 	Int32 slotPadding = 2;
@@ -2165,6 +2190,7 @@ func DrawInventory(Canvas* canvas, Inventory* inventory)
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 slotBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
+	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
 	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
 
@@ -2186,9 +2212,23 @@ func DrawInventory(Canvas* canvas, Inventory* inventory)
 			{
 				DrawBitmapRect(bitmap, slotLeft, slotRight, slotTop, slotBottom, itemBackgroundColor);
 
-				Int8* name = GetItemSlotName(itemId);
-				DrawBitmapTextLineCentered(bitmap, name, canvas->glyphData,
+				Int8* name = GetItemName(itemId);
+				DrawBitmapTextLineCentered(bitmap, name, glyphData,
 										   slotLeft, slotRight, slotTop, slotBottom, itemNameColor);
+
+				if(mousePosition.col >= slotLeft && mousePosition.col <= slotRight &&
+				   mousePosition.row >= slotTop && mousePosition.row <= slotBottom)
+				{
+					Int32 tooltipBottom = slotTop - UIBoxPadding;
+					Int32 tooltipRight = IntMin2((slotLeft + slotRight) / 2 + TooltipWidth / 2,
+												 (bitmap->width - 1) - UIBoxPadding);
+
+					Int8 tooltipBuffer[64];
+					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 64);
+					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
+
+					DrawBitmapRectOutline(bitmap, slotLeft, slotRight, slotTop, slotBottom, hoverOutlineColor);
+				}
 			}
 
 			slotLeft = slotRight + slotPadding;
@@ -2889,14 +2929,14 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	canvas->camera->center = player->position;
 
-	if(WasKeyReleased(userInput, 'I'))
+	if(WasKeyReleased(userInput, 'C'))
 	{
 		labState->showInventory = !labState->showInventory;
 	}
 
 	if(labState->showInventory)
 	{
-		DrawInventory(canvas, &labState->inventory);
+		DrawInventory(canvas, &labState->inventory, userInput->mousePixelPosition);
 	}
 	else
 	{
@@ -2915,7 +2955,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	// TODO: Use health potion!
 	// TODO: Item cooldown
 	// TODO: Item action bar
-	// TODO: Item tooltip
+	// TODO: Drag item
+	// TODO: Drop item
+	// TODO: Pick up item
 	// TODO: Drop from monsters
 	// TODO: Gathered from plants
 // TODO: Mana
