@@ -2256,6 +2256,93 @@ func GetItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 	return result;
 }
 
+static Bool32
+func InventorySlotIsValid(IntVec2 slot)
+{
+	Bool32 rowIsValid = IsIntBetween(slot.row, 0, InventoryRowN - 1);
+	Bool32 colIsValid = IsIntBetween(slot.col, 0, InventoryColN - 1);
+	Bool32 isValid = (rowIsValid && colIsValid);
+	return isValid;
+}
+
+static Bool32
+func InventoryItemIsValid(InventoryItem item)
+{
+	Bool32 isValid = (item.inventory != 0 && InventorySlotIsValid(item.slot));
+	return isValid;
+}
+
+static void
+func SetSlotItem(Inventory* inventory, IntVec2 slot, Int32 itemId)
+{
+	Assert(InventorySlotIsValid(slot));
+	inventory->items[slot.row][slot.col] = itemId;
+}
+
+static void
+func SwapItems(CombatLabState* labState, InventoryItem item1, InventoryItem item2)
+{
+	Assert(InventoryItemIsValid(item1));
+	Assert(InventoryItemIsValid(item2));
+
+	SetSlotItem(&labState->inventory, item1.slot, item2.itemId);
+	SetSlotItem(&labState->inventory, item2.slot, item1.itemId);
+}
+
+#define InventorySlotSide 50
+
+static void
+func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 itemId, Int32 top, Int32 left)
+{
+	Int32 bottom = top + InventorySlotSide;
+	Int32 right = left + InventorySlotSide;
+
+	Vec4 slotBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
+	Vec4 cooldownColor = MakeColor(0.2f, 0.0f, 0.0f);
+	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
+
+	if(itemId == NoAbilityId)
+	{
+		DrawBitmapRect(bitmap, left, right, top, bottom, slotBackgroundColor);
+	}
+	else
+	{
+		DrawBitmapRect(bitmap, left, right, top, bottom, itemBackgroundColor);
+
+		Real32 totalCooldown = GetItemCooldownDuration(itemId);
+		if(totalCooldown > 0.0f)
+		{
+			Entity* player = &labState->entities[0];
+			ItemCooldown* cooldown = GetItemCooldown(labState, player, itemId);
+			if(cooldown)
+			{
+				Real32 remainingCooldown = cooldown->timeRemaining;
+				Real32 cooldownRatio = (remainingCooldown / totalCooldown);
+				Assert(IsBetween(cooldownRatio, 0.0f, 1.0f));
+
+				Int32 cooldownRight = (Int32)Lerp((Real32)left, cooldownRatio, (Real32)right);
+				DrawBitmapRect(bitmap, left, cooldownRight, top, bottom, cooldownColor);
+			}
+		}
+
+		Int8* name = GetItemName(itemId);
+		DrawBitmapTextLineCentered(bitmap, name, glyphData, left, right, top, bottom, itemNameColor);
+	}
+}
+
+static void
+func DrawInventorySlotOutline(Canvas* canvas, Int32 top, Int32 left, Vec4 color)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+	Int32 bottom = top + InventorySlotSide;
+	Int32 right = left + InventorySlotSide;
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, color);
+}
+
 static void
 func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
 {
@@ -2264,11 +2351,10 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
 
-	Int32 slotSide = 50;
 	Int32 slotPadding = 2;
 	
-	Int32 width  = slotPadding + InventoryColN * (slotSide + slotPadding);
-	Int32 height = slotPadding + InventoryRowN * (slotSide + slotPadding);
+	Int32 width  = slotPadding + InventoryColN * (InventorySlotSide + slotPadding);
+	Int32 height = slotPadding + InventoryRowN * (InventorySlotSide + slotPadding);
 
 	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
 	Int32 left   = right - width;
@@ -2276,12 +2362,8 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 	Int32 top    = bottom - height;
 
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
-	Vec4 slotBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
-	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
-	Vec4 cooldownColor = MakeColor(0.2f, 0.0f, 0.0f);
 	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Vec4 dragOutlineColor = MakeColor(1.0f, 0.5f, 0.0f);
-	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
 	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
 
 	labState->hoverItem.inventory = 0;
@@ -2292,88 +2374,58 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 	Int32 slotTop = top + slotPadding;
 	for(Int32 row = 0; row < InventoryRowN; row++)
 	{
-		Int32 slotBottom = slotTop + slotSide;
 		Int32 slotLeft = left + slotPadding;
 		for(Int32 col = 0; col < InventoryColN; col++)
 		{
-			Int32 slotRight = slotLeft + slotSide;
-
 			Int32 itemId = inventory->items[row][col];
-			if(itemId == NoAbilityId)
+			Bool32 isDragItem = (dragItem->inventory == inventory && dragItem->slot.row == row && dragItem->slot.col == col);
+			if(!isDragItem)
 			{
-				DrawBitmapRect(bitmap, slotLeft, slotRight, slotTop, slotBottom, slotBackgroundColor);
+				DrawInventorySlot(canvas, labState, itemId, slotTop, slotLeft);
 			}
 			else
 			{
-				DrawBitmapRect(bitmap, slotLeft, slotRight, slotTop, slotBottom, itemBackgroundColor);
-
-				Real32 totalCooldown = GetItemCooldownDuration(itemId);
-				if(totalCooldown > 0.0f)
-				{
-					Entity* player = &labState->entities[0];
-					ItemCooldown* cooldown = GetItemCooldown(labState, player, itemId);
-					if(cooldown)
-					{
-						Real32 remainingCooldown = cooldown->timeRemaining;
-						Real32 cooldownRatio = (remainingCooldown / totalCooldown);
-						Assert(IsBetween(cooldownRatio, 0.0f, 1.0f));
-
-						Int32 right = (Int32)Lerp((Real32)slotLeft, cooldownRatio, (Real32)slotRight);
-						DrawBitmapRect(bitmap, slotLeft, right, slotTop, slotBottom, cooldownColor);
-					}
-				}
-
-				Bool32 isDragItem = (dragItem->inventory == inventory && dragItem->slot.row == row && dragItem->slot.col == col);
-
-				if(!isDragItem)
-				{
-					Int8* name = GetItemName(itemId);
-					DrawBitmapTextLineCentered(bitmap, name, glyphData,
-											   slotLeft, slotRight, slotTop, slotBottom, itemNameColor);
-
-					if(mousePosition.col >= slotLeft && mousePosition.col <= slotRight &&
-					   mousePosition.row >= slotTop && mousePosition.row <= slotBottom)
-					{
-						Int32 tooltipBottom = slotTop - UIBoxPadding;
-						Int32 tooltipRight = IntMin2((slotLeft + slotRight) / 2 + TooltipWidth / 2,
-													 (bitmap->width - 1) - UIBoxPadding);
-
-						Int8 tooltipBuffer[64];
-						String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 64);
-						DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
-
-						DrawBitmapRectOutline(bitmap, slotLeft, slotRight, slotTop, slotBottom, hoverOutlineColor);
-
-						labState->hoverItem.inventory = inventory;
-						labState->hoverItem.itemId = itemId;
-						labState->hoverItem.slot.row = row;
-						labState->hoverItem.slot.col = col;
-					}
-				}
+				DrawInventorySlot(canvas, labState, NoItemId, slotTop, slotLeft);
 			}
 
-			slotLeft = slotRight + slotPadding;
+			if(mousePosition.col >= slotLeft && mousePosition.col <= slotLeft + InventorySlotSide &&
+			   mousePosition.row >= slotTop && mousePosition.row <= slotTop + InventorySlotSide)
+			{
+				if(itemId != NoItemId)
+				{
+					Int32 tooltipBottom = slotTop - UIBoxPadding;
+					Int32 tooltipRight = IntMin2((slotLeft + InventorySlotSide / 2) + TooltipWidth / 2,
+												 (bitmap->width - 1) - UIBoxPadding);
+
+					Int8 tooltipBuffer[64];
+					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 64);
+					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
+				}
+
+				DrawInventorySlotOutline(canvas, slotTop, slotLeft, hoverOutlineColor);
+
+				labState->hoverItem.inventory = inventory;
+				labState->hoverItem.itemId = itemId;
+				labState->hoverItem.slot.row = row;
+				labState->hoverItem.slot.col = col;
+			}
+
+			slotLeft += (InventorySlotSide + slotPadding);
 		}
 
-		slotTop = slotBottom + slotPadding;
+		slotTop += (InventorySlotSide + slotPadding);
 	}
 
 	if(dragItem->inventory)
 	{
 		Assert(dragItem->inventory == inventory);
 		Assert(dragItem->itemId != NoAbilityId);
-		Int32 top    = mousePosition.row - slotSide / 2;
-		Int32 bottom = top + slotSide;
-		Int32 left   = mousePosition.col - slotSide / 2;
-		Int32 right  = left + slotSide;
 
-		DrawBitmapRect(bitmap, left, right, top, bottom, itemBackgroundColor);
+		Int32 slotTop  = mousePosition.row - InventorySlotSide / 2;
+		Int32 slotLeft = mousePosition.col - InventorySlotSide / 2;
 
-		Int8* name = GetItemName(dragItem->itemId);
-		DrawBitmapTextLineCentered(bitmap, name, glyphData,
-								   left, right, top, bottom, itemNameColor);
-
-		DrawBitmapRectOutline(bitmap, left, right, top, bottom, dragOutlineColor);
+		DrawInventorySlot(canvas, labState, dragItem->itemId, slotTop, slotLeft);
+		DrawInventorySlotOutline(canvas, slotTop, slotLeft, dragOutlineColor);
 	}
 }
 
@@ -3192,10 +3244,21 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	if(WasKeyPressed(userInput, VK_LBUTTON))
 	{
-		labState->dragItem = labState->hoverItem;
+		if(labState->hoverItem.inventory != 0 && labState->hoverItem.itemId != NoItemId)
+		{
+			labState->dragItem = labState->hoverItem;
+		}
 	}
 	if(WasKeyReleased(userInput, VK_LBUTTON))
 	{
+		if(labState->dragItem.inventory != 0)
+		{
+			Assert(labState->dragItem.itemId != NoItemId);
+			if(labState->hoverItem.inventory != 0)
+			{
+				SwapItems(labState, labState->dragItem, labState->hoverItem);
+			}
+		}
 		labState->dragItem.inventory = 0;
 	}
 
@@ -3216,8 +3279,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
 
-// TODO: Draw inventory slot function!
 // TODO: Consumable items
+	// [TODO: Move item in inventory]
 	// TODO: Item action bar
 	// TODO: Drop item
 	// TODO: Pick up item
