@@ -130,7 +130,8 @@ struct HateTable
 enum ItemId
 {
 	NoItemId,
-	HealthPotionItemId
+	HealthPotionItemId,
+	AntiVenomItemId
 };
 
 #define InventoryRowN 3
@@ -295,6 +296,8 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Inventory* inventory = &labState->inventory;
 	inventory->items[0][0] = HealthPotionItemId;
 	inventory->items[0][1] = HealthPotionItemId;
+	inventory->items[1][0] = AntiVenomItemId;
+	inventory->items[1][1] = AntiVenomItemId;
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -2166,6 +2169,30 @@ func UpdateEnemyTargets(CombatLabState* labState)
 }
 
 static Int8*
+func GetItemSlotName(Int32 itemId)
+{
+	Int8* name = 0;
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			name = "HP";
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			name = "AV";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+static Int8*
 func GetItemName(Int32 itemId)
 {
 	Int8* name = 0;
@@ -2173,7 +2200,12 @@ func GetItemName(Int32 itemId)
 	{
 		case HealthPotionItemId:
 		{
-			name = "Potion";
+			name = "Health Potion";
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			name = "Antivenom";
 			break;
 		}
 		default:
@@ -2193,6 +2225,11 @@ func GetItemCooldownDuration(Int32 itemId)
 		case HealthPotionItemId:
 		{
 			cooldown = 30.0f;
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			cooldown = 10.0f;
 			break;
 		}
 		default:
@@ -2229,6 +2266,11 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		case HealthPotionItemId:
 		{
 			AddLine(text, "Use: Heal yourself for 30.");
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			AddLine(text, "Use: Remove poison from friendly target.");
 			break;
 		}
 		default:
@@ -2329,7 +2371,7 @@ func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 itemId, I
 			}
 		}
 
-		Int8* name = GetItemName(itemId);
+		Int8* name = GetItemSlotName(itemId);
 		DrawBitmapTextLineCentered(bitmap, name, glyphData, left, right, top, bottom, itemNameColor);
 	}
 }
@@ -2397,8 +2439,8 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 					Int32 tooltipRight = IntMin2((slotLeft + InventorySlotSide / 2) + TooltipWidth / 2,
 												 (bitmap->width - 1) - UIBoxPadding);
 
-					Int8 tooltipBuffer[64];
-					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 64);
+					Int8 tooltipBuffer[128];
+					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 128);
 					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
 				}
 
@@ -2856,6 +2898,13 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 				canUse = CanBeHealed(entity);
 				break;
 			}
+			case AntiVenomItemId:
+			{
+				bool hasFriendlyTarget = (entity->target != 0 && entity->target->groupId == entity->groupId);
+				bool targetIsAlive = (entity->target != 0 && !IsDead(entity->target));
+				canUse = (hasFriendlyTarget && targetIsAlive);
+				break;
+			}
 			default:
 			{
 				DebugBreak();
@@ -2875,6 +2924,11 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 		case HealthPotionItemId:
 		{
 			Heal(labState, entity, entity, 30);
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			RemoveEffect(labState, entity->target, PoisonedEffectId);
 			break;
 		}
 		default:
@@ -3280,12 +3334,13 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 }
 
 // TODO: Consumable items
-	// [TODO: Move item in inventory]
 	// TODO: Item action bar
 	// TODO: Drop item
 	// TODO: Pick up item
 	// TODO: Drop from monsters
 	// TODO: Gathered from plants
+// TODO: Icons?
+// TODO: Show effects above entities' heads
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Entities attacking each other get too close
