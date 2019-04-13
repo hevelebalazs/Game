@@ -134,6 +134,15 @@ enum ItemId
 	AntiVenomItemId
 };
 
+#define DroppedItemTotalDuration 10.0f
+
+struct DroppedItem
+{
+	Vec2 position;
+	Int32 itemId;
+	Real32 timeLeft;
+};
+
 #define InventoryRowN 3
 #define InventoryColN 4
 struct Inventory
@@ -155,6 +164,7 @@ struct InventoryItem
 #define MaxDamageDisplayN 64
 #define MaxCombatLogLineN 32
 #define MaxCombatLogLineLength 64
+#define MaxDroppedItemN 32
 #define CombatLabArenaSize (2 * MegaByte)
 struct CombatLabState
 {
@@ -173,6 +183,11 @@ struct CombatLabState
 	Int32 effectN;
 
 	Entity entities[EntityN];
+
+	DroppedItem droppedItems[MaxDroppedItemN];
+	Int32 droppedItemN;
+
+	DroppedItem* hoverDroppedItem;
 
 	DamageDisplay damageDisplays[MaxDamageDisplayN];
 	Int32 damageDisplayN;
@@ -2610,6 +2625,158 @@ func CanMove(CombatLabState* labState, Entity* entity)
 }
 
 static void
+func SetInventoryItemId(Inventory* inventory, IntVec2 slot, Int32 itemId)
+{
+	Assert(IsIntBetween(slot.row, 0, InventoryRowN - 1));
+	Assert(IsIntBetween(slot.col, 0, InventoryColN - 1));
+	inventory->items[slot.row][slot.col] = itemId;
+}
+
+static Bool32
+func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
+{
+	Bool32 isAlive = !IsDead(entity);
+	Bool32 hasEmptySlot = false;
+
+	Inventory* inventory = &labState->inventory;
+	for(Int32 row = 0;  row < InventoryRowN; row++)
+	{
+		for(Int32 col = 0; col < InventoryColN; col++)
+		{
+			Int32 itemId = inventory->items[row][col];
+			if(itemId == NoItemId)
+			{
+				hasEmptySlot = true;
+				break;
+			}
+		}
+
+		if(hasEmptySlot)
+		{
+			break;
+		}
+	}
+
+	Bool32 canPickUpItem = (isAlive && hasEmptySlot);
+	return canPickUpItem;
+}
+
+static void
+func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
+{
+	Assert(item != 0);
+	Assert(CanPickUpItem(labState, entity, item));
+
+	Int32 itemIndex = 0;
+	Bool32 itemFound = false;
+	for(Int32 i = 0; i < labState->droppedItemN; i++)
+	{
+		if(item == &labState->droppedItems[i])
+		{
+			itemFound = true;
+			itemIndex = i;
+			break;
+		}
+	}
+
+	Assert(itemFound);
+	labState->droppedItemN--;
+	for(Int32 i = itemIndex; i < labState->droppedItemN; i++)
+	{
+		labState->droppedItems[i] = labState->droppedItems[i + 1];
+	}
+
+	Bool32 itemPickedUp = false;
+	Inventory* inventory = &labState->inventory;
+	for(Int32 row = 0; row < InventoryRowN; row++)
+	{
+		for(Int32 col = 0; col < InventoryColN; col++)
+		{
+			Int32 itemId = inventory->items[row][col];
+			if(itemId == NoItemId)
+			{
+				inventory->items[row][col] = item->itemId;
+				itemPickedUp = true;
+				break;
+			}
+		}
+
+		if(itemPickedUp)
+		{
+			break;
+		}
+	}
+	Assert(itemPickedUp);
+
+	Int8* itemName = GetItemName(item->itemId);
+	CombatLog(labState, entity->name + " picks up " + itemName + ".");
+}
+
+static void
+func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
+{
+	Assert(itemId != NoItemId);
+
+	DroppedItem item = {};
+	item.itemId = itemId;
+	item.position = entity->position;
+	item.timeLeft = DroppedItemTotalDuration;
+
+	Assert(labState->droppedItemN + 1 < MaxDroppedItemN);
+	labState->droppedItems[labState->droppedItemN] = item;
+	labState->droppedItemN++;
+
+	Int8* itemName = GetItemName(itemId);
+	CombatLog(labState, entity->name + " drops " + itemName + ".");
+}
+
+static void
+func UpdateAndDrawDroppedItems(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition, Real32 seconds)
+{
+	labState->hoverDroppedItem = 0;
+
+	Int32 remainingN = 0;
+	for(Int32 i = 0; i < labState->droppedItemN; i++)
+	{
+		DroppedItem* item = &labState->droppedItems[i];
+		item->timeLeft -= seconds;
+		if(item->timeLeft > 0.0f)
+		{
+			labState->droppedItems[remainingN] = *item;
+			remainingN++;
+		}
+	}
+	labState->droppedItemN = remainingN;
+
+	for(Int32 i = 0; i < labState->droppedItemN; i++)
+	{
+		DroppedItem* item = &labState->droppedItems[i];
+		Int8* itemName = GetItemName(item->itemId);
+
+		Vec4 normalBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+		Vec4 hoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
+		Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+		Real32 textWidth = GetTextWidth(canvas, itemName);
+		Real32 textHeight = GetTextHeight(canvas, itemName);
+		
+		Camera* camera = canvas->camera;
+		Assert(camera->unitInPixels > 0.0f);
+		Rect rect = MakeRect(item->position, textWidth, textHeight);
+
+		Vec4 backgroundColor = normalBackgroundColor;
+		if(IsPointInRect(mousePosition, rect))
+		{
+			backgroundColor = hoverBackgroundColor;
+			labState->hoverDroppedItem = item;
+		}
+
+		DrawRect(canvas, rect, backgroundColor);
+		DrawTextLineXYCentered(canvas, itemName, item->position.y, item->position.x, textColor);
+	}
+}
+
+static void
 func DrawDamageDisplays(Canvas* canvas, CombatLabState* labState)
 {
 	Vec4 damageColor = MakeColor(1.0f, 1.0f, 0.0f);
@@ -3303,17 +3470,37 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			labState->dragItem = labState->hoverItem;
 		}
 	}
+
 	if(WasKeyReleased(userInput, VK_LBUTTON))
 	{
-		if(labState->dragItem.inventory != 0)
+		InventoryItem* dragItem = &labState->dragItem;
+		InventoryItem* hoverItem = &labState->hoverItem;
+		if(dragItem->inventory != 0)
 		{
-			Assert(labState->dragItem.itemId != NoItemId);
-			if(labState->hoverItem.inventory != 0)
+			Assert(dragItem->itemId != NoItemId);
+			if(hoverItem->inventory != 0)
 			{
-				SwapItems(labState, labState->dragItem, labState->hoverItem);
+				SwapItems(labState, *dragItem, *hoverItem);
+			}
+			else
+			{
+				DropItem(labState, player, dragItem->itemId);
+				SetInventoryItemId(dragItem->inventory, dragItem->slot, NoItemId);
 			}
 		}
 		labState->dragItem.inventory = 0;
+	}
+
+	if(WasKeyPressed(userInput, ' '))
+	{
+		DroppedItem* item = labState->hoverDroppedItem;
+		if(item != 0)
+		{
+			if(CanPickUpItem(labState, player, item))
+			{
+				PickUpItem(labState, player, item);
+			}
+		}
 	}
 
 	if(labState->showInventory)
@@ -3330,15 +3517,16 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawPlayerEffectBar(canvas, labState);
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
+	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 	DrawCombatLog(canvas, labState);
 }
 
 // TODO: Consumable items
-	// TODO: Item action bar
-	// TODO: Drop item
+	// [TODO: Drop item]
 	// TODO: Pick up item
 	// TODO: Drop from monsters
 	// TODO: Gathered from plants
+	// TODO: Item action bar
 // TODO: Icons?
 // TODO: Show effects above entities' heads
 // TODO: Mana
