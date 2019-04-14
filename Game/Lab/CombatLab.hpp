@@ -598,6 +598,57 @@ func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 va
 	entry->value += value;
 }
 
+static Int8*
+func GetItemName(Int32 itemId)
+{
+	Int8* name = 0;
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			name = "Health Potion";
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			name = "Antivenom";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+static void
+func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
+{
+	Assert(itemId != NoItemId);
+
+	DroppedItem item = {};
+	item.itemId = itemId;
+	item.position = entity->position;
+	item.timeLeft = DroppedItemTotalDuration;
+
+	Assert(labState->droppedItemN + 1 < MaxDroppedItemN);
+	labState->droppedItems[labState->droppedItemN] = item;
+	labState->droppedItemN++;
+
+	Int8* itemName = GetItemName(itemId);
+	CombatLog(labState, entity->name + " drops " + itemName + ".");
+}
+
+static void
+func DropLoot(CombatLabState* labState, Entity* entity)
+{
+	if(entity->classId == SnakeClassId)
+	{
+		DropItem(labState, entity, AntiVenomItemId);
+	}
+}
+
 static void
 func DealFinalDamage(Entity* entity, Int32 damage)
 {
@@ -625,6 +676,7 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 		CombatLog(labState, source->name + " deals " + damage + " damage to " + target->name + ".");
 		if(IsDead(target))
 		{
+			DropLoot(labState, target);
 			CombatLog(labState, target->name + " dies.");
 		}
 	}
@@ -696,6 +748,7 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 		CombatLog(labState, effectName + " deals " + damage + " damage to " + target->name + ".");
 		if(IsDead(target))
 		{
+			DropLoot(labState, target);
 			CombatLog(labState, target->name + " dies.");
 		}
 	}
@@ -2207,30 +2260,6 @@ func GetItemSlotName(Int32 itemId)
 	return name;
 }
 
-static Int8*
-func GetItemName(Int32 itemId)
-{
-	Int8* name = 0;
-	switch(itemId)
-	{
-		case HealthPotionItemId:
-		{
-			name = "Health Potion";
-			break;
-		}
-		case AntiVenomItemId:
-		{
-			name = "Antivenom";
-			break;
-		}
-		default:
-		{
-			DebugBreak();
-		}
-	}
-	return name;
-}
-
 static Real32
 func GetItemCooldownDuration(Int32 itemId)
 {
@@ -2710,24 +2739,6 @@ func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 
 	Int8* itemName = GetItemName(item->itemId);
 	CombatLog(labState, entity->name + " picks up " + itemName + ".");
-}
-
-static void
-func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
-{
-	Assert(itemId != NoItemId);
-
-	DroppedItem item = {};
-	item.itemId = itemId;
-	item.position = entity->position;
-	item.timeLeft = DroppedItemTotalDuration;
-
-	Assert(labState->droppedItemN + 1 < MaxDroppedItemN);
-	labState->droppedItems[labState->droppedItemN] = item;
-	labState->droppedItemN++;
-
-	Int8* itemName = GetItemName(itemId);
-	CombatLog(labState, entity->name + " drops " + itemName + ".");
 }
 
 static void
@@ -3522,11 +3533,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 }
 
 // TODO: Consumable items
-	// [TODO: Drop item]
-	// TODO: Pick up item
-	// TODO: Drop from monsters
+	// [TODO: Drop from monsters]
 	// TODO: Gathered from plants
-	// TODO: Item action bar
 // TODO: Icons?
 // TODO: Show effects above entities' heads
 // TODO: Mana
