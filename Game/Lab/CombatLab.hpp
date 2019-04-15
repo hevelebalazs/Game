@@ -84,10 +84,17 @@ struct Entity
 	Vec2 inputDirection;
 };
 
-struct Cooldown
+struct AbilityCooldown
 {
 	Entity* entity;
 	Int32 abilityId;
+	Real32 timeRemaining;
+};
+
+struct ItemCooldown
+{
+	Entity* entity;
+	Int32 itemId;
 	Real32 timeRemaining;
 };
 
@@ -120,12 +127,44 @@ struct HateTable
 	Int32 entryN;
 };
 
+enum ItemId
+{
+	NoItemId,
+	HealthPotionItemId,
+	AntiVenomItemId
+};
+
+#define DroppedItemTotalDuration 10.0f
+
+struct DroppedItem
+{
+	Vec2 position;
+	Int32 itemId;
+	Real32 timeLeft;
+};
+
+#define InventoryRowN 3
+#define InventoryColN 4
+struct Inventory
+{
+	Int32 items[InventoryRowN][InventoryColN];
+};
+
+struct InventoryItem
+{
+	Inventory* inventory;
+	Int32 itemId;
+	IntVec2 slot;
+};
+
 #define EntityN 256
-#define MaxCooldownN 64
+#define MaxAbilityCooldownN 64
+#define MaxItemCooldownN 64
 #define MaxEffectN 64
 #define MaxDamageDisplayN 64
 #define MaxCombatLogLineN 32
 #define MaxCombatLogLineLength 64
+#define MaxDroppedItemN 32
 #define CombatLabArenaSize (2 * MegaByte)
 struct CombatLabState
 {
@@ -134,13 +173,21 @@ struct CombatLabState
 
 	Map map;
 
-	Cooldown cooldowns[MaxCooldownN];
-	Int32 cooldownN;
+	AbilityCooldown abilityCooldowns[MaxAbilityCooldownN];
+	Int32 abilityCooldownN;
+
+	ItemCooldown itemCooldowns[MaxItemCooldownN];
+	Int32 itemCooldownN;
 
 	Effect effects[MaxEffectN];
 	Int32 effectN;
 
 	Entity entities[EntityN];
+
+	DroppedItem droppedItems[MaxDroppedItemN];
+	Int32 droppedItemN;
+
+	DroppedItem* hoverDroppedItem;
 
 	DamageDisplay damageDisplays[MaxDamageDisplayN];
 	Int32 damageDisplayN;
@@ -152,6 +199,11 @@ struct CombatLabState
 	HateTable hateTable;
 
 	Int32 hoverAbilityId;
+
+	Bool32 showInventory;
+	Inventory inventory;
+	InventoryItem hoverItem;
+	InventoryItem dragItem;
 };
 
 #define PlayerSpeed 11.0f
@@ -255,17 +307,23 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 		enemy->classId = SnakeClassId;
 		enemy->groupId = EnemyGroupId;
 	}
+
+	Inventory* inventory = &labState->inventory;
+	inventory->items[0][0] = HealthPotionItemId;
+	inventory->items[0][1] = HealthPotionItemId;
+	inventory->items[1][0] = AntiVenomItemId;
+	inventory->items[1][1] = AntiVenomItemId;
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
 
 static Bool32
-func IsOnCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func AbilityIsOnCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Bool32 isOnCooldown = false;
-	for(Int32 i = 0; i < labState->cooldownN; i++)
+	for(Int32 i = 0; i < labState->abilityCooldownN; i++)
 	{
-		Cooldown* cooldown = &labState->cooldowns[i];
+		AbilityCooldown* cooldown = &labState->abilityCooldowns[i];
 		if(cooldown->entity == entity && cooldown->abilityId == abilityId)
 		{
 			isOnCooldown = true;
@@ -442,7 +500,7 @@ static Bool32
 func CanUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Bool32 canUseAbility = true;
-	if(entity->recharge > 0.0f || IsOnCooldown(labState, entity, abilityId))
+	if(entity->recharge > 0.0f || AbilityIsOnCooldown(labState, entity, abilityId))
 	{
 		canUseAbility = false;
 	}
@@ -540,6 +598,57 @@ func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 va
 	entry->value += value;
 }
 
+static Int8*
+func GetItemName(Int32 itemId)
+{
+	Int8* name = 0;
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			name = "Health Potion";
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			name = "Antivenom";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+static void
+func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
+{
+	Assert(itemId != NoItemId);
+
+	DroppedItem item = {};
+	item.itemId = itemId;
+	item.position = entity->position;
+	item.timeLeft = DroppedItemTotalDuration;
+
+	Assert(labState->droppedItemN + 1 < MaxDroppedItemN);
+	labState->droppedItems[labState->droppedItemN] = item;
+	labState->droppedItemN++;
+
+	Int8* itemName = GetItemName(itemId);
+	CombatLog(labState, entity->name + " drops " + itemName + ".");
+}
+
+static void
+func DropLoot(CombatLabState* labState, Entity* entity)
+{
+	if(entity->classId == SnakeClassId)
+	{
+		DropItem(labState, entity, AntiVenomItemId);
+	}
+}
+
 static void
 func DealFinalDamage(Entity* entity, Int32 damage)
 {
@@ -567,6 +676,7 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 		CombatLog(labState, source->name + " deals " + damage + " damage to " + target->name + ".");
 		if(IsDead(target))
 		{
+			DropLoot(labState, target);
 			CombatLog(labState, target->name + " dies.");
 		}
 	}
@@ -638,6 +748,7 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 		CombatLog(labState, effectName + " deals " + damage + " damage to " + target->name + ".");
 		if(IsDead(target))
 		{
+			DropLoot(labState, target);
 			CombatLog(labState, target->name + " dies.");
 		}
 	}
@@ -787,7 +898,7 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 }
 
 static Bool32
-func HasCooldown(Int32 abilityId)
+func AbilityHasCooldown(Int32 abilityId)
 {
 	Real32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
 	Bool32 hasCooldown = (cooldownDuration > 0.0f);
@@ -795,28 +906,28 @@ func HasCooldown(Int32 abilityId)
 }
 
 static void
-func AddCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func AddAbilityCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
-	Assert(HasCooldown(abilityId));
+	Assert(AbilityHasCooldown(abilityId));
 	Real32 duration = GetAbilityCooldownDuration(abilityId);
 
 	Assert(duration > 0.0f);
-	Assert(labState->cooldownN < MaxCooldownN);
-	Cooldown* cooldown = &labState->cooldowns[labState->cooldownN];
-	labState->cooldownN++;
+	Assert(labState->abilityCooldownN < MaxAbilityCooldownN);
+	AbilityCooldown* cooldown = &labState->abilityCooldowns[labState->abilityCooldownN];
+	labState->abilityCooldownN++;
 
 	cooldown->entity = entity;
 	cooldown->abilityId = abilityId;
 	cooldown->timeRemaining = duration;
 }
 
-static Cooldown*
-func GetCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+static AbilityCooldown*
+func GetAbilityCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
-	Cooldown* result = 0;
-	for(Int32 i = 0; i < labState->cooldownN; i++)
+	AbilityCooldown* result = 0;
+	for(Int32 i = 0; i < labState->abilityCooldownN; i++)
 	{
-		Cooldown* cooldown = &labState->cooldowns[i];
+		AbilityCooldown* cooldown = &labState->abilityCooldowns[i];
 		if(cooldown->entity == entity && cooldown->abilityId == abilityId)
 		{
 			result = cooldown;
@@ -1356,9 +1467,9 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 		PutOnRecharge(entity, rechargeDuration);
 	}
 
-	if(HasCooldown(abilityId))
+	if(AbilityHasCooldown(abilityId))
 	{
-		AddCooldown(labState, entity, abilityId);
+		AddAbilityCooldown(labState, entity, abilityId);
 	}
 }
 
@@ -1509,7 +1620,7 @@ func DrawEntityBars(Canvas* canvas, Entity* entity)
 	if(entity->castedAbility != NoAbilityId)
 	{
 		Real32 castBarWidth = healthBarWidth;
-		Real32 castBarHeight = 0.25f * EntityRadius;
+		Real32 castBarHeight = 0.3f * EntityRadius;
 		Vec2 castBarCenter = healthBarCenter + MakeVector(0.0f, -healthBarHeight * 0.5f - castBarHeight * 0.5f);
 
 		Vec4 castBarBackgroundColor = MakeColor(0.0, 0.5f, 0.5f);
@@ -1566,7 +1677,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		AddLine(text, "Recharge: " + rechargeDuration + " seconds");
 	}
 
-	if(HasCooldown(abilityId))
+	if(AbilityHasCooldown(abilityId))
 	{
 		Real32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
 		Assert(cooldownDuration > 0.0f);
@@ -1833,6 +1944,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[1]-[2] - Use Ability");
 		AddLine(tooltip, "[Q] - Order pet to follow you");
 		AddLine(tooltip, "[E] - Order pet to follow target");
+		AddLine(tooltip, "[C] - Show/hide inventory");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
 		Int32 tooltipRight = (bitmap->width - 1);
@@ -1889,7 +2001,7 @@ func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosit
 
 			Real32 recharge = 0.0f;
 			Real32 rechargeFrom = 0.0f;
-			Cooldown* cooldown = GetCooldown(labState, entity, abilityId);
+			AbilityCooldown* cooldown = GetAbilityCooldown(labState, entity, abilityId);
 			if(cooldown)
 			{
 				recharge = cooldown->timeRemaining;
@@ -1938,20 +2050,37 @@ func UpdateEntityRecharge(Entity* entity, Real32 seconds)
 }
 
 static void
-func UpdateCooldowns(CombatLabState* labState, Real32 seconds)
+func UpdateAbilityCooldowns(CombatLabState* labState, Real32 seconds)
 {
-	Int32 remainingCooldownN = 0;
-	for(Int32 i = 0; i < labState->cooldownN; i++)
+	Int32 remainingN = 0;
+	for(Int32 i = 0; i < labState->abilityCooldownN; i++)
 	{
-		Cooldown* cooldown = &labState->cooldowns[i];
+		AbilityCooldown* cooldown = &labState->abilityCooldowns[i];
 		cooldown->timeRemaining -= seconds;
 		if(cooldown->timeRemaining > 0.0f)
 		{
-			labState->cooldowns[remainingCooldownN] = *cooldown;
-			remainingCooldownN++;
+			labState->abilityCooldowns[remainingN] = *cooldown;
+			remainingN++;
 		}
 	}
-	labState->cooldownN = remainingCooldownN;
+	labState->abilityCooldownN = remainingN;
+}
+
+static void
+func UpdateItemCooldowns(CombatLabState* labState, Real32 seconds)
+{
+	Int32 remainingN = 0;
+	for(Int32 i = 0; i < labState->itemCooldownN; i++)
+	{
+		ItemCooldown* cooldown = &labState->itemCooldowns[i];
+		cooldown->timeRemaining -= seconds;
+		if(cooldown->timeRemaining > 0.0f)
+		{
+			labState->itemCooldowns[remainingN] = *cooldown;
+			remainingN++;
+		}
+	}
+	labState->itemCooldownN = remainingN;
 }
 
 static void
@@ -2107,6 +2236,285 @@ func UpdateEnemyTargets(CombatLabState* labState)
 	}
 }
 
+static Int8*
+func GetItemSlotName(Int32 itemId)
+{
+	Int8* name = 0;
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			name = "HP";
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			name = "AV";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+static Real32
+func GetItemCooldownDuration(Int32 itemId)
+{
+	Real32 cooldown = 0.0f;
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			cooldown = 30.0f;
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			cooldown = 10.0f;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return cooldown;
+}
+
+static String
+func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
+{
+	String text = StartString(buffer, bufferSize);
+
+	Int8* name = GetItemName(itemId);
+	AddLine(text, name);
+
+	Real32 cooldown = GetItemCooldownDuration(itemId);
+	if(cooldown > 0.0f)
+	{
+		if(cooldown == 1.0f)
+		{
+			AddLine(text, "Cooldown: 1 second");
+		}
+		else
+		{
+			AddLine(text, "Cooldown: " + cooldown + " seconds");
+		}
+	}
+
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			AddLine(text, "Use: Heal yourself for 30.");
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			AddLine(text, "Use: Remove poison from friendly target.");
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	return text;
+}
+
+static ItemCooldown*
+func GetItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
+{
+	ItemCooldown* result = 0;
+	for(Int32 i = 0; i < labState->itemCooldownN; i++)
+	{
+		ItemCooldown* cooldown = &labState->itemCooldowns[i];
+		if(cooldown->entity == entity && cooldown->itemId == itemId)
+		{
+			result = cooldown;
+			break;
+		}
+	}
+	return result;
+}
+
+static Bool32
+func InventorySlotIsValid(IntVec2 slot)
+{
+	Bool32 rowIsValid = IsIntBetween(slot.row, 0, InventoryRowN - 1);
+	Bool32 colIsValid = IsIntBetween(slot.col, 0, InventoryColN - 1);
+	Bool32 isValid = (rowIsValid && colIsValid);
+	return isValid;
+}
+
+static Bool32
+func InventoryItemIsValid(InventoryItem item)
+{
+	Bool32 isValid = (item.inventory != 0 && InventorySlotIsValid(item.slot));
+	return isValid;
+}
+
+static void
+func SetSlotItem(Inventory* inventory, IntVec2 slot, Int32 itemId)
+{
+	Assert(InventorySlotIsValid(slot));
+	inventory->items[slot.row][slot.col] = itemId;
+}
+
+static void
+func SwapItems(CombatLabState* labState, InventoryItem item1, InventoryItem item2)
+{
+	Assert(InventoryItemIsValid(item1));
+	Assert(InventoryItemIsValid(item2));
+
+	SetSlotItem(&labState->inventory, item1.slot, item2.itemId);
+	SetSlotItem(&labState->inventory, item2.slot, item1.itemId);
+}
+
+#define InventorySlotSide 50
+
+static void
+func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 itemId, Int32 top, Int32 left)
+{
+	Int32 bottom = top + InventorySlotSide;
+	Int32 right = left + InventorySlotSide;
+
+	Vec4 slotBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
+	Vec4 cooldownColor = MakeColor(0.2f, 0.0f, 0.0f);
+	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
+
+	if(itemId == NoAbilityId)
+	{
+		DrawBitmapRect(bitmap, left, right, top, bottom, slotBackgroundColor);
+	}
+	else
+	{
+		DrawBitmapRect(bitmap, left, right, top, bottom, itemBackgroundColor);
+
+		Real32 totalCooldown = GetItemCooldownDuration(itemId);
+		if(totalCooldown > 0.0f)
+		{
+			Entity* player = &labState->entities[0];
+			ItemCooldown* cooldown = GetItemCooldown(labState, player, itemId);
+			if(cooldown)
+			{
+				Real32 remainingCooldown = cooldown->timeRemaining;
+				Real32 cooldownRatio = (remainingCooldown / totalCooldown);
+				Assert(IsBetween(cooldownRatio, 0.0f, 1.0f));
+
+				Int32 cooldownRight = (Int32)Lerp((Real32)left, cooldownRatio, (Real32)right);
+				DrawBitmapRect(bitmap, left, cooldownRight, top, bottom, cooldownColor);
+			}
+		}
+
+		Int8* name = GetItemSlotName(itemId);
+		DrawBitmapTextLineCentered(bitmap, name, glyphData, left, right, top, bottom, itemNameColor);
+	}
+}
+
+static void
+func DrawInventorySlotOutline(Canvas* canvas, Int32 top, Int32 left, Vec4 color)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+	Int32 bottom = top + InventorySlotSide;
+	Int32 right = left + InventorySlotSide;
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, color);
+}
+
+static void
+func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
+{
+	Inventory* inventory = &labState->inventory;
+
+	Bitmap* bitmap = &canvas->bitmap;
+	GlyphData* glyphData = canvas->glyphData;
+
+	Int32 slotPadding = 2;
+	
+	Int32 width  = slotPadding + InventoryColN * (InventorySlotSide + slotPadding);
+	Int32 height = slotPadding + InventoryRowN * (InventorySlotSide + slotPadding);
+
+	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+	Int32 left   = right - width;
+	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	Int32 top    = bottom - height;
+
+	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 dragOutlineColor = MakeColor(1.0f, 0.5f, 0.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	labState->hoverItem.inventory = 0;
+	labState->hoverItem.itemId = NoItemId;
+
+	InventoryItem* dragItem = &labState->dragItem;
+
+	Int32 slotTop = top + slotPadding;
+	for(Int32 row = 0; row < InventoryRowN; row++)
+	{
+		Int32 slotLeft = left + slotPadding;
+		for(Int32 col = 0; col < InventoryColN; col++)
+		{
+			Int32 itemId = inventory->items[row][col];
+			Bool32 isDragItem = (dragItem->inventory == inventory && dragItem->slot.row == row && dragItem->slot.col == col);
+			if(!isDragItem)
+			{
+				DrawInventorySlot(canvas, labState, itemId, slotTop, slotLeft);
+			}
+			else
+			{
+				DrawInventorySlot(canvas, labState, NoItemId, slotTop, slotLeft);
+			}
+
+			if(mousePosition.col >= slotLeft && mousePosition.col <= slotLeft + InventorySlotSide &&
+			   mousePosition.row >= slotTop && mousePosition.row <= slotTop + InventorySlotSide)
+			{
+				if(itemId != NoItemId)
+				{
+					Int32 tooltipBottom = slotTop - UIBoxPadding;
+					Int32 tooltipRight = IntMin2((slotLeft + InventorySlotSide / 2) + TooltipWidth / 2,
+												 (bitmap->width - 1) - UIBoxPadding);
+
+					Int8 tooltipBuffer[128];
+					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 128);
+					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
+				}
+
+				DrawInventorySlotOutline(canvas, slotTop, slotLeft, hoverOutlineColor);
+
+				labState->hoverItem.inventory = inventory;
+				labState->hoverItem.itemId = itemId;
+				labState->hoverItem.slot.row = row;
+				labState->hoverItem.slot.col = col;
+			}
+
+			slotLeft += (InventorySlotSide + slotPadding);
+		}
+
+		slotTop += (InventorySlotSide + slotPadding);
+	}
+
+	if(dragItem->inventory)
+	{
+		Assert(dragItem->inventory == inventory);
+		Assert(dragItem->itemId != NoAbilityId);
+
+		Int32 slotTop  = mousePosition.row - InventorySlotSide / 2;
+		Int32 slotLeft = mousePosition.col - InventorySlotSide / 2;
+
+		DrawInventorySlot(canvas, labState, dragItem->itemId, slotTop, slotLeft);
+		DrawInventorySlotOutline(canvas, slotTop, slotLeft, dragOutlineColor);
+	}
+}
+
 static void
 func DrawHateTable(Canvas* canvas, CombatLabState* labState)
 {
@@ -2243,6 +2651,140 @@ func CanMove(CombatLabState* labState, Entity* entity)
 		canMove = true;
 	}
 	return canMove;
+}
+
+static void
+func SetInventoryItemId(Inventory* inventory, IntVec2 slot, Int32 itemId)
+{
+	Assert(IsIntBetween(slot.row, 0, InventoryRowN - 1));
+	Assert(IsIntBetween(slot.col, 0, InventoryColN - 1));
+	inventory->items[slot.row][slot.col] = itemId;
+}
+
+static Bool32
+func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
+{
+	Bool32 isAlive = !IsDead(entity);
+	Bool32 hasEmptySlot = false;
+
+	Inventory* inventory = &labState->inventory;
+	for(Int32 row = 0;  row < InventoryRowN; row++)
+	{
+		for(Int32 col = 0; col < InventoryColN; col++)
+		{
+			Int32 itemId = inventory->items[row][col];
+			if(itemId == NoItemId)
+			{
+				hasEmptySlot = true;
+				break;
+			}
+		}
+
+		if(hasEmptySlot)
+		{
+			break;
+		}
+	}
+
+	Bool32 canPickUpItem = (isAlive && hasEmptySlot);
+	return canPickUpItem;
+}
+
+static void
+func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
+{
+	Assert(item != 0);
+	Assert(CanPickUpItem(labState, entity, item));
+
+	Int32 itemIndex = 0;
+	Bool32 itemFound = false;
+	for(Int32 i = 0; i < labState->droppedItemN; i++)
+	{
+		if(item == &labState->droppedItems[i])
+		{
+			itemFound = true;
+			itemIndex = i;
+			break;
+		}
+	}
+
+	Assert(itemFound);
+	labState->droppedItemN--;
+	for(Int32 i = itemIndex; i < labState->droppedItemN; i++)
+	{
+		labState->droppedItems[i] = labState->droppedItems[i + 1];
+	}
+
+	Bool32 itemPickedUp = false;
+	Inventory* inventory = &labState->inventory;
+	for(Int32 row = 0; row < InventoryRowN; row++)
+	{
+		for(Int32 col = 0; col < InventoryColN; col++)
+		{
+			Int32 itemId = inventory->items[row][col];
+			if(itemId == NoItemId)
+			{
+				inventory->items[row][col] = item->itemId;
+				itemPickedUp = true;
+				break;
+			}
+		}
+
+		if(itemPickedUp)
+		{
+			break;
+		}
+	}
+	Assert(itemPickedUp);
+
+	Int8* itemName = GetItemName(item->itemId);
+	CombatLog(labState, entity->name + " picks up " + itemName + ".");
+}
+
+static void
+func UpdateAndDrawDroppedItems(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition, Real32 seconds)
+{
+	labState->hoverDroppedItem = 0;
+
+	Int32 remainingN = 0;
+	for(Int32 i = 0; i < labState->droppedItemN; i++)
+	{
+		DroppedItem* item = &labState->droppedItems[i];
+		item->timeLeft -= seconds;
+		if(item->timeLeft > 0.0f)
+		{
+			labState->droppedItems[remainingN] = *item;
+			remainingN++;
+		}
+	}
+	labState->droppedItemN = remainingN;
+
+	for(Int32 i = 0; i < labState->droppedItemN; i++)
+	{
+		DroppedItem* item = &labState->droppedItems[i];
+		Int8* itemName = GetItemName(item->itemId);
+
+		Vec4 normalBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+		Vec4 hoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
+		Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+		Real32 textWidth = GetTextWidth(canvas, itemName);
+		Real32 textHeight = GetTextHeight(canvas, itemName);
+		
+		Camera* camera = canvas->camera;
+		Assert(camera->unitInPixels > 0.0f);
+		Rect rect = MakeRect(item->position, textWidth, textHeight);
+
+		Vec4 backgroundColor = normalBackgroundColor;
+		if(IsPointInRect(mousePosition, rect))
+		{
+			backgroundColor = hoverBackgroundColor;
+			labState->hoverDroppedItem = item;
+		}
+
+		DrawRect(canvas, rect, backgroundColor);
+		DrawTextLineXYCentered(canvas, itemName, item->position.y, item->position.x, textColor);
+	}
 }
 
 static void
@@ -2467,6 +3009,123 @@ func RemoveEffectsOfDeadEntities(CombatLabState* labState)
 }
 
 static void
+func DeleteInventoryItem(InventoryItem item)
+{
+	Inventory* inventory = item.inventory;
+	Assert(inventory != 0);
+
+	IntVec2 slot = item.slot;
+	Assert(IsIntBetween(slot.row, 0, InventoryRowN - 1));
+	Assert(IsIntBetween(slot.col, 0, InventoryColN - 1));
+
+	inventory->items[slot.row][slot.col] = NoItemId;
+}
+
+static Bool32
+func ItemIsOnCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
+{
+	Bool32 isOnCooldown = false;
+	for(Int32 i = 0; i < labState->itemCooldownN; i++)
+	{
+		ItemCooldown* cooldown = &labState->itemCooldowns[i];
+		if(cooldown->entity == entity && cooldown->itemId == itemId)
+		{
+			isOnCooldown = true;
+			break;
+		}
+	}
+	return isOnCooldown;
+}
+
+static void
+func AddItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
+{
+	Assert(!ItemIsOnCooldown(labState, entity, itemId));
+
+	Real32 duration = GetItemCooldownDuration(itemId);
+	Assert(duration > 0.0f);
+
+	ItemCooldown cooldown = {};
+	cooldown.entity = entity;
+	cooldown.itemId = itemId;
+	cooldown.timeRemaining = duration;
+
+	Assert(labState->itemCooldownN < MaxItemCooldownN);
+	labState->itemCooldowns[labState->itemCooldownN] = cooldown;
+	labState->itemCooldownN++;
+}
+
+static Bool32
+func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
+{
+	Bool32 canUse = true;
+	if(IsDead(entity))
+	{
+		canUse = false;
+	}
+	else if(ItemIsOnCooldown(labState, entity, itemId))
+	{
+		canUse = false;
+	}
+	else
+	{
+		switch(itemId)
+		{
+			case HealthPotionItemId:
+			{
+				canUse = CanBeHealed(entity);
+				break;
+			}
+			case AntiVenomItemId:
+			{
+				bool hasFriendlyTarget = (entity->target != 0 && entity->target->groupId == entity->groupId);
+				bool targetIsAlive = (entity->target != 0 && !IsDead(entity->target));
+				canUse = (hasFriendlyTarget && targetIsAlive);
+				break;
+			}
+			default:
+			{
+				DebugBreak();
+			}
+		}
+	}
+	return canUse;
+}
+
+static void
+func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
+{
+	Int32 itemId = item.itemId;
+	Assert(CanUseItem(labState, entity, itemId));
+	switch(itemId)
+	{
+		case HealthPotionItemId:
+		{
+			Heal(labState, entity, entity, 30);
+			break;
+		}
+		case AntiVenomItemId:
+		{
+			RemoveEffect(labState, entity->target, PoisonedEffectId);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	Int8* itemName = GetItemName(itemId);
+	CombatLog(labState, entity->name + " uses item " + itemName + ".");
+	DeleteInventoryItem(item);
+
+	if(GetItemCooldownDuration(itemId) > 0.0f)
+	{
+		AddItemCooldown(labState, entity, itemId);
+	}
+}
+
+static void
 func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
@@ -2480,7 +3139,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	Entity* player = &labState->entities[0];
 	Assert(player->groupId == PlayerGroupId);
 
-	UpdateCooldowns(labState, seconds);
+	UpdateAbilityCooldowns(labState, seconds);
+	UpdateItemCooldowns(labState, seconds);
 	UpdateEffects(labState, seconds);
 	UpdateDamageDisplays(labState, seconds);
 
@@ -2727,6 +3387,17 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 
+	if(WasKeyReleased(userInput, VK_RBUTTON))
+	{
+		if(labState->hoverItem.itemId != NoItemId)
+		{
+			if(CanUseItem(labState, player, labState->hoverItem.itemId))
+			{
+				UseItem(labState, player, labState->hoverItem);
+			}
+		}
+	}
+
 	RemoveDeadEntitiesFromHateTable(&labState->hateTable);
 	SortHateTable(&labState->hateTable);
 	UpdateEnemyTargets(labState);
@@ -2798,15 +3469,71 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	canvas->camera->center = player->position;
 
+	if(WasKeyReleased(userInput, 'C'))
+	{
+		labState->showInventory = !labState->showInventory;
+	}
+
+	if(WasKeyPressed(userInput, VK_LBUTTON))
+	{
+		if(labState->hoverItem.inventory != 0 && labState->hoverItem.itemId != NoItemId)
+		{
+			labState->dragItem = labState->hoverItem;
+		}
+	}
+
+	if(WasKeyReleased(userInput, VK_LBUTTON))
+	{
+		InventoryItem* dragItem = &labState->dragItem;
+		InventoryItem* hoverItem = &labState->hoverItem;
+		if(dragItem->inventory != 0)
+		{
+			Assert(dragItem->itemId != NoItemId);
+			if(hoverItem->inventory != 0)
+			{
+				SwapItems(labState, *dragItem, *hoverItem);
+			}
+			else
+			{
+				DropItem(labState, player, dragItem->itemId);
+				SetInventoryItemId(dragItem->inventory, dragItem->slot, NoItemId);
+			}
+		}
+		labState->dragItem.inventory = 0;
+	}
+
+	if(WasKeyPressed(userInput, ' '))
+	{
+		DroppedItem* item = labState->hoverDroppedItem;
+		if(item != 0)
+		{
+			if(CanPickUpItem(labState, player, item))
+			{
+				PickUpItem(labState, player, item);
+			}
+		}
+	}
+
+	if(labState->showInventory)
+	{
+		DrawInventory(canvas, labState, userInput->mousePixelPosition);
+	}
+	else
+	{
+		DrawHateTable(canvas, labState);
+	}
+
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
 	DrawPlayerEffectBar(canvas, labState);
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
+	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 	DrawCombatLog(canvas, labState);
-	DrawHateTable(canvas, labState);
 }
 
+// TODO: Icons?
+// TODO: Show effects above entities' heads
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Entities attacking each other get too close
