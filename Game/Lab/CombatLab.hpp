@@ -273,7 +273,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	canvas->glyphData = GetGlobalGlyphData();
 
 	Camera* camera = canvas->camera;
-	camera->unitInPixels = 15.0f;
+	camera->unitInPixels = 2.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 
 	Real32 mapWidth  = GetMapWidth(map);
@@ -2912,7 +2912,7 @@ func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 			IntVec2 tile = MakeTile(row, col);
 			if(IsValidTile(map, tile))
 			{
-				if(TileHasTree(map, tile))
+				if(IsTileType(map, tile, TreeTileId))
 				{
 					collisionPoly = GetExtendedTreeOutline(map, tile, EntityRadius);
 					treeFound = true;
