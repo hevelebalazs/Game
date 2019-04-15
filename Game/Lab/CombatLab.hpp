@@ -3532,9 +3532,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
 
-// TODO: Consumable items
-	// [TODO: Drop from monsters]
-	// TODO: Gathered from plants
 // TODO: Icons?
 // TODO: Show effects above entities' heads
 // TODO: Mana
