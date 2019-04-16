@@ -215,7 +215,7 @@ func TileIsNearTree(Map* map, IntVec2 tile)
 }
 
 static IntVec2
-func GetRandomTileIndex(Map* map)
+func GetRandomTile(Map* map)
 {
 	IntVec2 tile = {};
 	tile.row = IntRandom(0, map->tileRowN - 1);
@@ -230,7 +230,7 @@ func GetRandomNonTreeTile(Map* map)
 	IntVec2 tile = {};
 	while(1)
 	{
-		tile = GetRandomTileIndex(map);
+		tile = GetRandomTile(map);
 		if(!IsTileType(map, tile, TreeTileId))
 		{
 			break;
@@ -240,17 +240,89 @@ func GetRandomNonTreeTile(Map* map)
 }
 
 static IntVec2
-func GetRandomGroundTileIndex(Map* map)
+func GetRandomGroundTile(Map* map)
 {
 	IntVec2 tile = {};
 	while(1)
 	{
-		tile = GetRandomTileIndex(map);
+		tile = GetRandomTile(map);
 		if(IsTileType(map, tile, GroundTileId))
 		{
 			break;
 		}
 	}
+	return tile;
+}
+
+static Real32
+func GetTileHeight(Map* map, IntVec2 tile)
+{
+	Assert(IsValidTile(map, tile));
+	Real32 height = map->terrain[tile.row * map->tileColN + tile.col];
+	return height;
+}
+
+static IntVec2
+func GetRandomGroundTileAboveHeight(Map* map, Real32 height)
+{
+	IntVec2 tile = {};
+	while(1)
+	{
+		tile = GetRandomTile(map);
+		if(IsTileType(map, tile, GroundTileId) && GetTileHeight(map, tile) > height)
+		{
+			break;
+		}
+	}
+	return tile;
+}
+
+#define InvalidTileIndex MakeTile(-1, -1)
+
+static IntVec2
+func GetNearestTileBelowHeight(Map* map, IntVec2 startTile, Real32 height)
+{
+	IntVec2 tile = InvalidTileIndex;
+	Int32 distance = 1;
+	Int32 count = 0;
+	Bool32 foundTile = false;
+
+	for(Int32 distance = 1; distance <= 1000; distance++)
+	{
+		for(Int32 row = 1; row <= distance; row++)
+		{
+			Int32 col = distance - row;
+			IntVec2 testTiles[] =
+			{
+				MakeTile(startTile.row - row, startTile.col - col),
+				MakeTile(startTile.row - row, startTile.col + col),
+				MakeTile(startTile.row + row, startTile.col - col),
+				MakeTile(startTile.row + row, startTile.col + col)
+			};
+			for(Int32 i = 0; i < 4; i++)
+			{
+				IntVec2 testTile = testTiles[i];
+				if(IsValidTile(map, testTile) && GetTileHeight(map, testTile) < height)
+				{
+					tile = testTile;
+					foundTile = true;
+					break;
+				}
+			}
+
+			if(foundTile)
+			{
+				break;
+			}
+		}
+
+		if(foundTile)
+		{
+			break;
+		}
+	}
+
+	Assert(foundTile);
 	return tile;
 }
 
@@ -487,6 +559,38 @@ func GetLowestAdjacentTile(Map* map, IntVec2 tile)
 	return resultTile;
 }
 
+static IntVec2
+GetLowestAdjacentGroundTile(Map* map, IntVec2 tile)
+{
+	Assert(IsValidTile(map, tile));
+
+	IntVec2 result = InvalidTileIndex;
+	Real32 resultHeight = 0.0f;
+	for(Int32 row = tile.row - 1; row <= tile.row + 1; row++)
+	{
+		for(Int32 col = tile.col - 1; col <= tile.col + 1; col++)
+		{
+			if(row == tile.row && col == tile.col)
+			{
+				continue;
+			}
+
+			IntVec2 testTile = MakeTile(row, col);
+			if(IsValidTile(map, testTile) && GetTileType(map, testTile) == GroundTileId)
+			{
+				Real32 height = map->terrain[row * map->tileColN + col];
+				if(result == InvalidTileIndex || height < resultHeight)
+				{
+					result = testTile;
+					resultHeight = height;
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
 static Map
 func GenerateForestMap(MemArena* arena)
 {
@@ -550,13 +654,19 @@ func GenerateForestMap(MemArena* arena)
 
 	for(Int32 i = 0; i < 100; i++)
 	{
-		IntVec2 tileIndex = GetRandomGroundTileIndex(&map);
-		while(1)
+		IntVec2 startTile = GetRandomGroundTileAboveHeight(&map, 0.8f);
+
+		IntVec2 tile = startTile;
+		while(GetTileHeight(&map, tile) > 0.3f)
 		{
-			SetTileType(&map, tileIndex, WaterTileId);
-			IntVec2 nextTile = GetLowestAdjacentTile(&map, tileIndex);
-			tileIndex = nextTile;
-			if(IsTileType(&map, tileIndex, WaterTileId))
+			SetTileType(&map, tile, WaterTileId);
+
+			IntVec2 nextTile = GetLowestAdjacentGroundTile(&map, tile);
+			if(nextTile != InvalidTileIndex)
+			{
+				tile = nextTile;
+			}
+			else
 			{
 				break;
 			}
@@ -1464,4 +1574,5 @@ func DrawMap(Canvas* canvas, Map* map)
 	}
 }
 
+// TODO: Wide rivers
 // TODO: IsValidNearTreePosition function
