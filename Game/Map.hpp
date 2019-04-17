@@ -254,6 +254,21 @@ func GetRandomGroundTile(Map* map)
 	return tile;
 }
 
+static IntVec2
+func GetRandomWaterTile(Map* map)
+{
+	IntVec2 tile = {};
+	while(1)
+	{
+		tile = GetRandomTile(map);
+		if(IsTileType(map, tile, WaterTileId))
+		{
+			break;
+		}
+	}
+	return tile;
+}
+
 static Real32
 func GetTileHeight(Map* map, IntVec2 tile)
 {
@@ -280,7 +295,7 @@ func GetRandomGroundTileAboveHeight(Map* map, Real32 height)
 #define InvalidTileIndex MakeTile(-1, -1)
 
 static IntVec2
-func GetNearestTileBelowHeight(Map* map, IntVec2 startTile, Real32 height)
+func GetNearestWaterTile(Map* map, IntVec2 startTile)
 {
 	IntVec2 tile = InvalidTileIndex;
 	Int32 distance = 1;
@@ -302,7 +317,7 @@ func GetNearestTileBelowHeight(Map* map, IntVec2 startTile, Real32 height)
 			for(Int32 i = 0; i < 4; i++)
 			{
 				IntVec2 testTile = testTiles[i];
-				if(IsValidTile(map, testTile) && GetTileHeight(map, testTile) < height)
+				if(IsValidTile(map, testTile) && GetTileType(map, testTile) == WaterTileId)
 				{
 					tile = testTile;
 					foundTile = true;
@@ -591,6 +606,116 @@ GetLowestAdjacentGroundTile(Map* map, IntVec2 tile)
 	return result;
 }
 
+enum GridDirection
+{
+	GridLeft,
+	GridRight,
+	GridUp,
+	GridDown
+};
+
+static GridDirection
+func GetRightDirection(GridDirection direction)
+{
+	GridDirection rightDirection = direction;
+	switch(direction)
+	{
+		case GridLeft:
+		{
+			rightDirection = GridUp;
+			break;
+		}
+		case GridRight:
+		{
+			rightDirection = GridDown;
+			break;
+		}
+		case GridUp:
+		{
+			rightDirection = GridRight;
+			break;
+		}
+		case GridDown:
+		{
+			rightDirection = GridLeft;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return rightDirection;
+}
+
+static IntVec2
+func GetNextTileInDirection(IntVec2 tile, GridDirection direction)
+{
+	IntVec2 nextTile = tile;
+	switch(direction)
+	{
+		case GridLeft:
+		{
+			nextTile.col--;
+			break;
+		}
+		case GridRight:
+		{
+			nextTile.col++;
+			break;
+		}
+		case GridUp:
+		{
+			nextTile.row--;
+			break;
+		}
+		case GridDown:
+		{
+			nextTile.row++;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return nextTile;
+}
+
+static GridDirection
+func GetLeftDirection(GridDirection direction)
+{
+	GridDirection leftDirection = direction;
+	switch(direction)
+	{
+		case GridLeft:
+		{
+			leftDirection = GridDown;
+			break;
+		}
+		case GridRight:
+		{
+			leftDirection = GridUp;
+			break;
+		}
+		case GridUp:
+		{
+			leftDirection = GridLeft;
+			break;
+		}
+		case GridDown:
+		{
+			leftDirection = GridRight;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return leftDirection;
+}
+
 static Map
 func GenerateForestMap(MemArena* arena)
 {
@@ -652,23 +777,75 @@ func GenerateForestMap(MemArena* arena)
 		map.terrain[i] = SmoothRatio(map.terrain[i]);
 	}
 
-	for(Int32 i = 0; i < 100; i++)
+	for(Int32 i = 0; i < tileN; i++)
 	{
-		IntVec2 startTile = GetRandomGroundTileAboveHeight(&map, 0.8f);
+		if(map.terrain[i] <= 0.2f)
+		{
+			map.tileTypes[i] = WaterTileId;
+		}
+	}
 
-		IntVec2 tile = startTile;
-		while(GetTileHeight(&map, tile) > 0.3f)
+	for(Int32 i = 0; i < 256; i++)
+	{
+		IntVec2 tile = GetRandomWaterTile(&map);
+		GridDirection baseDirection = (GridDirection)IntRandom(0, 3);
+
+		while(1)
+		{
+			IntVec2 nextTile = GetNextTileInDirection(tile, baseDirection);
+			if(!IsValidTile(&map, nextTile))
+			{
+				break;
+			}
+			
+			tile = nextTile;
+			if(GetTileType(&map, tile) != WaterTileId)
+			{
+				break;
+			}
+		}
+
+		GridDirection previousDirection = baseDirection;
+		Int32 maxLength = IntRandom(50, 300);
+		Int32 length = 0;
+		while(GetTileType(&map, tile) != WaterTileId)
 		{
 			SetTileType(&map, tile, WaterTileId);
 
-			IntVec2 nextTile = GetLowestAdjacentGroundTile(&map, tile);
-			if(nextTile != InvalidTileIndex)
+			Real32 random = RandomBetween(0.0f, 1.0f);
+			GridDirection direction = baseDirection;
+			if(previousDirection == baseDirection)
 			{
-				tile = nextTile;
+				if(random < 0.2f)
+				{
+					direction = GetLeftDirection(direction);
+				}
+				else if(random > 0.8f)
+				{
+					direction = GetRightDirection(direction);
+				}
+			}
+
+			previousDirection = direction;
+
+			IntVec2 nextTile = GetNextTileInDirection(tile, direction);
+			if(!IsValidTile(&map, nextTile))
+			{
+				break;
+			}
+			else if(GetTileType(&map, nextTile) == WaterTileId)
+			{
+				break;
 			}
 			else
 			{
-				break;
+				tile = nextTile;
+
+				length++;
+				if(length >= maxLength)
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -849,14 +1026,6 @@ func GetTreeTopLeftTile(Map* map, IntVec2 tile)
 	IntVec2 topLeftTile = MakeTile(topRow, topLeftCol);
 	return topLeftTile;
 }
-
-enum GridDirection
-{
-	GridLeft,
-	GridRight,
-	GridUp,
-	GridDown
-};
 
 static Poly16
 func GetExtendedTreeOutline(Map* map, IntVec2 tile, Real32 radius)
@@ -1051,114 +1220,12 @@ func HighlightTile(Canvas* canvas, Map* map, IntVec2 tile, Vec4 color)
 	DrawRect(canvas, rect, color);
 }
 
-static IntVec2
-func GetNextTileInDirection(Map* map, IntVec2 tile, GridDirection direction)
-{
-	IntVec2 nextTile = tile;
-	switch(direction)
-	{
-		case GridLeft:
-		{
-			nextTile.col--;
-			break;
-		}
-		case GridRight:
-		{
-			nextTile.col++;
-			break;
-		}
-		case GridUp:
-		{
-			nextTile.row--;
-			break;
-		}
-		case GridDown:
-		{
-			nextTile.row++;
-			break;
-		}
-		default:
-		{
-			DebugBreak();
-		}
-	}
-	return nextTile;
-}
-
 static Bool32 TilesAreAdjacent(IntVec2 tile1, IntVec2 tile2)
 {
 	Int32 rowAbs = IntAbs(tile1.row - tile2.row);
 	Int32 colAbs = IntAbs(tile1.col - tile2.col);
 	Bool32 areAdjacent = ((rowAbs == 0 && colAbs == 1) || (rowAbs == 1 && colAbs == 0));
 	return areAdjacent;
-}
-
-static GridDirection
-func GetLeftDirection(GridDirection direction)
-{
-	GridDirection leftDirection = direction;
-	switch(direction)
-	{
-		case GridLeft:
-		{
-			leftDirection = GridDown;
-			break;
-		}
-		case GridRight:
-		{
-			leftDirection = GridUp;
-			break;
-		}
-		case GridUp:
-		{
-			leftDirection = GridLeft;
-			break;
-		}
-		case GridDown:
-		{
-			leftDirection = GridRight;
-			break;
-		}
-		default:
-		{
-			DebugBreak();
-		}
-	}
-	return leftDirection;
-}
-
-static GridDirection
-func GetRightDirection(GridDirection direction)
-{
-	GridDirection rightDirection = direction;
-	switch(direction)
-	{
-		case GridLeft:
-		{
-			rightDirection = GridUp;
-			break;
-		}
-		case GridRight:
-		{
-			rightDirection = GridDown;
-			break;
-		}
-		case GridUp:
-		{
-			rightDirection = GridRight;
-			break;
-		}
-		case GridDown:
-		{
-			rightDirection = GridLeft;
-			break;
-		}
-		default:
-		{
-			DebugBreak();
-		}
-	}
-	return rightDirection;
 }
 
 struct NearTreePosition
@@ -1273,8 +1340,8 @@ func GetNextLeftNearTreePosition(Map* map, NearTreePosition position)
 	Assert(!IsTileType(map, position.tile, TreeTileId));
 	Assert(IsTileType(map, position.treeTile, TreeTileId));
 
-	IntVec2 nextTile = GetNextTileInDirection(map, position.tile, position.direction);
-	IntVec2 nextTreeTile = GetNextTileInDirection(map, position.treeTile, position.direction);
+	IntVec2 nextTile = GetNextTileInDirection(position.tile, position.direction);
+	IntVec2 nextTreeTile = GetNextTileInDirection(position.treeTile, position.direction);
 
 	NearTreePosition nextPosition = position;
 	if(IsValidTile(map, nextTile))
@@ -1329,8 +1396,8 @@ func GetNextRightNearTreePosition(Map* map, NearTreePosition position)
 	Assert(!IsTileType(map, position.tile, TreeTileId));
 	Assert(IsTileType(map, position.treeTile, TreeTileId));
 
-	IntVec2 nextTile = GetNextTileInDirection(map, position.tile, position.direction);
-	IntVec2 nextTreeTile = GetNextTileInDirection(map, position.treeTile, position.direction);
+	IntVec2 nextTile = GetNextTileInDirection(position.tile, position.direction);
+	IntVec2 nextTreeTile = GetNextTileInDirection(position.treeTile, position.direction);
 
 	NearTreePosition nextPosition = position;
 	if(IsValidTile(map, nextTile))
@@ -1447,10 +1514,7 @@ func TakeLeftPathAroundTree(Map* map, IntVec2 startTile, IntVec2 endTile)
 		}
 
 		rightDistance++;
-		if(rightDistance >= 100)
-		{
-			DebugBreak();
-		}
+		Assert(rightDistance < 100);
 	}
 
 	NearTreePosition leftPosition = GetLeftNearTreePosition(map, startTile, endTile);
@@ -1470,10 +1534,7 @@ func TakeLeftPathAroundTree(Map* map, IntVec2 startTile, IntVec2 endTile)
 		}
 
 		leftDistance++;
-		if(leftDistance >= 100)
-		{
-			DebugBreak();
-		}
+		Assert(leftDistance < 100);
 	}
 
 	Assert(canGoRight || canGoLeft);
