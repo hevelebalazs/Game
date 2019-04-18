@@ -352,9 +352,17 @@ func GetTileCenter(Map* map, IntVec2 index)
 }
 
 static Vec2
-func GetRandomNonTreeTileCenter(Map* map)
+func GetRandomGroundTileCenter(Map* map)
 {
-	IntVec2 tile = GetRandomNonTreeTile(map);
+	IntVec2 tile = GetRandomGroundTile(map);
+	Vec2 center = GetTileCenter(map, tile);
+	return center;
+}
+
+static Vec2
+func GetRandomWaterTileCenter(Map* map)
+{
+	IntVec2 tile = GetRandomWaterTile(map);
 	Vec2 center = GetTileCenter(map, tile);
 	return center;
 }
