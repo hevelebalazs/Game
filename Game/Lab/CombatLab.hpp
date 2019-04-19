@@ -27,6 +27,9 @@ enum AbilityId
 
 	SnakeStrikeAbilityId,
 
+	CrocodileBiteAbilityId,
+	CrocodileLashAbilityId,
+
 	AbilityN
 };
 
@@ -40,7 +43,8 @@ enum EffectId
 	BurningEffectId,
 	BlessingOfTheSunEffectId,
 	BlindEffectId,
-	PoisonedEffectId
+	PoisonedEffectId,
+	BittenEffectId
 };
 
 enum ClassId
@@ -49,7 +53,8 @@ enum ClassId
 	DruidClassId,
 	MonkClassId,
 	PaladinClassId,
-	SnakeClassId
+	SnakeClassId,
+	CrocodileClassId
 };
 
 #define EntityRadius 1.0f
@@ -206,7 +211,8 @@ struct CombatLabState
 	InventoryItem dragItem;
 };
 
-#define PlayerSpeed 11.0f
+#define EntityMoveSpeed 11.0f
+#define AnimalMoveSpeed 10.0f
 
 #define EnemyAttackRadius 10.0f
 
@@ -273,7 +279,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	canvas->glyphData = GetGlobalGlyphData();
 
 	Camera* camera = canvas->camera;
-	camera->unitInPixels = 15.0f;
+	camera->unitInPixels = 10.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 
 	Real32 mapWidth  = GetMapWidth(map);
@@ -298,13 +304,27 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	pet->groupId = PlayerGroupId;
 	pet->target = player;
 
-	for(Int32 i = 2; i < EntityN; i++)
+	Int32 firstSnakeIndex = 2;
+	Int32 lastSnakeIndex = EntityN / 2;
+	for(Int32 i = firstSnakeIndex; i <= lastSnakeIndex; i++)
 	{
 		Entity* enemy = &labState->entities[i];
 		enemy->name = "Snake";
-		enemy->position = GetRandomNonTreeTileCenter(map);
+		enemy->position = GetRandomGroundTileCenter(map);
 		enemy->health = EntityMaxHealth;
 		enemy->classId = SnakeClassId;
+		enemy->groupId = EnemyGroupId;
+	}
+
+	Int32 firstCrocodileIndex = lastSnakeIndex + 1;
+	Int32 lastCrocodileIndex = EntityN - 1;
+	for(Int32 i = firstCrocodileIndex; i <= lastCrocodileIndex; i++)
+	{
+		Entity* enemy = &labState->entities[i];
+		enemy->name = "Crocodile";
+		enemy->position = GetRandomWaterTileCenter(map);
+		enemy->health = EntityMaxHealth;
+		enemy->classId = CrocodileClassId;
 		enemy->groupId = EnemyGroupId;
 	}
 
@@ -378,6 +398,12 @@ func GetAbilityClass(Int32 abilityId)
 			classId = SnakeClassId;
 			break;
 		}
+		case CrocodileBiteAbilityId:
+		case CrocodileLashAbilityId:
+		{
+			classId = CrocodileClassId;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -435,6 +461,8 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 			case KickAbilityId:
 			case SwordStabAbilityId:
 			case SnakeStrikeAbilityId:
+			case CrocodileBiteAbilityId:
+			case CrocodileLashAbilityId:
 			{
 				enabled = hasLivingEnemyTarget && (distanceFromTarget <= MaxMeleeAttackDistance);
 				break;
@@ -459,8 +487,8 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 				Map* map = &labState->map;
 				Bool32 targetIsFriendly = (target != 0 && !IsDead(target) && target->groupId == entity->groupId);
 				IntVec2 entityTile = GetContainingTile(map, entity->position);
-				Bool32 isNearTree = TileIsNearTree(map, entityTile);
-				enabled = (targetIsFriendly && isNearTree);
+				Bool32 isNearWater = TileIsNearOrInWater(map, entityTile);
+				enabled = (targetIsFriendly && isNearWater);
 				break;
 			}
 			case SpinningKickAbilityId:
@@ -728,6 +756,11 @@ func GetEffectName(Int32 effectId)
 			name = "Poisoned";
 			break;
 		}
+		case BittenEffectId:
+		{
+			name = "Bitten";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -879,19 +912,14 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 			cooldown = 60.0f;
 			break;
 		}
-		case VenomBoltAbilityId:
-		case SmallPunchAbilityId:
-		case SpinningKickAbilityId:
-		case SwordStabAbilityId:
-		case SwordSwingAbilityId:
-		case SnakeStrikeAbilityId:
+		case CrocodileBiteAbilityId:
 		{
-			cooldown = 0.0f;
+			cooldown = 5.0f;
 			break;
 		}
 		default:
 		{
-			DebugBreak();
+			cooldown = 0.0f;
 		}
 	}
 	return cooldown;
@@ -1041,6 +1069,11 @@ func GetEffectTotalDuration(Int32 effectId)
 			duration = 60.0f;
 			break;
 		}
+		case BittenEffectId:
+		{
+			duration = 5.0f;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -1131,6 +1164,16 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 			break;
 		}
 		case SnakeStrikeAbilityId:
+		{
+			recharge = 3.0f;
+			break;
+		}
+		case CrocodileBiteAbilityId:
+		{
+			recharge = 1.0f;
+			break;
+		}
+		case CrocodileLashAbilityId:
 		{
 			recharge = 3.0f;
 			break;
@@ -1234,6 +1277,16 @@ func GetAbilityName(Int32 abilityId)
 		case SnakeStrikeAbilityId:
 		{
 			name = "Snake strike";
+			break;
+		}
+		case CrocodileBiteAbilityId:
+		{
+			name = "Crocodile bite";
+			break;
+		}
+		case CrocodileLashAbilityId:
+		{
+			name = "Crocodile Lash";
 			break;
 		}
 		default:
@@ -1397,6 +1450,19 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 			{
 				ResetOrAddEffect(labState, target, PoisonedEffectId);
 			}
+			break;
+		}
+		case CrocodileBiteAbilityId:
+		{
+			Assert(target != 0);
+			DealDamageFromEntity(labState, entity, target, 15);
+			ResetOrAddEffect(labState, target, BittenEffectId);
+			break;
+		}
+		case CrocodileLashAbilityId:
+		{
+			Assert(target != 0);
+			DealDamageFromEntity(labState, entity, target, 30);
 			break;
 		}
 		default:
@@ -1702,7 +1768,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		case HealAbilityId:
 		{
 			AddLine(text, "Heal friendly target for 20.");
-			AddLine(text, "You must be standing near a tree.");
+			AddLine(text, "You must be near a source of water.");
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -1803,6 +1869,18 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		{
 			AddLine(text, "Strike your target enemy dealing 10 damage,");
 			AddLine(text, "having a 30% chance to poison them.");
+			break;
+		}
+		case CrocodileBiteAbilityId:
+		{
+			AddLine(text, "Bite target enemy, dealing 15 damage and");
+			AddLine(text, "slowing their movement speed by 50% for");
+			AddLine(text, "5 seconds.");
+			break;
+		}
+		case CrocodileLashAbilityId:
+		{
+			AddLine(text, "Attack target enemy, dealing 30 damage.");
 			break;
 		}
 		default:
@@ -2912,7 +2990,7 @@ func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 			IntVec2 tile = MakeTile(row, col);
 			if(IsValidTile(map, tile))
 			{
-				if(TileHasTree(map, tile))
+				if(IsTileType(map, tile, TreeTileId))
 				{
 					collisionPoly = GetExtendedTreeOutline(map, tile, EntityRadius);
 					treeFound = true;
@@ -3125,6 +3203,39 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 	}
 }
 
+static Real32
+func GetEntityMoveSpeed(CombatLabState* labState, Entity* entity)
+{
+	Real32 moveSpeed = EntityMoveSpeed;
+	if(IsDead(entity))
+	{
+		moveSpeed = 0.0f;
+	}
+	else
+	{
+		switch(entity->classId)
+		{
+			case SnakeClassId:
+			case CrocodileClassId:
+			{
+				moveSpeed = AnimalMoveSpeed;
+				break;
+			}
+			default:
+			{
+				moveSpeed = EntityMoveSpeed;
+			}
+		}
+
+		if(HasEffect(labState, entity, BittenEffectId))
+		{
+			moveSpeed *= 0.5f;
+		}
+	}
+
+	return moveSpeed;
+}
+
 static void
 func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
@@ -3186,7 +3297,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	}
 	if(CanMove(labState, player))
 	{
-		player->velocity = PlayerSpeed * player->inputDirection;
+		Real32 moveSpeed = GetEntityMoveSpeed(labState, player);
+		player->velocity = moveSpeed * player->inputDirection;
 	}
 
 	UpdateEntityMovement(player, map, seconds);
@@ -3199,8 +3311,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 
-	Real32 petMoveSpeed = PlayerSpeed;
 	Entity* pet = &labState->entities[1];
+	Real32 petMoveSpeed = GetEntityMoveSpeed(labState, pet);
 
 	if(WasKeyPressed(userInput, 'Q'))
 	{
@@ -3275,9 +3387,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			}
 			else
 			{
-				Real32 enemyMoveSpeed = 10.0f;
 				IntVec2 nextTile = GetNextTileOnPath(map, enemyTile, targetTile);
-				enemy->velocity = enemyMoveSpeed * PointDirection(enemy->position, GetTileCenter(map, nextTile));
+				Real32 moveSpeed = GetEntityMoveSpeed(labState, enemy);
+				enemy->velocity = moveSpeed * PointDirection(enemy->position, GetTileCenter(map, nextTile));
 			}
 		}
 
@@ -3363,6 +3475,11 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		if(entity->classId == SnakeClassId)
 		{
 			AttemptToUseAbility(labState, entity, SnakeStrikeAbilityId);
+		}
+		else if(entity->classId == CrocodileClassId)
+		{
+			AttemptToUseAbility(labState, entity, CrocodileBiteAbilityId);
+			AttemptToUseAbility(labState, entity, CrocodileLashAbilityId);
 		}
 	}
 
