@@ -185,6 +185,36 @@ func SetTileType(Map* map, IntVec2 tile, TileTypeId type)
 }
 
 static Bool32
+func TileIsNearOrInWater(Map* map, IntVec2 tile)
+{
+	Bool32 isNearOrInWater = false;
+
+	Assert(IsValidTile(map, tile));
+	for(Int32 row = tile.row - 1; row <= tile.row + 1; row++)
+	{
+		for(Int32 col = tile.col - 1; col <= tile.col + 1; col++)
+		{
+			IntVec2 tileToCheck = MakeTile(row, col);
+			if(IsValidTile(map, tileToCheck))
+			{
+				if(GetTileType(map, tileToCheck) == WaterTileId)
+				{
+					isNearOrInWater = true;
+					break;
+				}
+			}
+		}
+
+		if(isNearOrInWater)
+		{
+			break;
+		}
+	}
+
+	return isNearOrInWater;
+}
+
+static Bool32
 func TileIsNearTree(Map* map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));

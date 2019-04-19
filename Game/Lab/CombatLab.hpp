@@ -487,8 +487,8 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 				Map* map = &labState->map;
 				Bool32 targetIsFriendly = (target != 0 && !IsDead(target) && target->groupId == entity->groupId);
 				IntVec2 entityTile = GetContainingTile(map, entity->position);
-				Bool32 isNearTree = TileIsNearTree(map, entityTile);
-				enabled = (targetIsFriendly && isNearTree);
+				Bool32 isNearWater = TileIsNearOrInWater(map, entityTile);
+				enabled = (targetIsFriendly && isNearWater);
 				break;
 			}
 			case SpinningKickAbilityId:
@@ -1768,7 +1768,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		case HealAbilityId:
 		{
 			AddLine(text, "Heal friendly target for 20.");
-			AddLine(text, "You must be standing near a tree.");
+			AddLine(text, "You must be near a source of water.");
 			break;
 		}
 		case SmallPunchAbilityId:
