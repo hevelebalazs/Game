@@ -70,6 +70,8 @@ struct Entity
 {
 	Int8* name;
 
+	Int32 level;
+
 	Vec2 position;
 	Vec2 velocity;
 
@@ -279,13 +281,14 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	canvas->glyphData = GetGlobalGlyphData();
 
 	Camera* camera = canvas->camera;
-	camera->unitInPixels = 10.0f;
+	camera->unitInPixels = 15.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 
 	Real32 mapWidth  = GetMapWidth(map);
 	Real32 mapHeight = GetMapHeight(map);
 
 	Entity* player = &labState->entities[0];
+	player->level = 1;
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
@@ -295,6 +298,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->groupId = PlayerGroupId;
 
 	Entity* pet = &labState->entities[1];
+	pet->level = 1;
 	pet->name = "Pet";
 	IntVec2 petTile = FindNearbyNonTreeTile(map, playerTile);
 	pet->position = GetTileCenter(map, petTile);
@@ -309,6 +313,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	for(Int32 i = firstSnakeIndex; i <= lastSnakeIndex; i++)
 	{
 		Entity* enemy = &labState->entities[i];
+		enemy->level = 1;
 		enemy->name = "Snake";
 		enemy->position = GetRandomGroundTileCenter(map);
 		enemy->health = EntityMaxHealth;
@@ -321,6 +326,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	for(Int32 i = firstCrocodileIndex; i <= lastCrocodileIndex; i++)
 	{
 		Entity* enemy = &labState->entities[i];
+		enemy->level = 2;
 		enemy->name = "Crocodile";
 		enemy->position = GetRandomWaterTileCenter(map);
 		enemy->health = EntityMaxHealth;
@@ -3575,7 +3581,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 		if(entity->castedAbility == NoAbilityId)
 		{
-			DrawTextLineBottomXCentered(canvas, entity->name, textBottom, textCenterX, entityNameColor);
+			Int8 name[32];
+			OneLineString(name, 32, "L" + entity->level + " " + entity->name);
+			DrawTextLineBottomXCentered(canvas, name, textBottom, textCenterX, entityNameColor);
 		}
 		else
 		{
