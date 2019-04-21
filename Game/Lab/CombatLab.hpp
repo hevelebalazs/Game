@@ -7,8 +7,10 @@ enum AbilityId
 {
 	NoAbilityId,
 
-	VenomBoltAbilityId,
+	LightningAbilityId,
+	EarthShakeAbilityId,
 	HealAbilityId,
+	EarthShieldAbilityId,
 
 	SmallPunchAbilityId,
 	BigPunchAbilityId,
@@ -44,7 +46,9 @@ enum EffectId
 	BlessingOfTheSunEffectId,
 	BlindEffectId,
 	PoisonedEffectId,
-	BittenEffectId
+	BittenEffectId,
+	EarthShakeEffectId,
+	EarthShieldEffectId
 };
 
 enum ClassId
@@ -219,6 +223,7 @@ struct CombatLabState
 #define EnemyAttackRadius 10.0f
 
 #define MaxMeleeAttackDistance (4.0f * EntityRadius)
+#define MaxRangedAttackDistance (30.0f)
 
 static Int32
 func GetNextCombatLogLineIndex(Int32 index)
@@ -297,18 +302,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
 
-	Entity* pet = &labState->entities[1];
-	pet->level = 1;
-	pet->name = "Pet";
-	IntVec2 petTile = FindNearbyNonTreeTile(map, playerTile);
-	pet->position = GetTileCenter(map, petTile);
-	pet->health = EntityMaxHealth;
-	pet->inputDirection = MakePoint(0.0f, 0.0f);
-	pet->classId = SnakeClassId;
-	pet->groupId = PlayerGroupId;
-	pet->target = player;
-
-	Int32 firstSnakeIndex = 2;
+	Int32 firstSnakeIndex = 1;
 	Int32 lastSnakeIndex = EntityN / 2;
 	for(Int32 i = firstSnakeIndex; i <= lastSnakeIndex; i++)
 	{
@@ -372,8 +366,10 @@ func GetAbilityClass(Int32 abilityId)
 	Int32 classId = NoClassId;
 	switch(abilityId)
 	{
-		case VenomBoltAbilityId:
+		case LightningAbilityId:
+		case EarthShakeAbilityId:
 		case HealAbilityId:
+		case EarthShieldAbilityId:
 		{
 			classId = DruidClassId;
 			break;
@@ -418,6 +414,35 @@ func GetAbilityClass(Int32 abilityId)
 	return classId;
 }
 
+static Int32
+func GetAbilityMinLevel(Int32 abilityId)
+{
+	Int32 minLevel = 0;
+	switch(abilityId)
+	{
+		case EarthShakeAbilityId:
+		{
+			minLevel = 2;
+			break;
+		}
+		case HealAbilityId:
+		{
+			minLevel = 3;
+			break;
+		}
+		case EarthShieldAbilityId:
+		{
+			minLevel = 4;
+			break;
+		}
+		default:
+		{
+			minLevel = 1;
+		}
+	}
+	return minLevel;
+}
+
 static Bool32
 func HasEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
@@ -443,6 +468,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 	Int32 abilityClassId = GetAbilityClass(abilityId);
 
 	Bool32 hasLivingEnemyTarget = (target != 0) && (!IsDead(target)) && (entity->groupId != target->groupId);
+	Bool32 hasLivingFriendlyTarget = (target != 0) && (!IsDead(target)) && (entity->groupId == target->groupId);
 	Real32 distanceFromTarget = (target != 0) ? MaxDistance(entity->position, target->position) : 0.0f;
 
 	if(IsDead(entity))
@@ -478,23 +504,24 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 				enabled = (entity->inputDirection.x != 0.0f || entity->inputDirection.y != 0.0f);
 				break;
 			}
-			case VenomBoltAbilityId:
-			{
-				enabled = hasLivingEnemyTarget && (distanceFromTarget <= 20.0f);
-				break;
-			}
+			case LightningAbilityId:
+			case EarthShakeAbilityId:
 			case BurnAbilityId:
 			{
-				enabled = hasLivingEnemyTarget && (distanceFromTarget <= 30.0f);
+				enabled = hasLivingEnemyTarget && (distanceFromTarget <= MaxRangedAttackDistance);
 				break;
 			}
 			case HealAbilityId:
 			{
 				Map* map = &labState->map;
-				Bool32 targetIsFriendly = (target != 0 && !IsDead(target) && target->groupId == entity->groupId);
 				IntVec2 entityTile = GetContainingTile(map, entity->position);
 				Bool32 isNearWater = TileIsNearOrInWater(map, entityTile);
-				enabled = (targetIsFriendly && isNearWater);
+				enabled = (hasLivingFriendlyTarget && isNearWater);
+				break;
+			}
+			case EarthShieldAbilityId:
+			{
+				enabled = hasLivingFriendlyTarget;
 				break;
 			}
 			case SpinningKickAbilityId:
@@ -534,7 +561,12 @@ static Bool32
 func CanUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
 	Bool32 canUseAbility = true;
-	if(entity->recharge > 0.0f || AbilityIsOnCooldown(labState, entity, abilityId))
+	Int32 minLevel = GetAbilityMinLevel(abilityId);
+	if(entity->level < minLevel)
+	{
+		canUseAbility = false;
+	}
+	else if(entity->recharge > 0.0f || AbilityIsOnCooldown(labState, entity, abilityId))
 	{
 		canUseAbility = false;
 	}
@@ -690,17 +722,29 @@ func DealFinalDamage(Entity* entity, Int32 damage)
 	entity->health = IntMax2(entity->health - damage, 0);
 }
 
+static Int32
+func GetFinalDamage(CombatLabState* labState, Entity* target, Int32 damage)
+{
+	Int32 finalDamage = damage;
+	Assert(CanTakeDamage(labState, target));
+	if(HasEffect(labState, target, ShieldRaisedEffectId))
+	{
+		finalDamage -= finalDamage / 2;
+	}
+	if(HasEffect(labState, target, EarthShieldEffectId))
+	{
+		finalDamage -= finalDamage / 10;
+	}
+	return finalDamage;
+}
+
 static void
 func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* target, Int32 damage)
 {
 	Assert(source->groupId != target->groupId);
 	if(CanTakeDamage(labState, target))
 	{
-		Int32 finalDamage = damage;
-		if(HasEffect(labState, target, ShieldRaisedEffectId))
-		{
-			finalDamage = damage / 2;
-		}
+		Int32 finalDamage = GetFinalDamage(labState, target, damage);
 
 		DealFinalDamage(target, finalDamage);
 		AddDamageDisplay(labState, target->position, finalDamage);
@@ -712,6 +756,12 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 		{
 			DropLoot(labState, target);
 			CombatLog(labState, target->name + " dies.");
+
+			if(target->groupId == EnemyGroupId)
+			{
+				Entity* player = &labState->entities[0];
+				player->level++;
+			}
 		}
 	}
 }
@@ -767,6 +817,16 @@ func GetEffectName(Int32 effectId)
 			name = "Bitten";
 			break;
 		}
+		case EarthShakeEffectId:
+		{
+			name = "Earth Shake";
+			break;
+		}
+		case EarthShieldEffectId:
+		{
+			name = "Earth Shield";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -780,15 +840,22 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 {
 	if(CanTakeDamage(labState, target))
 	{
-		DealFinalDamage(target, damage);
-		AddDamageDisplay(labState, target->position, damage);
+		Int32 finalDamage = GetFinalDamage(labState, target, damage);
+		DealFinalDamage(target, finalDamage);
+		AddDamageDisplay(labState, target->position, finalDamage);
 
 		Int8* effectName = GetEffectName(effectId);
-		CombatLog(labState, effectName + " deals " + damage + " damage to " + target->name + ".");
+		CombatLog(labState, effectName + " deals " + finalDamage + " damage to " + target->name + ".");
 		if(IsDead(target))
 		{
 			DropLoot(labState, target);
 			CombatLog(labState, target->name + " dies.");
+
+			if(target->groupId == EnemyGroupId)
+			{
+				Entity* player = &labState->entities[0];
+				player->level++;
+			}
 		}
 	}
 }
@@ -835,9 +902,9 @@ func GetAbilityCastDuration(Int32 abilityId)
 	Real32 castDuration = 0.0f;
 	switch(abilityId)
 	{
-		case VenomBoltAbilityId:
+		case LightningAbilityId:
 		{
-			castDuration = 2.5f;
+			castDuration = 2.0f;
 			break;
 		}
 		case HealAbilityId:
@@ -868,6 +935,21 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 	Real32 cooldown = 0.0f;
 	switch(abilityId)
 	{
+		case EarthShakeAbilityId:
+		{
+			cooldown = 10.0f;
+			break;
+		}
+		case HealAbilityId:
+		{
+			cooldown = 5.0f;
+			break;
+		}
+		case EarthShieldAbilityId:
+		{
+			cooldown = 5.0f;
+			break;
+		}
 		case BigPunchAbilityId:
 		{
 			cooldown = 3.0f;
@@ -879,11 +961,6 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 			break;
 		}
 		case RollAbilityId:
-		{
-			cooldown = 5.0f;
-			break;
-		}
-		case HealAbilityId:
 		{
 			cooldown = 5.0f;
 			break;
@@ -1080,6 +1157,16 @@ func GetEffectTotalDuration(Int32 effectId)
 			duration = 5.0f;
 			break;
 		}
+		case EarthShakeEffectId:
+		{
+			duration = 6.0f;
+			break;
+		}
+		case EarthShieldEffectId:
+		{
+			duration = 600.0f;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -1153,30 +1240,9 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 	Real32 recharge = 0.0f;
 	switch(abilityId)
 	{
-		case VenomBoltAbilityId:
-		case HealAbilityId:
-		case SmallPunchAbilityId:
-		case BigPunchAbilityId:
-		case KickAbilityId:
-		case SpinningKickAbilityId:
-		case AvoidanceAbilityId:
-		case RollAbilityId:
-		case SwordStabAbilityId:
-		case SwordSwingAbilityId:
-		case RaiseShieldAbilityId:
-		case LightOfTheSunAbilityId:
-		{
-			recharge = 1.0f;
-			break;
-		}
 		case SnakeStrikeAbilityId:
 		{
 			recharge = 3.0f;
-			break;
-		}
-		case CrocodileBiteAbilityId:
-		{
-			recharge = 1.0f;
 			break;
 		}
 		case CrocodileLashAbilityId:
@@ -1193,7 +1259,7 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 		}
 		default:
 		{
-			DebugBreak();
+			recharge = 1.0f;
 		}
 	}
 	return recharge;
@@ -1205,14 +1271,24 @@ func GetAbilityName(Int32 abilityId)
 	Int8* name = 0;
 	switch(abilityId)
 	{
-		case VenomBoltAbilityId:
+		case LightningAbilityId:
 		{
-			name = "Venom Bolt";
+			name = "Lightning";
+			break;
+		}
+		case EarthShakeAbilityId:
+		{
+			name = "Earth Shake";
 			break;
 		}
 		case HealAbilityId:
 		{
 			name = "Heal";
+			break;
+		}
+		case EarthShieldAbilityId:
+		{
+			name = "Earth Shield";
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -1314,30 +1390,37 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 	CombatLog(labState, entity->name + " uses ability " + abilityName + ".");
 
 	Entity* target = entity->target;
+	Bool32 hasEnemyTarget = (target != 0 && target->groupId != entity->groupId);
+	Bool32 hasFriendlyTarget = (target != 0 && target->groupId == entity->groupId);
 	switch(abilityId)
 	{
-		case VenomBoltAbilityId:
+		case EarthShakeAbilityId:
 		{
-			Assert(target != 0);
-			DealDamageFromEntity(labState, entity, target, 10);
-			ResetOrAddEffect(labState, target, PoisonedEffectId);
+			Assert(hasEnemyTarget);
+			ResetOrAddEffect(labState, target, EarthShakeEffectId);
 			break;
 		}
 		case SmallPunchAbilityId:
 		{
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, 10);
+			break;
+		}
+		case EarthShieldAbilityId:
+		{
+			Assert(hasFriendlyTarget && !IsDead(target));
+			ResetOrAddEffect(labState, target, EarthShieldEffectId);
 			break;
 		}
 		case BigPunchAbilityId:
 		{
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, 30);
 			break;
 		}
 		case KickAbilityId:
 		{
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			Real32 moveSpeed = 20.0f;
 			target->velocity = moveSpeed * GetClosestMoveDirection(target->position - entity->position);
 			AddEffect(labState, target, KickedEffectId);
@@ -1379,7 +1462,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 				damage += 2;
 			}
 
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
@@ -1416,7 +1499,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		}
 		case BurnAbilityId:
 		{
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			AddEffect(labState, target, BurningEffectId);
 			break;
 		}
@@ -1450,7 +1533,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		}
 		case SnakeStrikeAbilityId:
 		{
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, 10);
 			if(RandomBetween(0.0f, 1.0f) < 0.3f)
 			{
@@ -1460,14 +1543,14 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		}
 		case CrocodileBiteAbilityId:
 		{
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, 15);
 			ResetOrAddEffect(labState, target, BittenEffectId);
 			break;
 		}
 		case CrocodileLashAbilityId:
 		{
-			Assert(target != 0);
+			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, 30);
 			break;
 		}
@@ -1485,22 +1568,20 @@ func FinishCasting(CombatLabState* labState, Entity* entity)
 	Assert(abilityId != NoAbilityId);
 	Assert(AbilityIsCasted(abilityId));
 	Entity* target = entity->castTarget;
+	Bool32 hasEnemyTarget = (target != 0 && target->groupId != entity->groupId);
+	Bool32 hasFriendlyTarget = (target != 0 && target->groupId == entity->groupId);
 	switch(abilityId)
 	{
-		case VenomBoltAbilityId:
+		case LightningAbilityId:
 		{
-			Assert(target != 0 && target->groupId != entity->groupId);
-			Int32 damage = 10;
-			if(HasEffect(labState, target, PoisonedEffectId))
-			{
-				damage += 5;
-			}
-			DealDamageFromEntity(labState, entity, target, damage);
+			Assert(hasEnemyTarget);
+			DealDamageFromEntity(labState, entity, target, 10);
 			break;
 		}
 		case HealAbilityId:
 		{
-			AttemptToHeal(labState, entity, target, 20);
+			Assert(hasFriendlyTarget);
+			AttemptToHeal(labState, entity, target, 30);
 			break;
 		}
 		default:
@@ -1555,13 +1636,15 @@ func AttemptToUseAbility(CombatLabState* labState, Entity* entity, Int32 ability
 }
 
 static Int32
-func GetClassAbilityAtIndex(Int32 classId, Int32 abilityIndex)
+func GetAvailableClassAbilityAtIndex(Entity* entity, Int32 abilityIndex)
 {
 	Int32 result = NoAbilityId;
 	Int32 classAbilityIndex = 0;
 	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
 	{
-		if(GetAbilityClass(abilityId) == classId)
+		Int32 abilityLevel = GetAbilityMinLevel(abilityId);
+		Int32 abilityClassId = GetAbilityClass(abilityId);
+		if(entity->level >= abilityLevel && entity->classId == abilityClassId)
 		{
 			if(classAbilityIndex == abilityIndex)
 			{
@@ -1577,7 +1660,7 @@ func GetClassAbilityAtIndex(Int32 classId, Int32 abilityIndex)
 static void
 func AttemptToUseAbilityAtIndex(CombatLabState* labState, Entity* entity, Int32 abilityIndex)
 {
-	Int32 abilityId = GetClassAbilityAtIndex(entity->classId, abilityIndex);
+	Int32 abilityId = GetAvailableClassAbilityAtIndex(entity, abilityIndex);
 	if(abilityId != NoAbilityId)
 	{
 		AttemptToUseAbility(labState, entity, abilityId);
@@ -1765,16 +1848,31 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 
 	switch(abilityId)
 	{
-		case VenomBoltAbilityId:
+		case LightningAbilityId:
 		{
-			AddLine(text, "Deal 10 damage to your enemy and");
-			AddLine(text, "an additional 5 if they are poisoned.");
+			AddLine(text, "Ranged");
+			AddLine(text, "Strike enemy target with lightning,");
+			AddLine(text, "dealing 10 damage.");
+			break;
+		}
+		case EarthShakeAbilityId:
+		{
+			AddLine(text, "Ranged");
+			AddLine(text, "Make the earth shake under target enemy,");
+			AddLine(text, "reducing their movement speed by 50%");
+			AddLine(text, "while on the ground for 6 seconds.");
 			break;
 		}
 		case HealAbilityId:
 		{
-			AddLine(text, "Heal friendly target for 20.");
-			AddLine(text, "You must be near a source of water.");
+			AddLine(text, "Heal friendly target for 30. You must be");
+			AddLine(text, "near a source of water.");
+			break;
+		}
+		case EarthShieldAbilityId:
+		{
+			AddLine(text, "Tame enemy beast to make it obey your");
+			AddLine(text, "commands.");
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -2024,10 +2122,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[W][A][S][D] or Arrows - Move");
 		AddLine(tooltip, "[Tab] - Target closest enemy");
 		AddLine(tooltip, "[F1] - Target player");
-		AddLine(tooltip, "[F2] - Target pet");
 		AddLine(tooltip, "[1]-[2] - Use Ability");
-		AddLine(tooltip, "[Q] - Order pet to follow you");
-		AddLine(tooltip, "[E] - Order pet to follow target");
 		AddLine(tooltip, "[C] - Show/hide inventory");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
@@ -2051,7 +2146,9 @@ func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosit
 	Int32 abilityN = 0;
 	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
 	{
-		if(GetAbilityClass(abilityId) == classId)
+		Int32 abilityClassId = GetAbilityClass(abilityId);
+		Int32 abilityMinLevel = GetAbilityMinLevel(abilityId);
+		if(entity->level >= abilityMinLevel && entity->classId == abilityClassId)
 		{
 			abilityN++;
 		}
@@ -2072,7 +2169,9 @@ func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosit
 
 	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
 	{
-		if(GetAbilityClass(abilityId) == classId)
+		Int32 abilityClassId = GetAbilityClass(abilityId);
+		Int32 abilityMinLevel = GetAbilityMinLevel(abilityId);
+		if(entity->level >= abilityMinLevel && entity->classId == abilityClassId)
 		{
 			Int32 boxRight = boxLeft + UIBoxSide;
 			Int32 boxTop = top;
@@ -3237,6 +3336,17 @@ func GetEntityMoveSpeed(CombatLabState* labState, Entity* entity)
 		{
 			moveSpeed *= 0.5f;
 		}
+
+		if(HasEffect(labState, entity, EarthShakeEffectId))
+		{
+			Map* map = &labState->map;
+			IntVec2 tile = GetContainingTile(map, entity->position);
+			TileTypeId tileType = GetTileType(map, tile);
+			if(tileType == GroundTileId)
+			{
+				moveSpeed *= 0.5f;
+			}
+		}
 	}
 
 	return moveSpeed;
@@ -3317,33 +3427,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 
-	Entity* pet = &labState->entities[1];
-	Real32 petMoveSpeed = GetEntityMoveSpeed(labState, pet);
-
-	if(WasKeyPressed(userInput, 'Q'))
-	{
-		pet->target = player;
-	}
-	if(WasKeyPressed(userInput, 'E'))
-	{
-		pet->target = (player->target != 0) ? player->target : player;
-	}
-
-	pet->velocity = MakeVector(0.0f, 0.0f);
-	if(CanMove(labState, pet))
-	{
-		IntVec2 petTile = GetContainingTile(map, pet->position);
-		Assert(pet->target != 0);
-		IntVec2 targetTile = GetContainingTile(map, pet->target->position);
-		if(petTile != targetTile)
-		{
-			IntVec2 nextTile = GetNextTileOnPath(map, petTile, targetTile);
-			Vec2 tileCenter = GetTileCenter(map, nextTile);
-			pet->velocity = petMoveSpeed * PointDirection(pet->position, tileCenter);
-		}
-	}
-	UpdateEntityMovement(pet, map, seconds);
-
 	Real32 enemyPullDistance = 30.0f;
 	for(Int32 i = 0; i < EntityN; i++)
 	{
@@ -3360,13 +3443,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			{
 				enemy->target = player;
 				AddEmptyHateTableEntry(&labState->hateTable, enemy, player);
-			}
-
-			Real32 distanceFromPet = MaxDistance(pet->position, enemy->position);
-			if(distanceFromPet <= enemyPullDistance)
-			{
-				enemy->target = pet;
-				AddEmptyHateTableEntry(&labState->hateTable, enemy, pet);
 			}
 		}
 
@@ -3432,11 +3508,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	if(WasKeyPressed(userInput, VK_F1))
 	{
 		player->target = player;
-	}
-
-	if(WasKeyPressed(userInput, VK_F2))
-	{
-		player->target = pet;
 	}
 
 	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
@@ -3534,16 +3605,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	else
 	{
 		DrawEntity(canvas, player, playerColor);
-	}
-
-	Vec4 petColor = MakeColor(0.0f, 0.5f, 0.5f);
-	if(pet == player->target)
-	{
-		DrawSelectedEntity(canvas, pet, petColor);
-	}
-	else
-	{	
-		DrawEntity(canvas, pet, petColor);
 	}
 
 	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
@@ -3657,6 +3718,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
 
+// TODO: Event queue!
 // TODO: Icons?
 // TODO: Show effects above entities' heads
 // TODO: Mana
