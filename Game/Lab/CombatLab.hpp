@@ -82,6 +82,7 @@ struct Entity
 	Real32 recharge;
 	Real32 rechargeFrom;
 	Int32 health;
+	Int32 absorbDamage;
 
 	Int32 castedAbility;
 	Real32 castTimeTotal;
@@ -293,7 +294,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Real32 mapHeight = GetMapHeight(map);
 
 	Entity* player = &labState->entities[0];
-	player->level = 1;
+	player->level = 4;
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
@@ -719,7 +720,17 @@ static void
 func DealFinalDamage(Entity* entity, Int32 damage)
 {
 	Assert(damage > 0);
-	entity->health = IntMax2(entity->health - damage, 0);
+
+	if(entity->absorbDamage >= damage)
+	{
+		entity->absorbDamage -= damage;
+	}
+	else
+	{
+		damage -= entity->absorbDamage;
+		entity->absorbDamage = 0;
+		entity->health = IntMax2(entity->health - damage, 0);
+	}
 }
 
 static Int32
@@ -947,7 +958,7 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 		}
 		case EarthShieldAbilityId:
 		{
-			cooldown = 5.0f;
+			cooldown = 30.0f;
 			break;
 		}
 		case BigPunchAbilityId:
@@ -1164,7 +1175,7 @@ func GetEffectTotalDuration(Int32 effectId)
 		}
 		case EarthShieldEffectId:
 		{
-			duration = 600.0f;
+			duration = 5.0f;
 			break;
 		}
 		default:
@@ -1410,6 +1421,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		{
 			Assert(hasFriendlyTarget && !IsDead(target));
 			ResetOrAddEffect(labState, target, EarthShieldEffectId);
+			target->absorbDamage += 50;
 			break;
 		}
 		case BigPunchAbilityId:
@@ -1770,6 +1782,16 @@ func DrawEntityBars(Canvas* canvas, Entity* entity)
 	healthBarFilledRect.right = Lerp(healthBarBackgroundRect.left, healthRatio, healthBarBackgroundRect.right);
 	DrawRect(canvas, healthBarFilledRect, healthBarFilledColor);
 
+	if(entity->absorbDamage > 0)
+	{
+		Vec4 absorbDamageBackgroundColor = MakeColor(1.0f, 1.0f, 1.0f);
+		Rect absorbDamageRect = healthBarBackgroundRect;
+		absorbDamageRect.left = healthBarFilledRect.right;
+		Real32 absorbDamageWidth = Real32(entity->absorbDamage) / Real32(EntityMaxHealth) * healthBarWidth;
+		absorbDamageRect.right = Min2(healthBarBackgroundRect.right, absorbDamageRect.left + absorbDamageWidth);
+		DrawRect(canvas, absorbDamageRect, absorbDamageBackgroundColor);
+	}
+
 	DrawRectOutline(canvas, healthBarBackgroundRect, healthBarOutlineColor);
 
 	if(entity->castedAbility != NoAbilityId)
@@ -1871,8 +1893,9 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case EarthShieldAbilityId:
 		{
-			AddLine(text, "Tame enemy beast to make it obey your");
-			AddLine(text, "commands.");
+			AddLine(text, "Apply an earth shield to friendly target,");
+			AddLine(text, "reducing their damage taken by 10% and");
+			AddLine(text, "absorbing 50 damage for 5 seconds.");
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -2764,6 +2787,10 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 		{
 			labState->effects[remainingEffectN] = *effect;
 			remainingEffectN++;
+		}
+		else if(effect->effectId == EarthShieldEffectId)
+		{
+			effect->entity->absorbDamage = 0;
 		}
 	}
 	labState->effectN = remainingEffectN;
