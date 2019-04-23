@@ -20,10 +20,10 @@ enum AbilityId
 	AvoidanceAbilityId,
 
 	SwordStabAbilityId,
+	LightOfTheSunAbilityId,
 	SwordSwingAbilityId,
 	RaiseShieldAbilityId,
 	BurnAbilityId,
-	LightOfTheSunAbilityId,
 	BlessingOfTheSunAbilityId,
 	MercyOfTheSunAbilityId,
 
@@ -294,13 +294,13 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Real32 mapHeight = GetMapHeight(map);
 
 	Entity* player = &labState->entities[0];
-	player->level = 4;
+	player->level = 1;
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->health = EntityMaxHealth;
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = DruidClassId;
+	player->classId = MonkClassId;
 	player->groupId = PlayerGroupId;
 
 	Int32 firstSnakeIndex = 1;
@@ -386,10 +386,10 @@ func GetAbilityClass(Int32 abilityId)
 			break;
 		}
 		case SwordStabAbilityId:
+		case LightOfTheSunAbilityId:
 		case SwordSwingAbilityId:
 		case RaiseShieldAbilityId:
 		case BurnAbilityId:
-		case LightOfTheSunAbilityId:
 		case BlessingOfTheSunAbilityId:
 		case MercyOfTheSunAbilityId:
 		{
@@ -434,6 +434,71 @@ func GetAbilityMinLevel(Int32 abilityId)
 		case EarthShieldAbilityId:
 		{
 			minLevel = 4;
+			break;
+		}
+		case SwordStabAbilityId:
+		{
+			minLevel = 1;
+			break;
+		}
+		case LightOfTheSunAbilityId:
+		{
+			minLevel = 1;
+			break;
+		}
+		case SwordSwingAbilityId:
+		{
+			minLevel = 2;
+			break;
+		}
+		case RaiseShieldAbilityId:
+		{
+			minLevel = 2;
+			break;
+		}
+		case BurnAbilityId:
+		{
+			minLevel = 3;
+			break;
+		}
+		case BlessingOfTheSunAbilityId:
+		{
+			minLevel = 4;
+			break;
+		}
+		case MercyOfTheSunAbilityId:
+		{
+			minLevel = 5;
+			break;
+		}
+		case SmallPunchAbilityId:
+		{
+			minLevel = 1;
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			minLevel = 2;
+			break;
+		}
+		case KickAbilityId:
+		{
+			minLevel = 3;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			minLevel = 3;
+			break;
+		}
+		case RollAbilityId:
+		{
+			minLevel = 4;
+			break;
+		}
+		case AvoidanceAbilityId:
+		{
+			minLevel = 5;
 			break;
 		}
 		default:
@@ -923,6 +988,11 @@ func GetAbilityCastDuration(Int32 abilityId)
 			castDuration = 1.5f;
 			break;
 		}
+		case LightOfTheSunAbilityId:
+		{
+			castDuration = 1.5f;
+			break;
+		}
 		default:
 		{
 			castDuration = 0.0f;
@@ -1150,7 +1220,7 @@ func GetEffectTotalDuration(Int32 effectId)
 		}
 		case BlessingOfTheSunEffectId:
 		{
-			duration = 60.0f;
+			duration = 5 * 60.0f;
 			break;
 		}
 		case BlindEffectId:
@@ -1266,6 +1336,11 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 		case MercyOfTheSunAbilityId:
 		{
 			recharge = 0.0f;
+			break;
+		}
+		case SmallPunchAbilityId:
+		{
+			recharge = 0.5f;
 			break;
 		}
 		default:
@@ -1472,6 +1547,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
+				Heal(labState, entity, entity, 2);
 			}
 
 			Assert(hasEnemyTarget);
@@ -1484,6 +1560,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
+				Heal(labState, entity, entity, 2);
 			}
 
 			for(Int32 i = 0; i < EntityN; i++)
@@ -1513,11 +1590,6 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		{
 			Assert(hasEnemyTarget);
 			AddEffect(labState, target, BurningEffectId);
-			break;
-		}
-		case LightOfTheSunAbilityId:
-		{
-			Heal(labState, entity, entity, 20);
 			break;
 		}
 		case BlessingOfTheSunAbilityId:
@@ -1594,6 +1666,11 @@ func FinishCasting(CombatLabState* labState, Entity* entity)
 		{
 			Assert(hasFriendlyTarget);
 			AttemptToHeal(labState, entity, target, 30);
+			break;
+		}
+		case LightOfTheSunAbilityId:
+		{
+			AttemptToHeal(labState, entity, entity, 20);
 			break;
 		}
 		default:
@@ -1980,7 +2057,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 			AddLine(text, "Raising your shield burns enemies within");
 			AddLine(text, "melee range for 10 damage and heals you");
 			AddLine(text, "for 10 damage.");
-			AddLine(text, "Lasts for 60 seconds.");
+			AddLine(text, "Lasts for 5 minutes.");
 			break;
 		}
 		case MercyOfTheSunAbilityId:
@@ -3745,11 +3822,15 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawCombatLog(canvas, labState);
 }
 
-// TODO: Event queue!
-// TODO: Icons?
-// TODO: Show effects above entities' heads
+// TODO: Only put casted spells on cooldown when casting is finished!
+// TODO: Slow regeneration while standing near a tree
+// TODO: Get more health points when leveling up!
 // TODO: Mana
 // TODO: Offensive and defensive target
+// TODO: Neutral enemies
+// TODO: Event queue
+// TODO: Icons?
+// TODO: Show effects above entities' heads
 // TODO: Entities attacking each other get too close
 // TODO: Druid: Tame ability?
 // TODO: Druid: Debuff/buff abilities?
