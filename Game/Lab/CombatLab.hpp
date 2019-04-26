@@ -69,9 +69,9 @@ Int32 MaxHealthAtLevel[] =
 	0,
 	100,
 	150,
+	200,
 	250,
-	400,
-	600
+	300
 };
 
 enum EntityGroupId
@@ -102,6 +102,11 @@ struct Entity
 	Int32 classId;
 	Int32 groupId;
 	Entity* target;
+
+	Int32 strength;
+	Int32 intellect;
+	Int32 constitution;
+	Int32 dexterity;
 
 	Vec2 inputDirection;
 };
@@ -318,8 +323,13 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->health = GetEntityMaxHealth(player);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = PaladinClassId;
+	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
+
+	player->strength = 1;
+	player->constitution = 1;
+	player->dexterity = 1;
+	player->intellect = 1;
 
 	Int32 firstSnakeIndex = 1;
 	Int32 lastSnakeIndex = EntityN / 2;
@@ -1718,7 +1728,7 @@ func FinishCasting(CombatLabState* labState, Entity* entity)
 		case LightningAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 10);
+			DealDamageFromEntity(labState, entity, target, 20);
 			break;
 		}
 		case HealAbilityId:
@@ -2295,7 +2305,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[Tab] - Target closest enemy");
 		AddLine(tooltip, "[F1] - Target player");
 		AddLine(tooltip, "[1]-[2] - Use Ability");
-		AddLine(tooltip, "[C] - Show/hide inventory");
+		AddLine(tooltip, "[I] - Show/hide inventory");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
 		Int32 tooltipRight = (bitmap->width - 1);
@@ -2868,6 +2878,82 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 		DrawInventorySlot(canvas, labState, dragItem->itemId, slotTop, slotLeft);
 		DrawInventorySlotOutline(canvas, slotTop, slotLeft, dragOutlineColor);
 	}
+}
+
+static void
+func DrawCharacterInfo(Canvas* canvas, Entity* entity)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+	
+	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
+
+	Int32 width = 400;
+	Int32 height = UIBoxPadding + 12 * TextHeightInPixels + UIBoxPadding;
+
+	Int32 left = UIBoxPadding;
+	Int32 right = left + width;
+	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	Int32 top = bottom - height;
+
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	GlyphData* glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+
+	Vec4 textColor  = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 infoColor  = MakeColor(0.3f, 0.3f, 0.3f);
+
+	Int32 textLeft = left + UIBoxPadding;
+	Int32 textTop = top + UIBoxPadding;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Character Info", glyphData, textLeft, textTop, titleColor);
+	textTop += TextHeightInPixels;
+
+	Int8 lineBuffer[128] = {};
+	OneLineString(lineBuffer, 128, "Level " + entity->level);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Attributes", glyphData, textLeft, textTop, titleColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Constitution: " + entity->constitution);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Increases maximum health.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Strength: " + entity->strength);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Increases damage of physical attacks.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Intellect: " + entity->intellect);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Increases damage of magical attacks.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Dexterity: " + entity->dexterity);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Reduces cast time of abilities.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
 }
 
 static void
@@ -3848,7 +3934,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	canvas->camera->center = player->position;
 
-	if(WasKeyReleased(userInput, 'C'))
+	if(WasKeyReleased(userInput, 'I'))
 	{
 		labState->showInventory = !labState->showInventory;
 	}
@@ -3902,13 +3988,15 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		DrawHateTable(canvas, labState);
 	}
 
+	DrawCharacterInfo(canvas, player);
+
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
 	DrawPlayerEffectBar(canvas, labState);
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
-	DrawCombatLog(canvas, labState);
+	// DrawCombatLog(canvas, labState);
 }
 
 // TODO: Mana
