@@ -49,7 +49,8 @@ enum EffectId
 	BittenEffectId,
 	EarthShakeEffectId,
 	EarthShieldEffectId,
-	RegenerateEffectId
+	RegenerateEffectId,
+	IntellectPotionEffectId
 };
 
 enum ClassId
@@ -64,6 +65,7 @@ enum ClassId
 
 #define EntityRadius 1.0f
 
+#define MaxLevel 5
 Int32 MaxHealthAtLevel[] =
 {
 	0,
@@ -158,7 +160,8 @@ enum ItemId
 {
 	NoItemId,
 	HealthPotionItemId,
-	AntiVenomItemId
+	AntiVenomItemId,
+	IntellectPotionItemId
 };
 
 #define DroppedItemTotalDuration 10.0f
@@ -227,6 +230,8 @@ struct CombatLabState
 
 	Int32 hoverAbilityId;
 
+	Bool32 showCharacterInfo;
+
 	Bool32 showInventory;
 	Inventory inventory;
 	InventoryItem hoverItem;
@@ -294,7 +299,7 @@ static Int32
 func GetEntityMaxHealth(Entity* entity)
 {
 	Assert(IsIntBetween(entity->level, 1, 5));
-	Int32 maxHealth = MaxHealthAtLevel[entity->level];
+	Int32 maxHealth = MaxHealthAtLevel[entity->level] + entity->constitution * 10;
 	return maxHealth;
 }
 
@@ -321,7 +326,6 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
-	player->health = GetEntityMaxHealth(player);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
 	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
@@ -330,6 +334,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->constitution = 1;
 	player->dexterity = 1;
 	player->intellect = 1;
+	player->health = GetEntityMaxHealth(player);
 
 	Int32 firstSnakeIndex = 1;
 	Int32 lastSnakeIndex = EntityN / 2;
@@ -362,6 +367,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	inventory->items[0][1] = HealthPotionItemId;
 	inventory->items[1][0] = AntiVenomItemId;
 	inventory->items[1][1] = AntiVenomItemId;
+	inventory->items[1][2] = IntellectPotionItemId;
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -774,6 +780,11 @@ func GetItemName(Int32 itemId)
 			name = "Antivenom";
 			break;
 		}
+		case IntellectPotionItemId:
+		{
+			name = "Intellect Potion";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -826,6 +837,17 @@ func DealFinalDamage(Entity* entity, Int32 damage)
 	}
 }
 
+static void
+func LevelUp(Entity* entity)
+{
+	Assert(IsIntBetween(entity->level, 1, MaxLevel - 1));
+	entity->level++;
+	entity->intellect++;
+	entity->strength++;
+	entity->dexterity++;
+	entity->constitution++;
+}
+
 static Int32
 func GetFinalDamage(CombatLabState* labState, Entity* target, Int32 damage)
 {
@@ -864,9 +886,9 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 			if(target->groupId == EnemyGroupId)
 			{
 				Entity* player = &labState->entities[0];
-				if(player->level < 5)
+				if(player->level < MaxLevel)
 				{
-					player->level++;
+					LevelUp(player);
 				}
 			}
 		}
@@ -939,6 +961,11 @@ func GetEffectName(Int32 effectId)
 			name = "Regenerate";
 			break;
 		}
+		case IntellectPotionEffectId:
+		{
+			name = "Intellect Potion";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -966,7 +993,10 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 			if(target->groupId == EnemyGroupId)
 			{
 				Entity* player = &labState->entities[0];
-				player->level++;
+				if(player->level < MaxLevel)
+				{
+					LevelUp(player);
+				}
 			}
 		}
 	}
@@ -1305,6 +1335,11 @@ func GetEffectDuration(Int32 effectId)
 			duration = 5.0f;
 			break;
 		}
+		case IntellectPotionEffectId:
+		{
+			duration = 10 * 60.0f;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -1312,6 +1347,38 @@ func GetEffectDuration(Int32 effectId)
 	}
 	Assert(duration > 0.0f);
 	return duration;
+}
+
+static void
+func EnableEffect(Effect* effect)
+{
+	Int32 effectId = effect->effectId;
+	Entity* entity = effect->entity;
+	switch(effectId)
+	{
+		case IntellectPotionEffectId:
+		{
+			Assert(!IsDead(entity));
+			entity->intellect += 10;
+			break;
+		}
+	}
+}
+
+static void
+func DisableEffect(Effect* effect)
+{
+	Int32 effectId = effect->effectId;
+	Entity* entity = effect->entity;
+	switch(effectId)
+	{
+		case IntellectPotionEffectId:
+		{
+			Assert(entity->intellect > 10);
+			entity->intellect -= 10;
+			break;
+		}
+	}
 }
 
 static void
@@ -1325,6 +1392,10 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 		{
 			labState->effects[remainingEffectN] = *effect;
 			remainingEffectN++;
+		}
+		else
+		{
+			DisableEffect(effect);
 		}
 	}
 	labState->effectN = remainingEffectN;
@@ -1347,6 +1418,8 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 		effect->timeRemaining = duration;
 	}
 
+	EnableEffect(effect);
+
 	Int8* effectName = GetEffectName(effectId);
 	CombatLog(labState, entity->name + " gets " + effectName + ".");
 }
@@ -1354,7 +1427,6 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 static void
 func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
-
 	Bool32 foundEffect = false;
 	for(Int32 i = 0; i < labState->effectN; i++)
 	{
@@ -1530,6 +1602,61 @@ func GetAbilityName(Int32 abilityId)
 	return name;
 }
 
+static Int32
+func GetAbilityDamage(Entity* entity, Int32 abilityId)
+{
+	Int32 damage = 0;
+	switch(abilityId)
+	{
+		case LightningAbilityId:
+		{
+			damage = 20 + entity->intellect;
+			break;
+		}
+		case SmallPunchAbilityId:
+		{
+			damage = 10 + entity->strength;
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			damage = 30 + entity->strength;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			damage = 5 + entity->strength;
+			break;
+		}
+		case SwordStabAbilityId:
+		{
+			damage = 15 + entity->strength;
+			break;
+		}
+		case SwordSwingAbilityId:
+		{
+			damage = 10 + entity->strength;
+			break;
+		}
+		case SnakeStrikeAbilityId:
+		{
+			damage = 10 + entity->strength;
+			break;
+		}
+		case CrocodileBiteAbilityId:
+		{
+			damage = 15 + entity->strength;
+			break;
+		}
+		case CrocodileLashAbilityId:
+		{
+			damage = 30 + entity->strength;
+			break;
+		}
+	}
+	return damage;
+}
+
 static void
 func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
@@ -1542,6 +1669,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 	Entity* target = entity->target;
 	Bool32 hasEnemyTarget = (target != 0 && target->groupId != entity->groupId);
 	Bool32 hasFriendlyTarget = (target != 0 && target->groupId == entity->groupId);
+	Int32 damage = GetAbilityDamage(entity, abilityId);
 	switch(abilityId)
 	{
 		case EarthShakeAbilityId:
@@ -1553,7 +1681,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case SmallPunchAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 10);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		case EarthShieldAbilityId:
@@ -1566,7 +1694,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case BigPunchAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 30);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		case KickAbilityId:
@@ -1587,7 +1715,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 					Real32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
-						DealDamageFromEntity(labState, entity, target, 10);
+						DealDamageFromEntity(labState, entity, target, damage);
 					}
 				}
 			}
@@ -1607,7 +1735,6 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		}
 		case SwordStabAbilityId:
 		{
-			Int32 damage = 15;
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
@@ -1620,7 +1747,6 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		}
 		case SwordSwingAbilityId:
 		{
-			Int32 damage = 10;
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
@@ -1682,7 +1808,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case SnakeStrikeAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 10);
+			DealDamageFromEntity(labState, entity, target, damage);
 			if(RandomBetween(0.0f, 1.0f) < 0.3f)
 			{
 				ResetOrAddEffect(labState, target, PoisonedEffectId);
@@ -1692,14 +1818,14 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case CrocodileBiteAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 15);
+			DealDamageFromEntity(labState, entity, target, damage);
 			ResetOrAddEffect(labState, target, BittenEffectId);
 			break;
 		}
 		case CrocodileLashAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 30);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		default:
@@ -1723,12 +1849,13 @@ func FinishCasting(CombatLabState* labState, Entity* entity)
 	Entity* target = entity->castTarget;
 	Bool32 hasEnemyTarget = (target != 0 && target->groupId != entity->groupId);
 	Bool32 hasFriendlyTarget = (target != 0 && target->groupId == entity->groupId);
+	Int32 damage = GetAbilityDamage(entity, abilityId);
 	switch(abilityId)
 	{
 		case LightningAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 20);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		case HealAbilityId:
@@ -1970,7 +2097,7 @@ func DrawEntityBars(Canvas* canvas, Entity* entity)
 }
 
 static String
-func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
+func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 bufferSize)
 {
 	String text = StartString(buffer, bufferSize);
 
@@ -2018,13 +2145,15 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 	}
 
+	Int32 damage = GetAbilityDamage(entity, abilityId);
+
 	switch(abilityId)
 	{
 		case LightningAbilityId:
 		{
 			AddLine(text, "Ranged");
 			AddLine(text, "Strike enemy target with lightning,");
-			AddLine(text, "dealing 10 damage.");
+			AddLine(text, "dealing " + damage + " damage.");
 			break;
 		}
 		case EarthShakeAbilityId:
@@ -2037,7 +2166,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case HealAbilityId:
 		{
-			AddLine(text, "Heal friendly target for 30. You must be");
+			AddLine(text, "Heal friendly target for " + damage + ". You must be");
 			AddLine(text, "near a source of water.");
 			break;
 		}
@@ -2052,14 +2181,14 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		{
 			AddLine(text, "Melee range")
 			AddLine(text, "Punch target enemy lightly, dealing");
-			AddLine(text, "10 damage.");
+			AddLine(text, damage + " damage.");
 			break;
 		}
 		case BigPunchAbilityId:
 		{
 			AddLine(text, "Melee range");
 			AddLine(text, "Forcefully punch target enemy, dealing");
-			AddLine(text, "30 damage.");
+			AddLine(text, damage + " damage.");
 			break;
 		}
 		case KickAbilityId:
@@ -2070,7 +2199,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case SpinningKickAbilityId:
 		{
-			AddLine(text, "Deal 5 damage to all enemies within");
+			AddLine(text, "Deal " + damage + " damage to all enemies within");
 			AddLine(text, "melee range.");
 			break;
 		}
@@ -2088,12 +2217,12 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		{
 			AddLine(text, "Melee range");
 			AddLine(text, "Stab target enemy with your sword,");
-			AddLine(text, "dealing 15 damage.");
+			AddLine(text, "dealing " + damage + " damage.");
 			break;
 		}
 		case SwordSwingAbilityId:
 		{
-			AddLine(text, "Deal 10 damage to all enemies in front");
+			AddLine(text, "Deal " + damage + " damage to all enemies in front");
 			AddLine(text, "of you (melee range).");
 			break;
 		}
@@ -2136,7 +2265,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		case MercyOfTheSunAbilityId:
 		{
 			AddLine(text, "Plead for the mercy of the Sun, healing");
-			AddLine(text, "you for 30 damage and blinding all");
+			AddLine(text, "you for 30 and blinding all");
 			AddLine(text, "enemies within your melee range");
 			AddLine(text, "for 5 seconds, making them unable to");
 			AddLine(text, "use abilities while it lasts.");
@@ -2144,20 +2273,20 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case SnakeStrikeAbilityId:
 		{
-			AddLine(text, "Strike your target enemy dealing 10 damage,");
+			AddLine(text, "Strike your target enemy dealing " + damage + " damage,");
 			AddLine(text, "having a 30% chance to poison them.");
 			break;
 		}
 		case CrocodileBiteAbilityId:
 		{
-			AddLine(text, "Bite target enemy, dealing 15 damage and");
+			AddLine(text, "Bite target enemy, dealing " + damage + " damage and");
 			AddLine(text, "slowing their movement speed by 50% for");
 			AddLine(text, "5 seconds.");
 			break;
 		}
 		case CrocodileLashAbilityId:
 		{
-			AddLine(text, "Attack target enemy, dealing 30 damage.");
+			AddLine(text, "Attack target enemy, dealing " + damage + " damage.");
 			break;
 		}
 		default:
@@ -2306,6 +2435,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[F1] - Target player");
 		AddLine(tooltip, "[1]-[2] - Use Ability");
 		AddLine(tooltip, "[I] - Show/hide inventory");
+		AddLine(tooltip, "[C] - Show/hide character info");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
 		Int32 tooltipRight = (bitmap->width - 1);
@@ -2396,7 +2526,7 @@ func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosit
 				Int32 tooltipBottom = boxTop - 5;
 
 				static Int8 tooltipBuffer[512] = {};
-				String tooltipText = GetAbilityTooltipText(abilityId, tooltipBuffer, 512);
+				String tooltipText = GetAbilityTooltipText(abilityId, entity, tooltipBuffer, 512);
 				DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
 
 				labState->hoverAbilityId = abilityId;
@@ -2617,6 +2747,11 @@ func GetItemSlotName(Int32 itemId)
 			name = "AV";
 			break;
 		}
+		case IntellectPotionItemId:
+		{
+			name = "IP";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -2639,6 +2774,11 @@ func GetItemCooldownDuration(Int32 itemId)
 		case AntiVenomItemId:
 		{
 			cooldown = 10.0f;
+			break;
+		}
+		case IntellectPotionItemId:
+		{
+			cooldown = 30.0f;
 			break;
 		}
 		default:
@@ -2680,6 +2820,12 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		case AntiVenomItemId:
 		{
 			AddLine(text, "Use: Remove poison from friendly target.");
+			break;
+		}
+		case IntellectPotionItemId:
+		{
+			AddLine(text, "Use: Increase your intellect by 10");
+			AddLine(text, "for 10 minutes.");
 			break;
 		}
 		default:
@@ -3457,6 +3603,10 @@ func RemoveEffectsOfDeadEntities(CombatLabState* labState)
 			labState->effects[remainingEffectN] = *effect;
 			remainingEffectN++;
 		}
+		else
+		{
+			DisableEffect(effect);
+		}
 	}
 	labState->effectN = remainingEffectN;
 }
@@ -3536,6 +3686,11 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 				canUse = (hasFriendlyTarget && targetIsAlive);
 				break;
 			}
+			case IntellectPotionItemId:
+			{
+				canUse = true;
+				break;
+			}
 			default:
 			{
 				DebugBreak();
@@ -3560,6 +3715,11 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 		case AntiVenomItemId:
 		{
 			RemoveEffect(labState, entity->target, PoisonedEffectId);
+			break;
+		}
+		case IntellectPotionItemId:
+		{
+			ResetOrAddEffect(labState, entity, IntellectPotionEffectId);
 			break;
 		}
 		default:
@@ -3939,6 +4099,11 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		labState->showInventory = !labState->showInventory;
 	}
 
+	if(WasKeyReleased(userInput, 'C'))
+	{
+		labState->showCharacterInfo = !labState->showCharacterInfo;
+	}
+
 	if(WasKeyPressed(userInput, VK_LBUTTON))
 	{
 		if(labState->hoverItem.inventory != 0 && labState->hoverItem.itemId != NoItemId)
@@ -3988,15 +4153,22 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		DrawHateTable(canvas, labState);
 	}
 
-	DrawCharacterInfo(canvas, player);
-
 	DrawAbilityBar(canvas, labState, userInput->mousePixelPosition);
 	DrawHelpBar(canvas, labState, userInput->mousePixelPosition);
 	DrawPlayerEffectBar(canvas, labState);
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
+
+	if(labState->showCharacterInfo)
+	{
+		DrawCharacterInfo(canvas, player);
+	}
+	else
+	{
+		DrawCombatLog(canvas, labState);
+	}
+
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
-	// DrawCombatLog(canvas, labState);
 }
 
 // TODO: Mana
