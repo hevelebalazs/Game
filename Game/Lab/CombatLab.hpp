@@ -173,11 +173,11 @@ struct DroppedItem
 	Real32 timeLeft;
 };
 
-#define InventoryRowN 3
-#define InventoryColN 4
 struct Inventory
 {
-	Int32 items[InventoryRowN][InventoryColN];
+	Int32 rowN;
+	Int32 colN;
+	Int32* items;
 };
 
 struct InventoryItem
@@ -304,6 +304,14 @@ func GetEntityMaxHealth(Entity* entity)
 }
 
 static void
+func SetInventoryItemId(Inventory* inventory, Int32 row, Int32 col, Int32 itemId)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	inventory->items[row * inventory->colN + col] = itemId;
+}
+
+static void
 func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
 	labState->arena = CreateMemArena(labState->arenaMemory, CombatLabArenaSize);
@@ -363,11 +371,21 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	}
 
 	Inventory* inventory = &labState->inventory;
-	inventory->items[0][0] = HealthPotionItemId;
-	inventory->items[0][1] = HealthPotionItemId;
-	inventory->items[1][0] = AntiVenomItemId;
-	inventory->items[1][1] = AntiVenomItemId;
-	inventory->items[1][2] = IntellectPotionItemId;
+	inventory->rowN = 3;
+	inventory->colN = 4;
+	inventory->items = ArenaPushArray(&labState->arena, Int32, inventory->rowN * inventory->colN);
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			SetInventoryItemId(inventory, row, col, NoItemId);
+		}
+	}
+	SetInventoryItemId(inventory, 0, 0, HealthPotionItemId);
+	SetInventoryItemId(inventory, 0, 1, HealthPotionItemId);
+	SetInventoryItemId(inventory, 1, 0, AntiVenomItemId);
+	SetInventoryItemId(inventory, 1, 1, AntiVenomItemId);
+	SetInventoryItemId(inventory, 1, 2, IntellectPotionItemId);
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -2854,26 +2872,34 @@ func GetItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 }
 
 static Bool32
-func InventorySlotIsValid(IntVec2 slot)
+func InventorySlotIsValid(Inventory* inventory, IntVec2 slot)
 {
-	Bool32 rowIsValid = IsIntBetween(slot.row, 0, InventoryRowN - 1);
-	Bool32 colIsValid = IsIntBetween(slot.col, 0, InventoryColN - 1);
+	Bool32 rowIsValid = IsIntBetween(slot.row, 0, inventory->rowN - 1);
+	Bool32 colIsValid = IsIntBetween(slot.col, 0, inventory->colN - 1);
 	Bool32 isValid = (rowIsValid && colIsValid);
 	return isValid;
+}
+
+static Int32
+func GetInventoryItemId(Inventory* inventory, Int32 row, Int32 col)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	Int32 itemId = inventory->items[row * inventory->colN + col];
+	return itemId;
+}
+
+static void
+func SetSlotItemId(Inventory* inventory, IntVec2 slot, Int32 itemId)
+{
+	SetInventoryItemId(inventory, slot.row, slot.col, itemId);
 }
 
 static Bool32
 func InventoryItemIsValid(InventoryItem item)
 {
-	Bool32 isValid = (item.inventory != 0 && InventorySlotIsValid(item.slot));
+	Bool32 isValid = (item.inventory != 0 && InventorySlotIsValid(item.inventory, item.slot));
 	return isValid;
-}
-
-static void
-func SetSlotItem(Inventory* inventory, IntVec2 slot, Int32 itemId)
-{
-	Assert(InventorySlotIsValid(slot));
-	inventory->items[slot.row][slot.col] = itemId;
 }
 
 static void
@@ -2882,8 +2908,8 @@ func SwapItems(CombatLabState* labState, InventoryItem item1, InventoryItem item
 	Assert(InventoryItemIsValid(item1));
 	Assert(InventoryItemIsValid(item2));
 
-	SetSlotItem(&labState->inventory, item1.slot, item2.itemId);
-	SetSlotItem(&labState->inventory, item2.slot, item1.itemId);
+	SetSlotItemId(&labState->inventory, item1.slot, item2.itemId);
+	SetSlotItemId(&labState->inventory, item2.slot, item1.itemId);
 }
 
 #define InventorySlotSide 50
@@ -2949,9 +2975,9 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 	GlyphData* glyphData = canvas->glyphData;
 
 	Int32 slotPadding = 2;
-	
-	Int32 width  = slotPadding + InventoryColN * (InventorySlotSide + slotPadding);
-	Int32 height = slotPadding + InventoryRowN * (InventorySlotSide + slotPadding);
+
+	Int32 width  = slotPadding + inventory->colN * (InventorySlotSide + slotPadding);
+	Int32 height = slotPadding + inventory->rowN * (InventorySlotSide + slotPadding);
 
 	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
 	Int32 left   = right - width;
@@ -2969,12 +2995,12 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 	InventoryItem* dragItem = &labState->dragItem;
 
 	Int32 slotTop = top + slotPadding;
-	for(Int32 row = 0; row < InventoryRowN; row++)
+	for(Int32 row = 0; row < inventory->rowN; row++)
 	{
 		Int32 slotLeft = left + slotPadding;
-		for(Int32 col = 0; col < InventoryColN; col++)
+		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			Int32 itemId = inventory->items[row][col];
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
 			Bool32 isDragItem = (dragItem->inventory == inventory && dragItem->slot.row == row && dragItem->slot.col == col);
 			if(!isDragItem)
 			{
@@ -3252,14 +3278,6 @@ func CanMove(CombatLabState* labState, Entity* entity)
 	return canMove;
 }
 
-static void
-func SetInventoryItemId(Inventory* inventory, IntVec2 slot, Int32 itemId)
-{
-	Assert(IsIntBetween(slot.row, 0, InventoryRowN - 1));
-	Assert(IsIntBetween(slot.col, 0, InventoryColN - 1));
-	inventory->items[slot.row][slot.col] = itemId;
-}
-
 static Bool32
 func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 {
@@ -3267,11 +3285,11 @@ func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 	Bool32 hasEmptySlot = false;
 
 	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0;  row < InventoryRowN; row++)
+	for(Int32 row = 0;  row < inventory->rowN; row++)
 	{
-		for(Int32 col = 0; col < InventoryColN; col++)
+		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			Int32 itemId = inventory->items[row][col];
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
 			if(itemId == NoItemId)
 			{
 				hasEmptySlot = true;
@@ -3316,14 +3334,14 @@ func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 
 	Bool32 itemPickedUp = false;
 	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0; row < InventoryRowN; row++)
+	for(Int32 row = 0; row < inventory->rowN; row++)
 	{
-		for(Int32 col = 0; col < InventoryColN; col++)
+		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			Int32 itemId = inventory->items[row][col];
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
 			if(itemId == NoItemId)
 			{
-				inventory->items[row][col] = item->itemId;
+				SetInventoryItemId(inventory, row, col, item->itemId);
 				itemPickedUp = true;
 				break;
 			}
@@ -3617,11 +3635,7 @@ func DeleteInventoryItem(InventoryItem item)
 	Inventory* inventory = item.inventory;
 	Assert(inventory != 0);
 
-	IntVec2 slot = item.slot;
-	Assert(IsIntBetween(slot.row, 0, InventoryRowN - 1));
-	Assert(IsIntBetween(slot.col, 0, InventoryColN - 1));
-
-	inventory->items[slot.row][slot.col] = NoItemId;
+	SetSlotItemId(item.inventory, item.slot, NoItemId);
 }
 
 static Bool32
@@ -4126,7 +4140,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			else
 			{
 				DropItem(labState, player, dragItem->itemId);
-				SetInventoryItemId(dragItem->inventory, dragItem->slot, NoItemId);
+				SetSlotItemId(dragItem->inventory, dragItem->slot, NoItemId);
 			}
 		}
 		labState->dragItem.inventory = 0;
