@@ -231,9 +231,11 @@ struct CombatLabState
 	Int32 hoverAbilityId;
 
 	Bool32 showCharacterInfo;
+	Inventory equipInventory;
 
 	Bool32 showInventory;
 	Inventory inventory;
+
 	InventoryItem hoverItem;
 	InventoryItem dragItem;
 };
@@ -312,6 +314,19 @@ func SetInventoryItemId(Inventory* inventory, Int32 row, Int32 col, Int32 itemId
 }
 
 static void
+func InitInventory(Inventory* inventory, MemArena* arena, Int32 rowN, Int32 colN)
+{
+	inventory->rowN = rowN;
+	inventory->colN = colN;
+	Int32 itemN = (rowN * colN);
+	inventory->items = ArenaPushArray(arena, Int32, itemN);
+	for(Int32 i = 0; i < itemN; i++)
+	{
+		inventory->items[i] = NoItemId;
+	}
+}
+
+static void
 func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
 	labState->arena = CreateMemArena(labState->arenaMemory, CombatLabArenaSize);
@@ -335,7 +350,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = DruidClassId;
+	player->classId = MonkClassId;
 	player->groupId = PlayerGroupId;
 
 	player->strength = 1;
@@ -370,22 +385,18 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 		enemy->groupId = EnemyGroupId;
 	}
 
+	MemArena* arena = &labState->arena;
+
 	Inventory* inventory = &labState->inventory;
-	inventory->rowN = 3;
-	inventory->colN = 4;
-	inventory->items = ArenaPushArray(&labState->arena, Int32, inventory->rowN * inventory->colN);
-	for(Int32 row = 0; row < inventory->rowN; row++)
-	{
-		for(Int32 col = 0; col < inventory->colN; col++)
-		{
-			SetInventoryItemId(inventory, row, col, NoItemId);
-		}
-	}
+	InitInventory(inventory, arena, 3, 4);
 	SetInventoryItemId(inventory, 0, 0, HealthPotionItemId);
 	SetInventoryItemId(inventory, 0, 1, HealthPotionItemId);
 	SetInventoryItemId(inventory, 1, 0, AntiVenomItemId);
 	SetInventoryItemId(inventory, 1, 1, AntiVenomItemId);
 	SetInventoryItemId(inventory, 1, 2, IntellectPotionItemId);
+
+	Inventory* equipInventory = &labState->equipInventory;
+	InitInventory(equipInventory, arena, 1, 6);
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -1494,7 +1505,7 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 		}
 		case SmallPunchAbilityId:
 		{
-			recharge = 0.5f;
+			recharge = 1.0f;
 			break;
 		}
 		default:
@@ -2452,7 +2463,7 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[Tab] - Target closest enemy");
 		AddLine(tooltip, "[F1] - Target player");
 		AddLine(tooltip, "[1]-[2] - Use Ability");
-		AddLine(tooltip, "[I] - Show/hide inventory");
+		AddLine(tooltip, "[V] - Show/hide inventory");
 		AddLine(tooltip, "[C] - Show/hide character info");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
@@ -2966,23 +2977,36 @@ func DrawInventorySlotOutline(Canvas* canvas, Int32 top, Int32 left, Vec4 color)
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, color);
 }
 
-static void
-func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
-{
-	Inventory* inventory = &labState->inventory;
+#define InventorySlotPadding 2
 
+static Int32
+func GetInventoryWidth(Inventory* inventory)
+{
+	Int32 width = InventorySlotPadding + inventory->colN * (InventorySlotSide + InventorySlotPadding);
+	return width;
+}
+
+static Int32
+func GetInventoryHeight(Inventory* inventory)
+{
+	Int32 height = InventorySlotPadding + inventory->rowN * (InventorySlotSide + InventorySlotPadding);
+	return height;
+}
+
+static void
+func DrawInventory(Canvas* canvas, CombatLabState* labState, Inventory* inventory, 
+				   Int32 top, Int32 left, IntVec2 mousePosition)
+{
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
 
 	Int32 slotPadding = 2;
 
-	Int32 width  = slotPadding + inventory->colN * (InventorySlotSide + slotPadding);
-	Int32 height = slotPadding + inventory->rowN * (InventorySlotSide + slotPadding);
+	Int32 width  = GetInventoryWidth(inventory);
+	Int32 height = GetInventoryHeight(inventory);
 
-	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
-	Int32 left   = right - width;
-	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	Int32 top    = bottom - height;
+	Int32 right  = left + width;
+	Int32 bottom = top + height;
 
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
@@ -3053,20 +3077,32 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 }
 
 static void
-func DrawCharacterInfo(Canvas* canvas, Entity* entity)
+func DrawInventoryBottomRight(Canvas* canvas, CombatLabState* labState, Inventory* inventory, 
+							  Int32 bottom, Int32 right, IntVec2 mousePosition)
+{
+	Int32 left = right - GetInventoryWidth(inventory);
+	Int32 top  = bottom - GetInventoryHeight(inventory);
+	DrawInventory(canvas, labState, inventory, top, left, mousePosition);
+}
+
+static void
+func DrawCharacterInfo(Canvas* canvas, Entity* entity, CombatLabState* labState, IntVec2 mousePosition)
 {
 	Bitmap* bitmap = &canvas->bitmap;
 	
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	Vec4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
 
-	Int32 width = 400;
+	Inventory* inventory = &labState->equipInventory;
+	Int32 width = GetInventoryWidth(inventory);
 	Int32 height = UIBoxPadding + 12 * TextHeightInPixels + UIBoxPadding;
 
-	Int32 left = UIBoxPadding;
-	Int32 right = left + width;
+	Int32 left   = UIBoxPadding;
+	Int32 right  = left + width;
 	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	Int32 top = bottom - height;
+	Int32 top    = bottom - height;
+
+	DrawInventoryBottomRight(canvas, labState, inventory, top, right, mousePosition);
 
 	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
 
@@ -3230,7 +3266,7 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 			{
 				if(Floor(time) != Floor(previousTime))
 				{
-					AttemptToHeal(labState, effect->entity, effect->entity, 2);
+					AttemptToHeal(labState, effect->entity, effect->entity, 5);
 				}
 				break;
 			}
@@ -4108,7 +4144,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	canvas->camera->center = player->position;
 
-	if(WasKeyReleased(userInput, 'I'))
+	if(WasKeyReleased(userInput, 'V'))
 	{
 		labState->showInventory = !labState->showInventory;
 	}
@@ -4160,7 +4196,10 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	if(labState->showInventory)
 	{
-		DrawInventory(canvas, labState, userInput->mousePixelPosition);
+		Inventory* inventory = &labState->inventory;
+		Int32 right = (canvas->bitmap.width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+		Int32 bottom = (canvas->bitmap.height - 1) - UIBoxPadding;
+		DrawInventoryBottomRight(canvas, labState, inventory, bottom, right, userInput->mousePixelPosition);
 	}
 	else
 	{
@@ -4175,7 +4214,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	if(labState->showCharacterInfo)
 	{
-		DrawCharacterInfo(canvas, player);
+		DrawCharacterInfo(canvas, player, labState, userInput->mousePixelPosition);
 	}
 	else
 	{
@@ -4185,6 +4224,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 }
 
+// TODO: Stop spamming combat log when dying next to a tree!
+// TODO: Don't log overheal!
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Neutral enemies
