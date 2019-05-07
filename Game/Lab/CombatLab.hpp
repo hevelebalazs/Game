@@ -156,12 +156,24 @@ struct HateTable
 	Int32 entryN;
 };
 
+enum SlotId
+{
+	AnySlotId,
+	HeadSlotId,
+	ChestSlotId,
+	HandsSlotId,
+	WaistSlotId,
+	LegsSlotId,
+	FeetSlotId,
+};
+
 enum ItemId
 {
 	NoItemId,
 	HealthPotionItemId,
 	AntiVenomItemId,
-	IntellectPotionItemId
+	IntellectPotionItemId,
+	TestHelmItemId
 };
 
 #define DroppedItemTotalDuration 10.0f
@@ -181,11 +193,13 @@ struct Inventory
 	Int32 rowN;
 	Int32 colN;
 	Int32* items;
+	Int32* slots;
 };
 
 struct InventoryItem
 {
 	Inventory* inventory;
+	Int32 slotId;
 	Int32 itemId;
 	IntVec2 slot;
 };
@@ -308,11 +322,64 @@ func GetEntityMaxHealth(Entity* entity)
 	return maxHealth;
 }
 
+static Bool32
+func ItemGoesIntoSlot(Int32 itemId, Int32 slotId)
+{
+	Bool32 goesIntoSlot = false;
+
+	if(itemId == NoItemId)
+	{
+		goesIntoSlot = true;
+	}
+	else
+	{
+		switch(slotId)
+		{
+			case AnySlotId:
+			{
+				goesIntoSlot = true;
+				break;
+			}
+			case HeadSlotId:
+			{
+				goesIntoSlot = (itemId == TestHelmItemId);
+				break;
+			}
+			default:
+			{
+				goesIntoSlot = false;
+			}
+		}
+	}
+
+	return goesIntoSlot;
+}
+
+static void
+func SetInventorySlotId(Inventory* inventory, Int32 row, Int32 col, Int32 slotId)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	inventory->slots[row * inventory->colN + col] = slotId;
+}
+
+static Int32
+func GetInventorySlotId(Inventory* inventory, Int32 row, Int32 col)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	Int32 slotId = inventory->slots[row * inventory->colN + col];
+	return slotId;
+}
+
 static void
 func SetInventoryItemId(Inventory* inventory, Int32 row, Int32 col, Int32 itemId)
 {
 	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
 	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	Int32 slotId = GetInventorySlotId(inventory, row, col);
+	Assert(ItemGoesIntoSlot(itemId, slotId));
+
 	inventory->items[row * inventory->colN + col] = itemId;
 }
 
@@ -323,9 +390,11 @@ func InitInventory(Inventory* inventory, MemArena* arena, Int32 rowN, Int32 colN
 	inventory->colN = colN;
 	Int32 itemN = (rowN * colN);
 	inventory->items = ArenaPushArray(arena, Int32, itemN);
+	inventory->slots = ArenaPushArray(arena, Int32, itemN);
 	for(Int32 i = 0; i < itemN; i++)
 	{
 		inventory->items[i] = NoItemId;
+		inventory->slots[i] = AnySlotId;
 	}
 }
 
@@ -393,13 +462,18 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Inventory* inventory = &labState->inventory;
 	InitInventory(inventory, arena, 3, 4);
 	SetInventoryItemId(inventory, 0, 0, HealthPotionItemId);
-	SetInventoryItemId(inventory, 0, 1, HealthPotionItemId);
-	SetInventoryItemId(inventory, 1, 0, AntiVenomItemId);
-	SetInventoryItemId(inventory, 1, 1, AntiVenomItemId);
-	SetInventoryItemId(inventory, 1, 2, IntellectPotionItemId);
+	SetInventoryItemId(inventory, 0, 1, AntiVenomItemId);
+	SetInventoryItemId(inventory, 0, 2, IntellectPotionItemId);
+	SetInventoryItemId(inventory, 1, 0, TestHelmItemId);
 
 	Inventory* equipInventory = &labState->equipInventory;
 	InitInventory(equipInventory, arena, 1, 6);
+	SetInventorySlotId(equipInventory, 0, 0, HeadSlotId);
+	SetInventorySlotId(equipInventory, 0, 1, ChestSlotId);
+	SetInventorySlotId(equipInventory, 0, 2, HandsSlotId);
+	SetInventorySlotId(equipInventory, 0, 3, WaistSlotId);
+	SetInventorySlotId(equipInventory, 0, 4, LegsSlotId);
+	SetInventorySlotId(equipInventory, 0, 5, FeetSlotId);
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -797,6 +871,50 @@ func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 va
 }
 
 static Int8*
+func GetSlotName(Int32 slotId)
+{
+	Int8* name = 0;
+	switch(slotId)
+	{
+		case HeadSlotId:
+		{
+			name = "Head";
+			break;
+		}
+		case ChestSlotId:
+		{
+			name = "Chest";
+			break;
+		}
+		case HandsSlotId:
+		{
+			name = "Hands";
+			break;
+		}
+		case WaistSlotId:
+		{
+			name = "Waist";
+			break;
+		}
+		case LegsSlotId:
+		{
+			name = "Legs";
+			break;
+		}
+		case FeetSlotId:
+		{
+			name = "Feet";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+static Int8*
 func GetItemName(Int32 itemId)
 {
 	Int8* name = 0;
@@ -815,6 +933,11 @@ func GetItemName(Int32 itemId)
 		case IntellectPotionItemId:
 		{
 			name = "Intellect Potion";
+			break;
+		}
+		case TestHelmItemId:
+		{
+			name = "Test Helm";
 			break;
 		}
 		default:
@@ -2784,6 +2907,11 @@ func GetItemSlotName(Int32 itemId)
 			name = "IP";
 			break;
 		}
+		case TestHelmItemId:
+		{
+			name = "Helm";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -2815,7 +2943,7 @@ func GetItemCooldownDuration(Int32 itemId)
 		}
 		default:
 		{
-			DebugBreak();
+			cooldown = 0.0f;
 		}
 	}
 	return cooldown;
@@ -2858,6 +2986,11 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		{
 			AddLine(text, "Use: Increase your intellect by 10");
 			AddLine(text, "for 10 minutes.");
+			break;
+		}
+		case TestHelmItemId:
+		{
+			AddLine(text, "Head piece for testing.");
 			break;
 		}
 		default:
@@ -2910,26 +3043,46 @@ func SetSlotItemId(Inventory* inventory, IntVec2 slot, Int32 itemId)
 }
 
 static Bool32
-func InventoryItemIsValid(InventoryItem item)
+func InventoryItemIsValid(InventoryItem* item)
 {
-	Bool32 isValid = (item.inventory != 0 && InventorySlotIsValid(item.inventory, item.slot));
+	Bool32 isValid = (item->inventory && InventorySlotIsValid(item->inventory, item->slot));
 	return isValid;
 }
 
-static void
-func SwapItems(CombatLabState* labState, InventoryItem item1, InventoryItem item2)
+static Bool32
+func CanSwapItems(InventoryItem* item1, InventoryItem* item2)
 {
 	Assert(InventoryItemIsValid(item1));
 	Assert(InventoryItemIsValid(item2));
 
-	SetSlotItemId(item1.inventory, item1.slot, item2.itemId);
-	SetSlotItemId(item2.inventory, item2.slot, item1.itemId);
+	Bool32 canPutItem1 = ItemGoesIntoSlot(item1->itemId, item2->slotId);
+	Bool32 canPutItem2 = ItemGoesIntoSlot(item2->itemId, item1->slotId);
+	Bool32 canSwap = (canPutItem1 && canPutItem2);
+	return canSwap;
+}
+
+static void
+func SwapItems(InventoryItem* item1, InventoryItem* item2)
+{
+	Assert(CanSwapItems(item1, item2));
+
+	SetSlotItemId(item1->inventory, item1->slot, item2->itemId);
+	SetSlotItemId(item2->inventory, item2->slot, item1->itemId);
+}
+
+static void
+func AttemptToSwapItems(InventoryItem* item1, InventoryItem* item2)
+{
+	if(CanSwapItems(item1, item2))
+	{
+		SwapItems(item1, item2);
+	}
 }
 
 #define InventorySlotSide 50
 
 static void
-func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 itemId, Int32 top, Int32 left)
+func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 slotId, Int32 itemId, Int32 top, Int32 left)
 {
 	Int32 bottom = top + InventorySlotSide;
 	Int32 right = left + InventorySlotSide;
@@ -2938,13 +3091,20 @@ func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 itemId, I
 	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
 	Vec4 cooldownColor = MakeColor(0.2f, 0.0f, 0.0f);
 	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 slotNameColor = MakeColor(0.3f, 0.3f, 0.3f);
 
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
 
-	if(itemId == NoAbilityId)
+	if(itemId == NoItemId)
 	{
 		DrawBitmapRect(bitmap, left, right, top, bottom, slotBackgroundColor);
+		if(slotId != AnySlotId)
+		{
+			Int8* slotName = GetSlotName(slotId);
+			Assert(slotName != 0);
+			DrawBitmapTextLineCentered(bitmap, slotName, glyphData, left, right, top, bottom, slotNameColor);
+		}
 	}
 	else
 	{
@@ -3015,6 +3175,7 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 invalidOutlineColor = MakeColor(1.0f, 0.0f, 0.0f);
 	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
 
 	InventoryItem* dragItem = &labState->dragItem;
@@ -3026,6 +3187,7 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 		Int32 slotLeft = left + slotPadding;
 		for(Int32 col = 0; col < inventory->colN; col++)
 		{
+			Int32 slotId = GetInventorySlotId(inventory, row, col);
 			Int32 itemId = GetInventoryItemId(inventory, row, col);
 
 			Bool32 isHover = (IsIntBetween(mousePosition.col, slotLeft, slotLeft + InventorySlotSide) &&
@@ -3035,11 +3197,11 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 
 			if(!isDrag)
 			{
-				DrawInventorySlot(canvas, labState, itemId, slotTop, slotLeft);
+				DrawInventorySlot(canvas, labState, slotId, itemId, slotTop, slotLeft);
 			}
 			else
 			{
-				DrawInventorySlot(canvas, labState, NoItemId, slotTop, slotLeft);
+				DrawInventorySlot(canvas, labState, slotId, NoItemId, slotTop, slotLeft);
 			}
 
 			if(isHover)
@@ -3049,13 +3211,23 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 					Int32 tooltipBottom = slotTop - UIBoxPadding;
 					Int32 tooltipRight = IntMin2((slotLeft + InventorySlotSide / 2) + TooltipWidth / 2,
 												 (bitmap->width - 1) - UIBoxPadding);
+
+					tooltipRight = IntMax2(tooltipRight, UIBoxPadding + TooltipWidth);
+
 					Int8 tooltipBuffer[128];
 					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 128);
 					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
 				}
 
-				DrawInventorySlotOutline(canvas, slotTop, slotLeft, hoverOutlineColor);
+				Vec4 outlineColor = hoverOutlineColor;
+				if(dragItem->inventory && !ItemGoesIntoSlot(dragItem->itemId, slotId))
+				{
+					outlineColor = invalidOutlineColor;
+				}
+
+				DrawInventorySlotOutline(canvas, slotTop, slotLeft, outlineColor);
 				hoverItem->inventory = inventory;
+				hoverItem->slotId = slotId;
 				hoverItem->itemId = itemId;
 				hoverItem->slot.row = row;
 				hoverItem->slot.col = col;
@@ -3728,7 +3900,7 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 			}
 			default:
 			{
-				DebugBreak();
+				canUse = false;
 			}
 		}
 	}
@@ -4156,7 +4328,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			Assert(dragItem->itemId != NoItemId);
 			if(hoverItem->inventory != 0)
 			{
-				SwapItems(labState, *dragItem, *hoverItem);
+				AttemptToSwapItems(dragItem, hoverItem);
 			}
 			else
 			{
@@ -4219,7 +4391,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 		Vec4 dragOutlineColor = MakeColor(1.0f, 0.5f, 0.0f);
 
-		DrawInventorySlot(canvas, labState, dragItem->itemId, slotTop, slotLeft);
+		DrawInventorySlot(canvas, labState, dragItem->slotId, dragItem->itemId, slotTop, slotLeft);
 		DrawInventorySlotOutline(canvas, slotTop, slotLeft, dragOutlineColor);
 	}
 
