@@ -422,7 +422,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = MonkClassId;
+	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
 
 	player->strength = 1;
@@ -912,6 +912,55 @@ func GetSlotName(Int32 slotId)
 		}
 	}
 	return name;
+}
+
+struct ItemAttributes
+{
+	Int32 constitution;
+	Int32 strength;
+	Int32 intellect;
+	Int32 dexterity;
+};
+
+static Bool32
+func ItemIsEquippable(Int32 itemId)
+{
+	Bool32 isEquippable = false;
+	switch(itemId)
+	{
+		case TestHelmItemId:
+		{
+			isEquippable = true;
+			break;
+		}
+		default:
+		{
+			isEquippable = false;
+		}
+	}
+	return isEquippable;
+}
+
+static ItemAttributes
+func GetItemAttributes(Int32 itemId)
+{
+	Assert(ItemIsEquippable(itemId));
+	ItemAttributes attributes = {};
+	switch(itemId)
+	{
+		case TestHelmItemId:
+		{
+			attributes.strength = 2;
+			attributes.dexterity = 1;
+			attributes.intellect = 1;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return attributes;
 }
 
 static Int8*
@@ -1504,34 +1553,56 @@ func GetEffectDuration(Int32 effectId)
 	return duration;
 }
 
-static void
-func EnableEffect(Effect* effect)
+static Int32
+func GetInventoryItemId(Inventory* inventory, Int32 row, Int32 col)
 {
-	Int32 effectId = effect->effectId;
-	Entity* entity = effect->entity;
-	switch(effectId)
-	{
-		case IntellectPotionEffectId:
-		{
-			Assert(!IsDead(entity));
-			entity->intellect += 10;
-			break;
-		}
-	}
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	Int32 itemId = inventory->items[row * inventory->colN + col];
+	return itemId;
 }
 
 static void
-func DisableEffect(Effect* effect)
+func RecalculatePlayerAttributes(CombatLabState* labState)
 {
-	Int32 effectId = effect->effectId;
-	Entity* entity = effect->entity;
-	switch(effectId)
+	Entity* player = &labState->entities[0];
+	Assert(IsIntBetween(player->level, 1, MaxLevel));
+
+	player->constitution = player->level;
+	player->strength     = player->level;
+	player->intellect    = player->level;
+	player->dexterity    = player->level;
+
+	Inventory* equipInventory = &labState->equipInventory;
+	for(Int32 row = 0; row < equipInventory->rowN; row++)
 	{
-		case IntellectPotionEffectId:
+		for(Int32 col = 0; col < equipInventory->colN; col++)
 		{
-			Assert(entity->intellect > 10);
-			entity->intellect -= 10;
-			break;
+			Int32 itemId = GetInventoryItemId(equipInventory, row, col);
+			if(itemId != NoItemId)
+			{
+				ItemAttributes attributes = GetItemAttributes(itemId);
+				player->constitution += attributes.constitution;
+				player->strength     += attributes.strength;
+				player->intellect    += attributes.intellect;
+				player->dexterity    += attributes.dexterity;
+			}
+		}
+	}
+
+	for(Int32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		if(effect->entity == player)
+		{
+			switch(effect->effectId)
+			{
+				case IntellectPotionEffectId:
+				{
+					player->intellect += 10;
+					break;
+				}
+			}
 		}
 	}
 }
@@ -1548,12 +1619,14 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 			labState->effects[remainingEffectN] = *effect;
 			remainingEffectN++;
 		}
-		else
-		{
-			DisableEffect(effect);
-		}
 	}
 	labState->effectN = remainingEffectN;
+
+	Entity* player = &labState->entities[0];
+	if(entity == player)
+	{
+		RecalculatePlayerAttributes(labState);
+	}
 }
 
 static void
@@ -1573,7 +1646,11 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 		effect->timeRemaining = duration;
 	}
 
-	EnableEffect(effect);
+	Entity* player = &labState->entities[0];
+	if(entity == player)
+	{
+		RecalculatePlayerAttributes(labState);
+	}
 
 	Int8* effectName = GetEffectName(effectId);
 	CombatLog(labState, entity->name + " gets " + effectName + ".");
@@ -2970,6 +3047,28 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		}
 	}
 
+	if(ItemIsEquippable(itemId))
+	{
+		ItemAttributes attributes = GetItemAttributes(itemId);
+
+		if(attributes.constitution > 0)
+		{
+			AddLine(text, "+" + attributes.constitution + " Constitution");
+		}
+		if (attributes.strength > 0)
+		{
+			AddLine(text, "+" + attributes.strength + " Strength");
+		}
+		if(attributes.intellect > 0)
+		{
+			AddLine(text, "+" + attributes.intellect + " Intellect");
+		}
+		if(attributes.dexterity > 0)
+		{
+			AddLine(text, "+" + attributes.dexterity + " Dexterity");
+		}
+	}
+
 	switch(itemId)
 	{
 		case HealthPotionItemId:
@@ -3025,15 +3124,6 @@ func InventorySlotIsValid(Inventory* inventory, IntVec2 slot)
 	Bool32 colIsValid = IsIntBetween(slot.col, 0, inventory->colN - 1);
 	Bool32 isValid = (rowIsValid && colIsValid);
 	return isValid;
-}
-
-static Int32
-func GetInventoryItemId(Inventory* inventory, Int32 row, Int32 col)
-{
-	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
-	Assert(IsIntBetween(col, 0, inventory->colN - 1));
-	Int32 itemId = inventory->items[row * inventory->colN + col];
-	return itemId;
 }
 
 static void
@@ -3816,7 +3906,11 @@ func RemoveEffectsOfDeadEntities(CombatLabState* labState)
 		}
 		else
 		{
-			DisableEffect(effect);
+			Entity* player = &labState->entities[0];
+			if(effect->entity == player)
+			{
+				RecalculatePlayerAttributes(labState);
+			}
 		}
 	}
 	labState->effectN = remainingEffectN;
