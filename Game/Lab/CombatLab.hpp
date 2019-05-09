@@ -49,7 +49,8 @@ enum EffectId
 	BittenEffectId,
 	EarthShakeEffectId,
 	EarthShieldEffectId,
-	RegenerateEffectId
+	RegenerateEffectId,
+	IntellectPotionEffectId
 };
 
 enum ClassId
@@ -64,14 +65,15 @@ enum ClassId
 
 #define EntityRadius 1.0f
 
+#define MaxLevel 5
 Int32 MaxHealthAtLevel[] =
 {
 	0,
 	100,
 	150,
+	200,
 	250,
-	400,
-	600
+	300
 };
 
 enum EntityGroupId
@@ -102,6 +104,11 @@ struct Entity
 	Int32 classId;
 	Int32 groupId;
 	Entity* target;
+
+	Int32 strength;
+	Int32 intellect;
+	Int32 constitution;
+	Int32 dexterity;
 
 	Vec2 inputDirection;
 };
@@ -149,11 +156,24 @@ struct HateTable
 	Int32 entryN;
 };
 
+enum SlotId
+{
+	AnySlotId,
+	HeadSlotId,
+	ChestSlotId,
+	HandsSlotId,
+	WaistSlotId,
+	LegsSlotId,
+	FeetSlotId,
+};
+
 enum ItemId
 {
 	NoItemId,
 	HealthPotionItemId,
-	AntiVenomItemId
+	AntiVenomItemId,
+	IntellectPotionItemId,
+	TestHelmItemId
 };
 
 #define DroppedItemTotalDuration 10.0f
@@ -165,16 +185,21 @@ struct DroppedItem
 	Real32 timeLeft;
 };
 
-#define InventoryRowN 3
-#define InventoryColN 4
 struct Inventory
 {
-	Int32 items[InventoryRowN][InventoryColN];
+	Int32 left;
+	Int32 top;
+
+	Int32 rowN;
+	Int32 colN;
+	Int32* items;
+	Int32* slots;
 };
 
 struct InventoryItem
 {
 	Inventory* inventory;
+	Int32 slotId;
 	Int32 itemId;
 	IntVec2 slot;
 };
@@ -222,8 +247,12 @@ struct CombatLabState
 
 	Int32 hoverAbilityId;
 
+	Bool32 showCharacterInfo;
+	Inventory equipInventory;
+
 	Bool32 showInventory;
 	Inventory inventory;
+
 	InventoryItem hoverItem;
 	InventoryItem dragItem;
 };
@@ -289,8 +318,84 @@ static Int32
 func GetEntityMaxHealth(Entity* entity)
 {
 	Assert(IsIntBetween(entity->level, 1, 5));
-	Int32 maxHealth = MaxHealthAtLevel[entity->level];
+	Int32 maxHealth = MaxHealthAtLevel[entity->level] + entity->constitution * 10;
 	return maxHealth;
+}
+
+static Bool32
+func ItemGoesIntoSlot(Int32 itemId, Int32 slotId)
+{
+	Bool32 goesIntoSlot = false;
+
+	if(itemId == NoItemId)
+	{
+		goesIntoSlot = true;
+	}
+	else
+	{
+		switch(slotId)
+		{
+			case AnySlotId:
+			{
+				goesIntoSlot = true;
+				break;
+			}
+			case HeadSlotId:
+			{
+				goesIntoSlot = (itemId == TestHelmItemId);
+				break;
+			}
+			default:
+			{
+				goesIntoSlot = false;
+			}
+		}
+	}
+
+	return goesIntoSlot;
+}
+
+static void
+func SetInventorySlotId(Inventory* inventory, Int32 row, Int32 col, Int32 slotId)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	inventory->slots[row * inventory->colN + col] = slotId;
+}
+
+static Int32
+func GetInventorySlotId(Inventory* inventory, Int32 row, Int32 col)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	Int32 slotId = inventory->slots[row * inventory->colN + col];
+	return slotId;
+}
+
+static void
+func SetInventoryItemId(Inventory* inventory, Int32 row, Int32 col, Int32 itemId)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	Int32 slotId = GetInventorySlotId(inventory, row, col);
+	Assert(ItemGoesIntoSlot(itemId, slotId));
+
+	inventory->items[row * inventory->colN + col] = itemId;
+}
+
+static void
+func InitInventory(Inventory* inventory, MemArena* arena, Int32 rowN, Int32 colN)
+{
+	inventory->rowN = rowN;
+	inventory->colN = colN;
+	Int32 itemN = (rowN * colN);
+	inventory->items = ArenaPushArray(arena, Int32, itemN);
+	inventory->slots = ArenaPushArray(arena, Int32, itemN);
+	for(Int32 i = 0; i < itemN; i++)
+	{
+		inventory->items[i] = NoItemId;
+		inventory->slots[i] = AnySlotId;
+	}
 }
 
 static void
@@ -316,10 +421,15 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
-	player->health = GetEntityMaxHealth(player);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = PaladinClassId;
+	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
+
+	player->strength = 1;
+	player->constitution = 1;
+	player->dexterity = 1;
+	player->intellect = 1;
+	player->health = GetEntityMaxHealth(player);
 
 	Int32 firstSnakeIndex = 1;
 	Int32 lastSnakeIndex = EntityN / 2;
@@ -347,11 +457,23 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 		enemy->groupId = EnemyGroupId;
 	}
 
+	MemArena* arena = &labState->arena;
+
 	Inventory* inventory = &labState->inventory;
-	inventory->items[0][0] = HealthPotionItemId;
-	inventory->items[0][1] = HealthPotionItemId;
-	inventory->items[1][0] = AntiVenomItemId;
-	inventory->items[1][1] = AntiVenomItemId;
+	InitInventory(inventory, arena, 3, 4);
+	SetInventoryItemId(inventory, 0, 0, HealthPotionItemId);
+	SetInventoryItemId(inventory, 0, 1, AntiVenomItemId);
+	SetInventoryItemId(inventory, 0, 2, IntellectPotionItemId);
+	SetInventoryItemId(inventory, 1, 0, TestHelmItemId);
+
+	Inventory* equipInventory = &labState->equipInventory;
+	InitInventory(equipInventory, arena, 1, 6);
+	SetInventorySlotId(equipInventory, 0, 0, HeadSlotId);
+	SetInventorySlotId(equipInventory, 0, 1, ChestSlotId);
+	SetInventorySlotId(equipInventory, 0, 2, HandsSlotId);
+	SetInventorySlotId(equipInventory, 0, 3, WaistSlotId);
+	SetInventorySlotId(equipInventory, 0, 4, LegsSlotId);
+	SetInventorySlotId(equipInventory, 0, 5, FeetSlotId);
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -749,6 +871,99 @@ func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 va
 }
 
 static Int8*
+func GetSlotName(Int32 slotId)
+{
+	Int8* name = 0;
+	switch(slotId)
+	{
+		case HeadSlotId:
+		{
+			name = "Head";
+			break;
+		}
+		case ChestSlotId:
+		{
+			name = "Chest";
+			break;
+		}
+		case HandsSlotId:
+		{
+			name = "Hands";
+			break;
+		}
+		case WaistSlotId:
+		{
+			name = "Waist";
+			break;
+		}
+		case LegsSlotId:
+		{
+			name = "Legs";
+			break;
+		}
+		case FeetSlotId:
+		{
+			name = "Feet";
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return name;
+}
+
+struct ItemAttributes
+{
+	Int32 constitution;
+	Int32 strength;
+	Int32 intellect;
+	Int32 dexterity;
+};
+
+static Bool32
+func ItemIsEquippable(Int32 itemId)
+{
+	Bool32 isEquippable = false;
+	switch(itemId)
+	{
+		case TestHelmItemId:
+		{
+			isEquippable = true;
+			break;
+		}
+		default:
+		{
+			isEquippable = false;
+		}
+	}
+	return isEquippable;
+}
+
+static ItemAttributes
+func GetItemAttributes(Int32 itemId)
+{
+	Assert(ItemIsEquippable(itemId));
+	ItemAttributes attributes = {};
+	switch(itemId)
+	{
+		case TestHelmItemId:
+		{
+			attributes.strength = 2;
+			attributes.dexterity = 1;
+			attributes.intellect = 1;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return attributes;
+}
+
+static Int8*
 func GetItemName(Int32 itemId)
 {
 	Int8* name = 0;
@@ -762,6 +977,16 @@ func GetItemName(Int32 itemId)
 		case AntiVenomItemId:
 		{
 			name = "Antivenom";
+			break;
+		}
+		case IntellectPotionItemId:
+		{
+			name = "Intellect Potion";
+			break;
+		}
+		case TestHelmItemId:
+		{
+			name = "Test Helm";
 			break;
 		}
 		default:
@@ -816,6 +1041,17 @@ func DealFinalDamage(Entity* entity, Int32 damage)
 	}
 }
 
+static void
+func LevelUp(Entity* entity)
+{
+	Assert(IsIntBetween(entity->level, 1, MaxLevel - 1));
+	entity->level++;
+	entity->intellect++;
+	entity->strength++;
+	entity->dexterity++;
+	entity->constitution++;
+}
+
 static Int32
 func GetFinalDamage(CombatLabState* labState, Entity* target, Int32 damage)
 {
@@ -854,9 +1090,9 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 			if(target->groupId == EnemyGroupId)
 			{
 				Entity* player = &labState->entities[0];
-				if(player->level < 5)
+				if(player->level < MaxLevel)
 				{
-					player->level++;
+					LevelUp(player);
 				}
 			}
 		}
@@ -929,6 +1165,11 @@ func GetEffectName(Int32 effectId)
 			name = "Regenerate";
 			break;
 		}
+		case IntellectPotionEffectId:
+		{
+			name = "Intellect Potion";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -956,7 +1197,10 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 			if(target->groupId == EnemyGroupId)
 			{
 				Entity* player = &labState->entities[0];
-				player->level++;
+				if(player->level < MaxLevel)
+				{
+					LevelUp(player);
+				}
 			}
 		}
 	}
@@ -1295,6 +1539,11 @@ func GetEffectDuration(Int32 effectId)
 			duration = 5.0f;
 			break;
 		}
+		case IntellectPotionEffectId:
+		{
+			duration = 10 * 60.0f;
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -1302,6 +1551,60 @@ func GetEffectDuration(Int32 effectId)
 	}
 	Assert(duration > 0.0f);
 	return duration;
+}
+
+static Int32
+func GetInventoryItemId(Inventory* inventory, Int32 row, Int32 col)
+{
+	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
+	Assert(IsIntBetween(col, 0, inventory->colN - 1));
+	Int32 itemId = inventory->items[row * inventory->colN + col];
+	return itemId;
+}
+
+static void
+func RecalculatePlayerAttributes(CombatLabState* labState)
+{
+	Entity* player = &labState->entities[0];
+	Assert(IsIntBetween(player->level, 1, MaxLevel));
+
+	player->constitution = player->level;
+	player->strength     = player->level;
+	player->intellect    = player->level;
+	player->dexterity    = player->level;
+
+	Inventory* equipInventory = &labState->equipInventory;
+	for(Int32 row = 0; row < equipInventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < equipInventory->colN; col++)
+		{
+			Int32 itemId = GetInventoryItemId(equipInventory, row, col);
+			if(itemId != NoItemId)
+			{
+				ItemAttributes attributes = GetItemAttributes(itemId);
+				player->constitution += attributes.constitution;
+				player->strength     += attributes.strength;
+				player->intellect    += attributes.intellect;
+				player->dexterity    += attributes.dexterity;
+			}
+		}
+	}
+
+	for(Int32 i = 0; i < labState->effectN; i++)
+	{
+		Effect* effect = &labState->effects[i];
+		if(effect->entity == player)
+		{
+			switch(effect->effectId)
+			{
+				case IntellectPotionEffectId:
+				{
+					player->intellect += 10;
+					break;
+				}
+			}
+		}
+	}
 }
 
 static void
@@ -1318,6 +1621,12 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 		}
 	}
 	labState->effectN = remainingEffectN;
+
+	Entity* player = &labState->entities[0];
+	if(entity == player)
+	{
+		RecalculatePlayerAttributes(labState);
+	}
 }
 
 static void
@@ -1337,6 +1646,12 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 		effect->timeRemaining = duration;
 	}
 
+	Entity* player = &labState->entities[0];
+	if(entity == player)
+	{
+		RecalculatePlayerAttributes(labState);
+	}
+
 	Int8* effectName = GetEffectName(effectId);
 	CombatLog(labState, entity->name + " gets " + effectName + ".");
 }
@@ -1344,7 +1659,6 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 static void
 func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
-
 	Bool32 foundEffect = false;
 	for(Int32 i = 0; i < labState->effectN; i++)
 	{
@@ -1394,7 +1708,7 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 		}
 		case SmallPunchAbilityId:
 		{
-			recharge = 0.5f;
+			recharge = 1.0f;
 			break;
 		}
 		default:
@@ -1520,6 +1834,61 @@ func GetAbilityName(Int32 abilityId)
 	return name;
 }
 
+static Int32
+func GetAbilityDamage(Entity* entity, Int32 abilityId)
+{
+	Int32 damage = 0;
+	switch(abilityId)
+	{
+		case LightningAbilityId:
+		{
+			damage = 20 + entity->intellect;
+			break;
+		}
+		case SmallPunchAbilityId:
+		{
+			damage = 10 + entity->strength;
+			break;
+		}
+		case BigPunchAbilityId:
+		{
+			damage = 30 + entity->strength;
+			break;
+		}
+		case SpinningKickAbilityId:
+		{
+			damage = 5 + entity->strength;
+			break;
+		}
+		case SwordStabAbilityId:
+		{
+			damage = 15 + entity->strength;
+			break;
+		}
+		case SwordSwingAbilityId:
+		{
+			damage = 10 + entity->strength;
+			break;
+		}
+		case SnakeStrikeAbilityId:
+		{
+			damage = 10 + entity->strength;
+			break;
+		}
+		case CrocodileBiteAbilityId:
+		{
+			damage = 15 + entity->strength;
+			break;
+		}
+		case CrocodileLashAbilityId:
+		{
+			damage = 30 + entity->strength;
+			break;
+		}
+	}
+	return damage;
+}
+
 static void
 func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 {
@@ -1532,6 +1901,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 	Entity* target = entity->target;
 	Bool32 hasEnemyTarget = (target != 0 && target->groupId != entity->groupId);
 	Bool32 hasFriendlyTarget = (target != 0 && target->groupId == entity->groupId);
+	Int32 damage = GetAbilityDamage(entity, abilityId);
 	switch(abilityId)
 	{
 		case EarthShakeAbilityId:
@@ -1543,7 +1913,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case SmallPunchAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 10);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		case EarthShieldAbilityId:
@@ -1556,7 +1926,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case BigPunchAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 30);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		case KickAbilityId:
@@ -1577,7 +1947,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 					Real32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
-						DealDamageFromEntity(labState, entity, target, 10);
+						DealDamageFromEntity(labState, entity, target, damage);
 					}
 				}
 			}
@@ -1597,7 +1967,6 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		}
 		case SwordStabAbilityId:
 		{
-			Int32 damage = 15;
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
@@ -1610,7 +1979,6 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		}
 		case SwordSwingAbilityId:
 		{
-			Int32 damage = 10;
 			if(HasEffect(labState, entity, BlessingOfTheSunEffectId))
 			{
 				damage += 2;
@@ -1672,7 +2040,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case SnakeStrikeAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 10);
+			DealDamageFromEntity(labState, entity, target, damage);
 			if(RandomBetween(0.0f, 1.0f) < 0.3f)
 			{
 				ResetOrAddEffect(labState, target, PoisonedEffectId);
@@ -1682,14 +2050,14 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 		case CrocodileBiteAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 15);
+			DealDamageFromEntity(labState, entity, target, damage);
 			ResetOrAddEffect(labState, target, BittenEffectId);
 			break;
 		}
 		case CrocodileLashAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 30);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		default:
@@ -1713,12 +2081,13 @@ func FinishCasting(CombatLabState* labState, Entity* entity)
 	Entity* target = entity->castTarget;
 	Bool32 hasEnemyTarget = (target != 0 && target->groupId != entity->groupId);
 	Bool32 hasFriendlyTarget = (target != 0 && target->groupId == entity->groupId);
+	Int32 damage = GetAbilityDamage(entity, abilityId);
 	switch(abilityId)
 	{
 		case LightningAbilityId:
 		{
 			Assert(hasEnemyTarget);
-			DealDamageFromEntity(labState, entity, target, 10);
+			DealDamageFromEntity(labState, entity, target, damage);
 			break;
 		}
 		case HealAbilityId:
@@ -1960,7 +2329,7 @@ func DrawEntityBars(Canvas* canvas, Entity* entity)
 }
 
 static String
-func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
+func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 bufferSize)
 {
 	String text = StartString(buffer, bufferSize);
 
@@ -2008,13 +2377,15 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 	}
 
+	Int32 damage = GetAbilityDamage(entity, abilityId);
+
 	switch(abilityId)
 	{
 		case LightningAbilityId:
 		{
 			AddLine(text, "Ranged");
 			AddLine(text, "Strike enemy target with lightning,");
-			AddLine(text, "dealing 10 damage.");
+			AddLine(text, "dealing " + damage + " damage.");
 			break;
 		}
 		case EarthShakeAbilityId:
@@ -2027,7 +2398,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case HealAbilityId:
 		{
-			AddLine(text, "Heal friendly target for 30. You must be");
+			AddLine(text, "Heal friendly target for " + damage + ". You must be");
 			AddLine(text, "near a source of water.");
 			break;
 		}
@@ -2042,14 +2413,14 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		{
 			AddLine(text, "Melee range")
 			AddLine(text, "Punch target enemy lightly, dealing");
-			AddLine(text, "10 damage.");
+			AddLine(text, damage + " damage.");
 			break;
 		}
 		case BigPunchAbilityId:
 		{
 			AddLine(text, "Melee range");
 			AddLine(text, "Forcefully punch target enemy, dealing");
-			AddLine(text, "30 damage.");
+			AddLine(text, damage + " damage.");
 			break;
 		}
 		case KickAbilityId:
@@ -2060,7 +2431,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case SpinningKickAbilityId:
 		{
-			AddLine(text, "Deal 5 damage to all enemies within");
+			AddLine(text, "Deal " + damage + " damage to all enemies within");
 			AddLine(text, "melee range.");
 			break;
 		}
@@ -2078,12 +2449,12 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		{
 			AddLine(text, "Melee range");
 			AddLine(text, "Stab target enemy with your sword,");
-			AddLine(text, "dealing 15 damage.");
+			AddLine(text, "dealing " + damage + " damage.");
 			break;
 		}
 		case SwordSwingAbilityId:
 		{
-			AddLine(text, "Deal 10 damage to all enemies in front");
+			AddLine(text, "Deal " + damage + " damage to all enemies in front");
 			AddLine(text, "of you (melee range).");
 			break;
 		}
@@ -2126,7 +2497,7 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		case MercyOfTheSunAbilityId:
 		{
 			AddLine(text, "Plead for the mercy of the Sun, healing");
-			AddLine(text, "you for 30 damage and blinding all");
+			AddLine(text, "you for 30 and blinding all");
 			AddLine(text, "enemies within your melee range");
 			AddLine(text, "for 5 seconds, making them unable to");
 			AddLine(text, "use abilities while it lasts.");
@@ -2134,20 +2505,20 @@ func GetAbilityTooltipText(Int32 abilityId, Int8* buffer, Int32 bufferSize)
 		}
 		case SnakeStrikeAbilityId:
 		{
-			AddLine(text, "Strike your target enemy dealing 10 damage,");
+			AddLine(text, "Strike your target enemy dealing " + damage + " damage,");
 			AddLine(text, "having a 30% chance to poison them.");
 			break;
 		}
 		case CrocodileBiteAbilityId:
 		{
-			AddLine(text, "Bite target enemy, dealing 15 damage and");
+			AddLine(text, "Bite target enemy, dealing " + damage + " damage and");
 			AddLine(text, "slowing their movement speed by 50% for");
 			AddLine(text, "5 seconds.");
 			break;
 		}
 		case CrocodileLashAbilityId:
 		{
-			AddLine(text, "Attack target enemy, dealing 30 damage.");
+			AddLine(text, "Attack target enemy, dealing " + damage + " damage.");
 			break;
 		}
 		default:
@@ -2295,7 +2666,8 @@ func DrawHelpBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition
 		AddLine(tooltip, "[Tab] - Target closest enemy");
 		AddLine(tooltip, "[F1] - Target player");
 		AddLine(tooltip, "[1]-[2] - Use Ability");
-		AddLine(tooltip, "[C] - Show/hide inventory");
+		AddLine(tooltip, "[V] - Show/hide inventory");
+		AddLine(tooltip, "[C] - Show/hide character info");
 
 		Int32 tooltipBottom = top - UIBoxPadding;
 		Int32 tooltipRight = (bitmap->width - 1);
@@ -2386,7 +2758,7 @@ func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosit
 				Int32 tooltipBottom = boxTop - 5;
 
 				static Int8 tooltipBuffer[512] = {};
-				String tooltipText = GetAbilityTooltipText(abilityId, tooltipBuffer, 512);
+				String tooltipText = GetAbilityTooltipText(abilityId, entity, tooltipBuffer, 512);
 				DrawBitmapStringTooltipBottom(bitmap, tooltipText, glyphData, tooltipBottom, tooltipLeft);
 
 				labState->hoverAbilityId = abilityId;
@@ -2607,6 +2979,16 @@ func GetItemSlotName(Int32 itemId)
 			name = "AV";
 			break;
 		}
+		case IntellectPotionItemId:
+		{
+			name = "IP";
+			break;
+		}
+		case TestHelmItemId:
+		{
+			name = "Helm";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -2631,9 +3013,14 @@ func GetItemCooldownDuration(Int32 itemId)
 			cooldown = 10.0f;
 			break;
 		}
+		case IntellectPotionItemId:
+		{
+			cooldown = 30.0f;
+			break;
+		}
 		default:
 		{
-			DebugBreak();
+			cooldown = 0.0f;
 		}
 	}
 	return cooldown;
@@ -2660,6 +3047,28 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		}
 	}
 
+	if(ItemIsEquippable(itemId))
+	{
+		ItemAttributes attributes = GetItemAttributes(itemId);
+
+		if(attributes.constitution > 0)
+		{
+			AddLine(text, "+" + attributes.constitution + " Constitution");
+		}
+		if (attributes.strength > 0)
+		{
+			AddLine(text, "+" + attributes.strength + " Strength");
+		}
+		if(attributes.intellect > 0)
+		{
+			AddLine(text, "+" + attributes.intellect + " Intellect");
+		}
+		if(attributes.dexterity > 0)
+		{
+			AddLine(text, "+" + attributes.dexterity + " Dexterity");
+		}
+	}
+
 	switch(itemId)
 	{
 		case HealthPotionItemId:
@@ -2670,6 +3079,17 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		case AntiVenomItemId:
 		{
 			AddLine(text, "Use: Remove poison from friendly target.");
+			break;
+		}
+		case IntellectPotionItemId:
+		{
+			AddLine(text, "Use: Increase your intellect by 10");
+			AddLine(text, "for 10 minutes.");
+			break;
+		}
+		case TestHelmItemId:
+		{
+			AddLine(text, "Head piece for testing.");
 			break;
 		}
 		default:
@@ -2698,42 +3118,61 @@ func GetItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 }
 
 static Bool32
-func InventorySlotIsValid(IntVec2 slot)
+func InventorySlotIsValid(Inventory* inventory, IntVec2 slot)
 {
-	Bool32 rowIsValid = IsIntBetween(slot.row, 0, InventoryRowN - 1);
-	Bool32 colIsValid = IsIntBetween(slot.col, 0, InventoryColN - 1);
+	Bool32 rowIsValid = IsIntBetween(slot.row, 0, inventory->rowN - 1);
+	Bool32 colIsValid = IsIntBetween(slot.col, 0, inventory->colN - 1);
 	Bool32 isValid = (rowIsValid && colIsValid);
 	return isValid;
 }
 
-static Bool32
-func InventoryItemIsValid(InventoryItem item)
+static void
+func SetSlotItemId(Inventory* inventory, IntVec2 slot, Int32 itemId)
 {
-	Bool32 isValid = (item.inventory != 0 && InventorySlotIsValid(item.slot));
+	SetInventoryItemId(inventory, slot.row, slot.col, itemId);
+}
+
+static Bool32
+func InventoryItemIsValid(InventoryItem* item)
+{
+	Bool32 isValid = (item->inventory && InventorySlotIsValid(item->inventory, item->slot));
 	return isValid;
 }
 
-static void
-func SetSlotItem(Inventory* inventory, IntVec2 slot, Int32 itemId)
-{
-	Assert(InventorySlotIsValid(slot));
-	inventory->items[slot.row][slot.col] = itemId;
-}
-
-static void
-func SwapItems(CombatLabState* labState, InventoryItem item1, InventoryItem item2)
+static Bool32
+func CanSwapItems(InventoryItem* item1, InventoryItem* item2)
 {
 	Assert(InventoryItemIsValid(item1));
 	Assert(InventoryItemIsValid(item2));
 
-	SetSlotItem(&labState->inventory, item1.slot, item2.itemId);
-	SetSlotItem(&labState->inventory, item2.slot, item1.itemId);
+	Bool32 canPutItem1 = ItemGoesIntoSlot(item1->itemId, item2->slotId);
+	Bool32 canPutItem2 = ItemGoesIntoSlot(item2->itemId, item1->slotId);
+	Bool32 canSwap = (canPutItem1 && canPutItem2);
+	return canSwap;
+}
+
+static void
+func SwapItems(InventoryItem* item1, InventoryItem* item2)
+{
+	Assert(CanSwapItems(item1, item2));
+
+	SetSlotItemId(item1->inventory, item1->slot, item2->itemId);
+	SetSlotItemId(item2->inventory, item2->slot, item1->itemId);
+}
+
+static void
+func AttemptToSwapItems(InventoryItem* item1, InventoryItem* item2)
+{
+	if(CanSwapItems(item1, item2))
+	{
+		SwapItems(item1, item2);
+	}
 }
 
 #define InventorySlotSide 50
 
 static void
-func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 itemId, Int32 top, Int32 left)
+func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 slotId, Int32 itemId, Int32 top, Int32 left)
 {
 	Int32 bottom = top + InventorySlotSide;
 	Int32 right = left + InventorySlotSide;
@@ -2742,13 +3181,20 @@ func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 itemId, I
 	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
 	Vec4 cooldownColor = MakeColor(0.2f, 0.0f, 0.0f);
 	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 slotNameColor = MakeColor(0.3f, 0.3f, 0.3f);
 
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
 
-	if(itemId == NoAbilityId)
+	if(itemId == NoItemId)
 	{
 		DrawBitmapRect(bitmap, left, right, top, bottom, slotBackgroundColor);
+		if(slotId != AnySlotId)
+		{
+			Int8* slotName = GetSlotName(slotId);
+			Assert(slotName != 0);
+			DrawBitmapTextLineCentered(bitmap, slotName, glyphData, left, right, top, bottom, slotNameColor);
+		}
 	}
 	else
 	{
@@ -2784,71 +3230,97 @@ func DrawInventorySlotOutline(Canvas* canvas, Int32 top, Int32 left, Vec4 color)
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, color);
 }
 
-static void
-func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosition)
-{
-	Inventory* inventory = &labState->inventory;
+#define InventorySlotPadding 2
 
+static Int32
+func GetInventoryWidth(Inventory* inventory)
+{
+	Int32 width = InventorySlotPadding + inventory->colN * (InventorySlotSide + InventorySlotPadding);
+	return width;
+}
+
+static Int32
+func GetInventoryHeight(Inventory* inventory)
+{
+	Int32 height = InventorySlotPadding + inventory->rowN * (InventorySlotSide + InventorySlotPadding);
+	return height;
+}
+
+static void
+func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory* inventory, IntVec2 mousePosition)
+{
 	Bitmap* bitmap = &canvas->bitmap;
 	GlyphData* glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
 
 	Int32 slotPadding = 2;
-	
-	Int32 width  = slotPadding + InventoryColN * (InventorySlotSide + slotPadding);
-	Int32 height = slotPadding + InventoryRowN * (InventorySlotSide + slotPadding);
 
-	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
-	Int32 left   = right - width;
-	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	Int32 top    = bottom - height;
+	Int32 width = GetInventoryWidth(inventory);
+	Int32 height = GetInventoryHeight(inventory);
+
+	Int32 left = inventory->left;
+	Int32 right = left + width;
+	Int32 top = inventory->top;
+	Int32 bottom = top + height;
 
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 dragOutlineColor = MakeColor(1.0f, 0.5f, 0.0f);
+	Vec4 invalidOutlineColor = MakeColor(1.0f, 0.0f, 0.0f);
 	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
 
-	labState->hoverItem.inventory = 0;
-	labState->hoverItem.itemId = NoItemId;
-
 	InventoryItem* dragItem = &labState->dragItem;
+	InventoryItem* hoverItem = &labState->hoverItem;
 
 	Int32 slotTop = top + slotPadding;
-	for(Int32 row = 0; row < InventoryRowN; row++)
+	for(Int32 row = 0; row < inventory->rowN; row++)
 	{
 		Int32 slotLeft = left + slotPadding;
-		for(Int32 col = 0; col < InventoryColN; col++)
+		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			Int32 itemId = inventory->items[row][col];
-			Bool32 isDragItem = (dragItem->inventory == inventory && dragItem->slot.row == row && dragItem->slot.col == col);
-			if(!isDragItem)
+			Int32 slotId = GetInventorySlotId(inventory, row, col);
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
+
+			Bool32 isHover = (IsIntBetween(mousePosition.col, slotLeft, slotLeft + InventorySlotSide) &&
+							  IsIntBetween(mousePosition.row, slotTop, slotTop + InventorySlotSide));
+			Bool32 isDrag = (dragItem->inventory == inventory && 
+							 dragItem->slot.row == row && dragItem->slot.col == col);
+
+			if(!isDrag)
 			{
-				DrawInventorySlot(canvas, labState, itemId, slotTop, slotLeft);
+				DrawInventorySlot(canvas, labState, slotId, itemId, slotTop, slotLeft);
 			}
 			else
 			{
-				DrawInventorySlot(canvas, labState, NoItemId, slotTop, slotLeft);
+				DrawInventorySlot(canvas, labState, slotId, NoItemId, slotTop, slotLeft);
 			}
 
-			if(mousePosition.col >= slotLeft && mousePosition.col <= slotLeft + InventorySlotSide &&
-			   mousePosition.row >= slotTop && mousePosition.row <= slotTop + InventorySlotSide)
+			if(isHover)
 			{
-				if(itemId != NoItemId)
+				if(!isDrag && itemId != NoItemId)
 				{
 					Int32 tooltipBottom = slotTop - UIBoxPadding;
 					Int32 tooltipRight = IntMin2((slotLeft + InventorySlotSide / 2) + TooltipWidth / 2,
 												 (bitmap->width - 1) - UIBoxPadding);
+
+					tooltipRight = IntMax2(tooltipRight, UIBoxPadding + TooltipWidth);
 
 					Int8 tooltipBuffer[128];
 					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 128);
 					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
 				}
 
-				DrawInventorySlotOutline(canvas, slotTop, slotLeft, hoverOutlineColor);
+				Vec4 outlineColor = hoverOutlineColor;
+				if(dragItem->inventory && !ItemGoesIntoSlot(dragItem->itemId, slotId))
+				{
+					outlineColor = invalidOutlineColor;
+				}
 
-				labState->hoverItem.inventory = inventory;
-				labState->hoverItem.itemId = itemId;
-				labState->hoverItem.slot.row = row;
-				labState->hoverItem.slot.col = col;
+				DrawInventorySlotOutline(canvas, slotTop, slotLeft, outlineColor);
+				hoverItem->inventory = inventory;
+				hoverItem->slotId = slotId;
+				hoverItem->itemId = itemId;
+				hoverItem->slot.row = row;
+				hoverItem->slot.col = col;
 			}
 
 			slotLeft += (InventorySlotSide + slotPadding);
@@ -2856,18 +3328,87 @@ func DrawInventory(Canvas* canvas, CombatLabState* labState, IntVec2 mousePositi
 
 		slotTop += (InventorySlotSide + slotPadding);
 	}
+}
 
-	if(dragItem->inventory)
-	{
-		Assert(dragItem->inventory == inventory);
-		Assert(dragItem->itemId != NoAbilityId);
+static void
+func DrawCharacterInfo(Canvas* canvas, Entity* entity, CombatLabState* labState, IntVec2 mousePosition)
+{
+	Bitmap* bitmap = &canvas->bitmap;
+	
+	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 outlineColor = MakeColor(1.0f, 1.0f, 1.0f);
 
-		Int32 slotTop  = mousePosition.row - InventorySlotSide / 2;
-		Int32 slotLeft = mousePosition.col - InventorySlotSide / 2;
+	Inventory* inventory = &labState->equipInventory;
+	Int32 width = GetInventoryWidth(inventory);
+	Int32 height = UIBoxPadding + 12 * TextHeightInPixels + UIBoxPadding;
 
-		DrawInventorySlot(canvas, labState, dragItem->itemId, slotTop, slotLeft);
-		DrawInventorySlotOutline(canvas, slotTop, slotLeft, dragOutlineColor);
-	}
+	Int32 left   = UIBoxPadding;
+	Int32 right  = left + width;
+	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	Int32 top    = bottom - height;
+
+	inventory->left = right - GetInventoryWidth(inventory);
+	inventory->top = top - GetInventoryHeight(inventory);
+	UpdateAndDrawInventory(canvas, labState, inventory, mousePosition);
+
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	GlyphData* glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+
+	Vec4 textColor  = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 infoColor  = MakeColor(0.3f, 0.3f, 0.3f);
+
+	Int32 textLeft = left + UIBoxPadding;
+	Int32 textTop = top + UIBoxPadding;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Character Info", glyphData, textLeft, textTop, titleColor);
+	textTop += TextHeightInPixels;
+
+	Int8 lineBuffer[128] = {};
+	OneLineString(lineBuffer, 128, "Level " + entity->level);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Attributes", glyphData, textLeft, textTop, titleColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Constitution: " + entity->constitution);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Increases maximum health.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Strength: " + entity->strength);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Increases damage of physical attacks.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Intellect: " + entity->intellect);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Increases damage of magical attacks.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Dexterity: " + entity->dexterity);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Reduces cast time of abilities.",
+							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
 }
 
 static void
@@ -2972,7 +3513,7 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 			{
 				if(Floor(time) != Floor(previousTime))
 				{
-					AttemptToHeal(labState, effect->entity, effect->entity, 2);
+					AttemptToHeal(labState, effect->entity, effect->entity, 5);
 				}
 				break;
 			}
@@ -3020,14 +3561,6 @@ func CanMove(CombatLabState* labState, Entity* entity)
 	return canMove;
 }
 
-static void
-func SetInventoryItemId(Inventory* inventory, IntVec2 slot, Int32 itemId)
-{
-	Assert(IsIntBetween(slot.row, 0, InventoryRowN - 1));
-	Assert(IsIntBetween(slot.col, 0, InventoryColN - 1));
-	inventory->items[slot.row][slot.col] = itemId;
-}
-
 static Bool32
 func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 {
@@ -3035,11 +3568,11 @@ func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 	Bool32 hasEmptySlot = false;
 
 	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0;  row < InventoryRowN; row++)
+	for(Int32 row = 0;  row < inventory->rowN; row++)
 	{
-		for(Int32 col = 0; col < InventoryColN; col++)
+		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			Int32 itemId = inventory->items[row][col];
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
 			if(itemId == NoItemId)
 			{
 				hasEmptySlot = true;
@@ -3084,14 +3617,14 @@ func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 
 	Bool32 itemPickedUp = false;
 	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0; row < InventoryRowN; row++)
+	for(Int32 row = 0; row < inventory->rowN; row++)
 	{
-		for(Int32 col = 0; col < InventoryColN; col++)
+		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			Int32 itemId = inventory->items[row][col];
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
 			if(itemId == NoItemId)
 			{
-				inventory->items[row][col] = item->itemId;
+				SetInventoryItemId(inventory, row, col, item->itemId);
 				itemPickedUp = true;
 				break;
 			}
@@ -3371,6 +3904,14 @@ func RemoveEffectsOfDeadEntities(CombatLabState* labState)
 			labState->effects[remainingEffectN] = *effect;
 			remainingEffectN++;
 		}
+		else
+		{
+			Entity* player = &labState->entities[0];
+			if(effect->entity == player)
+			{
+				RecalculatePlayerAttributes(labState);
+			}
+		}
 	}
 	labState->effectN = remainingEffectN;
 }
@@ -3381,11 +3922,7 @@ func DeleteInventoryItem(InventoryItem item)
 	Inventory* inventory = item.inventory;
 	Assert(inventory != 0);
 
-	IntVec2 slot = item.slot;
-	Assert(IsIntBetween(slot.row, 0, InventoryRowN - 1));
-	Assert(IsIntBetween(slot.col, 0, InventoryColN - 1));
-
-	inventory->items[slot.row][slot.col] = NoItemId;
+	SetSlotItemId(item.inventory, item.slot, NoItemId);
 }
 
 static Bool32
@@ -3450,9 +3987,14 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 				canUse = (hasFriendlyTarget && targetIsAlive);
 				break;
 			}
+			case IntellectPotionItemId:
+			{
+				canUse = true;
+				break;
+			}
 			default:
 			{
-				DebugBreak();
+				canUse = false;
 			}
 		}
 	}
@@ -3474,6 +4016,11 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 		case AntiVenomItemId:
 		{
 			RemoveEffect(labState, entity->target, PoisonedEffectId);
+			break;
+		}
+		case IntellectPotionItemId:
+		{
+			ResetOrAddEffect(labState, entity, IntellectPotionEffectId);
 			break;
 		}
 		default:
@@ -3848,9 +4395,14 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	canvas->camera->center = player->position;
 
-	if(WasKeyReleased(userInput, 'C'))
+	if(WasKeyReleased(userInput, 'V'))
 	{
 		labState->showInventory = !labState->showInventory;
+	}
+
+	if(WasKeyReleased(userInput, 'C'))
+	{
+		labState->showCharacterInfo = !labState->showCharacterInfo;
 	}
 
 	if(WasKeyPressed(userInput, VK_LBUTTON))
@@ -3870,12 +4422,12 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			Assert(dragItem->itemId != NoItemId);
 			if(hoverItem->inventory != 0)
 			{
-				SwapItems(labState, *dragItem, *hoverItem);
+				AttemptToSwapItems(dragItem, hoverItem);
 			}
 			else
 			{
 				DropItem(labState, player, dragItem->itemId);
-				SetInventoryItemId(dragItem->inventory, dragItem->slot, NoItemId);
+				SetSlotItemId(dragItem->inventory, dragItem->slot, NoItemId);
 			}
 		}
 		labState->dragItem.inventory = 0;
@@ -3893,9 +4445,15 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 
+	labState->hoverItem.inventory = 0;
 	if(labState->showInventory)
 	{
-		DrawInventory(canvas, labState, userInput->mousePixelPosition);
+		Inventory* inventory = &labState->inventory;
+		Int32 right = (canvas->bitmap.width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+		Int32 bottom = (canvas->bitmap.height - 1) - UIBoxPadding;
+		inventory->left = right - GetInventoryWidth(inventory);
+		inventory->top = bottom - GetInventoryHeight(inventory);
+		UpdateAndDrawInventory(canvas, labState, inventory, userInput->mousePixelPosition);
 	}
 	else
 	{
@@ -3907,10 +4465,35 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawPlayerEffectBar(canvas, labState);
 	DrawTargetEffectBar(canvas, labState);
 	DrawDamageDisplays(canvas, labState);
+
+	if(labState->showCharacterInfo)
+	{
+		DrawCharacterInfo(canvas, player, labState, userInput->mousePixelPosition);
+	}
+	else
+	{
+		DrawCombatLog(canvas, labState);
+	}
+
+	InventoryItem* dragItem = &labState->dragItem;
+	if(dragItem->inventory != 0)
+	{
+		Assert(dragItem->itemId != 0);
+		
+		Int32 slotTop  = userInput->mousePixelPosition.row - InventorySlotSide / 2;
+		Int32 slotLeft = userInput->mousePixelPosition.col - InventorySlotSide / 2;
+
+		Vec4 dragOutlineColor = MakeColor(1.0f, 0.5f, 0.0f);
+
+		DrawInventorySlot(canvas, labState, dragItem->slotId, dragItem->itemId, slotTop, slotLeft);
+		DrawInventorySlotOutline(canvas, slotTop, slotLeft, dragOutlineColor);
+	}
+
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
-	DrawCombatLog(canvas, labState);
 }
 
+// TODO: Stop spamming combat log when dying next to a tree!
+// TODO: Don't log overheal!
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Neutral enemies
