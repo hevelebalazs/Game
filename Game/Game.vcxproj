@@ -125,10 +125,13 @@
     <ClCompile Include="Windows.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Ability.hpp" />
     <ClInclude Include="Bezier.hpp" />
     <ClInclude Include="Bitmap.hpp" />
     <ClInclude Include="Debug.hpp" />
+    <ClInclude Include="Effect.hpp" />
     <ClInclude Include="Geometry.hpp" />
+    <ClInclude Include="Item.hpp" />
     <ClInclude Include="Lab\CombatLab.hpp" />
     <ClInclude Include="Lab\TextLab.hpp" />
     <ClInclude Include="Lab\ThreadLab.hpp" />
