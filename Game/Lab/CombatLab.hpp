@@ -108,7 +108,13 @@ struct DroppedItem
 	Real32 timeLeft;
 };
 
-#define EntityN 256
+struct Flower
+{
+	Vec2 position;
+};
+
+// #define EntityN 256
+#define EntityN 1
 #define MaxAbilityCooldownN 64
 #define MaxItemCooldownN 64
 #define MaxEffectN 64
@@ -116,6 +122,7 @@ struct DroppedItem
 #define MaxCombatLogLineN 32
 #define MaxCombatLogLineLength 64
 #define MaxDroppedItemN 32
+#define MaxFlowerN 256
 #define CombatLabArenaSize (2 * MegaByte)
 struct CombatLabState
 {
@@ -137,6 +144,9 @@ struct CombatLabState
 
 	DroppedItem droppedItems[MaxDroppedItemN];
 	Int32 droppedItemN;
+
+	Flower flowers[MaxFlowerN];
+	Int32 flowerN;
 
 	DroppedItem* hoverDroppedItem;
 
@@ -302,6 +312,13 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	SetInventorySlotId(equipInventory, 0, 3, WaistSlotId);
 	SetInventorySlotId(equipInventory, 0, 4, LegsSlotId);
 	SetInventorySlotId(equipInventory, 0, 5, FeetSlotId);
+
+	labState->flowerN = MaxFlowerN;
+	for(Int32 i = 0; i < labState->flowerN; i++)
+	{
+		Flower* flower = &labState->flowers[i];
+		flower->position = GetRandomGroundTileCenter(&labState->map);
+	}
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -1620,6 +1637,41 @@ func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 
 		}
 	}
 	return text;
+}
+
+static void
+func DrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition)
+{
+	GlyphData* glyphData = canvas->glyphData;
+
+	Real32 radius = 0.5f;
+	Vec4 color = MakeColor(0.1f, 0.1f, 1.0f);
+
+	Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 textBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 textHoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
+	Int8* text = "Blue Flower";
+
+	for(Int32 i = 0; i < labState->flowerN; i++)
+	{
+		Flower* flower = &labState->flowers[i];
+		DrawCircle(canvas, flower->position, radius, color);
+
+		Real32 textWidth = GetTextWidth(canvas, text);
+		Real32 textHeight = GetTextHeight(canvas, text);
+
+		Real32 textBottom = flower->position.y - radius;
+		Real32 textCenterX = flower->position.x;
+		
+		Vec2 textBottomCenter = MakePoint(textCenterX, textBottom);
+		Rect textBackgroundRect = MakeRectBottom(textBottomCenter, textWidth, textHeight);
+
+		Bool32 isHover = IsPointInRect(mousePosition, textBackgroundRect);
+		Vec4 backgroundColor = (isHover) ? textHoverBackgroundColor : textBackgroundColor;
+
+		DrawRect(canvas, textBackgroundRect, backgroundColor);
+		DrawTextLineBottomXCentered(canvas, text, textBottom, textCenterX, textColor);
+	}
 }
 
 #define UIBoxSide 40
@@ -3024,6 +3076,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	DrawMap(canvas, &labState->map);
 
+	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
+	DrawFlowers(canvas, labState, mousePosition);
+
 	Real32 mapWidth  = GetMapWidth(&labState->map);
 	Real32 mapHeight = GetMapHeight(&labState->map);
 
@@ -3183,7 +3238,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		player->target = player;
 	}
 
-	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
 	if(WasKeyReleased(userInput, VK_LBUTTON))
 	{
 		if(labState->hoverAbilityId != NoAbilityId)
