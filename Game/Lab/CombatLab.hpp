@@ -147,6 +147,7 @@ struct CombatLabState
 
 	Flower flowers[MaxFlowerN];
 	Int32 flowerN;
+	Flower* hoverFlower;
 
 	DroppedItem* hoverDroppedItem;
 
@@ -299,10 +300,10 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 
 	Inventory* inventory = &labState->inventory;
 	InitInventory(inventory, arena, 3, 4);
-	SetInventoryItemId(inventory, 0, 0, HealthPotionItemId);
-	SetInventoryItemId(inventory, 0, 1, AntiVenomItemId);
-	SetInventoryItemId(inventory, 0, 2, IntellectPotionItemId);
-	SetInventoryItemId(inventory, 1, 0, TestHelmItemId);
+	AddItemToInventory(inventory, HealthPotionItemId);
+	AddItemToInventory(inventory, AntiVenomItemId);
+	AddItemToInventory(inventory, IntellectPotionItemId);
+	AddItemToInventory(inventory, TestHelmItemId);
 
 	Inventory* equipInventory = &labState->equipInventory;
 	InitInventory(equipInventory, arena, 1, 6);
@@ -1640,7 +1641,7 @@ func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 
 }
 
 static void
-func DrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition)
+func UpdateAndDrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition)
 {
 	GlyphData* glyphData = canvas->glyphData;
 
@@ -1651,6 +1652,8 @@ func DrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition)
 	Vec4 textBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 textHoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
 	Int8* text = "Blue Flower";
+
+	labState->hoverFlower = 0;
 
 	for(Int32 i = 0; i < labState->flowerN; i++)
 	{
@@ -1668,6 +1671,11 @@ func DrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition)
 
 		Bool32 isHover = IsPointInRect(mousePosition, textBackgroundRect);
 		Vec4 backgroundColor = (isHover) ? textHoverBackgroundColor : textBackgroundColor;
+
+		if(isHover)
+		{
+			labState->hoverFlower = flower;
+		}
 
 		DrawRect(canvas, textBackgroundRect, backgroundColor);
 		DrawTextLineBottomXCentered(canvas, text, textBottom, textCenterX, textColor);
@@ -2550,27 +2558,7 @@ static Bool32
 func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 {
 	Bool32 isAlive = !IsDead(entity);
-	Bool32 hasEmptySlot = false;
-
-	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0;  row < inventory->rowN; row++)
-	{
-		for(Int32 col = 0; col < inventory->colN; col++)
-		{
-			Int32 itemId = GetInventoryItemId(inventory, row, col);
-			if(itemId == NoItemId)
-			{
-				hasEmptySlot = true;
-				break;
-			}
-		}
-
-		if(hasEmptySlot)
-		{
-			break;
-		}
-	}
-
+	Bool32 hasEmptySlot = HasEmptySlot(&labState->inventory);
 	Bool32 canPickUpItem = (isAlive && hasEmptySlot);
 	return canPickUpItem;
 }
@@ -2600,30 +2588,33 @@ func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 		labState->droppedItems[i] = labState->droppedItems[i + 1];
 	}
 
-	Bool32 itemPickedUp = false;
-	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0; row < inventory->rowN; row++)
-	{
-		for(Int32 col = 0; col < inventory->colN; col++)
-		{
-			Int32 itemId = GetInventoryItemId(inventory, row, col);
-			if(itemId == NoItemId)
-			{
-				SetInventoryItemId(inventory, row, col, item->itemId);
-				itemPickedUp = true;
-				break;
-			}
-		}
-
-		if(itemPickedUp)
-		{
-			break;
-		}
-	}
-	Assert(itemPickedUp);
+	AddItemToInventory(&labState->inventory, item->itemId);
 
 	Int8* itemName = GetItemName(item->itemId);
 	CombatLog(labState, entity->name + " picks up " + itemName + ".");
+}
+
+static void
+func PickUpFlower(CombatLabState* labState, Flower* flower)
+{
+	Inventory* inventory = &labState->inventory;
+	Assert(HasEmptySlot(inventory));
+
+	Bool32 foundFlower = false;
+	for(Int32 i = 0; i < labState->flowerN; i++)
+	{
+		if(foundFlower)
+		{
+			labState->flowers[i - 1] = labState->flowers[i];
+		}
+		else if(&labState->flowers[i] == flower)
+		{
+			foundFlower = true;
+		}
+	}
+	Assert(foundFlower);
+
+	AddItemToInventory(inventory, FlowerItemId);
 }
 
 static void
@@ -3077,7 +3068,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	DrawMap(canvas, &labState->map);
 
 	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
-	DrawFlowers(canvas, labState, mousePosition);
+	UpdateAndDrawFlowers(canvas, labState, mousePosition);
 
 	Real32 mapWidth  = GetMapWidth(&labState->map);
 	Real32 mapHeight = GetMapHeight(&labState->map);
@@ -3428,6 +3419,15 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			if(CanPickUpItem(labState, player, item))
 			{
 				PickUpItem(labState, player, item);
+			}
+		}
+
+		Flower* flower = labState->hoverFlower;
+		if(flower)
+		{
+			if(HasEmptySlot(&labState->inventory))
+			{
+				PickUpFlower(labState, flower);
 			}
 		}
 	}

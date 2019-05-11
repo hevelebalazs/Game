@@ -19,7 +19,8 @@ enum ItemId
 	HealthPotionItemId,
 	AntiVenomItemId,
 	IntellectPotionItemId,
-	TestHelmItemId
+	TestHelmItemId,
+	FlowerItemId
 };
 
 struct ItemAttributes
@@ -132,6 +133,11 @@ func GetItemName(Int32 itemId)
 			name = "Test Helm";
 			break;
 		}
+		case FlowerItemId:
+		{
+			name = "Flower";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -163,6 +169,11 @@ func GetItemSlotName(Int32 itemId)
 		case TestHelmItemId:
 		{
 			name = "Helm";
+			break;
+		}
+		case FlowerItemId:
+		{
+			name = "Flower";
 			break;
 		}
 		default:
@@ -266,6 +277,10 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		case TestHelmItemId:
 		{
 			AddLine(text, "Head piece for testing.");
+			break;
+		}
+		case FlowerItemId:
+		{
 			break;
 		}
 		default:
@@ -414,4 +429,56 @@ func InventoryItemIsValid(InventoryItem* item)
 {
 	Bool32 isValid = (item->inventory && InventorySlotIsValid(item->inventory, item->slot));
 	return isValid;
+}
+
+static Bool32
+func HasEmptySlot(Inventory* inventory)
+{
+	Bool32 hasEmptySlot = false;
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
+			if(itemId == NoItemId)
+			{
+				hasEmptySlot = true;
+				break;
+			}
+		}
+
+		if(hasEmptySlot)
+		{
+			break;
+		}
+	}
+
+	return hasEmptySlot;
+}
+
+
+static void
+func AddItemToInventory(Inventory* inventory, Int32 itemId)
+{
+	Assert(HasEmptySlot(inventory));
+	Bool32 itemAdded = false;
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			Int32 currentItemId = GetInventoryItemId(inventory, row, col);
+			if(currentItemId == NoItemId)
+			{
+				SetInventoryItemId(inventory, row, col, itemId);
+				itemAdded = true;
+				break;
+			}
+		}
+
+		if(itemAdded)
+		{
+			break;
+		}
+	}
+	Assert(itemAdded);
 }
