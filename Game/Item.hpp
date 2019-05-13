@@ -20,7 +20,9 @@ enum ItemId
 	AntiVenomItemId,
 	IntellectPotionItemId,
 	TestHelmItemId,
-	FlowerItemId
+	BlueFlowerItemId,
+	RedFlowerItemId,
+	YellowFlowerItemId
 };
 
 struct ItemAttributes
@@ -133,9 +135,19 @@ func GetItemName(Int32 itemId)
 			name = "Test Helm";
 			break;
 		}
-		case FlowerItemId:
+		case BlueFlowerItemId:
 		{
-			name = "Flower";
+			name = "Blue Flower";
+			break;
+		}
+		case RedFlowerItemId:
+		{
+			name = "Red Flower";
+			break;
+		}
+		case YellowFlowerItemId:
+		{
+			name = "Yellow Flower";
 			break;
 		}
 		default:
@@ -171,9 +183,19 @@ func GetItemSlotName(Int32 itemId)
 			name = "Helm";
 			break;
 		}
-		case FlowerItemId:
+		case BlueFlowerItemId:
 		{
-			name = "Flower";
+			name = "BF";
+			break;
+		}
+		case RedFlowerItemId:
+		{
+			name = "RF";
+			break;
+		}
+		case YellowFlowerItemId:
+		{
+			name = "YF";
 			break;
 		}
 		default:
@@ -279,7 +301,9 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 			AddLine(text, "Head piece for testing.");
 			break;
 		}
-		case FlowerItemId:
+		case BlueFlowerItemId:
+		case RedFlowerItemId:
+		case YellowFlowerItemId:
 		{
 			break;
 		}

@@ -111,6 +111,7 @@ struct DroppedItem
 struct Flower
 {
 	Vec2 position;
+	Int32 itemId;
 };
 
 // #define EntityN 256
@@ -237,6 +238,13 @@ func GetEntityMaxHealth(Entity* entity)
 	return maxHealth;
 }
 
+static Int32
+func GetRandomFlowerItemId()
+{
+	Int32 itemId = IntRandom(BlueFlowerItemId, YellowFlowerItemId);
+	return itemId;
+}
+
 static void
 func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
@@ -319,6 +327,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	{
 		Flower* flower = &labState->flowers[i];
 		flower->position = GetRandomGroundTileCenter(&labState->map);
+		flower->itemId = GetRandomFlowerItemId();
 	}
 }
 
@@ -1640,25 +1649,55 @@ func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 
 	return text;
 }
 
+static Vec4
+func GetFlowerColor(Int32 itemId)
+{
+	Vec4 color = {};
+	switch(itemId)
+	{
+		case BlueFlowerItemId:
+		{
+			color = MakeColor(0.1f, 0.1f, 1.0f);
+			break;
+		}
+		case RedFlowerItemId:
+		{
+			color = MakeColor(1.0f, 0.1f, 0.1f);
+			break;
+		}
+		case YellowFlowerItemId:
+		{
+			color = MakeColor(1.0f, 1.0f, 0.1f);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return color;
+}
+
 static void
 func UpdateAndDrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition)
 {
 	GlyphData* glyphData = canvas->glyphData;
 
 	Real32 radius = 0.5f;
-	Vec4 color = MakeColor(0.1f, 0.1f, 1.0f);
 
 	Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
 	Vec4 textBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 textHoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
-	Int8* text = "Blue Flower";
 
 	labState->hoverFlower = 0;
 
 	for(Int32 i = 0; i < labState->flowerN; i++)
 	{
 		Flower* flower = &labState->flowers[i];
+		Vec4 color = GetFlowerColor(flower->itemId);
 		DrawCircle(canvas, flower->position, radius, color);
+
+		Int8* text = GetItemName(flower->itemId);
 
 		Real32 textWidth = GetTextWidth(canvas, text);
 		Real32 textHeight = GetTextHeight(canvas, text);
@@ -2601,20 +2640,24 @@ func PickUpFlower(CombatLabState* labState, Flower* flower)
 	Assert(HasEmptySlot(inventory));
 
 	Bool32 foundFlower = false;
+	Int32 flowerIndex = 0;
 	for(Int32 i = 0; i < labState->flowerN; i++)
 	{
-		if(foundFlower)
-		{
-			labState->flowers[i - 1] = labState->flowers[i];
-		}
-		else if(&labState->flowers[i] == flower)
+		if(&labState->flowers[i] == flower)
 		{
 			foundFlower = true;
+			flowerIndex = i;
+			break;
 		}
 	}
 	Assert(foundFlower);
 
-	AddItemToInventory(inventory, FlowerItemId);
+	AddItemToInventory(inventory, flower->itemId);
+
+	for(Int32 i = flowerIndex + 1; i < labState->flowerN; i++)
+	{
+		labState->flowers[i - 1] = labState->flowers[i];
+	}
 }
 
 static void
