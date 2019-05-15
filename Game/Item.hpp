@@ -227,6 +227,13 @@ func GetItemCooldownDuration(Int32 itemId)
 			cooldown = 30.0f;
 			break;
 		}
+		case BlueFlowerItemId:
+		case RedFlowerItemId:
+		case YellowFlowerItemId:
+		{
+			cooldown = 60.0f;
+			break;
+		}
 		default:
 		{
 			cooldown = 0.0f;
@@ -305,6 +312,7 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		case RedFlowerItemId:
 		case YellowFlowerItemId:
 		{
+			AddLine(text, "Use: Eat the flower.");
 			break;
 		}
 		default:

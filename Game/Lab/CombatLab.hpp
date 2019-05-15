@@ -114,8 +114,7 @@ struct Flower
 	Int32 itemId;
 };
 
-// #define EntityN 256
-#define EntityN 1
+#define EntityN 256
 #define MaxAbilityCooldownN 64
 #define MaxItemCooldownN 64
 #define MaxEffectN 64
@@ -871,6 +870,13 @@ func RecalculatePlayerAttributes(CombatLabState* labState)
 				case IntellectPotionEffectId:
 				{
 					player->intellect += 10;
+					break;
+				}
+				case BlueFlowerEffectId:
+				{
+					player->intellect += 10;
+					player->strength -= 10;
+					player->strength = IntMax2(player->strength, 0);
 					break;
 				}
 			}
@@ -2658,6 +2664,8 @@ func PickUpFlower(CombatLabState* labState, Flower* flower)
 	{
 		labState->flowers[i - 1] = labState->flowers[i];
 	}
+
+	labState->flowerN--;
 }
 
 static void
@@ -3011,6 +3019,13 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 				canUse = true;
 				break;
 			}
+			case BlueFlowerItemId:
+			case RedFlowerItemId:
+			case YellowFlowerItemId:
+			{
+				canUse = true;
+				break;
+			}
 			default:
 			{
 				canUse = false;
@@ -3040,6 +3055,21 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 		case IntellectPotionItemId:
 		{
 			ResetOrAddEffect(labState, entity, IntellectPotionEffectId);
+			break;
+		}
+		case BlueFlowerItemId:
+		{
+			ResetOrAddEffect(labState, entity, BlueFlowerEffectId);
+			break;
+		}
+		case RedFlowerItemId:
+		{
+			Heal(labState, entity, entity, 20);
+			break;
+		}
+		case YellowFlowerItemId:
+		{
+			RemoveEffect(labState, entity->target, PoisonedEffectId);
 			break;
 		}
 		default:

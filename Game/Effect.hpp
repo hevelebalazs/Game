@@ -17,7 +17,8 @@ enum EffectId
 	EarthShakeEffectId,
 	EarthShieldEffectId,
 	RegenerateEffectId,
-	IntellectPotionEffectId
+	IntellectPotionEffectId,
+	BlueFlowerEffectId
 };
 
 static Int8*
@@ -91,13 +92,20 @@ func GetEffectName(Int32 effectId)
 			name = "Intellect Potion";
 			break;
 		}
+		case BlueFlowerEffectId:
+		{
+			name = "Blue Flower";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
 		}
 	}
 	return name;
-}static Real32
+}
+
+static Real32
 func EffectHasDuration(Int32 effectId)
 {
 	bool hasDuration = true;
@@ -181,6 +189,11 @@ func GetEffectDuration(Int32 effectId)
 		case IntellectPotionEffectId:
 		{
 			duration = 10 * 60.0f;
+			break;
+		}
+		case BlueFlowerEffectId:
+		{
+			duration = 60.0f;
 			break;
 		}
 		default:
