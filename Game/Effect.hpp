@@ -18,7 +18,13 @@ enum EffectId
 	EarthShieldEffectId,
 	RegenerateEffectId,
 	IntellectPotionEffectId,
-	BlueFlowerEffectId
+	FeelingSmartEffectId,
+	HealOverTimeEffectId,
+	ReducedDamageDoneAndTakenEffectId,
+	FeelingStrongEffectId,
+	ImmuneToPoisonEffectId,
+	FeelingQuickEffectId,
+	IncreasedDamageDoneAndTakenEffectId
 };
 
 static Int8*
@@ -92,9 +98,39 @@ func GetEffectName(Int32 effectId)
 			name = "Intellect Potion";
 			break;
 		}
-		case BlueFlowerEffectId:
+		case FeelingSmartEffectId:
 		{
-			name = "Blue Flower";
+			name = "Feeling Smart";
+			break;
+		}
+		case HealOverTimeEffectId:
+		{
+			name = "Heal Over Time";
+			break;
+		}
+		case ReducedDamageDoneAndTakenEffectId:
+		{
+			name = "Reduced Damage";
+			break;
+		}
+		case FeelingStrongEffectId:
+		{
+			name = "Feeling Strong";
+			break;
+		}
+		case ImmuneToPoisonEffectId:
+		{
+			name = "Immune to Poison";
+			break;
+		}
+		case FeelingQuickEffectId:
+		{
+			name = "Feeling Quick";
+			break;
+		}
+		case IncreasedDamageDoneAndTakenEffectId:
+		{
+			name = "Increased Damage";
 			break;
 		}
 		default:
@@ -191,9 +227,39 @@ func GetEffectDuration(Int32 effectId)
 			duration = 10 * 60.0f;
 			break;
 		}
-		case BlueFlowerEffectId:
+		case FeelingSmartEffectId:
 		{
 			duration = 60.0f;
+			break;
+		}
+		case HealOverTimeEffectId:
+		{
+			duration = 60.0f;
+			break;
+		}
+		case ReducedDamageDoneAndTakenEffectId:
+		{
+			duration = 20.0f;
+			break;
+		}
+		case FeelingStrongEffectId:
+		{
+			duration = 60.0f;
+			break;
+		}
+		case ImmuneToPoisonEffectId:
+		{
+			duration = 60.0f;
+			break;
+		}
+		case FeelingQuickEffectId:
+		{
+			duration = 60.0f;
+			break;
+		}
+		case IncreasedDamageDoneAndTakenEffectId:
+		{
+			duration = 20.0f;
 			break;
 		}
 		default:

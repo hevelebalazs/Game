@@ -632,10 +632,23 @@ func LevelUp(Entity* entity)
 }
 
 static Int32
-func GetFinalDamage(CombatLabState* labState, Entity* target, Int32 damage)
+func GetFinalDamage(CombatLabState* labState, Entity* source, Entity* target, Int32 damage)
 {
 	Int32 finalDamage = damage;
 	Assert(CanTakeDamage(labState, target));
+
+	if(source)
+	{
+		if(HasEffect(labState, source, ReducedDamageDoneAndTakenEffectId))
+		{
+			finalDamage -= finalDamage / 5;
+		}
+	}
+
+	if(HasEffect(labState, target, ReducedDamageDoneAndTakenEffectId))
+	{
+		finalDamage -= finalDamage / 5;
+	}
 	if(HasEffect(labState, target, ShieldRaisedEffectId))
 	{
 		finalDamage -= finalDamage / 2;
@@ -653,7 +666,7 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 	Assert(source->groupId != target->groupId);
 	if(CanTakeDamage(labState, target))
 	{
-		Int32 finalDamage = GetFinalDamage(labState, target, damage);
+		Int32 finalDamage = GetFinalDamage(labState, source, target, damage);
 
 		DealFinalDamage(target, finalDamage);
 		AddDamageDisplay(labState, target->position, finalDamage);
@@ -683,7 +696,7 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 {
 	if(CanTakeDamage(labState, target))
 	{
-		Int32 finalDamage = GetFinalDamage(labState, target, damage);
+		Int32 finalDamage = GetFinalDamage(labState, 0, target, damage);
 		DealFinalDamage(target, finalDamage);
 		AddDamageDisplay(labState, target->position, finalDamage);
 
@@ -872,11 +885,24 @@ func RecalculatePlayerAttributes(CombatLabState* labState)
 					player->intellect += 10;
 					break;
 				}
-				case BlueFlowerEffectId:
+				case FeelingSmartEffectId:
 				{
 					player->intellect += 10;
 					player->strength -= 10;
 					player->strength = IntMax2(player->strength, 0);
+					break;
+				}
+				case FeelingStrongEffectId:
+				{
+					player->strength += 10;
+					player->intellect -= 10;
+					player->intellect = IntMax2(player->intellect, 0);
+					break;
+				}
+				case FeelingQuickEffectId:
+				{
+					player->constitution += 10;
+					player->dexterity += 10;
 					break;
 				}
 			}
@@ -906,9 +932,30 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 	}
 }
 
+static Bool32
+func CanAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+{
+	Bool32 canAddEffect = true;
+	switch(effectId)
+	{
+		case PoisonedEffectId:
+		{
+			canAddEffect = !HasEffect(labState, entity, ImmuneToPoisonEffectId);
+			break;
+		}
+		default:
+		{
+			canAddEffect = true;
+		}
+	}
+
+	return canAddEffect;
+}
+
 static void
 func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
+	Assert(CanAddEffect(labState, entity, effectId));
 	Assert(labState->effectN < MaxEffectN);
 	Effect* effect = &labState->effects[labState->effectN];
 	labState->effectN++;
@@ -956,7 +1003,10 @@ func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 
 	if(!foundEffect)
 	{
-		AddEffect(labState, entity, effectId);
+		if(CanAddEffect(labState, entity, effectId))
+		{
+			AddEffect(labState, entity, effectId);
+		}
 	}
 }
 
@@ -2555,6 +2605,14 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 				}
 				break;
 			}
+			case HealOverTimeEffectId:
+			{
+				if(Floor(time * (1.0f / 3.0f)) != Floor(previousTime * (1.0f / 3.0f)))
+				{
+					AttemptToHeal(labState, effect->entity, effect->entity, 5);
+				}
+				break;
+			}
 		}
 	}
 }
@@ -3059,17 +3117,61 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 		}
 		case BlueFlowerItemId:
 		{
-			ResetOrAddEffect(labState, entity, BlueFlowerEffectId);
+			Int32 random = IntRandom(1, 3);
+			if(random == 1)
+			{
+				ResetOrAddEffect(labState, entity, FeelingSmartEffectId);
+			}
+			else if(random == 2)
+			{
+				ResetOrAddEffect(labState, entity, HealOverTimeEffectId);
+			}
+			else if(random == 3)
+			{
+				ResetOrAddEffect(labState, entity, ReducedDamageDoneAndTakenEffectId);
+			}
+			else
+			{
+				DebugBreak();
+			}
+
 			break;
 		}
 		case RedFlowerItemId:
 		{
-			Heal(labState, entity, entity, 20);
+			Int32 random = IntRandom(1, 3);
+			if(random == 1)
+			{
+				ResetOrAddEffect(labState, entity, FeelingStrongEffectId);
+			}
+			else if(random == 2)
+			{
+				Heal(labState, entity, entity, 30);
+			}
+			else if(random == 3)
+			{
+				ResetOrAddEffect(labState, entity, PoisonedEffectId);
+			}
+
 			break;
 		}
 		case YellowFlowerItemId:
 		{
-			RemoveEffect(labState, entity->target, PoisonedEffectId);
+			Int32 random = IntRandom(1, 3);
+			if(random == 1)
+			{
+				RemoveEffect(labState, entity->target, PoisonedEffectId);
+				ResetOrAddEffect(labState, entity, ImmuneToPoisonEffectId);
+			}
+			else if(random == 2)
+			{
+				ResetOrAddEffect(labState, entity, FeelingQuickEffectId);
+			}
+			else if(random == 3)
+			{
+				ResetOrAddEffect(labState, entity, IncreasedDamageDoneAndTakenEffectId);
+			}
+
 			break;
 		}
 		default:
@@ -3556,6 +3658,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 // TODO: Don't log overheal!
 // TODO: Mana
 // TODO: Offensive and defensive target
+// TODO: Invisibility
 // TODO: Neutral enemies
 // TODO: Event queue
 // TODO: Icons?
