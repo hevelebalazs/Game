@@ -53,6 +53,8 @@ struct Entity
 	Int32 constitution;
 	Int32 dexterity;
 
+	Int32 herbalism;
+
 	Vec2 inputDirection;
 };
 
@@ -275,6 +277,9 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->constitution = 1;
 	player->dexterity = 1;
 	player->intellect = 1;
+
+	player->herbalism = 1;
+
 	player->health = GetEntityMaxHealth(player);
 
 	Int32 firstSnakeIndex = 1;
@@ -2428,7 +2433,7 @@ func DrawCharacterInfo(Canvas* canvas, Entity* entity, CombatLabState* labState,
 
 	Inventory* inventory = &labState->equipInventory;
 	Int32 width = GetInventoryWidth(inventory);
-	Int32 height = UIBoxPadding + 12 * TextHeightInPixels + UIBoxPadding;
+	Int32 height = UIBoxPadding + 14 * TextHeightInPixels + UIBoxPadding;
 
 	Int32 left   = UIBoxPadding;
 	Int32 right  = left + width;
@@ -2494,6 +2499,13 @@ func DrawCharacterInfo(Canvas* canvas, Entity* entity, CombatLabState* labState,
 
 	DrawBitmapTextLineTopLeft(bitmap, "Reduces cast time of abilities.",
 							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Professions", glyphData, textLeft, textTop, titleColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Herbalism: " + entity->herbalism);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
 	textTop += TextHeightInPixels;
 
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
@@ -3603,6 +3615,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			if(HasEmptySlot(&labState->inventory))
 			{
 				PickUpFlower(labState, flower);
+				player->herbalism++;
 			}
 		}
 	}
