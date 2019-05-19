@@ -239,13 +239,6 @@ func GetEntityMaxHealth(Entity* entity)
 	return maxHealth;
 }
 
-static Int32
-func GetRandomFlowerItemId()
-{
-	Int32 itemId = IntRandom(BlueFlowerItemId, YellowFlowerItemId);
-	return itemId;
-}
-
 static void
 func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
@@ -1717,16 +1710,25 @@ func GetFlowerColor(Int32 itemId)
 	switch(itemId)
 	{
 		case BlueFlowerItemId:
+		case BlueFlowerOfIntellectItemId:
+		case BlueFlowerOfHealingItemId:
+		case BlueFlowerOfDampeningItemId:
 		{
 			color = MakeColor(0.1f, 0.1f, 1.0f);
 			break;
 		}
 		case RedFlowerItemId:
+		case RedFlowerOfStrengthItemId:
+		case RedFlowerOfHealthItemId:
+		case RedFlowerOfPoisonItemId:
 		{
 			color = MakeColor(1.0f, 0.1f, 0.1f);
 			break;
 		}
 		case YellowFlowerItemId:
+		case YellowFlowerOfDexterityItemId:
+		case YellowFlowerOfAntivenomItemId:
+		case YellowFlowerOfRageItemId:
 		{
 			color = MakeColor(1.0f, 1.0f, 0.1f);
 			break;
@@ -3093,6 +3095,19 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 			case RedFlowerItemId:
 			case YellowFlowerItemId:
 			{
+				DebugBreak();
+				break;
+			}
+			case BlueFlowerOfIntellectItemId:
+			case BlueFlowerOfHealingItemId:
+			case BlueFlowerOfDampeningItemId:
+			case RedFlowerOfStrengthItemId:
+			case RedFlowerOfHealthItemId:
+			case RedFlowerOfPoisonItemId:
+			case YellowFlowerOfDexterityItemId:
+			case YellowFlowerOfAntivenomItemId:
+			case YellowFlowerOfRageItemId:
+			{
 				canUse = true;
 				break;
 			}
@@ -3128,62 +3143,56 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 			break;
 		}
 		case BlueFlowerItemId:
-		{
-			Int32 random = IntRandom(1, 3);
-			if(random == 1)
-			{
-				ResetOrAddEffect(labState, entity, FeelingSmartEffectId);
-			}
-			else if(random == 2)
-			{
-				ResetOrAddEffect(labState, entity, HealOverTimeEffectId);
-			}
-			else if(random == 3)
-			{
-				ResetOrAddEffect(labState, entity, ReducedDamageDoneAndTakenEffectId);
-			}
-			else
-			{
-				DebugBreak();
-			}
-
-			break;
-		}
 		case RedFlowerItemId:
-		{
-			Int32 random = IntRandom(1, 3);
-			if(random == 1)
-			{
-				ResetOrAddEffect(labState, entity, FeelingStrongEffectId);
-			}
-			else if(random == 2)
-			{
-				Heal(labState, entity, entity, 30);
-			}
-			else if(random == 3)
-			{
-				ResetOrAddEffect(labState, entity, PoisonedEffectId);
-			}
-
-			break;
-		}
 		case YellowFlowerItemId:
 		{
-			Int32 random = IntRandom(1, 3);
-			if(random == 1)
-			{
-				RemoveEffect(labState, entity->target, PoisonedEffectId);
-				ResetOrAddEffect(labState, entity, ImmuneToPoisonEffectId);
-			}
-			else if(random == 2)
-			{
-				ResetOrAddEffect(labState, entity, FeelingQuickEffectId);
-			}
-			else if(random == 3)
-			{
-				ResetOrAddEffect(labState, entity, IncreasedDamageDoneAndTakenEffectId);
-			}
-
+			DebugBreak();
+			break;
+		}
+		case BlueFlowerOfIntellectItemId:
+		{
+			ResetOrAddEffect(labState, entity, FeelingSmartEffectId);
+			break;
+		}
+		case BlueFlowerOfHealingItemId:
+		{
+			ResetOrAddEffect(labState, entity, HealOverTimeEffectId);
+			break;
+		}
+		case BlueFlowerOfDampeningItemId:
+		{
+			ResetOrAddEffect(labState, entity, ReducedDamageDoneAndTakenEffectId);
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		{
+			ResetOrAddEffect(labState, entity, FeelingStrongEffectId);
+			break;
+		}
+		case RedFlowerOfHealthItemId:
+		{
+			Heal(labState, entity, entity, 30);
+			break;
+		}
+		case RedFlowerOfPoisonItemId:
+		{
+			ResetOrAddEffect(labState, entity, PoisonedEffectId);
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		{
+			ResetOrAddEffect(labState, entity, FeelingQuickEffectId);
+			break;
+		}
+		case YellowFlowerOfAntivenomItemId:
+		{
+			RemoveEffect(labState, entity->target, PoisonedEffectId);
+			ResetOrAddEffect(labState, entity, ImmuneToPoisonEffectId);
+			break;
+		}
+		case YellowFlowerOfRageItemId:
+		{
+			ResetOrAddEffect(labState, entity, IncreasedDamageDoneAndTakenEffectId);
 			break;
 		}
 		default:
@@ -3667,6 +3676,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 }
 
+// TODO: Put different items on the same cooldown!
 // TODO: Stop spamming combat log when dying next to a tree!
 // TODO: Don't log overheal!
 // TODO: Mana
