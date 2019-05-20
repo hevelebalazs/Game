@@ -116,7 +116,8 @@ struct Flower
 	Int32 itemId;
 };
 
-#define EntityN 256
+// #define EntityN 256
+#define EntityN 2
 #define MaxAbilityCooldownN 64
 #define MaxItemCooldownN 64
 #define MaxEffectN 64
@@ -2221,6 +2222,9 @@ func UpdateEnemyTargets(CombatLabState* labState)
 static ItemCooldown*
 func GetItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
+	itemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(itemId));
+
 	ItemCooldown* result = 0;
 	for(Int32 i = 0; i < labState->itemCooldownN; i++)
 	{
@@ -3028,10 +3032,15 @@ static Bool32
 func ItemIsOnCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
 	Bool32 isOnCooldown = false;
+
+	Int32 cooldownItemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(cooldownItemId));
+
 	for(Int32 i = 0; i < labState->itemCooldownN; i++)
 	{
 		ItemCooldown* cooldown = &labState->itemCooldowns[i];
-		if(cooldown->entity == entity && cooldown->itemId == itemId)
+		Assert(ItemHasOwnCooldown(cooldown->itemId));
+		if(cooldown->entity == entity && cooldown->itemId == cooldownItemId)
 		{
 			isOnCooldown = true;
 			break;
@@ -3044,6 +3053,9 @@ static void
 func AddItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
 	Assert(!ItemIsOnCooldown(labState, entity, itemId));
+
+	itemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(itemId));
 
 	Real32 duration = GetItemCooldownDuration(itemId);
 	Assert(duration > 0.0f);

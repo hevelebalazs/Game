@@ -304,9 +304,55 @@ func GetItemSlotName(Int32 itemId)
 	return name;
 }
 
+static Int32
+func GetItemIdForCooldown(Int32 itemId)
+{
+	Int32 cooldownItemId = NoItemId;;
+	switch(itemId)
+	{
+		case BlueFlowerOfIntellectItemId:
+		case BlueFlowerOfHealingItemId:
+		case BlueFlowerOfDampeningItemId:
+		{
+			cooldownItemId = BlueFlowerItemId;
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		case RedFlowerOfHealthItemId:
+		case RedFlowerOfPoisonItemId:
+		{
+			cooldownItemId = RedFlowerItemId;
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		case YellowFlowerOfAntivenomItemId:
+		case YellowFlowerOfRageItemId:
+		{
+			cooldownItemId = YellowFlowerItemId;
+			break;
+		}
+		default:
+		{
+			cooldownItemId = itemId;
+		}
+	}
+	return cooldownItemId;
+}
+
+static Bool32
+func ItemHasOwnCooldown(Int32 itemId)
+{
+	Int32 cooldownItemId = GetItemIdForCooldown(itemId);
+	Bool32 hasOwnCooldown = (cooldownItemId == itemId);
+	return hasOwnCooldown;
+}
+
 static Real32
 func GetItemCooldownDuration(Int32 itemId)
 {
+	itemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(itemId));
+
 	Real32 cooldown = 0.0f;
 	switch(itemId)
 	{
@@ -325,24 +371,11 @@ func GetItemCooldownDuration(Int32 itemId)
 			cooldown = 30.0f;
 			break;
 		}
-		case BlueFlowerOfIntellectItemId:
-		case BlueFlowerOfHealingItemId:
-		case BlueFlowerOfDampeningItemId:
-		case RedFlowerOfStrengthItemId:
-		case RedFlowerOfHealthItemId:
-		case RedFlowerOfPoisonItemId:
-		case YellowFlowerOfDexterityItemId:
-		case YellowFlowerOfAntivenomItemId:
-		case YellowFlowerOfRageItemId:
-		{
-			cooldown = 60.0f;
-			break;
-		}
 		case BlueFlowerItemId:
 		case RedFlowerItemId:
 		case YellowFlowerItemId:
 		{
-			DebugBreak();
+			cooldown = 60.0f;
 			break;
 		}
 		default:
