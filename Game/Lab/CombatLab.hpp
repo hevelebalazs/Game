@@ -116,8 +116,7 @@ struct Flower
 	Int32 itemId;
 };
 
-// #define EntityN 256
-#define EntityN 2
+#define EntityN 256
 #define MaxAbilityCooldownN 64
 #define MaxItemCooldownN 64
 #define MaxEffectN 64
@@ -264,7 +263,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = DruidClassId;
+	player->classId = PaladinClassId;
 	player->groupId = PlayerGroupId;
 
 	player->strength = 1;
@@ -575,6 +574,55 @@ func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 va
 	entry->value += value;
 }
 
+static Int32
+func GetVisibleItemId(CombatLabState* labState, Int32 itemId)
+{
+	Entity* player = &labState->entities[0];
+	Assert(itemId != NoItemId);
+
+	Int32 herbalism = player->herbalism;
+	Int32 visibleItemId = NoItemId;
+	switch(itemId)
+	{
+		case BlueFlowerOfIntellectItemId:
+		case BlueFlowerOfHealingItemId:
+		case BlueFlowerOfDampeningItemId:
+		{
+			visibleItemId = (herbalism >= 5) ? itemId : BlueFlowerItemId;
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		case RedFlowerOfHealthItemId:
+		case RedFlowerOfPoisonItemId:
+		{
+			visibleItemId = (herbalism >= 10) ? itemId : RedFlowerItemId;
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		case YellowFlowerOfAntivenomItemId:
+		case YellowFlowerOfRageItemId:
+		{
+			visibleItemId = (herbalism >= 15) ? itemId : YellowFlowerItemId;
+			break;
+		}
+		default:
+		{
+			visibleItemId = itemId;
+		}
+	}
+
+	Assert(visibleItemId != NoItemId);
+	return visibleItemId;
+}
+
+static Int8*
+func GetVisibleItemName(CombatLabState* labState, Int32 itemId)
+{
+	Int32 visibleItemId = GetVisibleItemId(labState, itemId);
+	Int8* name = GetItemName(visibleItemId);
+	return name;
+}
+
 static void
 func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
@@ -589,7 +637,7 @@ func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 	labState->droppedItems[labState->droppedItemN] = item;
 	labState->droppedItemN++;
 
-	Int8* itemName = GetItemName(itemId);
+	Int8* itemName = GetVisibleItemName(labState, itemId);
 	CombatLog(labState, entity->name + " drops " + itemName + ".");
 }
 
@@ -1761,7 +1809,7 @@ func UpdateAndDrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePo
 		Vec4 color = GetFlowerColor(flower->itemId);
 		DrawCircle(canvas, flower->position, radius, color);
 
-		Int8* text = GetItemName(flower->itemId);
+		Int8* text = GetVisibleItemName(labState, flower->itemId);
 
 		Real32 textWidth = GetTextWidth(canvas, text);
 		Real32 textHeight = GetTextHeight(canvas, text);
@@ -2378,6 +2426,8 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 		{
 			Int32 slotId = GetInventorySlotId(inventory, row, col);
 			Int32 itemId = GetInventoryItemId(inventory, row, col);
+			
+			Int32 visibleItemId = (itemId == NoItemId) ? NoItemId : GetVisibleItemId(labState, itemId);
 
 			Bool32 isHover = (IsIntBetween(mousePosition.col, slotLeft, slotLeft + InventorySlotSide) &&
 							  IsIntBetween(mousePosition.row, slotTop, slotTop + InventorySlotSide));
@@ -2386,7 +2436,7 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 
 			if(!isDrag)
 			{
-				DrawInventorySlot(canvas, labState, slotId, itemId, slotTop, slotLeft);
+				DrawInventorySlot(canvas, labState, slotId, visibleItemId, slotTop, slotLeft);
 			}
 			else
 			{
@@ -2404,7 +2454,7 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 					tooltipRight = IntMax2(tooltipRight, UIBoxPadding + TooltipWidth);
 
 					Int8 tooltipBuffer[128];
-					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 128);
+					String tooltip = GetItemTooltipText(visibleItemId, tooltipBuffer, 128);
 					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
 				}
 
@@ -2711,7 +2761,7 @@ func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 
 	AddItemToInventory(&labState->inventory, item->itemId);
 
-	Int8* itemName = GetItemName(item->itemId);
+	Int8* itemName = GetVisibleItemName(labState, item->itemId);
 	CombatLog(labState, entity->name + " picks up " + itemName + ".");
 }
 
@@ -2765,7 +2815,7 @@ func UpdateAndDrawDroppedItems(Canvas* canvas, CombatLabState* labState, Vec2 mo
 	for(Int32 i = 0; i < labState->droppedItemN; i++)
 	{
 		DroppedItem* item = &labState->droppedItems[i];
-		Int8* itemName = GetItemName(item->itemId);
+		Int8* itemName = GetVisibleItemName(labState, item->itemId);
 
 		Vec4 normalBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 		Vec4 hoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
@@ -3213,7 +3263,7 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 		}
 	}
 
-	Int8* itemName = GetItemName(itemId);
+	Int8* itemName = GetVisibleItemName(labState, itemId);
 	CombatLog(labState, entity->name + " uses item " + itemName + ".");
 	DeleteInventoryItem(item);
 
