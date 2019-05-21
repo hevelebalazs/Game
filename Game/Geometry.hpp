@@ -60,7 +60,7 @@ func IsPointInRect(Vec2 point, Rect rect)
 	return result;
 }
 
-Rect
+static Rect
 func MakeSquareRect(Vec2 center, Real32 size)
 {
 	Rect rect = {};
@@ -71,7 +71,7 @@ func MakeSquareRect(Vec2 center, Real32 size)
 	return rect;
 }
 
-Rect
+static Rect
 func MakeRect(Vec2 center, Real32 xSize, Real32 ySize)
 {
 	Rect rect = {};
@@ -79,6 +79,17 @@ func MakeRect(Vec2 center, Real32 xSize, Real32 ySize)
 	rect.right  = center.x + xSize * 0.5f;
 	rect.top    = center.y - ySize * 0.5f;
 	rect.bottom = center.y + ySize * 0.5f;
+	return rect;
+}
+
+static Rect
+func MakeRectBottom(Vec2 bottomCenter, Real32 xSize, Real32 ySize)
+{
+	Rect rect = {};
+	rect.left	= bottomCenter.x - xSize * 0.5f;
+	rect.right  = bottomCenter.x + xSize * 0.5f;
+	rect.top	= bottomCenter.y - ySize;
+	rect.bottom = bottomCenter.y;
 	return rect;
 }
 

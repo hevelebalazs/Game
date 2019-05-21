@@ -19,7 +19,19 @@ enum ItemId
 	HealthPotionItemId,
 	AntiVenomItemId,
 	IntellectPotionItemId,
-	TestHelmItemId
+	TestHelmItemId,
+	BlueFlowerItemId,
+	BlueFlowerOfIntellectItemId,
+	BlueFlowerOfHealingItemId,
+	BlueFlowerOfDampeningItemId,
+	RedFlowerItemId,
+	RedFlowerOfStrengthItemId,
+	RedFlowerOfHealthItemId,
+	RedFlowerOfPoisonItemId,
+	YellowFlowerItemId,
+	YellowFlowerOfAntivenomItemId,
+	YellowFlowerOfDexterityItemId,
+	YellowFlowerOfRageItemId
 };
 
 struct ItemAttributes
@@ -29,7 +41,6 @@ struct ItemAttributes
 	Int32 intellect;
 	Int32 dexterity;
 };
-
 
 static Bool32
 func ItemGoesIntoSlot(Int32 itemId, Int32 slotId)
@@ -63,7 +74,6 @@ func ItemGoesIntoSlot(Int32 itemId, Int32 slotId)
 
 	return goesIntoSlot;
 }
-
 
 static Bool32
 func ItemIsEquippable(Int32 itemId)
@@ -132,6 +142,66 @@ func GetItemName(Int32 itemId)
 			name = "Test Helm";
 			break;
 		}
+		case BlueFlowerItemId:
+		{
+			name = "Blue Flower";
+			break;
+		}
+		case BlueFlowerOfIntellectItemId:
+		{
+			name = "Blue Flower of Intellect";
+			break;
+		}
+		case BlueFlowerOfHealingItemId:
+		{
+			name = "Blue Flower of Healing";
+			break;
+		}
+		case BlueFlowerOfDampeningItemId:
+		{
+			name = "Blue Flower of Dampening";
+			break;
+		}
+		case RedFlowerItemId:
+		{
+			name = "Red Flower";
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		{
+			name = "Red Flower of Strength";
+			break;
+		}
+		case RedFlowerOfHealthItemId:
+		{
+			name = "Red Flower of Health";
+			break;
+		}
+		case RedFlowerOfPoisonItemId:
+		{
+			name = "Red Flower of Poison";
+			break;
+		}
+		case YellowFlowerItemId:
+		{
+			name = "Yellow Flower";
+			break;
+		}
+		case YellowFlowerOfAntivenomItemId:
+		{
+			name = "Yellow Flower of Antivenom";
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		{
+			name = "Yellow Flower of Dexterity";
+			break;
+		}
+		case YellowFlowerOfRageItemId:
+		{
+			name = "Yellow Flower of Rage";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -139,6 +209,7 @@ func GetItemName(Int32 itemId)
 	}
 	return name;
 }
+
 static Int8*
 func GetItemSlotName(Int32 itemId)
 {
@@ -165,6 +236,66 @@ func GetItemSlotName(Int32 itemId)
 			name = "Helm";
 			break;
 		}
+		case BlueFlowerItemId:
+		{
+			name = "BF";
+			break;
+		}
+		case BlueFlowerOfIntellectItemId:
+		{
+			name = "BFI";
+			break;
+		}
+		case BlueFlowerOfHealingItemId:
+		{
+			name = "BFH";
+			break;
+		}
+		case BlueFlowerOfDampeningItemId:
+		{
+			name = "BFD";
+			break;
+		}
+		case RedFlowerItemId:
+		{
+			name = "RF";
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		{
+			name = "RFS";
+			break;
+		}
+		case RedFlowerOfHealthItemId:
+		{
+			name = "RFH";
+			break;
+		}
+		case RedFlowerOfPoisonItemId:
+		{
+			name = "RFP";
+			break;
+		}
+		case YellowFlowerItemId:
+		{
+			name = "YF";
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		{
+			name = "YFD";
+			break;
+		}
+		case YellowFlowerOfAntivenomItemId:
+		{
+			name = "YFA";
+			break;
+		}
+		case YellowFlowerOfRageItemId:
+		{
+			name = "YFR";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -173,9 +304,55 @@ func GetItemSlotName(Int32 itemId)
 	return name;
 }
 
+static Int32
+func GetItemIdForCooldown(Int32 itemId)
+{
+	Int32 cooldownItemId = NoItemId;;
+	switch(itemId)
+	{
+		case BlueFlowerOfIntellectItemId:
+		case BlueFlowerOfHealingItemId:
+		case BlueFlowerOfDampeningItemId:
+		{
+			cooldownItemId = BlueFlowerItemId;
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		case RedFlowerOfHealthItemId:
+		case RedFlowerOfPoisonItemId:
+		{
+			cooldownItemId = RedFlowerItemId;
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		case YellowFlowerOfAntivenomItemId:
+		case YellowFlowerOfRageItemId:
+		{
+			cooldownItemId = YellowFlowerItemId;
+			break;
+		}
+		default:
+		{
+			cooldownItemId = itemId;
+		}
+	}
+	return cooldownItemId;
+}
+
+static Bool32
+func ItemHasOwnCooldown(Int32 itemId)
+{
+	Int32 cooldownItemId = GetItemIdForCooldown(itemId);
+	Bool32 hasOwnCooldown = (cooldownItemId == itemId);
+	return hasOwnCooldown;
+}
+
 static Real32
 func GetItemCooldownDuration(Int32 itemId)
 {
+	itemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(itemId));
+
 	Real32 cooldown = 0.0f;
 	switch(itemId)
 	{
@@ -192,6 +369,13 @@ func GetItemCooldownDuration(Int32 itemId)
 		case IntellectPotionItemId:
 		{
 			cooldown = 30.0f;
+			break;
+		}
+		case BlueFlowerItemId:
+		case RedFlowerItemId:
+		case YellowFlowerItemId:
+		{
+			cooldown = 60.0f;
 			break;
 		}
 		default:
@@ -266,6 +450,65 @@ func GetItemTooltipText(Int32 itemId, Int8* buffer, Int32 bufferSize)
 		case TestHelmItemId:
 		{
 			AddLine(text, "Head piece for testing.");
+			break;
+		}
+		case BlueFlowerItemId:
+		case RedFlowerItemId:
+		case YellowFlowerItemId:
+		{
+			AddLine(text, "Use: Eat the flower.");
+			break;
+		}
+		case BlueFlowerOfIntellectItemId:
+		{
+			AddLine(text, "Use: Gain +10 intellect and");
+			AddLine(text, "-10 strength for 1 minute.");
+			break;
+		}
+		case BlueFlowerOfHealingItemId:
+		{
+			AddLine(text, "Use: Heal for 5 every 3 seconds");
+			AddLine(text, "for 1 minute.");
+			break;
+		}
+		case BlueFlowerOfDampeningItemId:
+		{
+			AddLine(text, "Use: Decreased dealing done and taken");
+			AddLine(text, "by 20% for 1 minute.");
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		{
+			AddLine(text, "Use: Gain +10 strength and");
+			AddLine(text, "-10 intellect for 1 minute.");
+			break;
+		}
+		case RedFlowerOfHealthItemId:
+		{
+			AddLine(text, "Use: Heal for 30.");
+			break;
+		}
+		case RedFlowerOfPoisonItemId:
+		{
+			AddLine(text, "Use: Get poisoned.");
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		{
+			AddLine(text, "Use: Gain +10 dexterity and");
+			AddLine(text, "+10 constitution for 1 minute.");
+			break;
+		}
+		case YellowFlowerOfAntivenomItemId:
+		{
+			AddLine(text, "Use: Gain immunity to poison");
+			AddLine(text, "for 1 minute.");
+			break;
+		}
+		case YellowFlowerOfRageItemId:
+		{
+			AddLine(text, "Use: Increase damage done and taken");
+			AddLine(text, "by 20% for 1 minute.");
 			break;
 		}
 		default:
@@ -414,4 +657,79 @@ func InventoryItemIsValid(InventoryItem* item)
 {
 	Bool32 isValid = (item->inventory && InventorySlotIsValid(item->inventory, item->slot));
 	return isValid;
+}
+
+static Bool32
+func HasEmptySlot(Inventory* inventory)
+{
+	Bool32 hasEmptySlot = false;
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			Int32 itemId = GetInventoryItemId(inventory, row, col);
+			if(itemId == NoItemId)
+			{
+				hasEmptySlot = true;
+				break;
+			}
+		}
+
+		if(hasEmptySlot)
+		{
+			break;
+		}
+	}
+
+	return hasEmptySlot;
+}
+
+
+static void
+func AddItemToInventory(Inventory* inventory, Int32 itemId)
+{
+	Assert(HasEmptySlot(inventory));
+	Bool32 itemAdded = false;
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			Int32 currentItemId = GetInventoryItemId(inventory, row, col);
+			if(currentItemId == NoItemId)
+			{
+				SetInventoryItemId(inventory, row, col, itemId);
+				itemAdded = true;
+				break;
+			}
+		}
+
+		if(itemAdded)
+		{
+			break;
+		}
+	}
+	Assert(itemAdded);
+}
+
+static Int32
+func GetRandomFlowerItemId()
+{
+	Int32 flowerItemIds[] =
+	{
+		BlueFlowerOfIntellectItemId,
+		BlueFlowerOfHealingItemId,
+		BlueFlowerOfDampeningItemId,
+		RedFlowerOfStrengthItemId,
+		RedFlowerOfHealthItemId,
+		RedFlowerOfPoisonItemId,
+		YellowFlowerOfAntivenomItemId,
+		YellowFlowerOfDexterityItemId,
+		YellowFlowerOfRageItemId
+	};
+	Int32 itemCount = 9;
+
+	Int32 indexInArray = IntRandom(0, itemCount - 1);
+	Int32 itemId = flowerItemIds[indexInArray];
+
+	return itemId;
 }

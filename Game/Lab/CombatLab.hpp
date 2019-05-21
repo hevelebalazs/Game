@@ -53,6 +53,8 @@ struct Entity
 	Int32 constitution;
 	Int32 dexterity;
 
+	Int32 herbalism;
+
 	Vec2 inputDirection;
 };
 
@@ -108,6 +110,12 @@ struct DroppedItem
 	Real32 timeLeft;
 };
 
+struct Flower
+{
+	Vec2 position;
+	Int32 itemId;
+};
+
 #define EntityN 256
 #define MaxAbilityCooldownN 64
 #define MaxItemCooldownN 64
@@ -116,6 +124,7 @@ struct DroppedItem
 #define MaxCombatLogLineN 32
 #define MaxCombatLogLineLength 64
 #define MaxDroppedItemN 32
+#define MaxFlowerN 256
 #define CombatLabArenaSize (2 * MegaByte)
 struct CombatLabState
 {
@@ -137,6 +146,10 @@ struct CombatLabState
 
 	DroppedItem droppedItems[MaxDroppedItemN];
 	Int32 droppedItemN;
+
+	Flower flowers[MaxFlowerN];
+	Int32 flowerN;
+	Flower* hoverFlower;
 
 	DroppedItem* hoverDroppedItem;
 
@@ -250,13 +263,16 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = DruidClassId;
+	player->classId = PaladinClassId;
 	player->groupId = PlayerGroupId;
 
 	player->strength = 1;
 	player->constitution = 1;
 	player->dexterity = 1;
 	player->intellect = 1;
+
+	player->herbalism = 1;
+
 	player->health = GetEntityMaxHealth(player);
 
 	Int32 firstSnakeIndex = 1;
@@ -289,10 +305,10 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 
 	Inventory* inventory = &labState->inventory;
 	InitInventory(inventory, arena, 3, 4);
-	SetInventoryItemId(inventory, 0, 0, HealthPotionItemId);
-	SetInventoryItemId(inventory, 0, 1, AntiVenomItemId);
-	SetInventoryItemId(inventory, 0, 2, IntellectPotionItemId);
-	SetInventoryItemId(inventory, 1, 0, TestHelmItemId);
+	AddItemToInventory(inventory, HealthPotionItemId);
+	AddItemToInventory(inventory, AntiVenomItemId);
+	AddItemToInventory(inventory, IntellectPotionItemId);
+	AddItemToInventory(inventory, TestHelmItemId);
 
 	Inventory* equipInventory = &labState->equipInventory;
 	InitInventory(equipInventory, arena, 1, 6);
@@ -302,6 +318,14 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	SetInventorySlotId(equipInventory, 0, 3, WaistSlotId);
 	SetInventorySlotId(equipInventory, 0, 4, LegsSlotId);
 	SetInventorySlotId(equipInventory, 0, 5, FeetSlotId);
+
+	labState->flowerN = MaxFlowerN;
+	for(Int32 i = 0; i < labState->flowerN; i++)
+	{
+		Flower* flower = &labState->flowers[i];
+		flower->position = GetRandomGroundTileCenter(&labState->map);
+		flower->itemId = GetRandomFlowerItemId();
+	}
 }
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
@@ -550,6 +574,55 @@ func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 va
 	entry->value += value;
 }
 
+static Int32
+func GetVisibleItemId(CombatLabState* labState, Int32 itemId)
+{
+	Entity* player = &labState->entities[0];
+	Assert(itemId != NoItemId);
+
+	Int32 herbalism = player->herbalism;
+	Int32 visibleItemId = NoItemId;
+	switch(itemId)
+	{
+		case BlueFlowerOfIntellectItemId:
+		case BlueFlowerOfHealingItemId:
+		case BlueFlowerOfDampeningItemId:
+		{
+			visibleItemId = (herbalism >= 5) ? itemId : BlueFlowerItemId;
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		case RedFlowerOfHealthItemId:
+		case RedFlowerOfPoisonItemId:
+		{
+			visibleItemId = (herbalism >= 10) ? itemId : RedFlowerItemId;
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		case YellowFlowerOfAntivenomItemId:
+		case YellowFlowerOfRageItemId:
+		{
+			visibleItemId = (herbalism >= 15) ? itemId : YellowFlowerItemId;
+			break;
+		}
+		default:
+		{
+			visibleItemId = itemId;
+		}
+	}
+
+	Assert(visibleItemId != NoItemId);
+	return visibleItemId;
+}
+
+static Int8*
+func GetVisibleItemName(CombatLabState* labState, Int32 itemId)
+{
+	Int32 visibleItemId = GetVisibleItemId(labState, itemId);
+	Int8* name = GetItemName(visibleItemId);
+	return name;
+}
+
 static void
 func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
@@ -564,7 +637,7 @@ func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 	labState->droppedItems[labState->droppedItemN] = item;
 	labState->droppedItemN++;
 
-	Int8* itemName = GetItemName(itemId);
+	Int8* itemName = GetVisibleItemName(labState, itemId);
 	CombatLog(labState, entity->name + " drops " + itemName + ".");
 }
 
@@ -606,10 +679,23 @@ func LevelUp(Entity* entity)
 }
 
 static Int32
-func GetFinalDamage(CombatLabState* labState, Entity* target, Int32 damage)
+func GetFinalDamage(CombatLabState* labState, Entity* source, Entity* target, Int32 damage)
 {
 	Int32 finalDamage = damage;
 	Assert(CanTakeDamage(labState, target));
+
+	if(source)
+	{
+		if(HasEffect(labState, source, ReducedDamageDoneAndTakenEffectId))
+		{
+			finalDamage -= finalDamage / 5;
+		}
+	}
+
+	if(HasEffect(labState, target, ReducedDamageDoneAndTakenEffectId))
+	{
+		finalDamage -= finalDamage / 5;
+	}
 	if(HasEffect(labState, target, ShieldRaisedEffectId))
 	{
 		finalDamage -= finalDamage / 2;
@@ -627,7 +713,7 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 	Assert(source->groupId != target->groupId);
 	if(CanTakeDamage(labState, target))
 	{
-		Int32 finalDamage = GetFinalDamage(labState, target, damage);
+		Int32 finalDamage = GetFinalDamage(labState, source, target, damage);
 
 		DealFinalDamage(target, finalDamage);
 		AddDamageDisplay(labState, target->position, finalDamage);
@@ -657,7 +743,7 @@ func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* targ
 {
 	if(CanTakeDamage(labState, target))
 	{
-		Int32 finalDamage = GetFinalDamage(labState, target, damage);
+		Int32 finalDamage = GetFinalDamage(labState, 0, target, damage);
 		DealFinalDamage(target, finalDamage);
 		AddDamageDisplay(labState, target->position, finalDamage);
 
@@ -846,6 +932,26 @@ func RecalculatePlayerAttributes(CombatLabState* labState)
 					player->intellect += 10;
 					break;
 				}
+				case FeelingSmartEffectId:
+				{
+					player->intellect += 10;
+					player->strength -= 10;
+					player->strength = IntMax2(player->strength, 0);
+					break;
+				}
+				case FeelingStrongEffectId:
+				{
+					player->strength += 10;
+					player->intellect -= 10;
+					player->intellect = IntMax2(player->intellect, 0);
+					break;
+				}
+				case FeelingQuickEffectId:
+				{
+					player->constitution += 10;
+					player->dexterity += 10;
+					break;
+				}
 			}
 		}
 	}
@@ -873,9 +979,30 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 	}
 }
 
+static Bool32
+func CanAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+{
+	Bool32 canAddEffect = true;
+	switch(effectId)
+	{
+		case PoisonedEffectId:
+		{
+			canAddEffect = !HasEffect(labState, entity, ImmuneToPoisonEffectId);
+			break;
+		}
+		default:
+		{
+			canAddEffect = true;
+		}
+	}
+
+	return canAddEffect;
+}
+
 static void
 func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 {
+	Assert(CanAddEffect(labState, entity, effectId));
 	Assert(labState->effectN < MaxEffectN);
 	Effect* effect = &labState->effects[labState->effectN];
 	labState->effectN++;
@@ -923,7 +1050,10 @@ func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 
 	if(!foundEffect)
 	{
-		AddEffect(labState, entity, effectId);
+		if(CanAddEffect(labState, entity, effectId))
+		{
+			AddEffect(labState, entity, effectId);
+		}
 	}
 }
 
@@ -1622,6 +1752,87 @@ func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 
 	return text;
 }
 
+static Vec4
+func GetFlowerColor(Int32 itemId)
+{
+	Vec4 color = {};
+	switch(itemId)
+	{
+		case BlueFlowerItemId:
+		case BlueFlowerOfIntellectItemId:
+		case BlueFlowerOfHealingItemId:
+		case BlueFlowerOfDampeningItemId:
+		{
+			color = MakeColor(0.1f, 0.1f, 1.0f);
+			break;
+		}
+		case RedFlowerItemId:
+		case RedFlowerOfStrengthItemId:
+		case RedFlowerOfHealthItemId:
+		case RedFlowerOfPoisonItemId:
+		{
+			color = MakeColor(1.0f, 0.1f, 0.1f);
+			break;
+		}
+		case YellowFlowerItemId:
+		case YellowFlowerOfDexterityItemId:
+		case YellowFlowerOfAntivenomItemId:
+		case YellowFlowerOfRageItemId:
+		{
+			color = MakeColor(1.0f, 1.0f, 0.1f);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+	return color;
+}
+
+static void
+func UpdateAndDrawFlowers(Canvas* canvas, CombatLabState* labState, Vec2 mousePosition)
+{
+	GlyphData* glyphData = canvas->glyphData;
+
+	Real32 radius = 0.5f;
+
+	Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 textBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 textHoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
+
+	labState->hoverFlower = 0;
+
+	for(Int32 i = 0; i < labState->flowerN; i++)
+	{
+		Flower* flower = &labState->flowers[i];
+		Vec4 color = GetFlowerColor(flower->itemId);
+		DrawCircle(canvas, flower->position, radius, color);
+
+		Int8* text = GetVisibleItemName(labState, flower->itemId);
+
+		Real32 textWidth = GetTextWidth(canvas, text);
+		Real32 textHeight = GetTextHeight(canvas, text);
+
+		Real32 textBottom = flower->position.y - radius;
+		Real32 textCenterX = flower->position.x;
+		
+		Vec2 textBottomCenter = MakePoint(textCenterX, textBottom);
+		Rect textBackgroundRect = MakeRectBottom(textBottomCenter, textWidth, textHeight);
+
+		Bool32 isHover = IsPointInRect(mousePosition, textBackgroundRect);
+		Vec4 backgroundColor = (isHover) ? textHoverBackgroundColor : textBackgroundColor;
+
+		if(isHover)
+		{
+			labState->hoverFlower = flower;
+		}
+
+		DrawRect(canvas, textBackgroundRect, backgroundColor);
+		DrawTextLineBottomXCentered(canvas, text, textBottom, textCenterX, textColor);
+	}
+}
+
 #define UIBoxSide 40
 #define UIBoxPadding 5
 static void
@@ -2059,6 +2270,9 @@ func UpdateEnemyTargets(CombatLabState* labState)
 static ItemCooldown*
 func GetItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
+	itemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(itemId));
+
 	ItemCooldown* result = 0;
 	for(Int32 i = 0; i < labState->itemCooldownN; i++)
 	{
@@ -2212,6 +2426,8 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 		{
 			Int32 slotId = GetInventorySlotId(inventory, row, col);
 			Int32 itemId = GetInventoryItemId(inventory, row, col);
+			
+			Int32 visibleItemId = (itemId == NoItemId) ? NoItemId : GetVisibleItemId(labState, itemId);
 
 			Bool32 isHover = (IsIntBetween(mousePosition.col, slotLeft, slotLeft + InventorySlotSide) &&
 							  IsIntBetween(mousePosition.row, slotTop, slotTop + InventorySlotSide));
@@ -2220,7 +2436,7 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 
 			if(!isDrag)
 			{
-				DrawInventorySlot(canvas, labState, slotId, itemId, slotTop, slotLeft);
+				DrawInventorySlot(canvas, labState, slotId, visibleItemId, slotTop, slotLeft);
 			}
 			else
 			{
@@ -2238,7 +2454,7 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 					tooltipRight = IntMax2(tooltipRight, UIBoxPadding + TooltipWidth);
 
 					Int8 tooltipBuffer[128];
-					String tooltip = GetItemTooltipText(itemId, tooltipBuffer, 128);
+					String tooltip = GetItemTooltipText(visibleItemId, tooltipBuffer, 128);
 					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyphData, tooltipBottom, tooltipRight);
 				}
 
@@ -2273,7 +2489,7 @@ func DrawCharacterInfo(Canvas* canvas, Entity* entity, CombatLabState* labState,
 
 	Inventory* inventory = &labState->equipInventory;
 	Int32 width = GetInventoryWidth(inventory);
-	Int32 height = UIBoxPadding + 12 * TextHeightInPixels + UIBoxPadding;
+	Int32 height = UIBoxPadding + 14 * TextHeightInPixels + UIBoxPadding;
 
 	Int32 left   = UIBoxPadding;
 	Int32 right  = left + width;
@@ -2339,6 +2555,13 @@ func DrawCharacterInfo(Canvas* canvas, Entity* entity, CombatLabState* labState,
 
 	DrawBitmapTextLineTopLeft(bitmap, "Reduces cast time of abilities.",
 							  glyphData, textLeft, textTop, infoColor);
+	textTop += TextHeightInPixels;
+
+	DrawBitmapTextLineTopLeft(bitmap, "Professions", glyphData, textLeft, textTop, titleColor);
+	textTop += TextHeightInPixels;
+
+	OneLineString(lineBuffer, 128, "Herbalism: " + entity->herbalism);
+	DrawBitmapTextLineTopLeft(bitmap, lineBuffer, glyphData, textLeft, textTop, textColor);
 	textTop += TextHeightInPixels;
 
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
@@ -2450,6 +2673,14 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 				}
 				break;
 			}
+			case HealOverTimeEffectId:
+			{
+				if(Floor(time * (1.0f / 3.0f)) != Floor(previousTime * (1.0f / 3.0f)))
+				{
+					AttemptToHeal(labState, effect->entity, effect->entity, 5);
+				}
+				break;
+			}
 		}
 	}
 }
@@ -2498,27 +2729,7 @@ static Bool32
 func CanPickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 {
 	Bool32 isAlive = !IsDead(entity);
-	Bool32 hasEmptySlot = false;
-
-	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0;  row < inventory->rowN; row++)
-	{
-		for(Int32 col = 0; col < inventory->colN; col++)
-		{
-			Int32 itemId = GetInventoryItemId(inventory, row, col);
-			if(itemId == NoItemId)
-			{
-				hasEmptySlot = true;
-				break;
-			}
-		}
-
-		if(hasEmptySlot)
-		{
-			break;
-		}
-	}
-
+	Bool32 hasEmptySlot = HasEmptySlot(&labState->inventory);
 	Bool32 canPickUpItem = (isAlive && hasEmptySlot);
 	return canPickUpItem;
 }
@@ -2548,30 +2759,39 @@ func PickUpItem(CombatLabState* labState, Entity* entity, DroppedItem* item)
 		labState->droppedItems[i] = labState->droppedItems[i + 1];
 	}
 
-	Bool32 itemPickedUp = false;
-	Inventory* inventory = &labState->inventory;
-	for(Int32 row = 0; row < inventory->rowN; row++)
-	{
-		for(Int32 col = 0; col < inventory->colN; col++)
-		{
-			Int32 itemId = GetInventoryItemId(inventory, row, col);
-			if(itemId == NoItemId)
-			{
-				SetInventoryItemId(inventory, row, col, item->itemId);
-				itemPickedUp = true;
-				break;
-			}
-		}
+	AddItemToInventory(&labState->inventory, item->itemId);
 
-		if(itemPickedUp)
+	Int8* itemName = GetVisibleItemName(labState, item->itemId);
+	CombatLog(labState, entity->name + " picks up " + itemName + ".");
+}
+
+static void
+func PickUpFlower(CombatLabState* labState, Flower* flower)
+{
+	Inventory* inventory = &labState->inventory;
+	Assert(HasEmptySlot(inventory));
+
+	Bool32 foundFlower = false;
+	Int32 flowerIndex = 0;
+	for(Int32 i = 0; i < labState->flowerN; i++)
+	{
+		if(&labState->flowers[i] == flower)
 		{
+			foundFlower = true;
+			flowerIndex = i;
 			break;
 		}
 	}
-	Assert(itemPickedUp);
+	Assert(foundFlower);
 
-	Int8* itemName = GetItemName(item->itemId);
-	CombatLog(labState, entity->name + " picks up " + itemName + ".");
+	AddItemToInventory(inventory, flower->itemId);
+
+	for(Int32 i = flowerIndex + 1; i < labState->flowerN; i++)
+	{
+		labState->flowers[i - 1] = labState->flowers[i];
+	}
+
+	labState->flowerN--;
 }
 
 static void
@@ -2595,7 +2815,7 @@ func UpdateAndDrawDroppedItems(Canvas* canvas, CombatLabState* labState, Vec2 mo
 	for(Int32 i = 0; i < labState->droppedItemN; i++)
 	{
 		DroppedItem* item = &labState->droppedItems[i];
-		Int8* itemName = GetItemName(item->itemId);
+		Int8* itemName = GetVisibleItemName(labState, item->itemId);
 
 		Vec4 normalBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 		Vec4 hoverBackgroundColor = MakeColor(0.7f, 0.5f, 0.5f);
@@ -2862,10 +3082,15 @@ static Bool32
 func ItemIsOnCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
 	Bool32 isOnCooldown = false;
+
+	Int32 cooldownItemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(cooldownItemId));
+
 	for(Int32 i = 0; i < labState->itemCooldownN; i++)
 	{
 		ItemCooldown* cooldown = &labState->itemCooldowns[i];
-		if(cooldown->entity == entity && cooldown->itemId == itemId)
+		Assert(ItemHasOwnCooldown(cooldown->itemId));
+		if(cooldown->entity == entity && cooldown->itemId == cooldownItemId)
 		{
 			isOnCooldown = true;
 			break;
@@ -2878,6 +3103,9 @@ static void
 func AddItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 {
 	Assert(!ItemIsOnCooldown(labState, entity, itemId));
+
+	itemId = GetItemIdForCooldown(itemId);
+	Assert(ItemHasOwnCooldown(itemId));
 
 	Real32 duration = GetItemCooldownDuration(itemId);
 	Assert(duration > 0.0f);
@@ -2925,6 +3153,26 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 				canUse = true;
 				break;
 			}
+			case BlueFlowerItemId:
+			case RedFlowerItemId:
+			case YellowFlowerItemId:
+			{
+				DebugBreak();
+				break;
+			}
+			case BlueFlowerOfIntellectItemId:
+			case BlueFlowerOfHealingItemId:
+			case BlueFlowerOfDampeningItemId:
+			case RedFlowerOfStrengthItemId:
+			case RedFlowerOfHealthItemId:
+			case RedFlowerOfPoisonItemId:
+			case YellowFlowerOfDexterityItemId:
+			case YellowFlowerOfAntivenomItemId:
+			case YellowFlowerOfRageItemId:
+			{
+				canUse = true;
+				break;
+			}
 			default:
 			{
 				canUse = false;
@@ -2956,13 +3204,66 @@ func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 			ResetOrAddEffect(labState, entity, IntellectPotionEffectId);
 			break;
 		}
+		case BlueFlowerItemId:
+		case RedFlowerItemId:
+		case YellowFlowerItemId:
+		{
+			DebugBreak();
+			break;
+		}
+		case BlueFlowerOfIntellectItemId:
+		{
+			ResetOrAddEffect(labState, entity, FeelingSmartEffectId);
+			break;
+		}
+		case BlueFlowerOfHealingItemId:
+		{
+			ResetOrAddEffect(labState, entity, HealOverTimeEffectId);
+			break;
+		}
+		case BlueFlowerOfDampeningItemId:
+		{
+			ResetOrAddEffect(labState, entity, ReducedDamageDoneAndTakenEffectId);
+			break;
+		}
+		case RedFlowerOfStrengthItemId:
+		{
+			ResetOrAddEffect(labState, entity, FeelingStrongEffectId);
+			break;
+		}
+		case RedFlowerOfHealthItemId:
+		{
+			Heal(labState, entity, entity, 30);
+			break;
+		}
+		case RedFlowerOfPoisonItemId:
+		{
+			ResetOrAddEffect(labState, entity, PoisonedEffectId);
+			break;
+		}
+		case YellowFlowerOfDexterityItemId:
+		{
+			ResetOrAddEffect(labState, entity, FeelingQuickEffectId);
+			break;
+		}
+		case YellowFlowerOfAntivenomItemId:
+		{
+			RemoveEffect(labState, entity->target, PoisonedEffectId);
+			ResetOrAddEffect(labState, entity, ImmuneToPoisonEffectId);
+			break;
+		}
+		case YellowFlowerOfRageItemId:
+		{
+			ResetOrAddEffect(labState, entity, IncreasedDamageDoneAndTakenEffectId);
+			break;
+		}
 		default:
 		{
 			DebugBreak();
 		}
 	}
 
-	Int8* itemName = GetItemName(itemId);
+	Int8* itemName = GetVisibleItemName(labState, itemId);
 	CombatLog(labState, entity->name + " uses item " + itemName + ".");
 	DeleteInventoryItem(item);
 
@@ -3023,6 +3324,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	ClearScreen(canvas, backgroundColor);
 
 	DrawMap(canvas, &labState->map);
+
+	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
+	UpdateAndDrawFlowers(canvas, labState, mousePosition);
 
 	Real32 mapWidth  = GetMapWidth(&labState->map);
 	Real32 mapHeight = GetMapHeight(&labState->map);
@@ -3183,7 +3487,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		player->target = player;
 	}
 
-	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
 	if(WasKeyReleased(userInput, VK_LBUTTON))
 	{
 		if(labState->hoverAbilityId != NoAbilityId)
@@ -3376,6 +3679,16 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 				PickUpItem(labState, player, item);
 			}
 		}
+
+		Flower* flower = labState->hoverFlower;
+		if(flower)
+		{
+			if(HasEmptySlot(&labState->inventory))
+			{
+				PickUpFlower(labState, flower);
+				player->herbalism++;
+			}
+		}
 	}
 
 	labState->hoverItem.inventory = 0;
@@ -3425,10 +3738,12 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 }
 
+// TODO: Put different items on the same cooldown!
 // TODO: Stop spamming combat log when dying next to a tree!
 // TODO: Don't log overheal!
 // TODO: Mana
 // TODO: Offensive and defensive target
+// TODO: Invisibility
 // TODO: Neutral enemies
 // TODO: Event queue
 // TODO: Icons?
