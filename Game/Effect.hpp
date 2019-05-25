@@ -28,7 +28,7 @@ enum EffectId
 };
 
 static Int8*
-func GetEffectName(Int32 effectId)
+func GetEffectName(EffectId effectId)
 {
 	Int8* name = 0;
 	switch(effectId)
@@ -142,7 +142,7 @@ func GetEffectName(Int32 effectId)
 }
 
 static Real32
-func EffectHasDuration(Int32 effectId)
+func EffectHasDuration(EffectId effectId)
 {
 	bool hasDuration = true;
 	switch(effectId)
@@ -161,7 +161,7 @@ func EffectHasDuration(Int32 effectId)
 }
 
 static Real32
-func GetEffectDuration(Int32 effectId)
+func GetEffectDuration(EffectId effectId)
 {
 	Assert(EffectHasDuration(effectId));
 	Real32 duration = 0.0f;

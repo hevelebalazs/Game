@@ -19,7 +19,7 @@ Int32 MaxHealthAtLevel[] =
 	300
 };
 
-enum EntityGroupId
+enum GroupId
 {
 	PlayerGroupId,
 	EnemyGroupId
@@ -39,13 +39,13 @@ struct Entity
 	Int32 health;
 	Int32 absorbDamage;
 
-	Int32 castedAbility;
+	AbilityId castedAbility;
 	Real32 castTimeTotal;
 	Real32 castTimeRemaining;
 	Entity* castTarget;
 
-	Int32 classId;
-	Int32 groupId;
+	ClassId classId;
+	GroupId groupId;
 	Entity* target;
 
 	Int32 strength;
@@ -61,14 +61,14 @@ struct Entity
 struct AbilityCooldown
 {
 	Entity* entity;
-	Int32 abilityId;
+	AbilityId abilityId;
 	Real32 timeRemaining;
 };
 
 struct ItemCooldown
 {
 	Entity* entity;
-	Int32 itemId;
+	ItemId itemId;
 	Real32 timeRemaining;
 };
 
@@ -83,7 +83,7 @@ struct DamageDisplay
 struct Effect
 {
 	Entity* entity;
-	Int32 effectId;
+	EffectId effectId;
 	Real32 timeRemaining;
 };
 
@@ -106,14 +106,14 @@ struct HateTable
 struct DroppedItem
 {
 	Vec2 position;
-	Int32 itemId;
+	ItemId itemId;
 	Real32 timeLeft;
 };
 
 struct Flower
 {
 	Vec2 position;
-	Int32 itemId;
+	ItemId itemId;
 };
 
 #define EntityN 256
@@ -162,7 +162,7 @@ struct CombatLabState
 
 	HateTable hateTable;
 
-	Int32 hoverAbilityId;
+	AbilityId hoverAbilityId;
 
 	Bool32 showCharacterInfo;
 	Inventory equipInventory;
@@ -331,7 +331,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
 
 static Bool32
-func AbilityIsOnCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func AbilityIsOnCooldown(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	Bool32 isOnCooldown = false;
 	for(Int32 i = 0; i < labState->abilityCooldownN; i++)
@@ -354,7 +354,7 @@ func IsDead(Entity* entity)
 }
 
 static Bool32
-func HasEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+func HasEffect(CombatLabState* labState, Entity* entity, EffectId effectId)
 {
 	Bool32 hasEffect = false;
 	for(Int32 i = 0; i < labState->effectN; i++)
@@ -370,7 +370,7 @@ func HasEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 }
 
 static Bool32
-func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func AbilityIsEnabled(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	Bool32 enabled = false;
 	Entity* target = entity->target;
@@ -468,7 +468,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, Int32 abilityId)
 }
 
 static Bool32
-func CanUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func CanUseAbility(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	Bool32 canUseAbility = true;
 	Int32 minLevel = GetAbilityMinLevel(abilityId);
@@ -574,14 +574,14 @@ func GenerateHate(HateTable* hateTable, Entity* source, Entity* target, Int32 va
 	entry->value += value;
 }
 
-static Int32
-func GetVisibleItemId(CombatLabState* labState, Int32 itemId)
+static ItemId
+func GetVisibleItemId(CombatLabState* labState, ItemId itemId)
 {
 	Entity* player = &labState->entities[0];
 	Assert(itemId != NoItemId);
 
 	Int32 herbalism = player->herbalism;
-	Int32 visibleItemId = NoItemId;
+	ItemId visibleItemId = NoItemId;
 	switch(itemId)
 	{
 		case BlueFlowerOfIntellectItemId:
@@ -616,15 +616,15 @@ func GetVisibleItemId(CombatLabState* labState, Int32 itemId)
 }
 
 static Int8*
-func GetVisibleItemName(CombatLabState* labState, Int32 itemId)
+func GetVisibleItemName(CombatLabState* labState, ItemId itemId)
 {
-	Int32 visibleItemId = GetVisibleItemId(labState, itemId);
+	ItemId visibleItemId = GetVisibleItemId(labState, itemId);
 	Int8* name = GetItemName(visibleItemId);
 	return name;
 }
 
 static void
-func DropItem(CombatLabState* labState, Entity* entity, Int32 itemId)
+func DropItem(CombatLabState* labState, Entity* entity, ItemId itemId)
 {
 	Assert(itemId != NoItemId);
 
@@ -739,7 +739,7 @@ func DealDamageFromEntity(CombatLabState* labState, Entity* source, Entity* targ
 }
 
 static void
-func DealDamageFromEffect(CombatLabState* labState, Int32 effectId, Entity* target, Int32 damage)
+func DealDamageFromEffect(CombatLabState* labState, EffectId effectId, Entity* target, Int32 damage)
 {
 	if(CanTakeDamage(labState, target))
 	{
@@ -803,7 +803,7 @@ func AttemptToHeal(CombatLabState* labState, Entity* source, Entity* target, Int
 }
 
 static void
-func AddAbilityCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func AddAbilityCooldown(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	Assert(AbilityHasCooldown(abilityId));
 	Real32 duration = GetAbilityCooldownDuration(abilityId);
@@ -819,7 +819,7 @@ func AddAbilityCooldown(CombatLabState* labState, Entity* entity, Int32 abilityI
 }
 
 static AbilityCooldown*
-func GetAbilityCooldown(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func GetAbilityCooldown(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	AbilityCooldown* result = 0;
 	for(Int32 i = 0; i < labState->abilityCooldownN; i++)
@@ -908,7 +908,7 @@ func RecalculatePlayerAttributes(CombatLabState* labState)
 	{
 		for(Int32 col = 0; col < equipInventory->colN; col++)
 		{
-			Int32 itemId = GetInventoryItemId(equipInventory, row, col);
+			ItemId itemId = GetInventoryItemId(equipInventory, row, col);
 			if(itemId != NoItemId)
 			{
 				ItemAttributes attributes = GetItemAttributes(itemId);
@@ -958,7 +958,7 @@ func RecalculatePlayerAttributes(CombatLabState* labState)
 }
 
 static void
-func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+func RemoveEffect(CombatLabState* labState, Entity* entity, EffectId effectId)
 {
 	Int32 remainingEffectN = 0;
 	for(Int32 i = 0; i < labState->effectN; i++)
@@ -980,7 +980,7 @@ func RemoveEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 }
 
 static Bool32
-func CanAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+func CanAddEffect(CombatLabState* labState, Entity* entity, EffectId effectId)
 {
 	Bool32 canAddEffect = true;
 	switch(effectId)
@@ -1000,7 +1000,7 @@ func CanAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 }
 
 static void
-func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+func AddEffect(CombatLabState* labState, Entity* entity, EffectId effectId)
 {
 	Assert(CanAddEffect(labState, entity, effectId));
 	Assert(labState->effectN < MaxEffectN);
@@ -1028,7 +1028,7 @@ func AddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 }
 
 static void
-func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
+func ResetOrAddEffect(CombatLabState* labState, Entity* entity, EffectId effectId)
 {
 	Bool32 foundEffect = false;
 	for(Int32 i = 0; i < labState->effectN; i++)
@@ -1058,7 +1058,7 @@ func ResetOrAddEffect(CombatLabState* labState, Entity* entity, Int32 effectId)
 }
 
 static Int32
-func GetAbilityDamage(Entity* entity, Int32 abilityId)
+func GetAbilityDamage(Entity* entity, AbilityId abilityId)
 {
 	Int32 damage = 0;
 	switch(abilityId)
@@ -1113,7 +1113,7 @@ func GetAbilityDamage(Entity* entity, Int32 abilityId)
 }
 
 static void
-func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func UseInstantAbility(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	Assert(!AbilityIsCasted(abilityId));
 	Assert(CanUseAbility(labState, entity, abilityId));
@@ -1298,7 +1298,7 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, Int32 abilityId
 static void
 func FinishCasting(CombatLabState* labState, Entity* entity)
 {
-	Int32 abilityId = entity->castedAbility;
+	AbilityId abilityId = entity->castedAbility;
 	Assert(abilityId != NoAbilityId);
 	Assert(AbilityIsCasted(abilityId));
 	Entity* target = entity->castTarget;
@@ -1342,7 +1342,7 @@ func FinishCasting(CombatLabState* labState, Entity* entity)
 }
 
 static void
-func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func UseAbility(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	if(AbilityIsCasted(abilityId))
 	{
@@ -1367,7 +1367,7 @@ func UseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
 }
 
 static void
-func AttemptToUseAbility(CombatLabState* labState, Entity* entity, Int32 abilityId)
+func AttemptToUseAbility(CombatLabState* labState, Entity* entity, AbilityId abilityId)
 {
 	if(CanUseAbility(labState, entity, abilityId))
 	{
@@ -1375,13 +1375,14 @@ func AttemptToUseAbility(CombatLabState* labState, Entity* entity, Int32 ability
 	}
 }
 
-static Int32
+static AbilityId
 func GetAvailableClassAbilityAtIndex(Entity* entity, Int32 abilityIndex)
 {
-	Int32 result = NoAbilityId;
+	AbilityId result = NoAbilityId;
 	Int32 classAbilityIndex = 0;
-	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
+	for(Int32 id = 1; id < AbilityN; id++)
 	{
+		AbilityId abilityId = (AbilityId)id;
 		Int32 abilityLevel = GetAbilityMinLevel(abilityId);
 		Int32 abilityClassId = GetAbilityClass(abilityId);
 		if(entity->level >= abilityLevel && entity->classId == abilityClassId)
@@ -1400,7 +1401,7 @@ func GetAvailableClassAbilityAtIndex(Entity* entity, Int32 abilityIndex)
 static void
 func AttemptToUseAbilityAtIndex(CombatLabState* labState, Entity* entity, Int32 abilityIndex)
 {
-	Int32 abilityId = GetAvailableClassAbilityAtIndex(entity, abilityIndex);
+	AbilityId abilityId = GetAvailableClassAbilityAtIndex(entity, abilityIndex);
 	if(abilityId != NoAbilityId)
 	{
 		AttemptToUseAbility(labState, entity, abilityId);
@@ -1552,7 +1553,7 @@ func DrawEntityBars(Canvas* canvas, Entity* entity)
 }
 
 static String
-func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 bufferSize)
+func GetAbilityTooltipText(AbilityId abilityId, Entity* entity, Int8* buffer, Int32 bufferSize)
 {
 	String text = StartString(buffer, bufferSize);
 
@@ -1753,7 +1754,7 @@ func GetAbilityTooltipText(Int32 abilityId, Entity* entity, Int8* buffer, Int32 
 }
 
 static Vec4
-func GetFlowerColor(Int32 itemId)
+func GetFlowerColor(ItemId itemId)
 {
 	Vec4 color = {};
 	switch(itemId)
@@ -1852,7 +1853,7 @@ func DrawUIBox(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom,
 
 static void
 func DrawUIBoxWithText(Bitmap* bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 rechargeRatio,
-								   Int8* text, GlyphData* glyphData, Vec4 color)
+					   Int8* text, GlyphData* glyphData, Vec4 color)
 {
 	DrawUIBox(bitmap, left, right, top, bottom, rechargeRatio, color);
 	Vec4 textColor = MakeColor(1.0f, 1.0f, 1.0f);
@@ -1988,13 +1989,14 @@ func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosit
 
 	Entity* entity = &labState->entities[0];
 	Assert(entity->groupId == PlayerGroupId);
-	Int32 classId = entity->classId;
+	ClassId classId = entity->classId;
 	Assert(classId != NoClassId);
 
 	Int32 abilityN = 0;
-	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
+	for(Int32 id = 1; id < AbilityN; id++)
 	{
-		Int32 abilityClassId = GetAbilityClass(abilityId);
+		AbilityId abilityId = (AbilityId)id;
+		ClassId abilityClassId = GetAbilityClass(abilityId);
 		Int32 abilityMinLevel = GetAbilityMinLevel(abilityId);
 		if(entity->level >= abilityMinLevel && entity->classId == abilityClassId)
 		{
@@ -2015,9 +2017,10 @@ func DrawAbilityBar(Canvas* canvas, CombatLabState* labState, IntVec2 mousePosit
 
 	labState->hoverAbilityId = NoAbilityId;
 
-	for(Int32 abilityId = 1; abilityId < AbilityN; abilityId++)
+	for(Int32 id = 1; id < AbilityN; id++)
 	{
-		Int32 abilityClassId = GetAbilityClass(abilityId);
+		AbilityId abilityId = (AbilityId)id;
+		ClassId abilityClassId = GetAbilityClass(abilityId);
 		Int32 abilityMinLevel = GetAbilityMinLevel(abilityId);
 		if(entity->level >= abilityMinLevel && entity->classId == abilityClassId)
 		{
@@ -2268,7 +2271,7 @@ func UpdateEnemyTargets(CombatLabState* labState)
 }
 
 static ItemCooldown*
-func GetItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
+func GetItemCooldown(CombatLabState* labState, Entity* entity, ItemId itemId)
 {
 	itemId = GetItemIdForCooldown(itemId);
 	Assert(ItemHasOwnCooldown(itemId));
@@ -2319,7 +2322,7 @@ func AttemptToSwapItems(InventoryItem* item1, InventoryItem* item2)
 #define InventorySlotSide 50
 
 static void
-func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, Int32 slotId, Int32 itemId, Int32 top, Int32 left)
+func DrawInventorySlot(Canvas* canvas, CombatLabState* labState, SlotId slotId, ItemId itemId, Int32 top, Int32 left)
 {
 	Int32 bottom = top + InventorySlotSide;
 	Int32 right = left + InventorySlotSide;
@@ -2424,10 +2427,10 @@ func UpdateAndDrawInventory(Canvas* canvas, CombatLabState* labState, Inventory*
 		Int32 slotLeft = left + slotPadding;
 		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			Int32 slotId = GetInventorySlotId(inventory, row, col);
-			Int32 itemId = GetInventoryItemId(inventory, row, col);
+			SlotId slotId = GetInventorySlotId(inventory, row, col);
+			ItemId itemId = GetInventoryItemId(inventory, row, col);
 			
-			Int32 visibleItemId = (itemId == NoItemId) ? NoItemId : GetVisibleItemId(labState, itemId);
+			ItemId visibleItemId = (itemId == NoItemId) ? NoItemId : GetVisibleItemId(labState, itemId);
 
 			Bool32 isHover = (IsIntBetween(mousePosition.col, slotLeft, slotLeft + InventorySlotSide) &&
 							  IsIntBetween(mousePosition.row, slotTop, slotTop + InventorySlotSide));
@@ -2646,7 +2649,7 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 		Effect* effect = &labState->effects[i];
 		Real32 time = effect->timeRemaining;
 		Real32 previousTime = time + seconds;
-		Int32 effectId = effect->effectId;
+		EffectId effectId = effect->effectId;
 		switch(effectId)
 		{
 			case BurningEffectId:
@@ -3079,11 +3082,11 @@ func DeleteInventoryItem(InventoryItem item)
 }
 
 static Bool32
-func ItemIsOnCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
+func ItemIsOnCooldown(CombatLabState* labState, Entity* entity, ItemId itemId)
 {
 	Bool32 isOnCooldown = false;
 
-	Int32 cooldownItemId = GetItemIdForCooldown(itemId);
+	ItemId cooldownItemId = GetItemIdForCooldown(itemId);
 	Assert(ItemHasOwnCooldown(cooldownItemId));
 
 	for(Int32 i = 0; i < labState->itemCooldownN; i++)
@@ -3100,7 +3103,7 @@ func ItemIsOnCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 }
 
 static void
-func AddItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
+func AddItemCooldown(CombatLabState* labState, Entity* entity, ItemId itemId)
 {
 	Assert(!ItemIsOnCooldown(labState, entity, itemId));
 
@@ -3121,7 +3124,7 @@ func AddItemCooldown(CombatLabState* labState, Entity* entity, Int32 itemId)
 }
 
 static Bool32
-func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
+func CanUseItem(CombatLabState* labState, Entity* entity, ItemId itemId)
 {
 	Bool32 canUse = true;
 	if(IsDead(entity))
@@ -3185,7 +3188,7 @@ func CanUseItem(CombatLabState* labState, Entity* entity, Int32 itemId)
 static void
 func UseItem(CombatLabState* labState, Entity* entity, InventoryItem item)
 {
-	Int32 itemId = item.itemId;
+	ItemId itemId = item.itemId;
 	Assert(CanUseItem(labState, entity, itemId));
 	switch(itemId)
 	{
@@ -3738,7 +3741,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 }
 
-// TODO: Put different items on the same cooldown!
 // TODO: Stop spamming combat log when dying next to a tree!
 // TODO: Don't log overheal!
 // TODO: Mana

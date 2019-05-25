@@ -46,10 +46,10 @@ enum ClassId
 	CrocodileClassId
 };
 
-static Int32
-func GetAbilityClass(Int32 abilityId)
+static ClassId
+func GetAbilityClass(AbilityId abilityId)
 {
-	Int32 classId = NoClassId;
+	ClassId classId = NoClassId;
 	switch(abilityId)
 	{
 		case LightningAbilityId:
@@ -101,7 +101,7 @@ func GetAbilityClass(Int32 abilityId)
 }
 
 static Int32
-func GetAbilityMinLevel(Int32 abilityId)
+func GetAbilityMinLevel(AbilityId abilityId)
 {
 	Int32 minLevel = 0;
 	switch(abilityId)
@@ -195,7 +195,7 @@ func GetAbilityMinLevel(Int32 abilityId)
 }
 
 static Real32
-func GetAbilityCastDuration(Int32 abilityId)
+func GetAbilityCastDuration(AbilityId abilityId)
 {
 	Assert(abilityId != NoAbilityId);
 	Real32 castDuration = 0.0f;
@@ -226,7 +226,7 @@ func GetAbilityCastDuration(Int32 abilityId)
 }
 
 static Bool32
-func AbilityIsCasted(Int32 abilityId)
+func AbilityIsCasted(AbilityId abilityId)
 {
 	Real32 castDuration = GetAbilityCastDuration(abilityId);
 	Bool32 isCasted = (castDuration > 0.0f);
@@ -234,7 +234,7 @@ func AbilityIsCasted(Int32 abilityId)
 }
 
 static Real32
-func GetAbilityCooldownDuration(Int32 abilityId)
+func GetAbilityCooldownDuration(AbilityId abilityId)
 {
 	Real32 cooldown = 0.0f;
 	switch(abilityId)
@@ -313,7 +313,7 @@ func GetAbilityCooldownDuration(Int32 abilityId)
 }
 
 static Bool32
-func AbilityHasCooldown(Int32 abilityId)
+func AbilityHasCooldown(AbilityId abilityId)
 {
 	Real32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
 	Bool32 hasCooldown = (cooldownDuration > 0.0f);
@@ -321,7 +321,7 @@ func AbilityHasCooldown(Int32 abilityId)
 }
 
 static Real32
-func GetAbilityRechargeDuration(Int32 abilityId)
+func GetAbilityRechargeDuration(AbilityId abilityId)
 {
 	Real32 recharge = 0.0f;
 	switch(abilityId)
@@ -357,7 +357,7 @@ func GetAbilityRechargeDuration(Int32 abilityId)
 }
 
 static Int8*
-func GetAbilityName(Int32 abilityId)
+func GetAbilityName(AbilityId abilityId)
 {
 	Int8* name = 0;
 	switch(abilityId)
