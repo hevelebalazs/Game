@@ -18,6 +18,14 @@ enum TileTypeId
 	TreeTileId
 };
 
+enum ZoneTypeId
+{
+	GroundZoneId,
+	JungleZoneId,
+	WaterZoneId,
+	ZoneTypeN
+};
+
 struct Map
 {
 	Real32 tileSide;
@@ -25,6 +33,7 @@ struct Map
 	Int32 tileColN;
 	Real32* terrain;
 	TileTypeId* tileTypes;
+	ZoneTypeId* zoneTypes;
 };
 
 #define MinTreeSide 5
@@ -764,6 +773,7 @@ func GenerateForestMap(MemArena* arena)
 	Int32 tileN = (map.tileRowN * map.tileColN);
 	map.tileTypes = ArenaPushArray(arena, TileTypeId, tileN);
 	map.terrain = ArenaPushArray(arena, Real32, tileN);
+	map.zoneTypes = ArenaPushArray(arena, ZoneTypeId, tileN);
 
 	Int8* arenaTop = GetArenaTop(arena);
 	RandomValueTable randomValueTable = CreateRandomValueTable(65536, arena);
@@ -773,6 +783,7 @@ func GenerateForestMap(MemArena* arena)
 	{
 		map.terrain[i] = 0.0f;
 		map.tileTypes[i] = GroundTileId;
+		map.zoneTypes[i] = GroundZoneId;
 	}
 
 	Real32 gridLevelSwitchRatio = 0.67f;
@@ -945,9 +956,72 @@ func GenerateForestMap(MemArena* arena)
 		}
 	}
 
+	Int32 zoneRowN = 8;
+	Int32 zoneRowTileN = map.tileRowN / zoneRowN;
+	Assert(zoneRowN * zoneRowTileN == map.tileRowN);
+
+	Int32 zoneColN = 8;
+	Int32 zoneColTileN = map.tileColN / zoneColN;
+	Assert(zoneColN * zoneColTileN == map.tileColN);
+
+	Int32 tileIndex = 0;
+	for(Int32 row = 0; row < map.tileRowN; row++)
+	{
+		Bool32 isFirstRowInZone = (row % zoneRowTileN == 0);
+		for(Int32 col = 0; col < map.tileColN; col++)
+		{
+			Bool32 isFirstColInZone = (col % zoneColTileN == 0);
+			if(isFirstRowInZone && isFirstColInZone)
+			{
+				map.zoneTypes[tileIndex] = (ZoneTypeId)IntRandom(0, ZoneTypeN - 1);
+			}
+			else if(!isFirstColInZone)
+			{
+				map.zoneTypes[tileIndex] = map.zoneTypes[tileIndex - 1];
+			}
+			else
+			{
+				Assert(!isFirstRowInZone);
+				map.zoneTypes[tileIndex] = map.zoneTypes[tileIndex - map.tileColN];
+			}
+
+			tileIndex++;
+		}
+	}
+
 	ArenaPopTo(arena, arenaTop);
 
 	return map;
+}
+
+static Vec4
+func GetZoneBaseColor(ZoneTypeId zoneId)
+{
+	Vec4 color = {};
+	switch(zoneId)
+	{
+		case GroundZoneId:
+		{
+			color = MakeColor(1.0f, 1.0f, 0.0f);
+			break;
+		}
+		case JungleZoneId:
+		{
+			color = MakeColor(0.0f, 1.0f, 0.0f);
+			break;
+		}
+		case WaterZoneId:
+		{
+			color = MakeColor(0.0f, 0.0f, 1.0f);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	return color;
 }
 
 static Vec4
@@ -958,11 +1032,12 @@ func GetTileColor(Map* map, Int32 row, Int32 col)
 
 	Int32 tileIndex = row * map->tileColN + col;
 	
-	Vec4 treeColor		 = MakeColor(0.0f, 0.0f, 0.0f);
-	Vec4 waterLowColor   = MakeColor(0.0f, 0.0f, 0.1f);
-	Vec4 waterHighColor  = MakeColor(0.0f, 0.0f, 1.0f);
-	Vec4 groundLowColor  = MakeColor(0.0f, 1.0f, 0.0f);
-	Vec4 groundHighColor = MakeColor(0.0f, 0.1f, 0.0f);
+	Vec4 treeColor	= MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 waterColor = MakeColor(0.0f, 0.0f, 1.0f);
+
+	ZoneTypeId zoneId = map->zoneTypes[tileIndex];
+	Vec4 zoneBaseColor = GetZoneBaseColor(zoneId);
+	Vec4 black = MakeColor(0.0f, 0.0f, 0.0f);
 
 	Real32 height = map->terrain[tileIndex];
 	Assert(IsBetween(height, 0.0f, 1.0f));
@@ -976,11 +1051,11 @@ func GetTileColor(Map* map, Int32 row, Int32 col)
 	}
 	else if(tileType == WaterTileId)
 	{
-		color = InterpolateColors(waterLowColor, height, waterHighColor);
+		color = InterpolateColors(waterColor, height, black);
 	}
 	else if(tileType == GroundTileId)
 	{
-		color = InterpolateColors(groundLowColor, height, groundHighColor);
+		color = InterpolateColors(zoneBaseColor, height, black);
 	}
 
 	return color;
