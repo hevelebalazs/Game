@@ -263,7 +263,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = PaladinClassId;
+	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
 
 	player->strength = 1;
@@ -3309,7 +3309,7 @@ func GetEntityMoveSpeed(CombatLabState* labState, Entity* entity)
 		{
 			Map* map = &labState->map;
 			IntVec2 tile = GetContainingTile(map, entity->position);
-			TileTypeId tileType = GetTileType(map, tile);
+			TileId tileType = GetTileType(map, tile);
 			if(tileType == GroundTileId)
 			{
 				moveSpeed *= 0.5f;

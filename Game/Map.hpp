@@ -11,14 +11,14 @@ struct RandomValueTable
 	Int32 valueN;
 };
 
-enum TileTypeId
+enum TileId
 {
 	GroundTileId,
 	WaterTileId,
 	TreeTileId
 };
 
-enum ZoneTypeId
+enum ZoneId
 {
 	GroundZoneId,
 	JungleZoneId,
@@ -32,8 +32,8 @@ struct Map
 	Int32 tileRowN;
 	Int32 tileColN;
 	Real32* terrain;
-	TileTypeId* tileTypes;
-	ZoneTypeId* zoneTypes;
+	TileId* tileTypes;
+	ZoneId* zoneTypes;
 };
 
 #define MinTreeSide 5
@@ -170,24 +170,32 @@ func IsValidGridIndex(Map* map, IntVec2 index)
 	return result;
 }
 
-static TileTypeId
+static TileId
 func GetTileType(Map* map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
-	TileTypeId tileType = map->tileTypes[tile.row * map->tileColN + tile.col];
+	TileId tileType = map->tileTypes[tile.row * map->tileColN + tile.col];
 	return tileType;
 }
 
-static Bool32
-func IsTileType(Map* map, IntVec2 tile, TileTypeId type)
+static ZoneId
+func GetZoneType(Map* map, IntVec2 tile)
 {
-	TileTypeId actualType = GetTileType(map, tile);
+	Assert(IsValidTile(map, tile));
+	ZoneId zoneId = map->zoneTypes[tile.row * map->tileColN + tile.col];
+	return zoneId;
+}
+
+static Bool32
+func IsTileType(Map* map, IntVec2 tile, TileId type)
+{
+	TileId actualType = GetTileType(map, tile);
 	Bool32 isType = (actualType == type);
 	return isType;
 }
 
 static void
-func SetTileType(Map* map, IntVec2 tile, TileTypeId type)
+func SetTileType(Map* map, IntVec2 tile, TileId type)
 {
 	Assert(IsValidTile(map, tile));
 	map->tileTypes[tile.row * map->tileColN + tile.col] = type;
@@ -206,6 +214,12 @@ func TileIsNearOrInWater(Map* map, IntVec2 tile)
 			IntVec2 tileToCheck = MakeTile(row, col);
 			if(IsValidTile(map, tileToCheck))
 			{
+				if(GetZoneType(map, tileToCheck) == WaterZoneId)
+				{
+					isNearOrInWater = true;
+					break;
+				}
+
 				if(GetTileType(map, tileToCheck) == WaterTileId)
 				{
 					isNearOrInWater = true;
@@ -771,9 +785,9 @@ func GenerateForestMap(MemArena* arena)
 	map.tileRowN = 512;
 	map.tileColN = 512;
 	Int32 tileN = (map.tileRowN * map.tileColN);
-	map.tileTypes = ArenaPushArray(arena, TileTypeId, tileN);
+	map.tileTypes = ArenaPushArray(arena, TileId, tileN);
 	map.terrain = ArenaPushArray(arena, Real32, tileN);
-	map.zoneTypes = ArenaPushArray(arena, ZoneTypeId, tileN);
+	map.zoneTypes = ArenaPushArray(arena, ZoneId, tileN);
 
 	Int8* arenaTop = GetArenaTop(arena);
 	RandomValueTable randomValueTable = CreateRandomValueTable(65536, arena);
@@ -973,7 +987,7 @@ func GenerateForestMap(MemArena* arena)
 			Bool32 isFirstColInZone = (col % zoneColTileN == 0);
 			if(isFirstRowInZone && isFirstColInZone)
 			{
-				map.zoneTypes[tileIndex] = (ZoneTypeId)IntRandom(0, ZoneTypeN - 1);
+				map.zoneTypes[tileIndex] = (ZoneId)IntRandom(0, ZoneTypeN - 1);
 			}
 			else if(!isFirstColInZone)
 			{
@@ -995,7 +1009,7 @@ func GenerateForestMap(MemArena* arena)
 }
 
 static Vec4
-func GetZoneBaseColor(ZoneTypeId zoneId)
+func GetZoneBaseColor(ZoneId zoneId)
 {
 	Vec4 color = {};
 	switch(zoneId)
@@ -1035,7 +1049,7 @@ func GetTileColor(Map* map, Int32 row, Int32 col)
 	Vec4 treeColor	= MakeColor(0.0f, 0.0f, 0.0f);
 	Vec4 waterColor = MakeColor(0.0f, 0.0f, 1.0f);
 
-	ZoneTypeId zoneId = map->zoneTypes[tileIndex];
+	ZoneId zoneId = map->zoneTypes[tileIndex];
 	Vec4 zoneBaseColor = GetZoneBaseColor(zoneId);
 	Vec4 black = MakeColor(0.0f, 0.0f, 0.0f);
 
@@ -1044,7 +1058,7 @@ func GetTileColor(Map* map, Int32 row, Int32 col)
 
 	Vec4 color = {};
 
-	TileTypeId tileType = map->tileTypes[tileIndex];
+	TileId tileType = map->tileTypes[tileIndex];
 	if(tileType == TreeTileId)
 	{
 		color = treeColor;
