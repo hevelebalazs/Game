@@ -3320,6 +3320,23 @@ func GetEntityMoveSpeed(CombatLabState* labState, Entity* entity)
 	return moveSpeed;
 }
 
+static Bool32
+func IsNeutral(Entity* entity)
+{
+	Assert(entity != 0);
+	Bool32 neutral = false;
+	switch(entity->classId)
+	{
+		case SnakeClassId:
+		{
+			neutral = true;
+			break;
+		}
+	}
+
+	return neutral;
+}
+
 static void
 func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
 {
@@ -3399,6 +3416,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	UpdateEntityMovement(player, map, seconds);
 
+	canvas->camera->center = player->position;
+
 	if(player->inputDirection.x != 0.0f || player->inputDirection.y != 0.0f)
 	{
 		if(player->castedAbility != NoAbilityId)
@@ -3419,7 +3438,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		if(enemy->target == 0)
 		{
 			Real32 distanceFromPlayer = MaxDistance(player->position, enemy->position);
-			if(distanceFromPlayer <= enemyPullDistance)
+			Bool32 isNeutral = IsNeutral(enemy);
+			if(!isNeutral && distanceFromPlayer <= enemyPullDistance)
 			{
 				enemy->target = player;
 				AddEmptyHateTableEntry(&labState->hateTable, enemy, player);
@@ -3586,7 +3606,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		DrawEntity(canvas, player, playerColor);
 	}
 
-	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 neutralEnemyColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 hostileEnemyColor = MakeColor(1.0f, 0.0f, 0.0f);
 	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
@@ -3594,6 +3615,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		{
 			continue;
 		}
+
+		Bool32 isNeutral = IsNeutral(enemy);
+		Vec4 enemyColor = (isNeutral) ? neutralEnemyColor : hostileEnemyColor;
 
 		if(enemy == player->target)
 		{
@@ -3631,8 +3655,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			DrawTextLineBottomXCentered(canvas, abilityName, textBottom, textCenterX, castAbilityNameColor);
 		}
 	}
-
-	canvas->camera->center = player->position;
 
 	if(WasKeyReleased(userInput, 'V'))
 	{
@@ -3741,12 +3763,18 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 }
 
+// TODO: M6
+	// TODO: Populate map based on zone type!
+		// Yellow: weaker mobs: spiders, scorpions, snakes
+		// Green: stronger mobs: tigers, lions, monkeys
+		// Blue: crocodiles, fish
+	// TODO: Rivers on borders of zones
+	// TODO: Map generation seed
 // TODO: Stop spamming combat log when dying next to a tree!
 // TODO: Don't log overheal!
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Invisibility
-// TODO: Neutral enemies
 // TODO: Event queue
 // TODO: Icons?
 // TODO: Show effects above entities' heads
