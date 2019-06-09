@@ -275,30 +275,44 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 
 	player->health = GetEntityMaxHealth(player);
 
-	Int32 firstSnakeIndex = 1;
-	Int32 lastSnakeIndex = EntityN / 2;
-	for(Int32 i = firstSnakeIndex; i <= lastSnakeIndex; i++)
+	for(Int32 i = 1; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
-		enemy->level = 1;
-		enemy->name = "Snake";
-		enemy->position = GetRandomGroundTileCenter(map);
-		enemy->health = GetEntityMaxHealth(enemy);
-		enemy->classId = SnakeClassId;
-		enemy->groupId = EnemyGroupId;
-	}
+		IntVec2 tile = GetRandomNonTreeTile(map);
+		enemy->position = GetTileCenter(map, tile);
 
-	Int32 firstCrocodileIndex = lastSnakeIndex + 1;
-	Int32 lastCrocodileIndex = EntityN - 1;
-	for(Int32 i = firstCrocodileIndex; i <= lastCrocodileIndex; i++)
-	{
-		Entity* enemy = &labState->entities[i];
-		enemy->level = 2;
-		enemy->name = "Crocodile";
-		enemy->position = GetRandomWaterTileCenter(map);
-		enemy->health = GetEntityMaxHealth(enemy);
-		enemy->classId = CrocodileClassId;
+		ZoneId zoneId = GetZoneType(map, tile);
+		switch(zoneId)
+		{
+			case GroundZoneId:
+			{
+				enemy->level = 1;
+				enemy->name = "Snake";
+				enemy->classId = SnakeClassId;
+				break;
+			}
+			case WaterZoneId:
+			{
+				enemy->level = 2;
+				enemy->name = "Crocodile";
+				enemy->classId = CrocodileClassId;
+				break;
+			}
+			case JungleZoneId:
+			{
+				enemy->level = 5;
+				enemy->name = "Tiger";
+				enemy->classId = TigerClassId;
+				break;
+			}
+			default:
+			{
+				DebugBreak();
+			}
+		}
+
 		enemy->groupId = EnemyGroupId;
+		enemy->health = GetEntityMaxHealth(enemy);
 	}
 
 	MemArena* arena = &labState->arena;
@@ -405,6 +419,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, AbilityId abilit
 			case SnakeStrikeAbilityId:
 			case CrocodileBiteAbilityId:
 			case CrocodileLashAbilityId:
+			case TigerBiteAbilityId:
 			{
 				enabled = hasLivingEnemyTarget && (distanceFromTarget <= MaxMeleeAttackDistance);
 				break;
@@ -1108,6 +1123,11 @@ func GetAbilityDamage(Entity* entity, AbilityId abilityId)
 			damage = 30 + entity->strength;
 			break;
 		}
+		case TigerBiteAbilityId:
+		{
+			damage = 25 + entity->strength;
+			break;
+		}
 	}
 	return damage;
 }
@@ -1281,6 +1301,13 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, AbilityId abili
 		{
 			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, damage);
+			break;
+		}
+		case TigerBiteAbilityId:
+		{
+			Assert(hasEnemyTarget);
+			DealDamageFromEntity(labState, entity, target, damage);
+			ResetOrAddEffect(labState, target, BleedingEffectId);
 			break;
 		}
 		default:
@@ -2684,6 +2711,13 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 				}
 				break;
 			}
+			case BleedingEffectId:
+			{
+				if(Floor(time * (1.0f / 3.0f)) != Floor(previousTime * (1.0f / 3.0f)))
+				{
+					DealDamageFromEffect(labState, effect->effectId, effect->entity, 10);
+				}
+			}
 		}
 	}
 }
@@ -3545,7 +3579,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 
-	for(Int32 i = 0; i < EntityN; i++)
+	for(Int32 i = 1; i < EntityN; i++)
 	{
 		Entity* entity = &labState->entities[i];
 		if(entity->classId == SnakeClassId)
@@ -3556,6 +3590,14 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		{
 			AttemptToUseAbility(labState, entity, CrocodileBiteAbilityId);
 			AttemptToUseAbility(labState, entity, CrocodileLashAbilityId);
+		}
+		else if(entity->classId == TigerClassId)
+		{
+			AttemptToUseAbility(labState, entity, TigerBiteAbilityId);
+		}
+		else
+		{
+			DebugBreak();
 		}
 	}
 
@@ -3765,7 +3807,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 // TODO: M6
 	// TODO: Populate map based on zone type!
-		// Yellow: weaker mobs: spiders, scorpions, snakes
+		// [Yellow: weaker mobs: spiders, scorpions, snakes]
 		// Green: stronger mobs: tigers, lions, monkeys
 		// Blue: crocodiles, fish
 	// TODO: Rivers on borders of zones

@@ -33,6 +33,8 @@ enum AbilityId
 	CrocodileBiteAbilityId,
 	CrocodileLashAbilityId,
 
+	TigerBiteAbilityId,
+
 	AbilityN
 };
 
@@ -43,7 +45,8 @@ enum ClassId
 	MonkClassId,
 	PaladinClassId,
 	SnakeClassId,
-	CrocodileClassId
+	CrocodileClassId,
+	TigerClassId
 };
 
 static ClassId
@@ -90,6 +93,11 @@ func GetAbilityClass(AbilityId abilityId)
 		case CrocodileLashAbilityId:
 		{
 			classId = CrocodileClassId;
+			break;
+		}
+		case TigerBiteAbilityId:
+		{
+			classId = TigerClassId;
 			break;
 		}
 		default:
@@ -460,6 +468,11 @@ func GetAbilityName(AbilityId abilityId)
 		case CrocodileLashAbilityId:
 		{
 			name = "Crocodile Lash";
+			break;
+		}
+		case TigerBiteAbilityId:
+		{
+			name = "Tiger bite";
 			break;
 		}
 		default:
