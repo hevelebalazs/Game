@@ -222,10 +222,89 @@ func AddCombatLogStringLine(CombatLabState* labState, String line)
 }
 
 static Vec2
-func FindEntityStartPosition(Map* map, Real32 x, Real32 y)
+func FindEntityStartPosition(Map* map)
 {
-	Vec2 initialPosition = MakePoint(x, y);
-	IntVec2 initialTile = GetContainingTile(map, initialPosition);
+	IntVec2 initialTile = GetRandomZoneTile(map, GroundZoneId);
+
+	Int32 minZoneSideDistance = 10;
+	Int32 leftZoneSideDistance   = minZoneSideDistance;
+	Int32 rightZoneSideDistance  = minZoneSideDistance;
+	Int32 topZoneSideDistance    = minZoneSideDistance;
+	Int32 bottomZoneSideDistance = minZoneSideDistance;
+	
+	IntVec2 topTile         = initialTile;
+	IntVec2 topLeftTile     = initialTile;
+	IntVec2 topRightTile    = initialTile;
+	IntVec2 leftTile        = initialTile;
+	IntVec2 rightTile       = initialTile;
+	IntVec2 bottomTile      = initialTile;
+	IntVec2 bottomLeftTile  = initialTile;
+	IntVec2 bottomRightTile = initialTile;
+
+	for(Int32 step = 0; step < minZoneSideDistance; step++)
+	{
+		topTile.row--;
+		if(!IsValidTile(map, topTile) || GetZoneType(map, topTile) != GroundZoneId)
+		{
+			topZoneSideDistance = IntMin2(topZoneSideDistance, step);
+		}
+
+		topLeftTile.row--;
+		topLeftTile.col--;
+		if(!IsValidTile(map, topLeftTile) || GetZoneType(map, topLeftTile) != GroundZoneId)
+		{
+			topZoneSideDistance  = IntMin2(topZoneSideDistance, step);
+			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
+		}
+
+		topRightTile.row--;
+		topRightTile.col++;
+		if(!IsValidTile(map, topRightTile) || GetZoneType(map, topRightTile) != GroundZoneId)
+		{
+			topZoneSideDistance = IntMin2(topZoneSideDistance, step);
+			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
+		}
+
+		leftTile.col--;
+		if(!IsValidTile(map, leftTile) || GetZoneType(map, leftTile) != GroundZoneId)
+		{
+			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
+		}
+
+		rightTile.col++;
+		if(!IsValidTile(map, rightTile) || GetZoneType(map, rightTile) != GroundZoneId)
+		{
+			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
+		}
+
+		bottomTile.row++;
+		if(!IsValidTile(map, bottomTile) || GetZoneType(map, bottomTile) != GroundZoneId)
+		{
+			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
+		}
+
+		bottomLeftTile.row++;
+		bottomLeftTile.col--;
+		if(!IsValidTile(map, bottomLeftTile) || GetZoneType(map, bottomLeftTile) != GroundZoneId)
+		{
+			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
+			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
+		}
+
+		bottomRightTile.row++;
+		bottomRightTile.col++;
+		if(!IsValidTile(map, bottomRightTile) || GetZoneType(map, bottomRightTile) != GroundZoneId)
+		{
+			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
+			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
+		}
+	}
+
+	initialTile.col += (minZoneSideDistance - leftZoneSideDistance);
+	initialTile.col -= (minZoneSideDistance - rightZoneSideDistance);
+	initialTile.row += (minZoneSideDistance - topZoneSideDistance);
+	initialTile.row -= (minZoneSideDistance - bottomZoneSideDistance);
+
 	IntVec2 startTile = FindNearbyNonTreeTile(map, initialTile);
 	Vec2 startPosition = GetTileCenter(map, startTile);
 	return startPosition;
@@ -260,7 +339,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Entity* player = &labState->entities[0];
 	player->level = 1;
 	player->name = "Player";
-	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
+	player->position = FindEntityStartPosition(map);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
 	player->classId = DruidClassId;
@@ -3806,8 +3885,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 }
 
 // TODO: M6
+	// [TODO: Start at the middle of a yellow zone!]
 	// TODO: Populate map based on zone type!
-		// [Yellow: weaker mobs: spiders, scorpions, snakes]
+		// Yellow: weaker mobs: spiders, scorpions, snakes
 		// Green: stronger mobs: tigers, lions, monkeys
 		// Blue: crocodiles, fish
 	// TODO: Rivers on borders of zones

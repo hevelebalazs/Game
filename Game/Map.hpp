@@ -278,6 +278,21 @@ func GetRandomTile(Map* map)
 }
 
 static IntVec2
+func GetRandomZoneTile(Map* map, ZoneId zoneId)
+{
+	IntVec2 tile = {};
+	while(1)
+	{
+		tile = GetRandomTile(map);
+		if(GetZoneType(map, tile) == zoneId)
+		{
+			break;
+		}
+	}
+	return tile;
+}
+
+static IntVec2
 func GetRandomNonTreeTile(Map* map)
 {
 	IntVec2 tile = {};
