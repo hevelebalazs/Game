@@ -3766,9 +3766,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 		if(entity->castedAbility == NoAbilityId)
 		{
-			Int8 name[32];
-			OneLineString(name, 32, "L" + entity->level + " " + entity->name);
-			DrawTextLineBottomXCentered(canvas, name, textBottom, textCenterX, entityNameColor);
+			DrawTextLineBottomXCentered(canvas, entity->name, textBottom, textCenterX, entityNameColor);
 		}
 		else
 		{
@@ -3885,9 +3883,11 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 }
 
 // TODO: M6
-	// [TODO: Start at the middle of a yellow zone!]
 	// TODO: Populate map based on zone type!
-		// Yellow: weaker mobs: spiders, scorpions, snakes
+		// Yellow: weaker mobs: 
+			// TODO: spiders
+			// TODO: scorpions
+			// TODO: snakes
 		// Green: stronger mobs: tigers, lions, monkeys
 		// Blue: crocodiles, fish
 	// TODO: Rivers on borders of zones
