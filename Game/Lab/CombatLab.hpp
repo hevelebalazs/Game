@@ -2902,6 +2902,10 @@ func PickUpFlower(CombatLabState* labState, Flower* flower)
 
 	AddItemToInventory(inventory, flower->itemId);
 
+	Entity* player = &labState->entities[0];
+	Int8* visibleFlowerName = GetVisibleItemName(labState, flower->itemId);
+	CombatLog(labState, player->name + " picks up " + visibleFlowerName + ".");
+
 	for(Int32 i = flowerIndex + 1; i < labState->flowerN; i++)
 	{
 		labState->flowers[i - 1] = labState->flowers[i];
