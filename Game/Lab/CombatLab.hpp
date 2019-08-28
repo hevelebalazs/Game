@@ -3886,16 +3886,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	UpdateAndDrawDroppedItems(canvas, labState, mousePosition, seconds);
 }
 
-// TODO: M6
-	// TODO: Populate map based on zone type!
-		// Yellow: weaker mobs: 
-			// TODO: spiders
-			// TODO: scorpions
-			// TODO: snakes
-		// Green: stronger mobs: tigers, lions, monkeys
-		// Blue: crocodiles, fish
-	// TODO: Rivers on borders of zones
-	// TODO: Map generation seed
 // TODO: Stop spamming combat log when dying next to a tree!
 // TODO: Don't log overheal!
 // TODO: Mana
