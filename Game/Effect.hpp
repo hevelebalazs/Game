@@ -24,7 +24,8 @@ enum EffectId
 	FeelingStrongEffectId,
 	ImmuneToPoisonEffectId,
 	FeelingQuickEffectId,
-	IncreasedDamageDoneAndTakenEffectId
+	IncreasedDamageDoneAndTakenEffectId,
+	BleedingEffectId
 };
 
 static Int8*
@@ -131,6 +132,11 @@ func GetEffectName(EffectId effectId)
 		case IncreasedDamageDoneAndTakenEffectId:
 		{
 			name = "Increased Damage";
+			break;
+		}
+		case BleedingEffectId:
+		{
+			name = "Bleeding";
 			break;
 		}
 		default:
@@ -260,6 +266,11 @@ func GetEffectDuration(EffectId effectId)
 		case IncreasedDamageDoneAndTakenEffectId:
 		{
 			duration = 20.0f;
+			break;
+		}
+		case BleedingEffectId:
+		{
+			duration = 30.0f;
 			break;
 		}
 		default:

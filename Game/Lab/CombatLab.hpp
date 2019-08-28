@@ -222,10 +222,89 @@ func AddCombatLogStringLine(CombatLabState* labState, String line)
 }
 
 static Vec2
-func FindEntityStartPosition(Map* map, Real32 x, Real32 y)
+func FindEntityStartPosition(Map* map)
 {
-	Vec2 initialPosition = MakePoint(x, y);
-	IntVec2 initialTile = GetContainingTile(map, initialPosition);
+	IntVec2 initialTile = GetRandomZoneTile(map, GroundZoneId);
+
+	Int32 minZoneSideDistance = 10;
+	Int32 leftZoneSideDistance   = minZoneSideDistance;
+	Int32 rightZoneSideDistance  = minZoneSideDistance;
+	Int32 topZoneSideDistance    = minZoneSideDistance;
+	Int32 bottomZoneSideDistance = minZoneSideDistance;
+	
+	IntVec2 topTile         = initialTile;
+	IntVec2 topLeftTile     = initialTile;
+	IntVec2 topRightTile    = initialTile;
+	IntVec2 leftTile        = initialTile;
+	IntVec2 rightTile       = initialTile;
+	IntVec2 bottomTile      = initialTile;
+	IntVec2 bottomLeftTile  = initialTile;
+	IntVec2 bottomRightTile = initialTile;
+
+	for(Int32 step = 0; step < minZoneSideDistance; step++)
+	{
+		topTile.row--;
+		if(!IsValidTile(map, topTile) || GetZoneType(map, topTile) != GroundZoneId)
+		{
+			topZoneSideDistance = IntMin2(topZoneSideDistance, step);
+		}
+
+		topLeftTile.row--;
+		topLeftTile.col--;
+		if(!IsValidTile(map, topLeftTile) || GetZoneType(map, topLeftTile) != GroundZoneId)
+		{
+			topZoneSideDistance  = IntMin2(topZoneSideDistance, step);
+			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
+		}
+
+		topRightTile.row--;
+		topRightTile.col++;
+		if(!IsValidTile(map, topRightTile) || GetZoneType(map, topRightTile) != GroundZoneId)
+		{
+			topZoneSideDistance = IntMin2(topZoneSideDistance, step);
+			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
+		}
+
+		leftTile.col--;
+		if(!IsValidTile(map, leftTile) || GetZoneType(map, leftTile) != GroundZoneId)
+		{
+			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
+		}
+
+		rightTile.col++;
+		if(!IsValidTile(map, rightTile) || GetZoneType(map, rightTile) != GroundZoneId)
+		{
+			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
+		}
+
+		bottomTile.row++;
+		if(!IsValidTile(map, bottomTile) || GetZoneType(map, bottomTile) != GroundZoneId)
+		{
+			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
+		}
+
+		bottomLeftTile.row++;
+		bottomLeftTile.col--;
+		if(!IsValidTile(map, bottomLeftTile) || GetZoneType(map, bottomLeftTile) != GroundZoneId)
+		{
+			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
+			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
+		}
+
+		bottomRightTile.row++;
+		bottomRightTile.col++;
+		if(!IsValidTile(map, bottomRightTile) || GetZoneType(map, bottomRightTile) != GroundZoneId)
+		{
+			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
+			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
+		}
+	}
+
+	initialTile.col += (minZoneSideDistance - leftZoneSideDistance);
+	initialTile.col -= (minZoneSideDistance - rightZoneSideDistance);
+	initialTile.row += (minZoneSideDistance - topZoneSideDistance);
+	initialTile.row -= (minZoneSideDistance - bottomZoneSideDistance);
+
 	IntVec2 startTile = FindNearbyNonTreeTile(map, initialTile);
 	Vec2 startPosition = GetTileCenter(map, startTile);
 	return startPosition;
@@ -260,10 +339,10 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	Entity* player = &labState->entities[0];
 	player->level = 1;
 	player->name = "Player";
-	player->position = FindEntityStartPosition(map, mapWidth * 0.5f, mapHeight * 0.5f);
+	player->position = FindEntityStartPosition(map);
 	IntVec2 playerTile = GetContainingTile(map, player->position);
 	player->inputDirection = MakePoint(0.0f, 0.0f);
-	player->classId = PaladinClassId;
+	player->classId = DruidClassId;
 	player->groupId = PlayerGroupId;
 
 	player->strength = 1;
@@ -275,30 +354,44 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 
 	player->health = GetEntityMaxHealth(player);
 
-	Int32 firstSnakeIndex = 1;
-	Int32 lastSnakeIndex = EntityN / 2;
-	for(Int32 i = firstSnakeIndex; i <= lastSnakeIndex; i++)
+	for(Int32 i = 1; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
-		enemy->level = 1;
-		enemy->name = "Snake";
-		enemy->position = GetRandomGroundTileCenter(map);
-		enemy->health = GetEntityMaxHealth(enemy);
-		enemy->classId = SnakeClassId;
-		enemy->groupId = EnemyGroupId;
-	}
+		IntVec2 tile = GetRandomNonTreeTile(map);
+		enemy->position = GetTileCenter(map, tile);
 
-	Int32 firstCrocodileIndex = lastSnakeIndex + 1;
-	Int32 lastCrocodileIndex = EntityN - 1;
-	for(Int32 i = firstCrocodileIndex; i <= lastCrocodileIndex; i++)
-	{
-		Entity* enemy = &labState->entities[i];
-		enemy->level = 2;
-		enemy->name = "Crocodile";
-		enemy->position = GetRandomWaterTileCenter(map);
-		enemy->health = GetEntityMaxHealth(enemy);
-		enemy->classId = CrocodileClassId;
+		ZoneId zoneId = GetZoneType(map, tile);
+		switch(zoneId)
+		{
+			case GroundZoneId:
+			{
+				enemy->level = 1;
+				enemy->name = "Snake";
+				enemy->classId = SnakeClassId;
+				break;
+			}
+			case WaterZoneId:
+			{
+				enemy->level = 2;
+				enemy->name = "Crocodile";
+				enemy->classId = CrocodileClassId;
+				break;
+			}
+			case JungleZoneId:
+			{
+				enemy->level = 5;
+				enemy->name = "Tiger";
+				enemy->classId = TigerClassId;
+				break;
+			}
+			default:
+			{
+				DebugBreak();
+			}
+		}
+
 		enemy->groupId = EnemyGroupId;
+		enemy->health = GetEntityMaxHealth(enemy);
 	}
 
 	MemArena* arena = &labState->arena;
@@ -405,6 +498,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, AbilityId abilit
 			case SnakeStrikeAbilityId:
 			case CrocodileBiteAbilityId:
 			case CrocodileLashAbilityId:
+			case TigerBiteAbilityId:
 			{
 				enabled = hasLivingEnemyTarget && (distanceFromTarget <= MaxMeleeAttackDistance);
 				break;
@@ -1108,6 +1202,11 @@ func GetAbilityDamage(Entity* entity, AbilityId abilityId)
 			damage = 30 + entity->strength;
 			break;
 		}
+		case TigerBiteAbilityId:
+		{
+			damage = 25 + entity->strength;
+			break;
+		}
 	}
 	return damage;
 }
@@ -1281,6 +1380,13 @@ func UseInstantAbility(CombatLabState* labState, Entity* entity, AbilityId abili
 		{
 			Assert(hasEnemyTarget);
 			DealDamageFromEntity(labState, entity, target, damage);
+			break;
+		}
+		case TigerBiteAbilityId:
+		{
+			Assert(hasEnemyTarget);
+			DealDamageFromEntity(labState, entity, target, damage);
+			ResetOrAddEffect(labState, target, BleedingEffectId);
 			break;
 		}
 		default:
@@ -2684,6 +2790,13 @@ func UpdateEffects(CombatLabState* labState, Real32 seconds)
 				}
 				break;
 			}
+			case BleedingEffectId:
+			{
+				if(Floor(time * (1.0f / 3.0f)) != Floor(previousTime * (1.0f / 3.0f)))
+				{
+					DealDamageFromEffect(labState, effect->effectId, effect->entity, 10);
+				}
+			}
 		}
 	}
 }
@@ -2788,6 +2901,10 @@ func PickUpFlower(CombatLabState* labState, Flower* flower)
 	Assert(foundFlower);
 
 	AddItemToInventory(inventory, flower->itemId);
+
+	Entity* player = &labState->entities[0];
+	Int8* visibleFlowerName = GetVisibleItemName(labState, flower->itemId);
+	CombatLog(labState, player->name + " picks up " + visibleFlowerName + ".");
 
 	for(Int32 i = flowerIndex + 1; i < labState->flowerN; i++)
 	{
@@ -3309,7 +3426,7 @@ func GetEntityMoveSpeed(CombatLabState* labState, Entity* entity)
 		{
 			Map* map = &labState->map;
 			IntVec2 tile = GetContainingTile(map, entity->position);
-			TileTypeId tileType = GetTileType(map, tile);
+			TileId tileType = GetTileType(map, tile);
 			if(tileType == GroundTileId)
 			{
 				moveSpeed *= 0.5f;
@@ -3318,6 +3435,23 @@ func GetEntityMoveSpeed(CombatLabState* labState, Entity* entity)
 	}
 
 	return moveSpeed;
+}
+
+static Bool32
+func IsNeutral(Entity* entity)
+{
+	Assert(entity != 0);
+	Bool32 neutral = false;
+	switch(entity->classId)
+	{
+		case SnakeClassId:
+		{
+			neutral = true;
+			break;
+		}
+	}
+
+	return neutral;
 }
 
 static void
@@ -3399,6 +3533,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 	UpdateEntityMovement(player, map, seconds);
 
+	canvas->camera->center = player->position;
+
 	if(player->inputDirection.x != 0.0f || player->inputDirection.y != 0.0f)
 	{
 		if(player->castedAbility != NoAbilityId)
@@ -3419,7 +3555,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		if(enemy->target == 0)
 		{
 			Real32 distanceFromPlayer = MaxDistance(player->position, enemy->position);
-			if(distanceFromPlayer <= enemyPullDistance)
+			Bool32 isNeutral = IsNeutral(enemy);
+			if(!isNeutral && distanceFromPlayer <= enemyPullDistance)
 			{
 				enemy->target = player;
 				AddEmptyHateTableEntry(&labState->hateTable, enemy, player);
@@ -3525,7 +3662,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		}
 	}
 
-	for(Int32 i = 0; i < EntityN; i++)
+	for(Int32 i = 1; i < EntityN; i++)
 	{
 		Entity* entity = &labState->entities[i];
 		if(entity->classId == SnakeClassId)
@@ -3536,6 +3673,14 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		{
 			AttemptToUseAbility(labState, entity, CrocodileBiteAbilityId);
 			AttemptToUseAbility(labState, entity, CrocodileLashAbilityId);
+		}
+		else if(entity->classId == TigerClassId)
+		{
+			AttemptToUseAbility(labState, entity, TigerBiteAbilityId);
+		}
+		else
+		{
+			DebugBreak();
 		}
 	}
 
@@ -3586,7 +3731,8 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		DrawEntity(canvas, player, playerColor);
 	}
 
-	Vec4 enemyColor = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 neutralEnemyColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 hostileEnemyColor = MakeColor(1.0f, 0.0f, 0.0f);
 	for(Int32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
@@ -3594,6 +3740,9 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 		{
 			continue;
 		}
+
+		Bool32 isNeutral = IsNeutral(enemy);
+		Vec4 enemyColor = (isNeutral) ? neutralEnemyColor : hostileEnemyColor;
 
 		if(enemy == player->target)
 		{
@@ -3621,9 +3770,7 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 
 		if(entity->castedAbility == NoAbilityId)
 		{
-			Int8 name[32];
-			OneLineString(name, 32, "L" + entity->level + " " + entity->name);
-			DrawTextLineBottomXCentered(canvas, name, textBottom, textCenterX, entityNameColor);
+			DrawTextLineBottomXCentered(canvas, entity->name, textBottom, textCenterX, entityNameColor);
 		}
 		else
 		{
@@ -3631,8 +3778,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			DrawTextLineBottomXCentered(canvas, abilityName, textBottom, textCenterX, castAbilityNameColor);
 		}
 	}
-
-	canvas->camera->center = player->position;
 
 	if(WasKeyReleased(userInput, 'V'))
 	{
@@ -3746,7 +3891,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 // TODO: Mana
 // TODO: Offensive and defensive target
 // TODO: Invisibility
-// TODO: Neutral enemies
 // TODO: Event queue
 // TODO: Icons?
 // TODO: Show effects above entities' heads
