@@ -58,5 +58,20 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 		camera->center.y += cameraMoveSpeed;
 	}
 
+	if(IsKeyDown(userInput, 'Q'))
+	{
+		camera->unitInPixels /= 1.10f;
+	}
+	if(IsKeyDown(userInput, 'E'))
+	{
+		camera->unitInPixels *= 1.10f;
+	}
+
+	if(WasKeyReleased(userInput, 'G'))
+	{
+		labState->arena.usedSize = 0;
+		labState->map = GenerateForestMap(&labState->arena);
+	}
+
 	DrawMap(canvas, &labState->map);
 }
