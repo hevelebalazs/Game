@@ -80,9 +80,16 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 		HANDLE file = CreateFileA(mapFile, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 		Assert(file != INVALID_HANDLE_VALUE);
 
-		char* data = "Hello";
-		DWORD dataSize = 5;
+		Map* map = &labState->map;
+		MemArena fileArena = CreateSubArena(&labState->arena, 512 * KiloByte);
+		Int32 tileN = (map->tileRowN * map->tileColN);
+		ArenaPushVar(&fileArena, *map);
+		ArenaPushData(&fileArena, tileN * sizeof(Real32), map->terrain);
+		ArenaPushData(&fileArena, tileN * sizeof(TileId), map->tileTypes);
+		ArenaPushData(&fileArena, tileN * sizeof(ZoneId), map->zoneTypes);
 
+		char* data = fileArena.baseAddress;
+		DWORD dataSize = fileArena.usedSize;
 		DWORD writtenDataSize = 0;
 
 		BOOL result = WriteFile(file, (LPCVOID)data, (DWORD)dataSize, &writtenDataSize, 0);
@@ -91,6 +98,8 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 
 		result = CloseHandle(file);
 		Assert(result);
+
+		ArenaPopTo(&labState->arena, fileArena.baseAddress);
 	}
 
 	if(WasKeyReleased(userInput, 'L'))
