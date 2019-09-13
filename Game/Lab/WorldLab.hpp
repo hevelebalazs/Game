@@ -23,7 +23,6 @@ static void
 func WorldLabInit(WorldLabState* labState, Canvas* canvas)
 {
 	labState->arena = CreateMemArena(labState->arenaMemory, WorldLabArenaSize);
-	labState->map = GenerateForestMap(&labState->arena);
 
 	Camera* camera = canvas->camera;
 	camera->unitInPixels = 10.0f;
@@ -69,12 +68,6 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 		camera->unitInPixels *= 1.10f;
 	}
 
-	if(WasKeyReleased(userInput, 'G'))
-	{
-		labState->arena.usedSize = 0;
-		labState->map = GenerateForestMap(&labState->arena);
-	}
-
 	if(WasKeyReleased(userInput, 'M'))
 	{
 		HANDLE file = CreateFileA(mapFile, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
@@ -84,13 +77,9 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 		Map* map = &labState->map;
 		Map* pushedMap = (Map*)ArenaPushVar(&fileArena, labState->map);
 		Int32 tileN = (map->tileRowN * map->tileColN);
-		Real32* terrain = (Real32*)ArenaPushData(&fileArena, tileN * sizeof(Real32), map->terrain);
-		TileId* tileTypes = (TileId*)ArenaPushData(&fileArena, tileN * sizeof(TileId), map->tileTypes);
-		ZoneId* zoneTypes = (ZoneId*)ArenaPushData(&fileArena, tileN * sizeof(ZoneId), map->zoneTypes);
 
-		pushedMap->terrain = (Real32*)GetRelativeAddress(terrain, fileArena.baseAddress);
+		TileId* tileTypes = (TileId*)ArenaPushData(&fileArena, tileN * sizeof(TileId), map->tileTypes);
 		pushedMap->tileTypes = (TileId*)GetRelativeAddress(tileTypes, fileArena.baseAddress);
-		pushedMap->zoneTypes = (ZoneId*)GetRelativeAddress(zoneTypes, fileArena.baseAddress);
 
 		char* data = fileArena.baseAddress;
 		DWORD dataSize = fileArena.usedSize;
@@ -124,9 +113,7 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 
 		Int8* base = labState->arena.baseAddress;
 		Map* map = (Map*)base;
-		map->terrain = (Real32*)GetAbsoluteAddress(map->terrain, base);
 		map->tileTypes = (TileId*)GetAbsoluteAddress(map->tileTypes, base);
-		map->zoneTypes = (ZoneId*)GetAbsoluteAddress(map->zoneTypes, base);
 
 		labState->map = *map;
 

@@ -126,6 +126,7 @@ struct Flower
 #define MaxDroppedItemN 32
 #define MaxFlowerN 256
 #define CombatLabArenaSize (2 * MegaByte)
+
 struct CombatLabState
 {
 	Int8 arenaMemory[CombatLabArenaSize];
@@ -224,89 +225,8 @@ func AddCombatLogStringLine(CombatLabState* labState, String line)
 static Vec2
 func FindEntityStartPosition(Map* map)
 {
-	IntVec2 initialTile = GetRandomZoneTile(map, GroundZoneId);
-
-	Int32 minZoneSideDistance = 10;
-	Int32 leftZoneSideDistance   = minZoneSideDistance;
-	Int32 rightZoneSideDistance  = minZoneSideDistance;
-	Int32 topZoneSideDistance    = minZoneSideDistance;
-	Int32 bottomZoneSideDistance = minZoneSideDistance;
-	
-	IntVec2 topTile         = initialTile;
-	IntVec2 topLeftTile     = initialTile;
-	IntVec2 topRightTile    = initialTile;
-	IntVec2 leftTile        = initialTile;
-	IntVec2 rightTile       = initialTile;
-	IntVec2 bottomTile      = initialTile;
-	IntVec2 bottomLeftTile  = initialTile;
-	IntVec2 bottomRightTile = initialTile;
-
-	for(Int32 step = 0; step < minZoneSideDistance; step++)
-	{
-		topTile.row--;
-		if(!IsValidTile(map, topTile) || GetZoneType(map, topTile) != GroundZoneId)
-		{
-			topZoneSideDistance = IntMin2(topZoneSideDistance, step);
-		}
-
-		topLeftTile.row--;
-		topLeftTile.col--;
-		if(!IsValidTile(map, topLeftTile) || GetZoneType(map, topLeftTile) != GroundZoneId)
-		{
-			topZoneSideDistance  = IntMin2(topZoneSideDistance, step);
-			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
-		}
-
-		topRightTile.row--;
-		topRightTile.col++;
-		if(!IsValidTile(map, topRightTile) || GetZoneType(map, topRightTile) != GroundZoneId)
-		{
-			topZoneSideDistance = IntMin2(topZoneSideDistance, step);
-			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
-		}
-
-		leftTile.col--;
-		if(!IsValidTile(map, leftTile) || GetZoneType(map, leftTile) != GroundZoneId)
-		{
-			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
-		}
-
-		rightTile.col++;
-		if(!IsValidTile(map, rightTile) || GetZoneType(map, rightTile) != GroundZoneId)
-		{
-			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
-		}
-
-		bottomTile.row++;
-		if(!IsValidTile(map, bottomTile) || GetZoneType(map, bottomTile) != GroundZoneId)
-		{
-			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
-		}
-
-		bottomLeftTile.row++;
-		bottomLeftTile.col--;
-		if(!IsValidTile(map, bottomLeftTile) || GetZoneType(map, bottomLeftTile) != GroundZoneId)
-		{
-			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
-			leftZoneSideDistance = IntMin2(leftZoneSideDistance, step);
-		}
-
-		bottomRightTile.row++;
-		bottomRightTile.col++;
-		if(!IsValidTile(map, bottomRightTile) || GetZoneType(map, bottomRightTile) != GroundZoneId)
-		{
-			bottomZoneSideDistance = IntMin2(bottomZoneSideDistance, step);
-			rightZoneSideDistance = IntMin2(rightZoneSideDistance, step);
-		}
-	}
-
-	initialTile.col += (minZoneSideDistance - leftZoneSideDistance);
-	initialTile.col -= (minZoneSideDistance - rightZoneSideDistance);
-	initialTile.row += (minZoneSideDistance - topZoneSideDistance);
-	initialTile.row -= (minZoneSideDistance - bottomZoneSideDistance);
-
-	IntVec2 startTile = FindNearbyNonTreeTile(map, initialTile);
-	Vec2 startPosition = GetTileCenter(map, startTile);
+	IntVec2 initialTile = GetRandomTile(map);
+	Vec2 startPosition = GetTileCenter(map, initialTile);
 	return startPosition;
 }
 
@@ -322,10 +242,8 @@ static void
 func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 {
 	labState->arena = CreateMemArena(labState->arenaMemory, CombatLabArenaSize);
-	labState->map = GenerateForestMap(&labState->arena);
 
 	Map* map = &labState->map;
-	map->tileSide = EntityRadius * 3.0f;
 
 	canvas->glyphData = GetGlobalGlyphData();
 
@@ -357,38 +275,8 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	for(Int32 i = 1; i < EntityN; i++)
 	{
 		Entity* enemy = &labState->entities[i];
-		IntVec2 tile = GetRandomNonTreeTile(map);
+		IntVec2 tile = GetRandomTile(map);
 		enemy->position = GetTileCenter(map, tile);
-
-		ZoneId zoneId = GetZoneType(map, tile);
-		switch(zoneId)
-		{
-			case GroundZoneId:
-			{
-				enemy->level = 1;
-				enemy->name = "Snake";
-				enemy->classId = SnakeClassId;
-				break;
-			}
-			case WaterZoneId:
-			{
-				enemy->level = 2;
-				enemy->name = "Crocodile";
-				enemy->classId = CrocodileClassId;
-				break;
-			}
-			case JungleZoneId:
-			{
-				enemy->level = 5;
-				enemy->name = "Tiger";
-				enemy->classId = TigerClassId;
-				break;
-			}
-			default:
-			{
-				DebugBreak();
-			}
-		}
 
 		enemy->groupId = EnemyGroupId;
 		enemy->health = GetEntityMaxHealth(enemy);
@@ -416,7 +304,7 @@ func CombatLabInit(CombatLabState* labState, Canvas* canvas)
 	for(Int32 i = 0; i < labState->flowerN; i++)
 	{
 		Flower* flower = &labState->flowers[i];
-		flower->position = GetRandomGroundTileCenter(&labState->map);
+		flower->position = GetRandomTileCenter(&labState->map);
 		flower->itemId = GetRandomFlowerItemId();
 	}
 }
@@ -519,8 +407,7 @@ func AbilityIsEnabled(CombatLabState* labState, Entity* entity, AbilityId abilit
 			{
 				Map* map = &labState->map;
 				IntVec2 entityTile = GetContainingTile(map, entity->position);
-				Bool32 isNearWater = TileIsNearOrInWater(map, entityTile);
-				enabled = (hasLivingFriendlyTarget && isNearWater);
+				enabled = (hasLivingFriendlyTarget);
 				break;
 			}
 			case EarthShieldAbilityId:
@@ -3059,110 +2946,6 @@ func GetEntityBottom(Entity* entity)
 static void
 func UpdateEntityMovement(Entity* entity, Map* map, Real32 seconds)
 {
-	Vec2 moveVector = seconds * entity->velocity;
-	Vec2 oldPosition = entity->position;
-	Vec2 newPosition = entity->position + moveVector;
-
-	Poly16 collisionPoly = {};
-
-	IntVec2 topTile = GetContainingTile(map, GetEntityTop(entity));
-	topTile.row--;
-
-	IntVec2 bottomTile = GetContainingTile(map, GetEntityBottom(entity));
-	bottomTile.row++;
-
-	IntVec2 leftTile = GetContainingTile(map, GetEntityLeft(entity));
-	leftTile.col--;
-
-	IntVec2 rightTile = GetContainingTile(map, GetEntityRight(entity));
-	rightTile.col++;
-
-	Bool32 treeFound = false;
-	for(Int32 row = topTile.row; row <= bottomTile.row; row++)
-	{
-		for(Int32 col = leftTile.col; col <= rightTile.col; col++)
-		{
-			IntVec2 tile = MakeTile(row, col);
-			if(IsValidTile(map, tile))
-			{
-				if(IsTileType(map, tile, TreeTileId))
-				{
-					collisionPoly = GetExtendedTreeOutline(map, tile, EntityRadius);
-					treeFound = true;
-					break;
-				}
-			}
-		}
-
-		if(treeFound)
-		{
-			break;
-		}
-	}
-
-	if(treeFound)
-	{
-		Assert(collisionPoly.pointN >= 2);
-		Int32 index1 = collisionPoly.pointN - 1;
-		for(Int32 index2 = 0; index2 < collisionPoly.pointN; index2++)
-		{
-			Vec2 point1 = collisionPoly.points[index1];
-			Vec2 point2 = collisionPoly.points[index2];
-			if(point1.x == point2.x)
-			{
-				Real32 x = point1.x;
-				if(point1.y < point2.y)
-				{
-					if(IsBetween(oldPosition.y, point1.y, point2.y) && (oldPosition.x >= x && newPosition.x < x))
-					{
-						newPosition.x = x;
-					}
-				}
-				else if(point2.y < point1.y)
-				{
-					if(IsBetween(oldPosition.y, point2.y, point1.y) && (oldPosition.x <= x && newPosition.x > x))
-					{
-						newPosition.x = x;
-					}
-				}
-				else
-				{
-					DebugBreak();
-				}
-			}
-			else if(point1.y == point2.y)
-			{
-				Real32 y = point1.y;
-				if(point1.x < point2.x)
-				{
-					if(IsBetween(oldPosition.x, point1.x, point2.x) && (oldPosition.y <= y && newPosition.y > y))
-					{
-						newPosition.y = y;
-					}
-				}
-				else if(point2.x < point1.x)
-				{
-					if(IsBetween(oldPosition.x, point2.x, point1.x) && (oldPosition.y >= y && newPosition.y < y))
-					{
-						newPosition.y = y;
-					}
-				}
-			}
-			else
-			{
-				DebugBreak();
-			}
-
-			index1 = index2;
-		}
-	}
-
-	Real32 mapWidth  = GetMapWidth(map);
-	Real32 mapHeight = GetMapHeight(map);
-	newPosition.x = Clip(newPosition.x, +EntityRadius, mapWidth  - EntityRadius);
-	newPosition.y = Clip(newPosition.y, +EntityRadius, mapHeight - EntityRadius);
-
-	entity->position = newPosition;
 }
 
 static void
@@ -3427,10 +3210,6 @@ func GetEntityMoveSpeed(CombatLabState* labState, Entity* entity)
 			Map* map = &labState->map;
 			IntVec2 tile = GetContainingTile(map, entity->position);
 			TileId tileType = GetTileType(map, tile);
-			if(tileType == GroundTileId)
-			{
-				moveSpeed *= 0.5f;
-			}
 		}
 	}
 
@@ -3486,15 +3265,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 	Bool32 inputMoveDown  = IsKeyDown(userInput, 'S') || IsKeyDown(userInput, VK_DOWN);	
 
 	IntVec2 playerTile = GetContainingTile(map, player->position);
-	if(TileIsNearTree(map, playerTile))
-	{
-		ResetOrAddEffect(labState, player, RegenerateEffectId);
-	}
-	else
-	{
-		RemoveEffect(labState, player, RegenerateEffectId);
-	}
-
 	if(inputMoveLeft && inputMoveRight)
 	{
 		player->inputDirection.x = 0.0f;
@@ -3586,9 +3356,6 @@ func CombatLabUpdate(CombatLabState* labState, Canvas* canvas, Real32 seconds, U
 			}
 			else
 			{
-				IntVec2 nextTile = GetNextTileOnPath(map, enemyTile, targetTile);
-				Real32 moveSpeed = GetEntityMoveSpeed(labState, enemy);
-				enemy->velocity = moveSpeed * PointDirection(enemy->position, GetTileCenter(map, nextTile));
 			}
 		}
 
