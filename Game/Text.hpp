@@ -22,8 +22,9 @@ struct GlyphData
 };
 GlyphData gGlyphData;
 
-static void InitGlyphData(GlyphData* glyphData);
-static GlyphData*
+static void InitGlyphData(GlyphData *glyphData);
+
+static GlyphData *
 func GetGlobalGlyphData()
 {
 	if(!gGlyphData.initialized)
@@ -35,7 +36,7 @@ func GetGlobalGlyphData()
 }
 
 static void
-func InitGlyphData(GlyphData* glyphData)
+func InitGlyphData(GlyphData *glyphData)
 {
 	static Glyph glyphs[256] =
 	{

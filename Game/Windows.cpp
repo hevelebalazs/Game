@@ -26,7 +26,7 @@ func WinInit()
 }
 
 static void
-func WinUpdate(Real32 seconds, UserInput* userInput)
+func WinUpdate(Real32 seconds, UserInput *userInput)
 {
 	WorldLabUpdate(&gLabState, &gCanvas, seconds, userInput);
 }
@@ -36,7 +36,7 @@ func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT result = 0;
 
-	UserInput* userInput = &gUserInput;
+	UserInput *userInput = &gUserInput;
 	switch(message)
 	{
 		case WM_SIZE:
@@ -46,10 +46,10 @@ func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 			Int32 width  = clientRect.right - clientRect.left;
 			Int32 height = clientRect.bottom - clientRect.top;
 
-			Canvas* canvas = &gCanvas;
+			Canvas *canvas = &gCanvas;
 			Assert(canvas != 0);
 
-			Camera* camera = canvas->camera;
+			Camera *camera = canvas->camera;
 			Assert(camera != 0);
 
 			ResizeCamera(camera, width, height);
@@ -159,7 +159,7 @@ func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, Int32 cm
 	);
 	Assert(window != 0);
 
-	UserInput* userInput = &gUserInput;
+	UserInput *userInput = &gUserInput;
 
 	LARGE_INTEGER counterFrequency;
 	QueryPerformanceFrequency(&counterFrequency);
@@ -192,8 +192,8 @@ func WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, Int32 cm
 		GetClientRect(window, &rect);
 
 		HDC context = GetDC(window);
-		Canvas* canvas = &gCanvas;
-		Bitmap* bitmap = &canvas->bitmap;
+		Canvas *canvas = &gCanvas;
+		Bitmap *bitmap = &canvas->bitmap;
 		BITMAPINFO bitmapInfo = GetBitmapInfo(bitmap);
 
 		Int32 width  = rect.right - rect.left;

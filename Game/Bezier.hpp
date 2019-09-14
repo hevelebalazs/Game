@@ -122,7 +122,7 @@ func GetBezier4DistanceFromEnd(Bezier4 bezier4, Real32 ratio)
 }
 
 static void
-func DrawBezier4(Canvas* canvas, Bezier4 bezier4, Vec4 color, Real32 lineWidth, Int32 segmentCount)
+func DrawBezier4(Canvas *canvas, Bezier4 bezier4, Vec4 color, Real32 lineWidth, Int32 segmentCount)
 {
 	Vec2 point = bezier4.points[0];
 

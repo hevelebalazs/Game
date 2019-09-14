@@ -28,10 +28,10 @@ enum EffectId
 	BleedingEffectId
 };
 
-static Int8*
+static Int8 *
 func GetEffectName(EffectId effectId)
 {
-	Int8* name = 0;
+	Int8 *name = 0;
 	switch(effectId)
 	{
 		case KickedEffectId:

@@ -9,7 +9,7 @@
 
 struct RowPaintWork 
 {
-	Bitmap* bitmap;
+	Bitmap *bitmap;
 	Int32 row;
 	UInt32 colorCode;
 };
@@ -31,7 +31,7 @@ struct ThreadLabState
 };
 
 static void
-func ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
+func ThreadLabBlit(Canvas *canvas, HDC context, RECT rect)
 {
 	Int32 width = rect.right - rect.left;
 	Int32 height = rect.bottom - rect.top;
@@ -49,10 +49,10 @@ func ThreadLabBlit(Canvas* canvas, HDC context, RECT rect)
 }
 
 static void
-func PaintRow(Bitmap* bitmap, Int32 row, UInt32 colorCode)
+func PaintRow(Bitmap *bitmap, Int32 row, UInt32 colorCode)
 {
 	Assert(row >= 0 && row < bitmap->height);
-	UInt32* pixel = bitmap->memory +(row * bitmap->width);
+	UInt32 *pixel = bitmap->memory +(row * bitmap->width);
 	for(Int32 col = 0; col < bitmap->width; col++) 
 	{
 		*pixel = colorCode;
@@ -63,11 +63,11 @@ func PaintRow(Bitmap* bitmap, Int32 row, UInt32 colorCode)
 static DWORD WINAPI
 func RowPaintWorkProc(LPVOID parameter)
 {
-	RowPaintWorkList* workList = (RowPaintWorkList*)parameter;
+	RowPaintWorkList *workList = (RowPaintWorkList *)parameter;
 	while(1) 
 	{
 		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
-		Int32 workIndex = (Int32)InterlockedIncrement((volatile UInt64*)&workList->firstWorkToDo) - 1;
+		Int32 workIndex = (Int32)InterlockedIncrement((volatile UInt64 *)&workList->firstWorkToDo) - 1;
 		RowPaintWork work = workList->works[workIndex];
 		PaintRow(work.bitmap, work.row, work.colorCode);
 		ReleaseSemaphore(workList->semaphoreDone, 1, 0);
@@ -75,7 +75,7 @@ func RowPaintWorkProc(LPVOID parameter)
 }
 
 static void
-func PushRowPaintWork(RowPaintWorkList* workList, RowPaintWork work)
+func PushRowPaintWork(RowPaintWorkList *workList, RowPaintWork work)
 {
 	Assert(workList->workN < MaxRowPaintWorkListN);
 	workList->works[workList->workN] = work;
@@ -84,9 +84,9 @@ func PushRowPaintWork(RowPaintWorkList* workList, RowPaintWork work)
 }
 
 static void
-func ThreadLabInit(ThreadLabState* labState, Canvas* canvas)
+func ThreadLabInit(ThreadLabState *labState, Canvas *canvas)
 {
-	Camera* camera = canvas->camera;
+	Camera *camera = canvas->camera;
 	camera->unitInPixels = 1.0f;
 
 	labState->workList.semaphore = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
@@ -98,14 +98,14 @@ func ThreadLabInit(ThreadLabState* labState, Canvas* canvas)
 }
 
 static void
-func ThreadLabUpdate(ThreadLabState* labState, Canvas* canvas)
+func ThreadLabUpdate(ThreadLabState *labState, Canvas *canvas)
 {
 	Vec4 backgroundColor = MakeColor(0.8f, 1.0f, 1.0f);
-	Bitmap* bitmap = &canvas->bitmap;
+	Bitmap *bitmap = &canvas->bitmap;
 
 	UInt32 paintColorCode = GetRandomColorCode();
 
-	RowPaintWorkList* workList = &labState->workList;
+	RowPaintWorkList *workList = &labState->workList;
 	workList->workN = 0;
 	workList->firstWorkToDo = 0;
 	for(Int32 row = 0; row < bitmap->height; row++) 

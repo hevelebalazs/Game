@@ -15,20 +15,20 @@ struct Map
 {
 	Int32 tileRowN;
 	Int32 tileColN;
-	TileId* tileTypes;
+	TileId *tileTypes;
 };
 
 #define MapTileSide 1.0f
 
 static Real32
-func GetMapWidth(Map* map)
+func GetMapWidth(Map *map)
 {
 	Real32 width = map->tileColN * MapTileSide;
 	return width;
 }
 
 static Real32
-func GetMapHeight(Map* map)
+func GetMapHeight(Map *map)
 {
 	Real32 height = map->tileRowN * MapTileSide;
 	return height;
@@ -49,7 +49,7 @@ func MakeGrid(Int32 row, Int32 col)
 }
 
 static Bool32
-func IsValidTile(Map* map, IntVec2 index)
+func IsValidTile(Map *map, IntVec2 index)
 {
 	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN - 1) &&
 					 IsIntBetween(index.col, 0, map->tileColN - 1));
@@ -57,7 +57,7 @@ func IsValidTile(Map* map, IntVec2 index)
 }
 
 static Bool32
-func IsValidGridIndex(Map* map, IntVec2 index)
+func IsValidGridIndex(Map *map, IntVec2 index)
 {
 	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN) &&
 					 IsIntBetween(index.col, 0, map->tileColN));
@@ -65,7 +65,7 @@ func IsValidGridIndex(Map* map, IntVec2 index)
 }
 
 static TileId
-func GetTileType(Map* map, IntVec2 tile)
+func GetTileType(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	TileId tileType = map->tileTypes[tile.row * map->tileColN + tile.col];
@@ -73,7 +73,7 @@ func GetTileType(Map* map, IntVec2 tile)
 }
 
 static Bool32
-func IsTileType(Map* map, IntVec2 tile, TileId type)
+func IsTileType(Map *map, IntVec2 tile, TileId type)
 {
 	TileId actualType = GetTileType(map, tile);
 	Bool32 isType = (actualType == type);
@@ -81,14 +81,14 @@ func IsTileType(Map* map, IntVec2 tile, TileId type)
 }
 
 static void
-func SetTileType(Map* map, IntVec2 tile, TileId type)
+func SetTileType(Map *map, IntVec2 tile, TileId type)
 {
 	Assert(IsValidTile(map, tile));
 	map->tileTypes[tile.row * map->tileColN + tile.col] = type;
 }
 
 static IntVec2
-func GetRandomTile(Map* map)
+func GetRandomTile(Map *map)
 {
 	IntVec2 tile = {};
 	tile.row = IntRandom(0, map->tileRowN - 1);
@@ -98,9 +98,8 @@ func GetRandomTile(Map* map)
 }
 
 #define InvalidTileIndex MakeTile(-1, -1)
-
 static Vec2
-func GetTileCenter(Map* map, IntVec2 index)
+func GetTileCenter(Map *map, IntVec2 index)
 {
 	Assert(IsValidTile(map, index));
 	Real32 x = (Real32)index.col * MapTileSide + MapTileSide * 0.5f;
@@ -110,7 +109,7 @@ func GetTileCenter(Map* map, IntVec2 index)
 }
 
 static Vec2
-func GetRandomTileCenter(Map* map)
+func GetRandomTileCenter(Map *map)
 {
 	IntVec2 tile = GetRandomTile(map);
 	Vec2 center = GetTileCenter(map, tile);
@@ -118,7 +117,7 @@ func GetRandomTileCenter(Map* map)
 }
 
 static Bool32
-func IsPassableTile(Map* map, IntVec2 tile)
+func IsPassableTile(Map *map, IntVec2 tile)
 {
 	TileId tileType = GetTileType(map, tile);
 	bool isPassable = (tileType != NoTileId);
@@ -126,7 +125,7 @@ func IsPassableTile(Map* map, IntVec2 tile)
 }
 
 static Vec2
-func GetGridPosition(Map* map, IntVec2 index)
+func GetGridPosition(Map *map, IntVec2 index)
 {
 	Real32 x = (Real32)index.col * MapTileSide;
 	Real32 y = (Real32)index.row * MapTileSide;
@@ -135,7 +134,7 @@ func GetGridPosition(Map* map, IntVec2 index)
 }
 
 static IntVec2
-func GetContainingTile(Map* map, Vec2 point)
+func GetContainingTile(Map *map, Vec2 point)
 {
 	Int32 row = Floor(point.y / MapTileSide);
 	Int32 col = Floor(point.x / MapTileSide);
@@ -178,7 +177,7 @@ func GetTileColor(Map* map, Int32 row, Int32 col)
 }
 
 static Rect
-func GetTileRect(Canvas* canvas, Map* map, IntVec2 tile)
+func GetTileRect(Canvas *canvas, Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	Vec2 tileCenter = GetTileCenter(map, tile);
@@ -187,7 +186,7 @@ func GetTileRect(Canvas* canvas, Map* map, IntVec2 tile)
 }
 
 static void
-func HighlightTile(Canvas* canvas, Map* map, IntVec2 tile, Vec4 color)
+func HighlightTile(Canvas *canvas, Map *map, IntVec2 tile, Vec4 color)
 {
 	Assert(IsValidTile(map, tile));
 	Rect rect = GetTileRect(canvas, map, tile);
@@ -203,9 +202,9 @@ static Bool32 TilesAreAdjacent(IntVec2 tile1, IntVec2 tile2)
 }
 
 static void
-func DrawMap(Canvas* canvas, Map* map)
+func DrawMap(Canvas *canvas, Map* map)
 {
-	Camera* camera = canvas->camera;
+	Camera *camera = canvas->camera;
 	Real32 cameraLeft   = CameraLeftSide(camera);
 	Real32 cameraRight  = CameraRightSide(camera);
 	Real32 cameraTop    = CameraTopSide(camera);

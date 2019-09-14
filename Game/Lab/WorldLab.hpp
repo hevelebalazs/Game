@@ -20,26 +20,26 @@ struct WorldLabState
 };
 
 static void
-func WorldLabInit(WorldLabState* labState, Canvas* canvas)
+func WorldLabInit(WorldLabState *labState, Canvas* canvas)
 {
 	labState->arena = CreateMemArena(labState->arenaMemory, WorldLabArenaSize);
 
-	Camera* camera = canvas->camera;
+	Camera *camera = canvas->camera;
 	camera->unitInPixels = 10.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 }
 
-static char* mapFile = "Data/Map.data";
+static Int8 *mapFile = "Data/Map.data";
 
 static void
-func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, UserInput* userInput)
+func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, UserInput *userInput)
 {
-	Bitmap* bitmap = &canvas->bitmap;
+	Bitmap *bitmap = &canvas->bitmap;
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, backgroundColor);
 
 	Real32 cameraMoveSpeed = seconds * 50.0f;
-	Camera* camera = canvas->camera;
+	Camera *camera = canvas->camera;
 
 	if(IsKeyDown(userInput, 'A'))
 	{
@@ -74,14 +74,14 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 		Assert(file != INVALID_HANDLE_VALUE);
 
 		MemArena fileArena = CreateSubArena(&labState->arena, 512 * KiloByte);
-		Map* map = &labState->map;
-		Map* pushedMap = (Map*)ArenaPushVar(&fileArena, labState->map);
+		Map *map = &labState->map;
+		Map *pushedMap = (Map *)ArenaPushVar(&fileArena, labState->map);
 		Int32 tileN = (map->tileRowN * map->tileColN);
 
-		TileId* tileTypes = (TileId*)ArenaPushData(&fileArena, tileN * sizeof(TileId), map->tileTypes);
-		pushedMap->tileTypes = (TileId*)GetRelativeAddress(tileTypes, fileArena.baseAddress);
+		TileId *tileTypes = (TileId *)ArenaPushData(&fileArena, tileN * sizeof(TileId), map->tileTypes);
+		pushedMap->tileTypes = (TileId *)GetRelativeAddress(tileTypes, fileArena.baseAddress);
 
-		char* data = fileArena.baseAddress;
+		Int8 *data = fileArena.baseAddress;
 		DWORD dataSize = fileArena.usedSize;
 		DWORD writtenDataSize = 0;
 
@@ -111,9 +111,9 @@ func WorldLabUpdate(WorldLabState* labState, Canvas* canvas, Real32 seconds, Use
 
 		labState->arena.usedSize += fileSize;
 
-		Int8* base = labState->arena.baseAddress;
-		Map* map = (Map*)base;
-		map->tileTypes = (TileId*)GetAbsoluteAddress(map->tileTypes, base);
+		Int8 *base = labState->arena.baseAddress;
+		Map *map = (Map *)base;
+		map->tileTypes = (TileId *)GetAbsoluteAddress(map->tileTypes, base);
 
 		labState->map = *map;
 
