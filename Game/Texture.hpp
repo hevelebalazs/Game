@@ -8,11 +8,11 @@ struct Texture
 {
 	Int32 side; // NOTE: power of two
 	Int32 logSide;
-	UInt32* memory;
+	UInt32 *memory;
 };
 
 static Texture
-func CopyTexture(Texture* texture) 
+func CopyTexture(Texture *texture) 
 {
 	Texture result = {};
 	result.side = texture->side;
@@ -20,8 +20,8 @@ func CopyTexture(Texture* texture)
 	// TODO: use a memory arena
 	result.memory = new UInt32[result.side * result.side];
 
-	UInt32* resultPixel = result.memory;
-	UInt32* texturePixel = texture->memory;
+	UInt32 *resultPixel = result.memory;
+	UInt32 *texturePixel = texture->memory;
 	// TODO: use a memcpy here?
 	for(Int32 row = 0; row < result.side; row++) 
 	{
@@ -37,7 +37,7 @@ func CopyTexture(Texture* texture)
 }
 
 static void
-func Swap2(UInt32* i1, UInt32* i2)
+func Swap2(UInt32 *i1, UInt32 *i2)
 {
 	UInt32 tmp = *i1;
 	*i1 = *i2;
@@ -45,7 +45,7 @@ func Swap2(UInt32* i1, UInt32* i2)
 }
 
 static void
-func Swap4(UInt32* i1, UInt32* i2, UInt32* i3, UInt32* i4)
+func Swap4(UInt32 *i1, UInt32 *i2, UInt32 *i3, UInt32 *i4)
 {
 	UInt32 tmp = *i1;
 	*i1 = *i2;
@@ -54,22 +54,22 @@ func Swap4(UInt32* i1, UInt32* i2, UInt32* i3, UInt32* i4)
 	*i4 = tmp;
 }
 
-static UInt32*
-func TextureAddress(Texture* texture, Int32 row, Int32 col)
+static UInt32 *
+func TextureAddress(Texture *texture, Int32 row, Int32 col)
 {
-	UInt32* result = texture->memory + (row * texture->side) + col;
+	UInt32 *result = texture->memory + (row * texture->side) + col;
 	return result;
 }
 
 static UInt32
-func TextureValue(Texture* texture, Int32 row, Int32 col)
+func TextureValue(Texture *texture, Int32 row, Int32 col)
 {
 	UInt32 result = *TextureAddress(texture, row, col);
 	return result;
 }
 
 static void
-func RotateTextureUpsideDown(Texture* texture)
+func RotateTextureUpsideDown(Texture *texture)
 {
 	Int32 side = texture->side;
 	Int32 halfSide = (side / 2);
@@ -78,15 +78,15 @@ func RotateTextureUpsideDown(Texture* texture)
 	{
 		for(Int32 col = 0; col < side; col++) 
 		{
-			UInt32* top = TextureAddress(texture, row, col);
-			UInt32* bottom = TextureAddress(texture, side - 1 - row, side - 1 - col);
+			UInt32 *top = TextureAddress(texture, row, col);
+			UInt32 *bottom = TextureAddress(texture, side - 1 - row, side - 1 - col);
 			Swap2(top, bottom);
 		}
 	}
 }
 
 static void
-func RotateTextureLeft(Texture* texture)
+func RotateTextureLeft(Texture *texture)
 {
 	Int32 side = texture->side;
 	Int32 halfSide = (side / 2);
@@ -94,10 +94,10 @@ func RotateTextureLeft(Texture* texture)
 	{
 		for(Int32 col = 0; col < halfSide; col++) 
 		{
-			UInt32* topLeft  = TextureAddress(texture, row, col);
-			UInt32* topRight = TextureAddress(texture, col, side - 1 - row);
-			UInt32* bottomRight = TextureAddress(texture, side - 1 - row, side - 1 - col);
-			UInt32* bottomLeft = TextureAddress(texture, side - 1 - col, row);
+			UInt32 *topLeft  = TextureAddress(texture, row, col);
+			UInt32 *topRight = TextureAddress(texture, col, side - 1 - row);
+			UInt32 *bottomRight = TextureAddress(texture, side - 1 - row, side - 1 - col);
+			UInt32 *bottomLeft = TextureAddress(texture, side - 1 - col, row);
 
 			Swap4(topLeft, topRight, bottomRight, bottomLeft);
 		}
@@ -105,7 +105,7 @@ func RotateTextureLeft(Texture* texture)
 }
 
 static void
-func RotateTextureRight(Texture* texture)
+func RotateTextureRight(Texture *texture)
 {
 	Int32 side = texture->side;
 	Int32 halfSide = (side / 2);
@@ -113,10 +113,10 @@ func RotateTextureRight(Texture* texture)
 	{
 		for(Int32 col = 0; col < halfSide; col++) 
 		{
-			UInt32* topLeft  = TextureAddress(texture, row, col);
-			UInt32* topRight = TextureAddress(texture, col, side - 1 - row);
-			UInt32* bottomRight = TextureAddress(texture, side - 1 - row, side - 1 - col);
-			UInt32* bottomLeft = TextureAddress(texture, side - 1 - col, row);
+			UInt32 *topLeft  = TextureAddress(texture, row, col);
+			UInt32 *topRight = TextureAddress(texture, col, side - 1 - row);
+			UInt32 *bottomRight = TextureAddress(texture, side - 1 - row, side - 1 - col);
+			UInt32 *bottomLeft = TextureAddress(texture, side - 1 - col, row);
 
 			Swap4(topLeft, bottomLeft, bottomRight, topRight);
 		}
@@ -174,7 +174,7 @@ func RoofTexture(Int32 logSide)
 }
 
 static Texture
-func GrassTexture(Int32 logSide, MemArena* tmpArena)
+func GrassTexture(Int32 logSide, MemArena *tmpArena)
 {
 	Texture result = {};
 	result.logSide = logSide;
@@ -182,7 +182,7 @@ func GrassTexture(Int32 logSide, MemArena* tmpArena)
 	// TODO: use a memory arena
 	result.memory = new UInt32[result.side * result.side];
 
-	UInt32* pixel = result.memory;
+	UInt32 *pixel = result.memory;
 	for(Int32 row = 0; row < result.side; row++) 
 	{
 		for(Int32 col = 0; col < result.side; col++) 
@@ -197,8 +197,8 @@ func GrassTexture(Int32 logSide, MemArena* tmpArena)
 	Real32 opacity = 1.0f - multiplier;
 	while(gridN <= 256) 
 	{
-		Real32* gridValues = ArenaPushArray(tmpArena, Real32, (gridN + 1) * (gridN + 1));
-		Real32* gridValue = gridValues;
+		Real32 *gridValues = ArenaPushArray(tmpArena, Real32, (gridN + 1) * (gridN + 1));
+		Real32 *gridValue = gridValues;
 		for(Int32 row = 0; row <= gridN; row++) 
 		{
 			for(Int32 col = 0; col <= gridN; col++) 
@@ -222,7 +222,7 @@ func GrassTexture(Int32 logSide, MemArena* tmpArena)
 
 		Int32 gridWidth = (result.side / gridN);
 
-		UInt32* pixel = result.memory;
+		UInt32 *pixel = result.memory;
 		for(Int32 row = 0; row < result.side; row++) 
 		{
 			Int32 y0 = (row / gridWidth);
@@ -284,7 +284,7 @@ func RandomGreyTexture(Int32 logSide, Int32 minRatio, Int32 maxRatio)
 	// TODO: use a memory arena
 	result.memory = new UInt32[result.side * result.side];
 
-	UInt32* pixel = result.memory;
+	UInt32 *pixel = result.memory;
 	for(Int32 row = 0; row < result.side; row++) 
 	{
 		for(Int32 col = 0; col < result.side; col++) 

@@ -7,16 +7,16 @@
 #include "../UserInput.hpp"
 
 static void
-func TextLabInit(Canvas* canvas)
+func TextLabInit(Canvas *canvas)
 {
 	canvas->glyphData = GetGlobalGlyphData();
 	canvas->camera->unitInPixels = 2.0f;
 }
 
 static void
-func DrawTestToolTip(Canvas* canvas)
+func DrawTestToolTip(Canvas *canvas)
 {
-	Int8* lines[] =
+	Int8 *lines[] =
 	{
 		"LMB",
 		"Use time: 0.5 sec",
@@ -26,14 +26,14 @@ func DrawTestToolTip(Canvas* canvas)
 	};
 	Int32 lineN = sizeof(lines) / sizeof(char*);
 
-	Bitmap* bitmap = &canvas->bitmap;
+	Bitmap *bitmap = &canvas->bitmap;
 	Int32 tooltipLeft = (bitmap->width / 2) - (TooltipWidth / 2);
 	Int32 tooltipTop = (bitmap->height / 2) - (GetTooltipHeight(lineN) / 2);
 	DrawBitmapTooltip(bitmap, lines, lineN, canvas->glyphData, tooltipTop, tooltipLeft);
 }
 
 static void
-func TextLabUpdate(Canvas* canvas)
+func TextLabUpdate(Canvas *canvas)
 {
 	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, backgroundColor);
@@ -43,8 +43,8 @@ func TextLabUpdate(Canvas* canvas)
 	Vec4 bottomLeftColor  = MakeColor(0.0f, 0.0f, 1.0f);
 	Vec4 bottomRightColor = MakeColor(1.0f, 0.0f, 0.0f);
 
-	Bitmap* bitmap = &canvas->bitmap;
-	UInt32* pixel = bitmap->memory;
+	Bitmap *bitmap = &canvas->bitmap;
+	UInt32 *pixel = bitmap->memory;
 	for(Int32 row = 0; row < bitmap->height; row++)
 	{
 		Real32 yRatio = Real32(row) / Real32(bitmap->height - 1);
@@ -62,7 +62,7 @@ func TextLabUpdate(Canvas* canvas)
 		}
 	}
 
-	Camera* camera = canvas->camera;
+	Camera *camera = canvas->camera;
 	Real32 baseLineY = 0.5f * (CameraTopSide(camera) + CameraBottomSide(camera));
 	Real32 baseLineLeft = CameraLeftSide(camera);
 	Real32 baseLineRight = CameraRightSide(camera);

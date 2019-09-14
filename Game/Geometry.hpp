@@ -108,7 +108,7 @@ struct Quad
 };
 
 static void
-func Poly16Add(Poly16* poly, Vec2 point)
+func Poly16Add(Poly16 *poly, Vec2 point)
 {
 	Assert(poly->pointN < 16);
 	poly->points[poly->pointN] = point;
@@ -307,7 +307,7 @@ func PointDirection(Vec2 startPoint, Vec2 endPoint)
 static Bool32
 func IsPointInQuad(Quad quad, Vec2 point)
 {
-	Vec2* points = quad.points;
+	Vec2 *points = quad.points;
 	if(point.x < points[0].x && point.x < points[1].x && point.x < points[2].x && point.x < points[3].x)
 	{
 		return false;
@@ -435,7 +435,7 @@ func LineIntersection(Line line1, Line line2)
 }
 
 static Bool32
-func IsPointInPoly(Vec2 point, Vec2* points, Int32 pointN)
+func IsPointInPoly(Vec2 point, Vec2 *points, Int32 pointN)
 {
 	Bool32 isInside = false;
 	if(pointN >= 3) 

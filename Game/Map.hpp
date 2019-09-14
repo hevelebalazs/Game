@@ -7,7 +7,7 @@
 
 struct RandomValueTable
 {
-	Real32* values;
+	Real32 *values;
 	Int32 valueN;
 };
 
@@ -31,16 +31,16 @@ struct Map
 	Real32 tileSide;
 	Int32 tileRowN;
 	Int32 tileColN;
-	Real32* terrain;
-	TileId* tileTypes;
-	ZoneId* zoneTypes;
+	Real32 *terrain;
+	TileId *tileTypes;
+	ZoneId *zoneTypes;
 };
 
 #define MinTreeSide 5
 #define MaxTreeSide 8
 
 static RandomValueTable
-func CreateRandomValueTable(Int32 valueN, MemArena* arena)
+func CreateRandomValueTable(Int32 valueN, MemArena *arena)
 {
 	Assert(valueN > 0);
 
@@ -54,21 +54,21 @@ func CreateRandomValueTable(Int32 valueN, MemArena* arena)
 #define MaxGridLevel 8
 
 static Real32
-func GetMapWidth(Map* map)
+func GetMapWidth(Map *map)
 {
 	Real32 width = (map->tileSide * map->tileColN);
 	return width;
 }
 
 static Real32
-func GetMapHeight(Map* map)
+func GetMapHeight(Map *map)
 {
 	Real32 height = (map->tileSide * map->tileRowN);
 	return height;
 }
 
 static Real32
-func GetValueFromRandomTable(RandomValueTable* table, Int32 index)
+func GetValueFromRandomTable(RandomValueTable *table, Int32 index)
 {
 	Real32 value = table->values[index % table->valueN];
 	return value;
@@ -82,7 +82,7 @@ func SmoothRatio(Real32 x)
 }
 
 static Real32
-func GetGridPointValue(RandomValueTable* table, Int32 gridLevel, Int32 row, Int32 col)
+func GetGridPointValue(RandomValueTable *table, Int32 gridLevel, Int32 row, Int32 col)
 {
 	Assert(IsIntBetween(gridLevel, MinGridLevel, MaxGridLevel));
 	Int32 gridN = (1 << gridLevel);
@@ -102,7 +102,7 @@ func GetGridPointValue(RandomValueTable* table, Int32 gridLevel, Int32 row, Int3
 }
 
 static Real32
-func GetPointValue(RandomValueTable* table, Int32 gridLevel, Real32 x, Real32 y)
+func GetPointValue(RandomValueTable *table, Int32 gridLevel, Real32 x, Real32 y)
 {
 	Assert(IsBetween(x, 0.0f, 1.0f));
 	Assert(IsBetween(y, 0.0f, 1.0f));
@@ -131,7 +131,7 @@ func GetPointValue(RandomValueTable* table, Int32 gridLevel, Real32 x, Real32 y)
 }
 
 static void
-func InitRandomValueTable(RandomValueTable* table)
+func InitRandomValueTable(RandomValueTable *table)
 {
 	InitRandom();
 	for(Int32 i = 0; i < table->valueN; i++)
@@ -155,7 +155,7 @@ func MakeGrid(Int32 row, Int32 col)
 }
 
 static Bool32
-func IsValidTile(Map* map, IntVec2 index)
+func IsValidTile(Map *map, IntVec2 index)
 {
 	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN - 1) &&
 					 IsIntBetween(index.col, 0, map->tileColN - 1));
@@ -163,7 +163,7 @@ func IsValidTile(Map* map, IntVec2 index)
 }
 
 static Bool32
-func IsValidGridIndex(Map* map, IntVec2 index)
+func IsValidGridIndex(Map *map, IntVec2 index)
 {
 	Bool32 result = (IsIntBetween(index.row, 0, map->tileRowN) &&
 					 IsIntBetween(index.col, 0, map->tileColN));
@@ -171,7 +171,7 @@ func IsValidGridIndex(Map* map, IntVec2 index)
 }
 
 static TileId
-func GetTileType(Map* map, IntVec2 tile)
+func GetTileType(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	TileId tileType = map->tileTypes[tile.row * map->tileColN + tile.col];
@@ -179,7 +179,7 @@ func GetTileType(Map* map, IntVec2 tile)
 }
 
 static ZoneId
-func GetZoneType(Map* map, IntVec2 tile)
+func GetZoneType(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	ZoneId zoneId = map->zoneTypes[tile.row * map->tileColN + tile.col];
@@ -187,7 +187,7 @@ func GetZoneType(Map* map, IntVec2 tile)
 }
 
 static Bool32
-func IsTileType(Map* map, IntVec2 tile, TileId type)
+func IsTileType(Map *map, IntVec2 tile, TileId type)
 {
 	TileId actualType = GetTileType(map, tile);
 	Bool32 isType = (actualType == type);
@@ -195,14 +195,14 @@ func IsTileType(Map* map, IntVec2 tile, TileId type)
 }
 
 static void
-func SetTileType(Map* map, IntVec2 tile, TileId type)
+func SetTileType(Map *map, IntVec2 tile, TileId type)
 {
 	Assert(IsValidTile(map, tile));
 	map->tileTypes[tile.row * map->tileColN + tile.col] = type;
 }
 
 static Bool32
-func TileIsNearOrInWater(Map* map, IntVec2 tile)
+func TileIsNearOrInWater(Map *map, IntVec2 tile)
 {
 	Bool32 isNearOrInWater = false;
 
@@ -238,7 +238,7 @@ func TileIsNearOrInWater(Map* map, IntVec2 tile)
 }
 
 static Bool32
-func TileIsNearTree(Map* map, IntVec2 tile)
+func TileIsNearTree(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	Assert(!IsTileType(map, tile, TreeTileId));
@@ -268,7 +268,7 @@ func TileIsNearTree(Map* map, IntVec2 tile)
 }
 
 static IntVec2
-func GetRandomTile(Map* map)
+func GetRandomTile(Map *map)
 {
 	IntVec2 tile = {};
 	tile.row = IntRandom(0, map->tileRowN - 1);
@@ -278,7 +278,7 @@ func GetRandomTile(Map* map)
 }
 
 static IntVec2
-func GetRandomZoneTile(Map* map, ZoneId zoneId)
+func GetRandomZoneTile(Map *map, ZoneId zoneId)
 {
 	IntVec2 tile = {};
 	while(1)
@@ -293,7 +293,7 @@ func GetRandomZoneTile(Map* map, ZoneId zoneId)
 }
 
 static IntVec2
-func GetRandomNonTreeTile(Map* map)
+func GetRandomNonTreeTile(Map *map)
 {
 	IntVec2 tile = {};
 	while(1)
@@ -308,7 +308,7 @@ func GetRandomNonTreeTile(Map* map)
 }
 
 static IntVec2
-func GetRandomGroundTile(Map* map)
+func GetRandomGroundTile(Map *map)
 {
 	IntVec2 tile = {};
 	while(1)
@@ -323,7 +323,7 @@ func GetRandomGroundTile(Map* map)
 }
 
 static IntVec2
-func GetRandomWaterTile(Map* map)
+func GetRandomWaterTile(Map *map)
 {
 	IntVec2 tile = {};
 	while(1)
@@ -338,7 +338,7 @@ func GetRandomWaterTile(Map* map)
 }
 
 static Real32
-func GetTileHeight(Map* map, IntVec2 tile)
+func GetTileHeight(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	Real32 height = map->terrain[tile.row * map->tileColN + tile.col];
@@ -346,7 +346,7 @@ func GetTileHeight(Map* map, IntVec2 tile)
 }
 
 static IntVec2
-func GetRandomGroundTileAboveHeight(Map* map, Real32 height)
+func GetRandomGroundTileAboveHeight(Map *map, Real32 height)
 {
 	IntVec2 tile = {};
 	while(1)
@@ -363,7 +363,7 @@ func GetRandomGroundTileAboveHeight(Map* map, Real32 height)
 #define InvalidTileIndex MakeTile(-1, -1)
 
 static IntVec2
-func GetNearestWaterTile(Map* map, IntVec2 startTile)
+func GetNearestWaterTile(Map *map, IntVec2 startTile)
 {
 	IntVec2 tile = InvalidTileIndex;
 	Int32 distance = 1;
@@ -410,7 +410,7 @@ func GetNearestWaterTile(Map* map, IntVec2 startTile)
 }
 
 static Vec2
-func GetTileCenter(Map* map, IntVec2 index)
+func GetTileCenter(Map *map, IntVec2 index)
 {
 	Assert(IsValidTile(map, index));
 	Real32 x = (Real32)index.col * map->tileSide + map->tileSide * 0.5f;
@@ -420,7 +420,7 @@ func GetTileCenter(Map* map, IntVec2 index)
 }
 
 static Vec2
-func GetRandomGroundTileCenter(Map* map)
+func GetRandomGroundTileCenter(Map *map)
 {
 	IntVec2 tile = GetRandomGroundTile(map);
 	Vec2 center = GetTileCenter(map, tile);
@@ -428,7 +428,7 @@ func GetRandomGroundTileCenter(Map* map)
 }
 
 static Vec2
-func GetRandomWaterTileCenter(Map* map)
+func GetRandomWaterTileCenter(Map *map)
 {
 	IntVec2 tile = GetRandomWaterTile(map);
 	Vec2 center = GetTileCenter(map, tile);
@@ -436,14 +436,14 @@ func GetRandomWaterTileCenter(Map* map)
 }
 
 static Bool32
-func IsPassableTile(Map* map, IntVec2 tile)
+func IsPassableTile(Map *map, IntVec2 tile)
 {
 	Bool32 isPassable = (!IsTileType(map, tile, TreeTileId));
 	return isPassable;
 }
 
 static IntVec2
-func FindNearbyNonTreeTile(Map* map, IntVec2 tile)
+func FindNearbyNonTreeTile(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	IntVec2 result = {};
@@ -477,7 +477,7 @@ func FindNearbyNonTreeTile(Map* map, IntVec2 tile)
 }
 
 static Vec2
-func GetGridPosition(Map* map, IntVec2 index)
+func GetGridPosition(Map *map, IntVec2 index)
 {
 	Real32 x = (Real32)index.col * map->tileSide;
 	Real32 y = (Real32)index.row * map->tileSide;
@@ -486,7 +486,7 @@ func GetGridPosition(Map* map, IntVec2 index)
 }
 
 static IntVec2
-func GetContainingTile(Map* map, Vec2 point)
+func GetContainingTile(Map *map, Vec2 point)
 {
 	Int32 row = Floor(point.y / map->tileSide);
 	Int32 col = Floor(point.x / map->tileSide);
@@ -593,7 +593,7 @@ func GenerateTreeShape()
 }
 
 static void
-func ApplyTreeShape(Map* map, TreeShape* shape, Int32 leftCol, Int32 topRow)
+func ApplyTreeShape(Map *map, TreeShape *shape, Int32 leftCol, Int32 topRow)
 {
 	Int32 bottomRow = ClipInt(topRow + MaxTreeSide - 1, 0, map->tileRowN - 1);
 	Int32 rightCol  = ClipInt(leftCol + MaxTreeSide - 1, 0, map->tileColN - 1);
@@ -613,7 +613,7 @@ func ApplyTreeShape(Map* map, TreeShape* shape, Int32 leftCol, Int32 topRow)
 }
 
 static IntVec2
-func GetLowestAdjacentTile(Map* map, IntVec2 tile)
+func GetLowestAdjacentTile(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 
@@ -651,7 +651,7 @@ func GetLowestAdjacentTile(Map* map, IntVec2 tile)
 }
 
 static IntVec2
-GetLowestAdjacentGroundTile(Map* map, IntVec2 tile)
+GetLowestAdjacentGroundTile(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 
@@ -793,7 +793,7 @@ func GetLeftDirection(GridDirection direction)
 }
 
 static Map
-func GenerateForestMap(MemArena* arena)
+func GenerateForestMap(MemArena *arena)
 {
 	Map map = {};
 	map.tileSide = 3.0f;
@@ -804,7 +804,7 @@ func GenerateForestMap(MemArena* arena)
 	map.terrain = ArenaPushArray(arena, Real32, tileN);
 	map.zoneTypes = ArenaPushArray(arena, ZoneId, tileN);
 
-	Int8* arenaTop = GetArenaTop(arena);
+	Int8 *arenaTop = GetArenaTop(arena);
 	RandomValueTable randomValueTable = CreateRandomValueTable(65536, arena);
 	InitRandomValueTable(&randomValueTable);
 
@@ -928,7 +928,7 @@ func GenerateForestMap(MemArena* arena)
 		}
 	}
 
-	Int32* lowestTreeRow = ArenaPushArray(arena, Int32, map.tileColN);
+	Int32 *lowestTreeRow = ArenaPushArray(arena, Int32, map.tileColN);
 	for(Int32 i = 0; i < map.tileColN; i++)
 	{
 		lowestTreeRow[i] = 0;
@@ -1054,7 +1054,7 @@ func GetZoneBaseColor(ZoneId zoneId)
 }
 
 static Vec4
-func GetTileColor(Map* map, Int32 row, Int32 col)
+func GetTileColor(Map *map, Int32 row, Int32 col)
 {
 	Assert(IsIntBetween(row, 0, map->tileRowN - 1));
 	Assert(IsIntBetween(col, 0, map->tileColN - 1));
@@ -1126,7 +1126,7 @@ func GetBottomRightTile(IntVec2 grid)
 }
 
 static IntVec2
-func GetTreeTopLeftTile(Map* map, IntVec2 tile)
+func GetTreeTopLeftTile(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	Assert(IsTileType(map, tile, TreeTileId));
@@ -1170,7 +1170,7 @@ func GetTreeTopLeftTile(Map* map, IntVec2 tile)
 }
 
 static Poly16
-func GetExtendedTreeOutline(Map* map, IntVec2 tile, Real32 radius)
+func GetExtendedTreeOutline(Map *map, IntVec2 tile, Real32 radius)
 {
 	Poly16 poly = {};
 	poly.pointN = 0;
@@ -1323,14 +1323,14 @@ func GetExtendedTreeOutline(Map* map, IntVec2 tile, Real32 radius)
 }
 
 static Poly16
-func GetTreeOutline(Map* map, IntVec2 tile)
+func GetTreeOutline(Map *map, IntVec2 tile)
 {
 	Poly16 poly = GetExtendedTreeOutline(map, tile, 0.0f);
 	return poly; 
 }
 
 static void
-func DrawTreeOutline(Canvas* canvas, Map* map, IntVec2 tile)
+func DrawTreeOutline(Canvas *canvas, Map *map, IntVec2 tile)
 {
 	Poly16 poly = GetTreeOutline(map, tile);
 	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
@@ -1338,7 +1338,7 @@ func DrawTreeOutline(Canvas* canvas, Map* map, IntVec2 tile)
 }
 
 static void
-func DrawExtendedTreeOutline(Canvas* canvas, Map* map, IntVec2 tile, Real32 radius)
+func DrawExtendedTreeOutline(Canvas *canvas, Map *map, IntVec2 tile, Real32 radius)
 {
 	Poly16 poly = GetExtendedTreeOutline(map, tile, radius);
 	Vec4 color = MakeColor(1.0f, 0.0f, 1.0f);
@@ -1346,7 +1346,7 @@ func DrawExtendedTreeOutline(Canvas* canvas, Map* map, IntVec2 tile, Real32 radi
 }
 
 static Rect
-func GetTileRect(Canvas* canvas, Map* map, IntVec2 tile)
+func GetTileRect(Canvas *canvas, Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	Vec2 tileCenter = GetTileCenter(map, tile);
@@ -1355,7 +1355,7 @@ func GetTileRect(Canvas* canvas, Map* map, IntVec2 tile)
 }
 
 static void
-func HighlightTile(Canvas* canvas, Map* map, IntVec2 tile, Vec4 color)
+func HighlightTile(Canvas *canvas, Map *map, IntVec2 tile, Vec4 color)
 {
 	Assert(IsValidTile(map, tile));
 	Rect rect = GetTileRect(canvas, map, tile);
@@ -1378,7 +1378,7 @@ struct NearTreePosition
 };
 
 static NearTreePosition
-func GetLeftNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile)
+func GetLeftNearTreePosition(Map *map, IntVec2 startTile, IntVec2 endTile)
 {
 	Assert(IsValidTile(map, startTile));
 	Assert(IsValidTile(map, endTile));
@@ -1420,7 +1420,7 @@ func GetLeftNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile)
 }
 
 static NearTreePosition
-func GetRightNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile)
+func GetRightNearTreePosition(Map *map, IntVec2 startTile, IntVec2 endTile)
 {
 	Assert(IsValidTile(map, startTile));
 	Assert(IsValidTile(map, endTile));
@@ -1462,7 +1462,7 @@ func GetRightNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile)
 }
 
 static NearTreePosition
-func GetNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile, Bool32 goLeft)
+func GetNearTreePosition(Map *map, IntVec2 startTile, IntVec2 endTile, Bool32 goLeft)
 {
 	NearTreePosition position = {};
 	if(goLeft)
@@ -1477,7 +1477,7 @@ func GetNearTreePosition(Map* map, IntVec2 startTile, IntVec2 endTile, Bool32 go
 }
 
 static NearTreePosition
-func GetNextLeftNearTreePosition(Map* map, NearTreePosition position)
+func GetNextLeftNearTreePosition(Map *map, NearTreePosition position)
 {
 	Assert(!IsTileType(map, position.tile, TreeTileId));
 	Assert(IsTileType(map, position.treeTile, TreeTileId));
@@ -1533,7 +1533,7 @@ func GetNextLeftNearTreePosition(Map* map, NearTreePosition position)
 }
 
 static NearTreePosition
-func GetNextRightNearTreePosition(Map* map, NearTreePosition position)
+func GetNextRightNearTreePosition(Map *map, NearTreePosition position)
 {
 	Assert(!IsTileType(map, position.tile, TreeTileId));
 	Assert(IsTileType(map, position.treeTile, TreeTileId));
@@ -1589,7 +1589,7 @@ func GetNextRightNearTreePosition(Map* map, NearTreePosition position)
 }
 
 static NearTreePosition
-func GetNextNearTreePosition(Map* map, NearTreePosition position, Bool32 goLeft)
+func GetNextNearTreePosition(Map *map, NearTreePosition position, Bool32 goLeft)
 {
 	NearTreePosition nextPosition = {};
 	if(goLeft)
@@ -1604,7 +1604,7 @@ func GetNextNearTreePosition(Map* map, NearTreePosition position, Bool32 goLeft)
 }
 
 static IntVec2
-func GetFirstTileAfterTree(Map* map, IntVec2 startTile, IntVec2 endTile)
+func GetFirstTileAfterTree(Map *map, IntVec2 startTile, IntVec2 endTile)
 {
 	IntVec2 nextTile = startTile;
 	nextTile.row += IntSign(endTile.row - startTile.row);
@@ -1637,7 +1637,7 @@ func GetFirstTileAfterTree(Map* map, IntVec2 startTile, IntVec2 endTile)
 }
 
 static Bool32
-func TakeLeftPathAroundTree(Map* map, IntVec2 startTile, IntVec2 endTile)
+func TakeLeftPathAroundTree(Map *map, IntVec2 startTile, IntVec2 endTile)
 {
 	NearTreePosition rightPosition = GetRightNearTreePosition(map, startTile, endTile);
 	Bool32 canGoRight = true;
@@ -1686,7 +1686,7 @@ func TakeLeftPathAroundTree(Map* map, IntVec2 startTile, IntVec2 endTile)
 }
 
 static IntVec2
-func GetNextTileOnPath(Map* map, IntVec2 startTile, IntVec2 endTile)
+func GetNextTileOnPath(Map *map, IntVec2 startTile, IntVec2 endTile)
 {
 	Assert(IsValidTile(map, startTile));
 	Assert(!IsTileType(map, startTile, TreeTileId));
@@ -1740,9 +1740,9 @@ func GetNextTileOnPath(Map* map, IntVec2 startTile, IntVec2 endTile)
 }
 
 static void
-func DrawMap(Canvas* canvas, Map* map)
+func DrawMap(Canvas *canvas, Map* map)
 {
-	Camera* camera = canvas->camera;
+	Camera *camera = canvas->camera;
 	Real32 cameraLeft   = CameraLeftSide(camera);
 	Real32 cameraRight  = CameraRightSide(camera);
 	Real32 cameraTop    = CameraTopSide(camera);

@@ -42,7 +42,7 @@ struct Vec4
 };
 
 static void
-func IntSwap(Int32* i, Int32* j)
+func IntSwap(Int32 *i, Int32 *j)
 {
 	Int32 tmp = *i;
 	*i = *j;

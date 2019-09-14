@@ -364,10 +364,10 @@ func GetAbilityRechargeDuration(AbilityId abilityId)
 	return recharge;
 }
 
-static Int8*
+static Int8 *
 func GetAbilityName(AbilityId abilityId)
 {
-	Int8* name = 0;
+	Int8 *name = 0;
 	switch(abilityId)
 	{
 		case LightningAbilityId:

@@ -8,15 +8,15 @@
 
 struct String
 {
-	Int8* buffer;
+	Int8 *buffer;
 	Int32 bufferSize;
 	Int32 usedSize;
 };
 
-static void CloseString(String* string);
+static void CloseString(String *string);
 
 static Bool32
-func StringIsTerminated(Int8* string, Int32 length)
+func StringIsTerminated(Int8 *string, Int32 length)
 {
 	Bool32 isTerminated = false;
 	for(Int32 i = 0; i < length; i++)
@@ -31,7 +31,7 @@ func StringIsTerminated(Int8* string, Int32 length)
 }
 
 static void
-func StringCopy(Int8* from, Int8* to, Int32 maxSize)
+func StringCopy(Int8 *from, Int8 *to, Int32 maxSize)
 {
 	Bool32 terminated = false;
 	for(Int32 i = 0; i < maxSize; i++)
@@ -47,7 +47,7 @@ func StringCopy(Int8* from, Int8* to, Int32 maxSize)
 }
 
 static String
-func StartString(Int8* buffer, Int32 bufferSize)
+func StartString(Int8 *buffer, Int32 bufferSize)
 {
 	Assert(bufferSize > 0);
 	String string = {};
@@ -58,7 +58,7 @@ func StartString(Int8* buffer, Int32 bufferSize)
 }
 
 static void
-func AddChar(String* string, Int8 value)
+func AddChar(String *string, Int8 value)
 {
 	Assert(string->usedSize + 1 < string->bufferSize);
 	string->buffer[string->usedSize] = value;
@@ -97,7 +97,7 @@ func CutLastDigit(Int32 value)
 }
 
 static void
-func AddInt(String* string, Int32 value)
+func AddInt(String *string, Int32 value)
 {
 	if(value == 0)
 	{
@@ -122,7 +122,7 @@ func AddInt(String* string, Int32 value)
 }
 
 static void
-func AddFloat(String* string, Real32 value)
+func AddFloat(String *string, Real32 value)
 {
 	Assert(value >= 0.0f);
 	AddInt(string, (Int32)value);
@@ -142,7 +142,7 @@ func AddFloat(String* string, Real32 value)
 }
 
 static void
-func AddText(String* string, Int8* text)
+func AddText(String *string, Int8* text)
 {
 	for(Int32 i = 0; text[i]; i++)
 	{
@@ -153,7 +153,7 @@ func AddText(String* string, Int8* text)
 }
 
 static void
-func CloseString(String* string)
+func CloseString(String *string)
 {
 	Assert(string->usedSize + 1 < string->bufferSize);
 	string->buffer[string->usedSize] = 0;

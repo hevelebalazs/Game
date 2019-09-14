@@ -12,16 +12,16 @@
 
 struct MemArena 
 {
-	Int8* baseAddress;
+	Int8 *baseAddress;
 	UInt32 usedSize;
 	UInt32 maxSize;
 };
 
 static MemArena
-func CreateMemArena(void* memory, UInt32 size)
+func CreateMemArena(void *memory, UInt32 size)
 {
 	MemArena arena = {};
-	arena.baseAddress = (Int8*)memory;
+	arena.baseAddress = (Int8 *)memory;
 	arena.maxSize = size;
 	arena.usedSize = 0;
 	return arena;
@@ -39,18 +39,18 @@ func CreateMemArena(UInt32 maxSize)
 }
 
 static void
-func ArenaReset(MemArena* arena)
+func ArenaReset(MemArena *arena)
 {
 	arena->usedSize = 0;
 }
 
-static void*
-func ArenaAlloc(MemArena* arena, UInt32 size)
+static void *
+func ArenaAlloc(MemArena *arena, UInt32 size)
 {
 	Assert(arena->usedSize + size <= arena->maxSize);
 	if(arena->usedSize + size <= arena->maxSize) 
 	{
-		Int8* result = arena->baseAddress + arena->usedSize;
+		Int8 *result = arena->baseAddress + arena->usedSize;
 		arena->usedSize += size;
 		return result;
 	}
@@ -61,37 +61,37 @@ func ArenaAlloc(MemArena* arena, UInt32 size)
 }
 
 static UInt32
-func GetArenaSize(MemArena* arena)
+func GetArenaSize(MemArena *arena)
 {
 	UInt32 result = arena->usedSize;
 	return result;
 }
 
 static void
-func SetArenaSize(MemArena* arena, UInt32 size)
+func SetArenaSize(MemArena *arena, UInt32 size)
 {
 	arena->usedSize = size;
 }
 
 // TODO: only pop if the address is smaller than the current one?
 static void
-func ArenaPopTo(MemArena* arena, void* address)
+func ArenaPopTo(MemArena *arena, void *address)
 {
-	arena->usedSize = (UInt32)((Int8*)address - arena->baseAddress);
+	arena->usedSize = (UInt32)((Int8 *)address - arena->baseAddress);
 }
 
-static Int8*
-func GetArenaTop(MemArena* arena)
+static Int8 *
+func GetArenaTop(MemArena *arena)
 {
-	Int8* top = arena->baseAddress + arena->usedSize;
+	Int8 *top = arena->baseAddress + arena->usedSize;
 	return top;
 }
 
 #define ArenaPushType(arena, type) ((type*)ArenaAlloc((arena), sizeof(type)))
 #define ArenaPushArray(arena, type, size) ((type*)ArenaAlloc((arena), (size) * sizeof(type)))
 #define ArenaPush(arena, type, variable) {\
-			type* address = (type*)ArenaAlloc(arena, sizeof(variable)); \
+			type *address = (type*)ArenaAlloc(arena, sizeof(variable)); \
 			*address = (variable); }
 #define ArenaPushVar(arena, variable) {  \
-			Int8* address = (Int8*)ArenaAlloc((arena), sizeof(variable)); \
+			Int8 *address = (Int8 *)ArenaAlloc((arena), sizeof(variable)); \
 		    memcpy((address), &(variable), sizeof(variable)); }

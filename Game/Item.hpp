@@ -116,10 +116,10 @@ func GetItemAttributes(ItemId itemId)
 	return attributes;
 }
 
-static Int8*
+static Int8 *
 func GetItemName(ItemId itemId)
 {
-	Int8* name = 0;
+	Int8 *name = 0;
 	switch(itemId)
 	{
 		case HealthPotionItemId:
@@ -210,10 +210,10 @@ func GetItemName(ItemId itemId)
 	return name;
 }
 
-static Int8*
+static Int8 *
 func GetItemSlotName(ItemId itemId)
 {
-	Int8* name = 0;
+	Int8 *name = 0;
 	switch(itemId)
 	{
 		case HealthPotionItemId:
@@ -387,7 +387,7 @@ func GetItemCooldownDuration(ItemId itemId)
 }
 
 static String
-func GetItemTooltipText(ItemId itemId, Int8* buffer, Int32 bufferSize)
+func GetItemTooltipText(ItemId itemId, Int8 *buffer, Int32 bufferSize)
 {
 	String text = StartString(buffer, bufferSize);
 
@@ -521,10 +521,10 @@ func GetItemTooltipText(ItemId itemId, Int8* buffer, Int32 bufferSize)
 }
 
 
-static Int8*
+static Int8 *
 func GetSlotName(SlotId slotId)
 {
-	Int8* name = 0;
+	Int8 *name = 0;
 	switch(slotId)
 	{
 		case HeadSlotId:
@@ -572,13 +572,13 @@ struct Inventory
 
 	Int32 rowN;
 	Int32 colN;
-	ItemId* items;
-	SlotId* slots;
+	ItemId *items;
+	SlotId *slots;
 };
 
 struct InventoryItem
 {
-	Inventory* inventory;
+	Inventory *inventory;
 	SlotId slotId;
 	ItemId itemId;
 	IntVec2 slot;
@@ -586,7 +586,7 @@ struct InventoryItem
 
 
 static void
-func SetInventorySlotId(Inventory* inventory, Int32 row, Int32 col, SlotId slotId)
+func SetInventorySlotId(Inventory *inventory, Int32 row, Int32 col, SlotId slotId)
 {
 	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
 	Assert(IsIntBetween(col, 0, inventory->colN - 1));
@@ -594,7 +594,7 @@ func SetInventorySlotId(Inventory* inventory, Int32 row, Int32 col, SlotId slotI
 }
 
 static SlotId
-func GetInventorySlotId(Inventory* inventory, Int32 row, Int32 col)
+func GetInventorySlotId(Inventory *inventory, Int32 row, Int32 col)
 {
 	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
 	Assert(IsIntBetween(col, 0, inventory->colN - 1));
@@ -603,7 +603,7 @@ func GetInventorySlotId(Inventory* inventory, Int32 row, Int32 col)
 }
 
 static void
-func SetInventoryItemId(Inventory* inventory, Int32 row, Int32 col, ItemId itemId)
+func SetInventoryItemId(Inventory *inventory, Int32 row, Int32 col, ItemId itemId)
 {
 	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
 	Assert(IsIntBetween(col, 0, inventory->colN - 1));
@@ -614,7 +614,7 @@ func SetInventoryItemId(Inventory* inventory, Int32 row, Int32 col, ItemId itemI
 }
 
 static ItemId
-func GetInventoryItemId(Inventory* inventory, Int32 row, Int32 col)
+func GetInventoryItemId(Inventory *inventory, Int32 row, Int32 col)
 {
 	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
 	Assert(IsIntBetween(col, 0, inventory->colN - 1));
@@ -623,7 +623,7 @@ func GetInventoryItemId(Inventory* inventory, Int32 row, Int32 col)
 }
 
 static void
-func InitInventory(Inventory* inventory, MemArena* arena, Int32 rowN, Int32 colN)
+func InitInventory(Inventory *inventory, MemArena *arena, Int32 rowN, Int32 colN)
 {
 	inventory->rowN = rowN;
 	inventory->colN = colN;
@@ -638,7 +638,7 @@ func InitInventory(Inventory* inventory, MemArena* arena, Int32 rowN, Int32 colN
 }
 
 static Bool32
-func InventorySlotIsValid(Inventory* inventory, IntVec2 slot)
+func InventorySlotIsValid(Inventory *inventory, IntVec2 slot)
 {
 	Bool32 rowIsValid = IsIntBetween(slot.row, 0, inventory->rowN - 1);
 	Bool32 colIsValid = IsIntBetween(slot.col, 0, inventory->colN - 1);
@@ -647,20 +647,20 @@ func InventorySlotIsValid(Inventory* inventory, IntVec2 slot)
 }
 
 static void
-func SetSlotItemId(Inventory* inventory, IntVec2 slot, ItemId itemId)
+func SetSlotItemId(Inventory *inventory, IntVec2 slot, ItemId itemId)
 {
 	SetInventoryItemId(inventory, slot.row, slot.col, itemId);
 }
 
 static Bool32
-func InventoryItemIsValid(InventoryItem* item)
+func InventoryItemIsValid(InventoryItem *item)
 {
 	Bool32 isValid = (item->inventory && InventorySlotIsValid(item->inventory, item->slot));
 	return isValid;
 }
 
 static Bool32
-func HasEmptySlot(Inventory* inventory)
+func HasEmptySlot(Inventory *inventory)
 {
 	Bool32 hasEmptySlot = false;
 	for(Int32 row = 0; row < inventory->rowN; row++)
@@ -686,7 +686,7 @@ func HasEmptySlot(Inventory* inventory)
 
 
 static void
-func AddItemToInventory(Inventory* inventory, ItemId itemId)
+func AddItemToInventory(Inventory *inventory, ItemId itemId)
 {
 	Assert(HasEmptySlot(inventory));
 	Bool32 itemAdded = false;
