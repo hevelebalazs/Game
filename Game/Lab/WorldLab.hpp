@@ -25,7 +25,7 @@ func WorldLabInit(WorldLabState *labState, Canvas* canvas)
 	labState->arena = CreateMemArena(labState->arenaMemory, WorldLabArenaSize);
 
 	Camera *camera = canvas->camera;
-	camera->unitInPixels = 10.0f;
+	camera->unitInPixels = 100.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 }
 
@@ -122,4 +122,18 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 	}
 
 	DrawMap(canvas, &labState->map);
+
+	Vec2 mousePosition = PixelToUnit(camera, userInput->mousePixelPosition);
+	
+	Int32 tileRowIndex = Floor(mousePosition.y / MapTileSide);
+	Int32 tileColIndex = Floor(mousePosition.x / MapTileSide);
+	
+	Rect tileRect = {};
+	tileRect.left   = tileColIndex * MapTileSide;
+	tileRect.right  = tileRect.left + MapTileSide;
+	tileRect.top    = tileRowIndex * MapTileSide;
+	tileRect.bottom = tileRect.top + MapTileSide;
+
+	Vec4 tileColor = MakeColor(0.5f, 0.5f, 0.5f);
+	DrawRect(canvas, tileRect, tileColor);
 }
