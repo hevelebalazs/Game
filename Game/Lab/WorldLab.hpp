@@ -75,7 +75,7 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 
 		MemArena fileArena = CreateSubArena(&labState->arena, 512 * KiloByte);
 		Map *map = &labState->map;
-		Map *pushedMap = (Map *)ArenaPushVar(&fileArena, labState->map);
+		Map *pushedMap = (Map *)ArenaPushVar(&fileArena, *map);
 		Int32 tileN = (map->tileRowN * map->tileColN);
 
 		TileId *tileTypes = (TileId *)ArenaPushData(&fileArena, tileN * sizeof(TileId), map->tileTypes);
@@ -121,17 +121,53 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 		Assert(result);
 	}
 
+	Map* map = &labState->map;
 	DrawMap(canvas, &labState->map);
+
+	if(map->tileRowN > 0)
+	{
+		Assert(map->tileColN > 0);
+		Rect rect = {};
+		rect.left = 0.0f;
+		rect.right = GetMapWidth(map);
+		rect.top = 0.0f;
+		rect.bottom = GetMapWidth(map);
+
+		Vec4 borderColor = MakeColor(1.0f, 1.0f, 0.0);
+		DrawRectOutline(canvas, rect, borderColor);
+	}
 
 	Vec2 mousePosition = PixelToUnit(camera, userInput->mousePixelPosition);
 	
-	Int32 tileRowIndex = Floor(mousePosition.y / MapTileSide);
-	Int32 tileColIndex = Floor(mousePosition.x / MapTileSide);
+	IntVec2 tile = {};
+	tile.row = Floor(mousePosition.y / MapTileSide);
+	tile.col = Floor(mousePosition.x / MapTileSide);
+
+	if(WasKeyReleased(userInput, VK_LBUTTON))
+	{
+		if(map->tileRowN == 0)
+		{
+			Assert(map->tileColN == 0);
+			Assert(map->tileTypes == 0);
+			map->tileRowN = 1;
+			map->tileColN = 1;
+			map->tileTypes = ArenaPushArray(&labState->arena, TileId, 1);
+
+			IntVec2 newTile = {};
+			newTile.row = 0;
+			newTile.col = 0;
+
+			SetTileType(map, newTile, CaveTileId);
+
+			camera->center.y -= tile.row * MapTileSide;
+			camera->center.x -= tile.col * MapTileSide;
+		}
+	}
 	
 	Rect tileRect = {};
-	tileRect.left   = tileColIndex * MapTileSide;
+	tileRect.left   = tile.col * MapTileSide;
 	tileRect.right  = tileRect.left + MapTileSide;
-	tileRect.top    = tileRowIndex * MapTileSide;
+	tileRect.top    = tile.row * MapTileSide;
 	tileRect.bottom = tileRect.top + MapTileSide;
 
 	Vec4 tileColor = MakeColor(0.5f, 0.5f, 0.5f);

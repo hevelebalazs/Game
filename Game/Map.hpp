@@ -151,7 +151,7 @@ func GetTileColor(Map* map, Int32 row, Int32 col)
 	Int32 tileIndex = row * map->tileColN + col;
 
 	Vec4 blackColor = MakeColor(0.0f, 0.0f, 0.0f);
-	Vec4 caveColor  = MakeColor(0.5f, 0.5f, 0.0f);
+	Vec4 caveColor  = MakeColor(0.2f, 0.05f, 0.0f);
 
 	Vec4 color = {};
 	TileId tileType = map->tileTypes[tileIndex];
