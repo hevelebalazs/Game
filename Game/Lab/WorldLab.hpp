@@ -131,7 +131,7 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 		rect.left = 0.0f;
 		rect.right = GetMapWidth(map);
 		rect.top = 0.0f;
-		rect.bottom = GetMapWidth(map);
+		rect.bottom = GetMapHeight(map);
 
 		Vec4 borderColor = MakeColor(1.0f, 1.0f, 0.0);
 		DrawRectOutline(canvas, rect, borderColor);
@@ -161,6 +161,89 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 
 			camera->center.y -= tile.row * MapTileSide;
 			camera->center.x -= tile.col * MapTileSide;
+		}
+		else
+		{
+			Assert(map->tileColN > 0);
+			Assert(map->tileRowN > 0);
+
+			Int32 newRowN = map->tileRowN;
+			Int32 newColN = map->tileColN;
+
+			if(tile.row < 0)
+			{
+				newRowN += (-tile.row);
+			}
+			else if(tile.row >= map->tileRowN)
+			{
+				newRowN += (tile.row - map->tileRowN + 1);
+			}
+
+			if(tile.col < 0)
+			{
+				newColN += (-tile.col);
+			}
+			else if(tile.col >= map->tileColN)
+			{
+				newColN += (tile.col - map->tileColN + 1);
+			}
+
+			MemArena *arena = &labState->arena;
+			Int8 *tileDataEnd = (Int8 *)&map->tileTypes[map->tileRowN * map->tileColN];
+			Int8 *arenaEnd = GetArenaTop(arena);
+			Assert(tileDataEnd == arenaEnd);
+
+			TileId *newTiles = ArenaPushArray(arena, TileId, newRowN * newColN);
+			for(Int32 index = 0; index < newRowN * newColN; index++)
+			{
+				newTiles[index] = NoTileId;
+			}
+
+			for(Int32 row = 0; row < map->tileRowN; row++)
+			{
+				for(Int32 col = 0; col < map->tileColN; col++)
+				{
+					Int32 oldIndex = map->tileColN * row + col;
+					Int32 newRow = row;
+					if(tile.row < 0)
+					{
+						newRow += (-tile.row);
+					}
+
+					Int32 newCol = col;
+					if(tile.col < 0)
+					{
+						newCol += (-tile.col);
+					}
+
+					Int32 newIndex = newColN * newRow + newCol;
+					newTiles[newIndex] = map->tileTypes[oldIndex];
+				}
+			}
+
+			Int32 indexDifference = (map->tileRowN * map->tileColN);
+			for(Int32 index = 0; index < newRowN * newColN; index++)
+			{
+				map->tileTypes[index] = map->tileTypes[index + indexDifference];
+			}
+
+			map->tileRowN = newRowN;
+			map->tileColN = newColN;
+
+			arena->usedSize -= indexDifference * sizeof(TileId);
+
+			if(tile.row < 0)
+			{
+				camera->center.y += (-tile.row) * MapTileSide;
+			}
+			if(tile.col < 0)
+			{
+				camera->center.x += (-tile.col) * MapTileSide;
+			}
+
+			tile.row = IntMax2(tile.row, 0);
+			tile.col = IntMax2(tile.col, 0);
+			SetTileType(map, tile, CaveTileId);
 		}
 	}
 	
