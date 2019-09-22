@@ -18,7 +18,7 @@ struct Map
 	TileId *tileTypes;
 };
 
-#define MapTileSide 1.0f
+#define MapTileSide 10.0f
 
 static Real32
 func GetMapWidth(Map *map)
@@ -237,4 +237,31 @@ func DrawMap(Canvas *canvas, Map* map)
 			DrawRectLRTB(canvas, tileLeft, tileRight, tileTop, tileBottom, color);
 		}
 	}
+}
+
+static Map
+func ReadMapFromFile(Int8 *filePath, MemArena *arena)
+{
+	HANDLE file = CreateFileA(filePath, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	Assert(file != INVALID_HANDLE_VALUE);
+
+	arena->usedSize = 0;
+	DWORD fileSize = GetFileSize(file, 0);
+	Assert(fileSize <= arena->maxSize);
+
+	DWORD readSize = 0;
+	bool result = ReadFile(file, arena->baseAddress, fileSize, &readSize, 0);
+	Assert(result);
+	Assert(fileSize == readSize);
+
+	arena->usedSize += fileSize;
+
+	Int8 *base = arena->baseAddress;
+	Map *map = (Map *)base;
+	map->tileTypes = (TileId *)GetAbsoluteAddress(map->tileTypes, base);
+
+	result = CloseHandle(file);
+	Assert(result);
+
+	return *map;
 }

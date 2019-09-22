@@ -4,6 +4,7 @@
 
 #include "Bitmap.hpp"
 #include "Draw.hpp"
+#include "Game.hpp"
 #include "Type.hpp"
 #include "UserInput.hpp"
 
@@ -12,23 +13,39 @@
 #include "Lab/ThreadLab.hpp"
 #include "Lab/WorldLab.hpp"
 
+#define RUN_GAME 1
+
 Camera gCamera;
 Canvas gCanvas;
 UserInput gUserInput;
 Bool32 gRunning;
+
+#if RUN_GAME
+Game gGame;
+#else
 WorldLabState gLabState;
+#endif
 
 static void
 func WinInit()
 {
 	gCanvas.camera = &gCamera;
+
+#if RUN_GAME
+	GameInit(&gGame, &gCanvas);
+#else
 	WorldLabInit(&gLabState, &gCanvas);
+#endif
 }
 
 static void
 func WinUpdate(Real32 seconds, UserInput *userInput)
 {
+#if RUN_GAME
+	GameUpdate(&gGame, &gCanvas, seconds, userInput);
+#else
 	WorldLabUpdate(&gLabState, &gCanvas, seconds, userInput);
+#endif
 }
 
 static LRESULT CALLBACK

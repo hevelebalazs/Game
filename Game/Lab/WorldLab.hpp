@@ -16,7 +16,6 @@ struct WorldLabState
 	Int8 arenaMemory[WorldLabArenaSize];
 	MemArena arena;
 	Map map;
-	Bitmap bitmap;
 };
 
 static void
@@ -68,6 +67,7 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 		camera->unitInPixels *= 1.10f;
 	}
 
+	MemArena* arena = &labState->arena;
 	if(WasKeyReleased(userInput, 'M'))
 	{
 		HANDLE file = CreateFileA(mapFile, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
@@ -97,32 +97,11 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 
 	if(WasKeyReleased(userInput, 'L'))
 	{
-		HANDLE file = CreateFileA(mapFile, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-		Assert(file != INVALID_HANDLE_VALUE);
-
-		labState->arena.usedSize = 0;
-		DWORD fileSize = GetFileSize(file, 0);
-		Assert(fileSize <= labState->arena.maxSize);
-
-		DWORD readSize = 0;
-		bool result = ReadFile(file, labState->arena.baseAddress, fileSize, &readSize, 0);
-		Assert(result);
-		Assert(fileSize == readSize);
-
-		labState->arena.usedSize += fileSize;
-
-		Int8 *base = labState->arena.baseAddress;
-		Map *map = (Map *)base;
-		map->tileTypes = (TileId *)GetAbsoluteAddress(map->tileTypes, base);
-
-		labState->map = *map;
-
-		result = CloseHandle(file);
-		Assert(result);
+		labState->map = ReadMapFromFile(mapFile, arena);
 	}
 
 	Map* map = &labState->map;
-	DrawMap(canvas, &labState->map);
+	DrawMap(canvas, map);
 
 	if(map->tileRowN > 0)
 	{
