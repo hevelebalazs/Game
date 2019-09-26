@@ -177,7 +177,7 @@ func GetTileColor(Map* map, Int32 row, Int32 col)
 }
 
 static Rect
-func GetTileRect(Canvas *canvas, Map *map, IntVec2 tile)
+func GetTileRect(Map *map, IntVec2 tile)
 {
 	Assert(IsValidTile(map, tile));
 	Vec2 tileCenter = GetTileCenter(map, tile);
@@ -189,7 +189,7 @@ static void
 func HighlightTile(Canvas *canvas, Map *map, IntVec2 tile, Vec4 color)
 {
 	Assert(IsValidTile(map, tile));
-	Rect rect = GetTileRect(canvas, map, tile);
+	Rect rect = GetTileRect(map, tile);
 	DrawRect(canvas, rect, color);
 }
 

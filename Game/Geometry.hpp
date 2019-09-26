@@ -104,6 +104,17 @@ func MakeRectTopLeft(Vec2 topLeft, Real32 xSize, Real32 ySize)
 	return rect;
 }
 
+static Rect
+func GetExtendedRect(Rect rect, Real32 extendSide)
+{
+	Rect extended = {};
+	extended.left   = rect.left   - extendSide;
+	extended.right  = rect.right  + extendSide;
+	extended.top    = rect.top    - extendSide;
+	extended.bottom = rect.bottom + extendSide;
+	return extended;
+}
+
 Bool32
 func RectContainsPoint(Rect rect, Vec2 point)
 {

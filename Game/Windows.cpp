@@ -8,7 +8,7 @@
 #include "Type.hpp"
 #include "UserInput.hpp"
 
-#include "Lab/CombatLab.hpp"
+// #include "Lab/CombatLab.hpp"
 #include "Lab/TextLab.hpp"
 #include "Lab/ThreadLab.hpp"
 #include "Lab/WorldLab.hpp"
