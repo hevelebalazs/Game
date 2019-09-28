@@ -2,6 +2,7 @@
 
 #include "Bitmap.hpp"
 #include "Draw.hpp"
+#include "Item.hpp"
 #include "Memory.hpp"
 #include "Type.hpp"
 
@@ -11,11 +12,20 @@ enum TileId
 	CaveTileId
 };
 
+struct MapItem
+{
+	ItemId itemId;
+	Vec2 position;
+};
+
 struct Map
 {
 	Int32 tileRowN;
 	Int32 tileColN;
 	TileId *tileTypes;
+
+	Int32 itemN;
+	MapItem *items;
 };
 
 #define MapTileSide 10.0f
@@ -237,6 +247,14 @@ func DrawMap(Canvas *canvas, Map* map)
 			DrawRectLRTB(canvas, tileLeft, tileRight, tileTop, tileBottom, color);
 		}
 	}
+
+	Real32 itemRadius = 0.2f;
+	Vec4 itemColor = MakeColor(0.5f, 0.0f, 0.5f);
+	for(Int32 i = 0; i < map->itemN; i++)
+	{
+		MapItem *item = &map->items[i];
+		DrawCircle(canvas, item->position, itemRadius, itemColor);
+	}
 }
 
 static Map
@@ -259,6 +277,11 @@ func ReadMapFromFile(Int8 *filePath, MemArena *arena)
 	Int8 *base = arena->baseAddress;
 	Map *map = (Map *)base;
 	map->tileTypes = (TileId *)GetAbsoluteAddress(map->tileTypes, base);
+	map->items = (MapItem *)GetAbsoluteAddress(map->items, base);
+
+	Int8 *mapEnd = (Int8 *)&map->items[map->itemN];
+	Int8 *arenaTop = GetArenaTop(arena);
+	Assert(mapEnd == arenaTop);
 
 	result = CloseHandle(file);
 	Assert(result);

@@ -13,7 +13,7 @@
 #include "Lab/ThreadLab.hpp"
 #include "Lab/WorldLab.hpp"
 
-#define RUN_GAME 1
+#define RUN_GAME 0
 
 Camera gCamera;
 Canvas gCanvas;
