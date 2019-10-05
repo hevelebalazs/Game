@@ -600,6 +600,72 @@ func DrawVerticalTrapezoid(Canvas* canvas, Vec2 topLeft, Vec2 topRight, Vec2 bot
 }
 
 static void
+func DrawCircle(Canvas *canvas, Vec2 center, Real32 radius, Vec4 color)
+{
+	UInt32 colorCode = GetColorCode(color);
+
+	Camera *camera = canvas->camera;
+
+	Int32 centerXPixel = UnitXtoPixel(camera, center.x);
+	Int32 centerYPixel = UnitYtoPixel(camera, center.y);
+
+	Int32 leftPixel   = UnitXtoPixel(camera, center.x - radius);
+	Int32 rightPixel  = UnitXtoPixel(camera, center.x + radius);
+	Int32 topPixel    = UnitYtoPixel(camera, center.y - radius);
+	Int32 bottomPixel = UnitYtoPixel(camera, center.y + radius);
+
+	if(topPixel > bottomPixel)
+	{
+		IntSwap(&topPixel, &bottomPixel);
+	}
+
+	if(leftPixel > rightPixel)
+	{
+		IntSwap(&leftPixel, &rightPixel);
+	}
+
+	Int32 pixelRadius = (Int32)(radius * camera->unitInPixels);
+	Int32 pixelRadiusSquare = pixelRadius * pixelRadius;
+
+	Bitmap bitmap = canvas->bitmap;
+	topPixel    = IntMax2(topPixel, 0);
+	bottomPixel = IntMin2(bottomPixel, bitmap.height - 1);
+	leftPixel   = IntMax2(leftPixel, 0);
+	rightPixel  = IntMin2(rightPixel, bitmap.width - 1);
+
+	for(Int32 row = topPixel; row < bottomPixel; row++)
+	{
+		for(Int32 col = leftPixel; col < rightPixel; col++)
+		{
+			UInt32 *pixel = bitmap.memory + row * bitmap.width + col;
+			Int32 pixelDistanceSquare = IntSquare(row - centerYPixel) + IntSquare(col - centerXPixel);
+			if(pixelDistanceSquare <= pixelRadiusSquare)
+			{
+				*pixel = colorCode;
+			}
+		}
+	}
+}
+
+static void
+func DrawCircleOutline(Canvas *canvas, Vec2 center, Real32 radius, Vec4 color)
+{
+	Int32 lineN = 20;
+	Real32 angleAdvance = (2.0f * PI) / Real32(lineN);
+	Real32 angle = 0.0f;
+	for(Int32 i = 0; i < lineN; i++)
+	{
+		Real32 angle1 = angle;
+		Real32 angle2 = angle + angleAdvance;
+		Vec2 point1 = center + radius * RotationVector(angle1);
+		Vec2 point2 = center + radius * RotationVector(angle2);
+		Bresenham(canvas, point1, point2, color);
+
+		angle += angleAdvance;
+	}
+}
+
+static void
 func DrawRectLRTB(Canvas* canvas, Real32 left, Real32 right, Real32 top, Real32 bottom, Vec4 color)
 {
 	UInt32 colorCode = GetColorCode(color);

@@ -131,6 +131,7 @@
     <ClInclude Include="Debug.hpp" />
     <ClInclude Include="Effect.hpp" />
     <ClInclude Include="Geometry.hpp" />
+    <ClInclude Include="Game.hpp" />
     <ClInclude Include="Item.hpp" />
     <ClInclude Include="Lab\CombatLab.hpp" />
     <ClInclude Include="Lab\TextLab.hpp" />

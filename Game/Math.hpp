@@ -166,6 +166,12 @@ func operator+(Vec2 point1, Vec2 point2)
 	return result;
 }
 
+static void
+func operator+=(Vec2& point1, Vec2 point2)
+{
+	point1 = point1 + point2;
+}
+
 static Vec2
 func operator-(Vec2 point1, Vec2 point2)
 {

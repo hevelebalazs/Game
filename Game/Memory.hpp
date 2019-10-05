@@ -87,11 +87,35 @@ func GetArenaTop(MemArena *arena)
 	return top;
 }
 
+static Int8*
+func ArenaPushData(MemArena* arena, UInt32 size, void* data)
+{
+	Int8* copyTo = (Int8*)ArenaAlloc(arena, size);
+	Int8* copyFrom = (Int8*)data;
+	for(UInt32 index = 0; index < size; index++)
+	{
+		copyTo[index] = copyFrom[index];
+	}
+
+	return copyTo;
+}
+
 #define ArenaPushType(arena, type) ((type*)ArenaAlloc((arena), sizeof(type)))
 #define ArenaPushArray(arena, type, size) ((type*)ArenaAlloc((arena), (size) * sizeof(type)))
 #define ArenaPush(arena, type, variable) {\
 			type *address = (type*)ArenaAlloc(arena, sizeof(variable)); \
 			*address = (variable); }
-#define ArenaPushVar(arena, variable) {  \
-			Int8 *address = (Int8 *)ArenaAlloc((arena), sizeof(variable)); \
-		    memcpy((address), &(variable), sizeof(variable)); }
+#define ArenaPushVar(arena, variable) ArenaPushData(arena, sizeof(variable), &(variable));
+
+static MemArena
+func CreateSubArena(MemArena *arena, UInt32 size)
+{
+	MemArena result = {};
+	result.baseAddress = (Int8 *)ArenaAlloc(arena, size);
+	result.usedSize = 0;
+	result.maxSize = size;
+	return result;
+}
+
+#define GetRelativeAddress(absoluteAddress, base) ((UInt64)(absoluteAddress) - (UInt64)(base))
+#define GetAbsoluteAddress(relativeAddress, base) ((UInt64)(relativeAddress) + (UInt64)(base))
