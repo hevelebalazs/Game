@@ -257,6 +257,8 @@ func DrawMap(Canvas *canvas, Map* map)
 	}
 }
 
+#define MapVersion 1
+
 static Map
 func ReadMapFromFile(Int8 *filePath, MemArena *arena)
 {
@@ -271,17 +273,26 @@ func ReadMapFromFile(Int8 *filePath, MemArena *arena)
 	bool result = ReadFile(file, arena->baseAddress, fileSize, &readSize, 0);
 	Assert(result);
 	Assert(fileSize == readSize);
-
 	arena->usedSize += fileSize;
 
 	Int8 *base = arena->baseAddress;
-	Map *map = (Map *)base;
+
+	Int8 *position = base;
+	Int32 version = *(Int32 *)position;
+	Assert(version == MapVersion);
+
+	position += sizeof(Int32);
+
+	Map *map = (Map *)position;
 	map->tileTypes = (TileId *)GetAbsoluteAddress(map->tileTypes, base);
 	map->items = (MapItem *)GetAbsoluteAddress(map->items, base);
 
-	Int8 *mapEnd = (Int8 *)&map->items[map->itemN];
+	position += sizeof(Map);
+	position += map->tileRowN * map->tileColN * sizeof(TileId);
+	position += map->itemN * sizeof(MapItem);
+
 	Int8 *arenaTop = GetArenaTop(arena);
-	Assert(mapEnd == arenaTop);
+	Assert(position == arenaTop);
 
 	result = CloseHandle(file);
 	Assert(result);

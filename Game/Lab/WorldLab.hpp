@@ -268,6 +268,9 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 		Assert(file != INVALID_HANDLE_VALUE);
 
 		MemArena *fileArena = tmpArena;
+		Int32 version = MapVersion;
+		ArenaPushVar(fileArena, version);
+
 		Map *map = &labState->map;
 		Map *pushedMap = (Map *)ArenaPushVar(fileArena, *map);
 		Int32 tileN = (map->tileRowN * map->tileColN);
