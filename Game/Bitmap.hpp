@@ -687,6 +687,7 @@ func DrawBitmapGlyph(Bitmap *bitmap, Glyph *glyph, Int32 x, Int32 baseLineY, Vec
 static void
 func DrawBitmapTextLine(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, Int32 left, Int32 baseLineY, Vec4 color)
 {
+	Assert(glyphData);
 	Real32 textX = (Real32)left;
 	Real32 textY = (Real32)baseLineY;
 

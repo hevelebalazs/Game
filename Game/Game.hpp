@@ -35,6 +35,8 @@ func GameInit(Game *game, Canvas *canvas)
 
 	Int8 *mapFile = "Data/Map.data";
 	game->map = ReadMapFromFile(mapFile, &game->arena); 
+
+	canvas->glyphData = GetGlobalGlyphData();
 }
 
 #define EntityRadius 0.5f
@@ -143,6 +145,29 @@ func UpdateEntityMovement(Entity *entity, Map *map, Real32 seconds)
 }
 
 static void
+func DrawInteractionDialog(Canvas *canvas)
+{
+	Vec4 color = MakeColor(0.8f, 0.8f, 0.4f);
+	Vec4 outlineColor = MakeColor(1.0f, 1.0f, 0.5f);
+
+	Int32 border = 30;
+	Bitmap *bitmap = &canvas->bitmap;
+	Int32 bottom = bitmap->height - border;
+	Int32 left = border;
+	Int32 right = bitmap->width - border;
+	Int32 top = bottom - 200;
+	DrawBitmapRect(bitmap, left, right, top, bottom, color);
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+
+	Vec4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Int32 textLeft = left + 10;
+	Int32 textTop = top + 10;
+
+	Int8 *text = "Can you bring me 10 crystals?";
+	DrawBitmapTextLineTopLeft(bitmap, text, canvas->glyphData, textLeft, textTop, textColor);
+}
+
+static void
 func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput)
 {
 	Bitmap *bitmap = &canvas->bitmap;
@@ -181,4 +206,21 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	Vec4 playerColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Rect playerRect = GetEntityRect(player);
 	DrawRect(canvas, playerRect, playerColor);
+
+	Vec4 npcColor = MakeColor(1.0f, 0.0f, 1.0f);
+	Vec4 npcHighlightColor = MakeColor(0.5f, 0.0f, 0.5f);
+	Vec4 npcBorderColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Entity npc = {};
+	npc.position = MakePoint(50.0f, 25.0f);
+
+	Real32 playerNPCDistance = Distance(player->position, npc.position);
+	Real32 interactionDistance = 3.0f;
+	Rect npcRect = GetEntityRect(&npc);
+
+	DrawRect(canvas, npcRect, npcColor);
+	if(playerNPCDistance <= interactionDistance)
+	{
+		DrawRectOutline(canvas, npcRect, npcBorderColor);
+		DrawInteractionDialog(canvas);
+	}
 }
