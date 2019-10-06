@@ -628,8 +628,8 @@ func InitInventory(Inventory *inventory, MemArena *arena, Int32 rowN, Int32 colN
 	inventory->rowN = rowN;
 	inventory->colN = colN;
 	Int32 itemN = (rowN * colN);
-	inventory->items = ArenaPushArray(arena, ItemId, itemN);
-	inventory->slots = ArenaPushArray(arena, SlotId, itemN);
+	inventory->items = ArenaAllocArray(arena, ItemId, itemN);
+	inventory->slots = ArenaAllocArray(arena, SlotId, itemN);
 	for(Int32 i = 0; i < itemN; i++)
 	{
 		inventory->items[i] = NoItemId;

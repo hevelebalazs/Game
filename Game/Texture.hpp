@@ -197,7 +197,7 @@ func GrassTexture(Int32 logSide, MemArena *tmpArena)
 	Real32 opacity = 1.0f - multiplier;
 	while(gridN <= 256) 
 	{
-		Real32 *gridValues = ArenaPushArray(tmpArena, Real32, (gridN + 1) * (gridN + 1));
+		Real32 *gridValues = ArenaAllocArray(tmpArena, Real32, (gridN + 1) * (gridN + 1));
 		Real32 *gridValue = gridValues;
 		for(Int32 row = 0; row <= gridN; row++) 
 		{
