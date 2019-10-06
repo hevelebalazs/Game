@@ -27,17 +27,6 @@ func CreateMemArena(void *memory, UInt32 size)
 	return arena;
 }
 
-static MemArena
-func CreateMemArena(UInt32 maxSize)
-{
-	MemArena result = {};
-	result.baseAddress = new Int8[maxSize];
-	result.maxSize = maxSize;
-	result.usedSize = 0;
-
-	return result;
-}
-
 static void
 func ArenaReset(MemArena *arena)
 {
@@ -48,16 +37,9 @@ static void *
 func ArenaAlloc(MemArena *arena, UInt32 size)
 {
 	Assert(arena->usedSize + size <= arena->maxSize);
-	if(arena->usedSize + size <= arena->maxSize) 
-	{
-		Int8 *result = arena->baseAddress + arena->usedSize;
-		arena->usedSize += size;
-		return result;
-	}
-	else
-	{
-		return 0;
-	}
+	Int8 *result = arena->baseAddress + arena->usedSize;
+	arena->usedSize += size;
+	return result;
 }
 
 static UInt32
@@ -73,10 +55,11 @@ func SetArenaSize(MemArena *arena, UInt32 size)
 	arena->usedSize = size;
 }
 
-// TODO: only pop if the address is smaller than the current one?
 static void
 func ArenaPopTo(MemArena *arena, void *address)
 {
+	Assert(arena->baseAddress <= address);
+	Assert(address < arena->baseAddress + arena->usedSize);
 	arena->usedSize = (UInt32)((Int8 *)address - arena->baseAddress);
 }
 
@@ -87,11 +70,11 @@ func GetArenaTop(MemArena *arena)
 	return top;
 }
 
-static Int8*
-func ArenaPushData(MemArena* arena, UInt32 size, void* data)
+static Int8 *
+func ArenaPushData(MemArena *arena, UInt32 size, void* data)
 {
-	Int8* copyTo = (Int8*)ArenaAlloc(arena, size);
-	Int8* copyFrom = (Int8*)data;
+	Int8 *copyTo = (Int8*)ArenaAlloc(arena, size);
+	Int8 *copyFrom = (Int8*)data;
 	for(UInt32 index = 0; index < size; index++)
 	{
 		copyTo[index] = copyFrom[index];
@@ -100,12 +83,15 @@ func ArenaPushData(MemArena* arena, UInt32 size, void* data)
 	return copyTo;
 }
 
-#define ArenaPushType(arena, type) ((type*)ArenaAlloc((arena), sizeof(type)))
-#define ArenaPushArray(arena, type, size) ((type*)ArenaAlloc((arena), (size) * sizeof(type)))
+#define ArenaAllocType(arena, type) ((type *)ArenaAlloc((arena), sizeof(type))
+#define ArenaAllocArray(arena, type, size) ((type *)ArenaAlloc((arena), (size) * sizeof(type)))
+
+/*
 #define ArenaPush(arena, type, variable) {\
 			type *address = (type*)ArenaAlloc(arena, sizeof(variable)); \
 			*address = (variable); }
-#define ArenaPushVar(arena, variable) ArenaPushData(arena, sizeof(variable), &(variable));
+*/
+#define ArenaPushVar(arena, variable) ArenaPushData(arena, sizeof(variable), &(variable))
 
 static MemArena
 func CreateSubArena(MemArena *arena, UInt32 size)

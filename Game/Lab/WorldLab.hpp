@@ -83,7 +83,7 @@ func HandlePlaceTileMode(WorldLabState *labState, Canvas *canvas, UserInput *use
 			Assert(map->tileTypes == 0);
 			map->tileRowN = 1;
 			map->tileColN = 1;
-			map->tileTypes = ArenaPushArray(tmpArena, TileId, 1);
+			map->tileTypes = ArenaAllocArray(tmpArena, TileId, 1);
 
 			IntVec2 newTile = MakeIntPoint(0, 0);
 			SetTileType(map, newTile, CaveTileId);
@@ -117,7 +117,7 @@ func HandlePlaceTileMode(WorldLabState *labState, Canvas *canvas, UserInput *use
 				newColN += (tile.col - map->tileColN + 1);
 			}
 
-			TileId *newTiles = ArenaPushArray(tmpArena, TileId, newRowN * newColN);
+			TileId *newTiles = ArenaAllocArray(tmpArena, TileId, newRowN * newColN);
 			for(Int32 index = 0; index < newRowN * newColN; index++)
 			{
 				newTiles[index] = NoTileId;
@@ -168,7 +168,7 @@ func HandlePlaceTileMode(WorldLabState *labState, Canvas *canvas, UserInput *use
 	}
 
 	MapItem *oldItems = map->items;
-	map->items = ArenaPushArray(arena, MapItem, map->itemN);
+	map->items = ArenaAllocArray(arena, MapItem, map->itemN);
 	for(Int32 i = 0; i < map->itemN; i++)
 	{
 		map->items[i] = oldItems[i];

@@ -320,14 +320,14 @@ func FloodfillBitmap(Bitmap *bitmap, Int32 row, Int32 col, Vec4 color, MemArena*
 	UInt32 baseColorCode  = *GetBitmapPixelAddress(bitmap, row, col);
 	Assert(paintColorCode != baseColorCode);
 	Int32 positionN = 0;
-	Int32 *positions = ArenaPushArray(tmpArena, Int32, 0);
-	ArenaPush(tmpArena, Int32, row);
-	ArenaPush(tmpArena, Int32, col);
+	Int32 *positions = ArenaAllocArray(tmpArena, Int32, 0);
+	ArenaPushVar(tmpArena, row);
+	ArenaPushVar(tmpArena, col);
 	positionN++;
 
 	// NOTE: Initial position has to be inserted twice, one for horizontal, one for vertical fill.
-	ArenaPush(tmpArena, Int32, row);
-	ArenaPush(tmpArena, Int32, col);
+	ArenaPushVar(tmpArena, row);
+	ArenaPushVar(tmpArena, col);
 	positionN++;
 
 	Bool32 fillHorizontally = true;
@@ -359,8 +359,8 @@ func FloodfillBitmap(Bitmap *bitmap, Int32 row, Int32 col, Vec4 color, MemArena*
 					break;
 				}
 				*pixel = paintColorCode;
-				ArenaPush(tmpArena, Int32, row);
-				ArenaPush(tmpArena, Int32, left);
+				ArenaPushVar(tmpArena, row);
+				ArenaPushVar(tmpArena, left);
 				positionN++;
 			}
 
@@ -373,8 +373,8 @@ func FloodfillBitmap(Bitmap *bitmap, Int32 row, Int32 col, Vec4 color, MemArena*
 					break;
 				}
 				*pixel = paintColorCode;
-				ArenaPush(tmpArena, Int32, row);
-				ArenaPush(tmpArena, Int32, right);
+				ArenaPushVar(tmpArena, row);
+				ArenaPushVar(tmpArena, right);
 				positionN++;
 			}
 		} 
@@ -389,8 +389,8 @@ func FloodfillBitmap(Bitmap *bitmap, Int32 row, Int32 col, Vec4 color, MemArena*
 					break;
 				}
 				*pixel = paintColorCode;
-				ArenaPush(tmpArena, Int32, top);
-				ArenaPush(tmpArena, Int32, col);
+				ArenaPushVar(tmpArena, top);
+				ArenaPushVar(tmpArena, col);
 				positionN++;
 			}
 
@@ -403,8 +403,8 @@ func FloodfillBitmap(Bitmap *bitmap, Int32 row, Int32 col, Vec4 color, MemArena*
 					break;
 				}
 				*pixel = paintColorCode;
-				ArenaPush(tmpArena, Int32, bottom);
-				ArenaPush(tmpArena, Int32, col);
+				ArenaPushVar(tmpArena, bottom);
+				ArenaPushVar(tmpArena, col);
 				positionN++;
 			}
 		}
