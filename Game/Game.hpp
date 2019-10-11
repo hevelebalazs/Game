@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Item.hpp"
 #include "Map.hpp"
 #include "UserInput.hpp"
 
@@ -16,6 +17,9 @@ struct Game
 	Int8 arenaMemory[GameArenaSize];
 	MemArena arena;
 	Map map;
+
+	Inventory inventory;
+	Bool32 showInventory;
 
 	Entity player;
 };
@@ -37,6 +41,9 @@ func GameInit(Game *game, Canvas *canvas)
 	game->map = ReadMapFromFile(mapFile, &game->arena); 
 
 	canvas->glyphData = GetGlobalGlyphData();
+
+	InitInventory(&game->inventory, &game->arena, 3, 5);
+	game->showInventory = false;
 }
 
 #define EntityRadius 0.5f
@@ -167,6 +174,109 @@ func DrawInteractionDialog(Canvas *canvas)
 	DrawBitmapTextLineTopLeft(bitmap, text, canvas->glyphData, textLeft, textTop, textColor);
 }
 
+#define InventorySlotSide 50
+
+static void
+func DrawInventorySlot(Canvas *canvas, SlotId slotId, ItemId itemId, Int32 top, Int32 left)
+{
+	Int32 bottom = top + InventorySlotSide;
+	Int32 right = left + InventorySlotSide;
+
+	Vec4 slotBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
+	Vec4 cooldownColor = MakeColor(0.2f, 0.0f, 0.0f);
+	Vec4 itemNameColor = MakeColor(1.0f, 1.0f, 1.0f);
+	Vec4 slotNameColor = MakeColor(0.3f, 0.3f, 0.3f);
+
+	Bitmap *bitmap = &canvas->bitmap;
+	GlyphData *glyphData = canvas->glyphData;
+
+	if(itemId == NoItemId)
+	{
+		DrawBitmapRect(bitmap, left, right, top, bottom, slotBackgroundColor);
+		if(slotId != AnySlotId)
+		{
+			Int8 *slotName = GetSlotName(slotId);
+			Assert(slotName != 0);
+			DrawBitmapTextLineCentered(bitmap, slotName, glyphData, left, right, top, bottom, slotNameColor);
+		}
+	}
+	else
+	{
+		DrawBitmapRect(bitmap, left, right, top, bottom, itemBackgroundColor);
+		Int8 *name = GetItemSlotName(itemId);
+		DrawBitmapTextLineCentered(bitmap, name, glyphData, left, right, top, bottom, itemNameColor);
+	}
+}
+
+static void
+func DrawInventorySlotOutline(Canvas *canvas, Int32 top, Int32 left, Vec4 color)
+{
+	Bitmap *bitmap = &canvas->bitmap;
+	Int32 bottom = top + InventorySlotSide;
+	Int32 right = left + InventorySlotSide;
+	DrawBitmapRectOutline(bitmap, left, right, top, bottom, color);
+}
+
+#define InventorySlotPadding 2
+
+static Int32
+func GetInventoryWidth(Inventory *inventory)
+{
+	Int32 width = InventorySlotPadding + inventory->colN * (InventorySlotSide + InventorySlotPadding);
+	return width;
+}
+
+static Int32
+func GetInventoryHeight(Inventory *inventory)
+{
+	Int32 height = InventorySlotPadding + inventory->rowN * (InventorySlotSide + InventorySlotPadding);
+	return height;
+}
+
+#define UIBoxSide 40
+#define UIBoxPadding 5
+
+static void
+func DrawInventory(Canvas *canvas, Inventory *inventory)
+{
+	Bitmap *bitmap = &canvas->bitmap;
+	GlyphData *glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+
+	Int32 slotPadding = 2;
+
+	Int32 width = GetInventoryWidth(inventory);
+	Int32 height = GetInventoryHeight(inventory);
+
+	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+	Int32 left   = right - width;
+	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	Int32 top    = bottom - height;
+
+	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 invalidOutlineColor = MakeColor(1.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+
+	Int32 slotTop = top + slotPadding;
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		Int32 slotLeft = left + slotPadding;
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			SlotId slotId = GetInventorySlotId(inventory, row, col);
+			ItemId itemId = GetInventoryItemId(inventory, row, col);
+
+			DrawInventorySlot(canvas, slotId, itemId, slotTop, slotLeft);
+
+			slotLeft += (InventorySlotSide + slotPadding);
+		}
+
+		slotTop += (InventorySlotSide + slotPadding);
+	}
+}
+
 static void
 func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput)
 {
@@ -197,6 +307,11 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 		player->velocity.y += playerMoveSpeed;
 	}
 
+	if(WasKeyReleased(userInput, 'I'))
+	{
+		game->showInventory = !game->showInventory;
+	}
+
 	Map *map = &game->map;
 	UpdateEntityMovement(player, map, seconds);
 	canvas->camera->center = player->position;
@@ -222,5 +337,10 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	{
 		DrawRectOutline(canvas, npcRect, npcBorderColor);
 		DrawInteractionDialog(canvas);
+	}
+
+	if(game->showInventory)
+	{
+		DrawInventory(canvas, &game->inventory);
 	}
 }

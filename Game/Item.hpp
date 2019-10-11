@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Debug.hpp"
+#include "Memory.hpp"
+#include "String.hpp"
 
 enum SlotId
 {
