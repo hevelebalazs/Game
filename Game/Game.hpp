@@ -22,6 +22,8 @@ struct Game
 	Bool32 showInventory;
 
 	Entity player;
+
+	Real32 *itemSpawnCooldowns;
 };
 
 static void
@@ -39,6 +41,12 @@ func GameInit(Game *game, Canvas *canvas)
 
 	Int8 *mapFile = "Data/Map.data";
 	game->map = ReadMapFromFile(mapFile, &game->arena); 
+	game->itemSpawnCooldowns = ArenaAllocArray(&game->arena, Real32, game->map.itemN);
+
+	for(Int32 i = 0; i < game->map.itemN; i++)
+	{
+		game->itemSpawnCooldowns[i] = 0.0f;
+	}
 
 	canvas->glyphData = GetGlobalGlyphData();
 
@@ -316,8 +324,49 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	UpdateEntityMovement(player, map, seconds);
 	canvas->camera->center = player->position;
 
-	DrawMap(canvas, map);
 
+	DrawMapWithoutItems(canvas, map);
+	for(Int32 i = 0; i < map->itemN; i++)
+	{
+		game->itemSpawnCooldowns[i] -= seconds;
+		if(game->itemSpawnCooldowns[i] <= 0.0f)
+		{		
+			DrawMapItem(canvas, &map->items[i]);
+
+			game->itemSpawnCooldowns[i] = 0.0f;
+		}
+	}
+
+	Int32 hoverItemIndex = 0;
+	MapItem *hoverItem = 0;
+	for(Int32 i = 0; i < map->itemN; i++)
+	{
+		MapItem *item = &map->items[i];
+		if(game->itemSpawnCooldowns[i] == 0.0f)
+		{
+			Real32 distance = Distance(item->position, player->position);
+			if(distance < 2.0f)
+			{
+				hoverItemIndex = i;
+				hoverItem = item;
+				break;
+			}
+		}
+	}
+
+	if(hoverItem)
+	{
+		Vec4 hoverItemColor = MakeColor(1.0f, 0.2f, 1.0f);
+		DrawCircle(canvas, hoverItem->position, MapItemRadius, hoverItemColor);
+
+		if(WasKeyReleased(userInput, 'E'))
+		{
+			AddItemToInventory(&game->inventory, CrystalItemId);
+			Assert(game->itemSpawnCooldowns[hoverItemIndex] == 0.0f);
+			game->itemSpawnCooldowns[hoverItemIndex] = 30.0f;
+		}
+	}
+	   
 	Vec4 playerColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Rect playerRect = GetEntityRect(player);
 	DrawRect(canvas, playerRect, playerColor);

@@ -33,7 +33,8 @@ enum ItemId
 	YellowFlowerItemId,
 	YellowFlowerOfAntivenomItemId,
 	YellowFlowerOfDexterityItemId,
-	YellowFlowerOfRageItemId
+	YellowFlowerOfRageItemId,
+	CrystalItemId
 };
 
 struct ItemAttributes
@@ -204,6 +205,11 @@ func GetItemName(ItemId itemId)
 			name = "Yellow Flower of Rage";
 			break;
 		}
+		case CrystalItemId:
+		{
+			name = "Crsytal";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -296,6 +302,11 @@ func GetItemSlotName(ItemId itemId)
 		case YellowFlowerOfRageItemId:
 		{
 			name = "YFR";
+			break;
+		}
+		case CrystalItemId:
+		{
+			name = "CR";
 			break;
 		}
 		default:
@@ -511,6 +522,11 @@ func GetItemTooltipText(ItemId itemId, Int8 *buffer, Int32 bufferSize)
 		{
 			AddLine(text, "Use: Increase damage done and taken");
 			AddLine(text, "by 20% for 1 minute.");
+			break;
+		}
+		case CrystalItemId:
+		{
+			AddLine(text, "A piece of crystal.");
 			break;
 		}
 		default:
