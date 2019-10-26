@@ -21,6 +21,9 @@ struct Game
 	Inventory inventory;
 	Bool32 showInventory;
 
+	Inventory tradeInventory;
+	Bool32 showTradeWindow;
+
 	Entity player;
 
 	Real32 *itemSpawnCooldowns;
@@ -52,6 +55,9 @@ func GameInit(Game *game, Canvas *canvas)
 
 	InitInventory(&game->inventory, &game->arena, 3, 5);
 	game->showInventory = false;
+
+	InitInventory(&game->tradeInventory, &game->arena, 3, 5);
+	game->showTradeWindow = false;
 }
 
 #define EntityRadius 0.5f
@@ -242,6 +248,34 @@ func GetInventoryHeight(Inventory *inventory)
 	return height;
 }
 
+static void
+func MoveInventoryToRight(Inventory *inventory, Int32 right)
+{
+	Int32 width = GetInventoryWidth(inventory);
+	inventory->left = right - width;
+}
+
+static void
+func MoveInventoryToBottom(Inventory *inventory, Int32 bottom)
+{
+	Int32 height = GetInventoryHeight(inventory);
+	inventory->top = bottom - height;
+}
+
+static void
+func MoveInventoryToBottomRight(Inventory *inventory, Int32 bottom, Int32 right)
+{
+	MoveInventoryToBottom(inventory, bottom);
+	MoveInventoryToRight(inventory, right);
+}
+
+static void
+func MoveInventoryToBottomLeft(Inventory *inventory, Int32 bottom, Int32 left)
+{
+	MoveInventoryToBottom(inventory, bottom);
+	inventory->left = left;
+}
+
 #define UIBoxSide 40
 #define UIBoxPadding 5
 
@@ -257,10 +291,10 @@ func DrawInventory(Canvas *canvas, Inventory *inventory)
 	Int32 width = GetInventoryWidth(inventory);
 	Int32 height = GetInventoryHeight(inventory);
 
-	Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
-	Int32 left   = right - width;
-	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	Int32 top    = bottom - height;
+	Int32 left   = inventory->left;
+	Int32 right  = left + width;
+	Int32 top    = inventory->top;
+	Int32 bottom = top + height;
 
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
@@ -317,7 +351,15 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 
 	if(WasKeyReleased(userInput, 'I'))
 	{
-		game->showInventory = !game->showInventory;
+		if(game->showInventory)
+		{
+			game->showInventory = false;
+			game->showTradeWindow = false;
+		}
+		else
+		{
+			game->showInventory = true;
+		}
 	}
 
 	Map *map = &game->map;
@@ -386,10 +428,42 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	{
 		DrawRectOutline(canvas, npcRect, npcBorderColor);
 		DrawInteractionDialog(canvas);
+
+		if(WasKeyReleased(userInput, 'E'))
+		{
+			game->showTradeWindow = !game->showTradeWindow;
+			game->showInventory = game->showTradeWindow;
+		}
+	}
+	else
+	{
+		if(game->showTradeWindow)
+		{
+			game->showTradeWindow = false;
+			game->showInventory = false;
+		}
+	}
+
+	if(game->showTradeWindow)
+	{
+		Inventory *inventory = &game->tradeInventory;
+
+		Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+		Int32 left = UIBoxPadding;
+		MoveInventoryToBottomLeft(inventory, bottom, left);
+
+		DrawInventory(canvas, inventory);
+		game->showInventory = true;
 	}
 
 	if(game->showInventory)
 	{
-		DrawInventory(canvas, &game->inventory);
+		Inventory *inventory = &game->inventory;
+
+		Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
+		Int32 right  = (bitmap->width - 1) - UIBoxPadding;
+		MoveInventoryToBottomRight(inventory, bottom, right);
+
+		DrawInventory(canvas, inventory);
 	}
 }

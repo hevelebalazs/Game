@@ -602,7 +602,6 @@ struct InventoryItem
 	IntVec2 slot;
 };
 
-
 static void
 func SetInventorySlotId(Inventory *inventory, Int32 row, Int32 col, SlotId slotId)
 {
