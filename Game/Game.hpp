@@ -173,28 +173,44 @@ func DrawInteractionDialog(Canvas *canvas)
 
 	Int32 border = 30;
 	Bitmap *bitmap = &canvas->bitmap;
-	Int32 bottom = bitmap->height - border;
-	Int32 left = border;
-	Int32 right = bitmap->width - border;
-	Int32 top = bottom - 200;
-	DrawBitmapRect(bitmap, left, right, top, bottom, color);
-	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outlineColor);
+	IntRect rect = {};
+	rect.bottom = bitmap->height - border;
+	rect.left = border;
+	rect.right = bitmap->width - border;
+	rect.top = rect.bottom - 200;
+	DrawBitmapRect(bitmap, rect, color);
+	DrawBitmapRectOutline(bitmap, rect, outlineColor);
 
 	Vec4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
-	Int32 textLeft = left + 10;
-	Int32 textTop = top + 10;
+	Int32 textLeft = rect.left + 10;
+	Int32 textTop = rect.top + 10;
 
 	Int8 *text = "Can you bring me 10 crystals?";
 	DrawBitmapTextLineTopLeft(bitmap, text, canvas->glyphData, textLeft, textTop, textColor);
 }
 
 #define InventorySlotSide 50
+#define InventorySlotPadding 2
+
+static IntRect
+func GetInventorySlotRect(Inventory *inventory, IntVec2 slot)
+{
+	Assert(InventorySlotIsValid(inventory, slot));
+	IntRect rect = {};
+	rect.left   = (inventory->left + InventorySlotPadding) + slot.col * (InventorySlotSide + InventorySlotPadding);
+	rect.right  = rect.left + InventorySlotSide;
+	rect.top    = (inventory->top + InventorySlotPadding) + slot.row * (InventorySlotSide + InventorySlotPadding);
+	rect.bottom = rect.top + InventorySlotSide;
+	return rect;
+}
 
 static void
-func DrawInventorySlot(Canvas *canvas, SlotId slotId, ItemId itemId, Int32 top, Int32 left)
+func DrawInventorySlot(Canvas *canvas, Inventory *inventory, IntVec2 slot)
 {
-	Int32 bottom = top + InventorySlotSide;
-	Int32 right = left + InventorySlotSide;
+	Assert(InventorySlotIsValid(inventory, slot));
+	ItemId itemId = GetInventoryItemId(inventory, slot);
+	SlotId slotId = GetInventorySlotId(inventory, slot);
+	IntRect slotRect = GetInventorySlotRect(inventory, slot);
 
 	Vec4 slotBackgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
 	Vec4 itemBackgroundColor = MakeColor(0.1f, 0.1f, 0.1f);
@@ -207,29 +223,28 @@ func DrawInventorySlot(Canvas *canvas, SlotId slotId, ItemId itemId, Int32 top, 
 
 	if(itemId == NoItemId)
 	{
-		DrawBitmapRect(bitmap, left, right, top, bottom, slotBackgroundColor);
+		DrawBitmapRect(bitmap, slotRect, slotBackgroundColor);
 		if(slotId != AnySlotId)
 		{
 			Int8 *slotName = GetSlotName(slotId);
 			Assert(slotName != 0);
-			DrawBitmapTextLineCentered(bitmap, slotName, glyphData, left, right, top, bottom, slotNameColor);
+			DrawBitmapTextLineCentered(bitmap, slotName, glyphData, slotRect, slotNameColor);
 		}
 	}
 	else
 	{
-		DrawBitmapRect(bitmap, left, right, top, bottom, itemBackgroundColor);
+		DrawBitmapRect(bitmap, slotRect, itemBackgroundColor);
 		Int8 *name = GetItemSlotName(itemId);
-		DrawBitmapTextLineCentered(bitmap, name, glyphData, left, right, top, bottom, itemNameColor);
+		DrawBitmapTextLineCentered(bitmap, name, glyphData, slotRect, itemNameColor);
 	}
 }
 
 static void
-func DrawInventorySlotOutline(Canvas *canvas, Int32 top, Int32 left, Vec4 color)
+func DrawInventorySlotOutline(Canvas *canvas, Inventory *inventory, IntVec2 slot, Vec4 color)
 {
 	Bitmap *bitmap = &canvas->bitmap;
-	Int32 bottom = top + InventorySlotSide;
-	Int32 right = left + InventorySlotSide;
-	DrawBitmapRectOutline(bitmap, left, right, top, bottom, color);
+	IntRect rect = GetInventorySlotRect(inventory, slot);
+	DrawBitmapRectOutline(bitmap, rect, color);
 }
 
 #define InventorySlotPadding 2
@@ -286,37 +301,77 @@ func DrawInventory(Canvas *canvas, Inventory *inventory)
 	GlyphData *glyphData = canvas->glyphData;
 	Assert(glyphData != 0);
 
-	Int32 slotPadding = 2;
-
 	Int32 width = GetInventoryWidth(inventory);
 	Int32 height = GetInventoryHeight(inventory);
 
-	Int32 left   = inventory->left;
-	Int32 right  = left + width;
-	Int32 top    = inventory->top;
-	Int32 bottom = top + height;
+	IntRect rect = {};
+	rect.left   = inventory->left;
+	rect.right  = rect.left + width;
+	rect.top    = inventory->top;
+	rect.bottom = rect.top + height;
 
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Vec4 invalidOutlineColor = MakeColor(1.0f, 0.0f, 0.0f);
-	DrawBitmapRect(bitmap, left, right, top, bottom, backgroundColor);
+	DrawBitmapRect(bitmap, rect, backgroundColor);
 
-	Int32 slotTop = top + slotPadding;
 	for(Int32 row = 0; row < inventory->rowN; row++)
 	{
-		Int32 slotLeft = left + slotPadding;
 		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			SlotId slotId = GetInventorySlotId(inventory, row, col);
-			ItemId itemId = GetInventoryItemId(inventory, row, col);
-
-			DrawInventorySlot(canvas, slotId, itemId, slotTop, slotLeft);
-
-			slotLeft += (InventorySlotSide + slotPadding);
+			IntVec2 slot = MakeIntPoint(row, col);
+			SlotId slotId = GetInventorySlotId(inventory, slot);
+			ItemId itemId = GetInventoryItemId(inventory, slot);
+			DrawInventorySlot(canvas, inventory, slot);
 		}
-
-		slotTop += (InventorySlotSide + slotPadding);
 	}
+}
+
+static InventoryItem
+func GetInventoryItemAtPosition(Inventory *inventory, IntVec2 position)
+{
+	InventoryItem item = {};
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			IntVec2 slot = MakeIntPoint(row, col);
+			ItemId itemId = GetInventoryItemId(inventory, slot);
+			IntRect rect = GetInventorySlotRect(inventory, slot);
+			if(IsPointInIntRect(position, rect))
+			{
+				item = GetInventoryItem(inventory, slot);
+			}
+		}
+	}
+
+	return item;
+}
+
+static void
+func StopTrading(Game *game)
+{
+	Assert(game->showTradeWindow);
+	Assert(game->showInventory);
+
+	Inventory *inventory = &game->inventory;
+	Inventory *tradeInventory = &game->tradeInventory;
+	for(Int32 row = 0; row < tradeInventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < tradeInventory->colN; col++)
+		{
+			IntVec2 slot = MakeIntPoint(row, col);
+			InventoryItem item = GetInventoryItem(tradeInventory, slot);
+			Assert(item.inventory == tradeInventory);
+			if(item.itemId != NoItemId)
+			{
+				MoveItemToInventory(item, inventory);
+			}
+		}
+	}
+
+	game->showTradeWindow = false;
+	game->showInventory = false;
 }
 
 static void
@@ -353,8 +408,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	{
 		if(game->showInventory)
 		{
-			game->showInventory = false;
-			game->showTradeWindow = false;
+			StopTrading(game);
 		}
 		else
 		{
@@ -431,39 +485,73 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 
 		if(WasKeyReleased(userInput, 'E'))
 		{
-			game->showTradeWindow = !game->showTradeWindow;
-			game->showInventory = game->showTradeWindow;
+			if(game->showTradeWindow)
+			{
+				StopTrading(game);
+			}
+			else
+			{
+				game->showTradeWindow = true;
+				game->showInventory = true; 
+			}
 		}
 	}
 	else
 	{
 		if(game->showTradeWindow)
 		{
-			game->showTradeWindow = false;
-			game->showInventory = false;
+			StopTrading(game);
 		}
 	}
 
+	Inventory *tradeInventory = &game->tradeInventory;
+	Inventory *inventory = &game->inventory;
 	if(game->showTradeWindow)
 	{
-		Inventory *inventory = &game->tradeInventory;
-
 		Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
 		Int32 left = UIBoxPadding;
-		MoveInventoryToBottomLeft(inventory, bottom, left);
+		MoveInventoryToBottomLeft(tradeInventory, bottom, left);
 
-		DrawInventory(canvas, inventory);
+		DrawInventory(canvas, tradeInventory);
 		game->showInventory = true;
+
+		InventoryItem hoverItem = GetInventoryItemAtPosition(tradeInventory, userInput->mousePixelPosition);
+		if(hoverItem.inventory != 0 && hoverItem.itemId != NoItemId)
+		{
+			Vec4 color = MakeColor(1.0f, 1.0f, 0.0f);
+			DrawInventorySlotOutline(canvas, tradeInventory, hoverItem.slot, color);
+
+			if(game->showTradeWindow)
+			{
+				if(WasKeyReleased(userInput, VK_RBUTTON))
+				{
+					MoveItemToInventory(hoverItem, inventory);
+				}
+			}
+		}
 	}
 
 	if(game->showInventory)
 	{
-		Inventory *inventory = &game->inventory;
-
 		Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
 		Int32 right  = (bitmap->width - 1) - UIBoxPadding;
 		MoveInventoryToBottomRight(inventory, bottom, right);
 
 		DrawInventory(canvas, inventory);
+
+		InventoryItem hoverItem = GetInventoryItemAtPosition(inventory, userInput->mousePixelPosition);
+		if(hoverItem.inventory != 0 && hoverItem.itemId != NoItemId)
+		{
+			Vec4 color = MakeColor(1.0f, 1.0f, 0.0f);
+			DrawInventorySlotOutline(canvas, inventory, hoverItem.slot, color);
+
+			if(game->showTradeWindow)
+			{
+				if(WasKeyReleased(userInput, VK_RBUTTON))
+				{
+					MoveItemToInventory(hoverItem, tradeInventory);
+				}
+			}
+		}
 	}
 }

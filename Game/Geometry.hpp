@@ -53,11 +53,38 @@ struct Rect
 	Real32 bottom;
 };
 
+struct IntRect
+{
+	Int32 left;
+	Int32 right;
+	Int32 top;
+	Int32 bottom;
+};
+
+static IntRect
+func GetIntRectIntersection(IntRect rect1, IntRect rect2)
+{
+	IntRect result = {};
+	result.left   = IntMax2(rect1.left, rect2.left);
+	result.right  = IntMin2(rect1.right, rect2.right);
+	result.top    = IntMax2(rect1.top, rect2.top);
+	result.bottom = IntMin2(rect1.bottom, rect2.bottom);
+	return result;
+}
+
 static Bool32
 func IsPointInRect(Vec2 point, Rect rect)
 {
 	Bool32 result = IsPointInRectLRTB(point, rect.left, rect.right, rect.top, rect.bottom);
 	return result;
+}
+
+static Bool32
+func IsPointInIntRect(IntVec2 point, IntRect rect)
+{
+	Bool32 isRowIn = IsIntBetween(point.row, rect.top, rect.bottom);
+	Bool32 isColIn = IsIntBetween(point.col, rect.left, rect.right);
+	return (isRowIn && isColIn);
 }
 
 static Rect

@@ -623,17 +623,27 @@ func DrawBitmapPolyOutline(Bitmap *bitmap, Int32 polyN, Int32 *polyColRow, Vec4 
 	}
 }
 
-static void
-func DrawBitmapRect(Bitmap *bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
+static IntRect
+func GetBitmapBounds(Bitmap *bitmap)
 {
+	IntRect bounds = {};
+	bounds.left   = 0;
+	bounds.right  = (bitmap->width - 1);
+	bounds.top    = 0;
+	bounds.bottom = (bitmap->height - 1);
+	return bounds;
+}
+
+static void
+func DrawBitmapRect(Bitmap *bitmap, IntRect rect, Vec4 color)
+{
+	IntRect bitmapBounds = GetBitmapBounds(bitmap);
+	IntRect drawRect = GetIntRectIntersection(rect, bitmapBounds);
+
 	UInt32 colorCode = GetColorCode(color);
-	left   = ClipInt(left, 0, bitmap->width - 1);
-	right  = ClipInt(right, 0, bitmap->width - 1);
-	top    = ClipInt(top, 0, bitmap->height - 1);
-	bottom = ClipInt(bottom, 0, bitmap->height - 1);
-	for(Int32 col = left; col <= right; col++)
+	for(Int32 col = drawRect.left; col <= drawRect.right; col++)
 	{
-		for(Int32 row = top; row <= bottom; row++)
+		for(Int32 row = drawRect.top; row <= drawRect.bottom; row++)
 		{
 			UInt32 *pixelAddress = GetBitmapPixelAddress(bitmap, row, col);
 			*pixelAddress = colorCode;
@@ -642,12 +652,12 @@ func DrawBitmapRect(Bitmap *bitmap, Int32 left, Int32 right, Int32 top, Int32 bo
 }
 
 static void
-func DrawBitmapRectOutline(Bitmap *bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
+func DrawBitmapRectOutline(Bitmap *bitmap, IntRect rect, Vec4 color)
 {
-	DrawBitmapBresenhamLine(bitmap, top, left, top, right, color);
-	DrawBitmapBresenhamLine(bitmap, top, right, bottom, right, color);
-	DrawBitmapBresenhamLine(bitmap, bottom, right, bottom, left, color);
-	DrawBitmapBresenhamLine(bitmap, bottom, left, top, left, color);
+	DrawBitmapBresenhamLine(bitmap, rect.top, rect.left, rect.top, rect.right, color);
+	DrawBitmapBresenhamLine(bitmap, rect.top, rect.right, rect.bottom, rect.right, color);
+	DrawBitmapBresenhamLine(bitmap, rect.bottom, rect.right, rect.bottom, rect.left, color);
+	DrawBitmapBresenhamLine(bitmap, rect.bottom, rect.left, rect.top, rect.left, color);
 }
 
 static void
@@ -736,12 +746,12 @@ func GetTextPixelWidth(Int8 *text, GlyphData *glyphData)
 }
 
 static void
-func DrawBitmapTextLineCentered(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, Int32 left, Int32 right, Int32 top, Int32 bottom, Vec4 color)
+func DrawBitmapTextLineCentered(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, IntRect rect, Vec4 color)
 {
 	Int32 textHeight = TextHeightInPixels;
 	Int32 textWidth = (Int32)GetTextPixelWidth(text, glyphData);
-	Int32 textLeft = (left + right) / 2 - textWidth / 2;
-	Int32 textTop = (bottom + top) / 2 - textHeight / 2;
+	Int32 textLeft = (rect.left + rect.right) / 2 - textWidth / 2;
+	Int32 textTop = (rect.bottom + rect.top) / 2 - textHeight / 2;
 	Int32 textBaseLineY = textTop + TextPixelsAboveBaseLine;
 	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, color);
 }
@@ -779,17 +789,20 @@ func DrawBitmapStringTooltip(Bitmap *bitmap, String string, GlyphData *glyphData
 	Int32 lineN = GetNumberOfLines(string);
     
 	Assert(glyphData != 0);
+
+	IntRect rect = {};
+	rect.left = left;
+	rect.top = top;
     
-	Int32 right = left + TooltipWidth;
-    
+	rect.right = left + TooltipWidth;
 	Int32 height = GetTooltipHeight(lineN);
-	Int32 bottom = top + height;
+	rect.bottom = top + height;
     
 	Vec4 tooltipColor = MakeColor(0.0f, 0.0f, 0.0f);
-	DrawBitmapRect(bitmap, left, right, top, bottom, tooltipColor);
+	DrawBitmapRect(bitmap, rect, tooltipColor);
     
 	Vec4 tooltipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawBitmapRectOutline(bitmap, left, right, top, bottom, tooltipBorderColor);
+	DrawBitmapRectOutline(bitmap, rect, tooltipBorderColor);
     
 	Vec4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Vec4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
@@ -826,7 +839,7 @@ func DrawBitmapStringTooltip(Bitmap *bitmap, String string, GlyphData *glyphData
 			textX = right;
 		}
         
-		Assert(textX <= right);
+		Assert(textX <= rect.right);
 	}
 }
 
@@ -852,16 +865,18 @@ func DrawBitmapTooltip(Bitmap *bitmap, Int8 **lines, Int32 lineN, GlyphData *gly
 {
 	Assert(glyphData != 0);
     
-	Int32 right = left + TooltipWidth;
-    
+	IntRect rect = {};
+	rect.left = left;
+	rect.top = top;
+	rect.right = left + TooltipWidth;
 	Int32 height = GetTooltipHeight(lineN);
-	Int32 bottom = top + height;
+	rect.bottom = top + height;
     
 	Vec4 tooltipColor = MakeColor(0.0f, 0.0f, 0.0f);
-	DrawBitmapRect(bitmap, left, right, top, bottom, tooltipColor);
+	DrawBitmapRect(bitmap, rect, tooltipColor);
     
 	Vec4 tooltipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawBitmapRectOutline(bitmap, left, right, top, bottom, tooltipBorderColor);
+	DrawBitmapRectOutline(bitmap, rect, tooltipBorderColor);
     
 	Vec4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
 	Vec4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
