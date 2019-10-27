@@ -408,7 +408,10 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	{
 		if(game->showInventory)
 		{
-			StopTrading(game);
+			if(game->showTradeWindow)
+			{
+				StopTrading(game);
+			}
 		}
 		else
 		{
