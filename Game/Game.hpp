@@ -294,13 +294,9 @@ func MoveInventoryToBottomLeft(Inventory *inventory, Int32 bottom, Int32 left)
 #define UIBoxSide 40
 #define UIBoxPadding 5
 
-static void
-func DrawInventory(Canvas *canvas, Inventory *inventory)
+static IntRect
+func GetInventoryRect(Inventory *inventory)
 {
-	Bitmap *bitmap = &canvas->bitmap;
-	GlyphData *glyphData = canvas->glyphData;
-	Assert(glyphData != 0);
-
 	Int32 width = GetInventoryWidth(inventory);
 	Int32 height = GetInventoryHeight(inventory);
 
@@ -309,6 +305,18 @@ func DrawInventory(Canvas *canvas, Inventory *inventory)
 	rect.right  = rect.left + width;
 	rect.top    = inventory->top;
 	rect.bottom = rect.top + height;
+
+	return rect;
+}
+
+static void
+func DrawInventory(Canvas *canvas, Inventory *inventory)
+{
+	Bitmap *bitmap = &canvas->bitmap;
+	GlyphData *glyphData = canvas->glyphData;
+	Assert(glyphData != 0);
+
+	IntRect rect = GetInventoryRect(inventory);
 
 	Vec4 backgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
 	Vec4 hoverOutlineColor = MakeColor(1.0f, 1.0f, 0.0f);
@@ -531,6 +539,33 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 					MoveItemToInventory(hoverItem, inventory);
 				}
 			}
+		}
+
+		Int32 crystalCount = 0;
+		Int32 itemCount = 0;
+		for(Int32 row = 0; row < tradeInventory->rowN; row++)
+		{
+			for(Int32 col = 0; col < tradeInventory->colN; col++)
+			{
+				IntVec2 slot = MakeIntPoint(row, col);
+				ItemId itemId = GetInventoryItemId(tradeInventory, slot);
+				if(itemId != NoItemId)
+				{
+					itemCount++;
+					if(itemId == CrystalItemId)
+					{
+						crystalCount++;
+					}
+				}
+			}
+		}
+
+		Bool32 areItemsExpected = (crystalCount == 10 && itemCount == 10);
+		if(areItemsExpected)
+		{
+			IntRect rect = GetInventoryRect(tradeInventory);
+			Vec4 color = MakeColor(0.0f, 1.0f, 0.0f);
+			DrawBitmapRectOutline(bitmap, rect, color);
 		}
 	}
 
