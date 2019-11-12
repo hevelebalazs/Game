@@ -211,8 +211,26 @@ static Bool32 TilesAreAdjacent(IntVec2 tile1, IntVec2 tile2)
 	return areAdjacent;
 }
 
+#define MapItemRadius 0.2f
+
 static void
-func DrawMap(Canvas *canvas, Map* map)
+func DrawMapItem(Canvas *canvas, MapItem *item)
+{
+	Vec4 itemColor = MakeColor(0.5f, 0.0f, 0.5f);
+	DrawCircle(canvas, item->position, MapItemRadius, itemColor);
+}
+
+static void
+func DrawMapItems(Canvas *canvas, Map *map)
+{
+	for(Int32 i = 0; i < map->itemN; i++)
+	{
+		DrawMapItem(canvas, &map->items[i]);
+	}
+}
+
+static void
+func DrawMapWithoutItems(Canvas *canvas, Map *map)
 {
 	Camera *camera = canvas->camera;
 	Real32 cameraLeft   = CameraLeftSide(camera);
@@ -247,14 +265,13 @@ func DrawMap(Canvas *canvas, Map* map)
 			DrawRectLRTB(canvas, tileLeft, tileRight, tileTop, tileBottom, color);
 		}
 	}
+}
 
-	Real32 itemRadius = 0.2f;
-	Vec4 itemColor = MakeColor(0.5f, 0.0f, 0.5f);
-	for(Int32 i = 0; i < map->itemN; i++)
-	{
-		MapItem *item = &map->items[i];
-		DrawCircle(canvas, item->position, itemRadius, itemColor);
-	}
+static void
+func DrawMapWithItems(Canvas *canvas, Map *map)
+{
+	DrawMapWithoutItems(canvas, map);
+	DrawMapItems(canvas, map);
 }
 
 #define MapVersion 1

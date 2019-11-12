@@ -14,7 +14,8 @@
 enum WorldEditMode
 {
 	PlaceTileMode,
-	PlaceItemMode
+	PlaceItemMode,
+	RemoveItemMode
 };
 
 struct WorldLabState
@@ -212,6 +213,49 @@ func HandlePlaceItemMode(WorldLabState *labState, Canvas *canvas, UserInput *use
 	}
 }
 
+static void
+func HandleRemoveItemMode(WorldLabState *labState, Canvas *canvas, UserInput *userInput)
+{
+	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
+
+	Map *map = &labState->map;
+	MapItem *hoverItem = 0;
+	Int32 hoverIndex = -1;
+	for(Int32 i = 0; i < map->itemN; i++)
+	{
+		MapItem *item = &map->items[i];
+		Real32 distance = Distance(item->position, mousePosition);
+		if(distance <= MapItemRadius)
+		{
+			hoverItem = item;
+			hoverIndex = i;
+			break;
+		}
+	}
+
+	if(hoverItem)
+	{
+		Vec4 itemColor = MakeColor(0.2f, 0.2f, 0.2f);
+		DrawCircle(canvas, hoverItem->position, MapItemRadius, itemColor);
+		if(WasKeyReleased(userInput, VK_LBUTTON))
+		{
+			MemArena *arena = labState->arena;
+			Int8 *arenaTop = GetArenaTop(arena);
+			Int8 *itemsEnd = (Int8 *)&map->items[map->itemN];
+			Assert(arenaTop == itemsEnd);
+
+			for(Int32 i = hoverIndex + 1; i < map->itemN; i++)
+			{
+				map->items[i - 1] = map->items[i];
+			}
+
+			map->itemN--;
+			itemsEnd -= sizeof(MapItem);
+			ArenaPopTo(arena, itemsEnd);
+		}
+	}
+}
+
 static Int8 *mapFile = "Data/Map.data";
 
 static void
@@ -259,6 +303,10 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 	{
 		labState->editMode = PlaceItemMode;
 	}
+	if(WasKeyPressed(userInput, '3'))
+	{
+		labState->editMode = RemoveItemMode;
+	}
 
 	MemArena *arena = labState->arena;
 	MemArena *tmpArena = labState->tmpArena;
@@ -301,7 +349,7 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 	}
 
 	Map *map = &labState->map;
-	DrawMap(canvas, map);
+	DrawMapWithItems(canvas, map);
 
 	if(map->tileRowN > 0)
 	{
@@ -323,5 +371,13 @@ func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, Use
 	else if(labState->editMode == PlaceItemMode)
 	{
 		HandlePlaceItemMode(labState, canvas, userInput);
+	}
+	else if(labState->editMode == RemoveItemMode)
+	{
+		HandleRemoveItemMode(labState, canvas, userInput);
+	}
+	else
+	{
+		DebugBreak();
 	}
 }

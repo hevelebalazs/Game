@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Debug.hpp"
+#include "Memory.hpp"
+#include "String.hpp"
 
 enum SlotId
 {
@@ -31,7 +33,8 @@ enum ItemId
 	YellowFlowerItemId,
 	YellowFlowerOfAntivenomItemId,
 	YellowFlowerOfDexterityItemId,
-	YellowFlowerOfRageItemId
+	YellowFlowerOfRageItemId,
+	CrystalItemId
 };
 
 struct ItemAttributes
@@ -202,6 +205,11 @@ func GetItemName(ItemId itemId)
 			name = "Yellow Flower of Rage";
 			break;
 		}
+		case CrystalItemId:
+		{
+			name = "Crsytal";
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -294,6 +302,11 @@ func GetItemSlotName(ItemId itemId)
 		case YellowFlowerOfRageItemId:
 		{
 			name = "YFR";
+			break;
+		}
+		case CrystalItemId:
+		{
+			name = "CR";
 			break;
 		}
 		default:
@@ -511,6 +524,11 @@ func GetItemTooltipText(ItemId itemId, Int8 *buffer, Int32 bufferSize)
 			AddLine(text, "by 20% for 1 minute.");
 			break;
 		}
+		case CrystalItemId:
+		{
+			AddLine(text, "A piece of crystal.");
+			break;
+		}
 		default:
 		{
 			DebugBreak();
@@ -584,41 +602,58 @@ struct InventoryItem
 	IntVec2 slot;
 };
 
+static Bool32
+func InventorySlotIsValid(Inventory *inventory, IntVec2 slot)
+{
+	Bool32 rowIsValid = IsIntBetween(slot.row, 0, inventory->rowN - 1);
+	Bool32 colIsValid = IsIntBetween(slot.col, 0, inventory->colN - 1);
+	Bool32 isValid = (rowIsValid && colIsValid);
+	return isValid;
+}
 
 static void
-func SetInventorySlotId(Inventory *inventory, Int32 row, Int32 col, SlotId slotId)
+func SetInventorySlotId(Inventory *inventory, IntVec2 slot, SlotId slotId)
 {
-	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
-	Assert(IsIntBetween(col, 0, inventory->colN - 1));
-	inventory->slots[row * inventory->colN + col] = slotId;
+	Assert(InventorySlotIsValid(inventory, slot));
+	inventory->slots[slot.row * inventory->colN + slot.col] = slotId;
 }
 
 static SlotId
-func GetInventorySlotId(Inventory *inventory, Int32 row, Int32 col)
+func GetInventorySlotId(Inventory *inventory, IntVec2 slot)
 {
-	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
-	Assert(IsIntBetween(col, 0, inventory->colN - 1));
-	SlotId slotId = inventory->slots[row * inventory->colN + col];
+	Assert(InventorySlotIsValid(inventory, slot));
+	SlotId slotId = inventory->slots[slot.row * inventory->colN + slot.col];
 	return slotId;
 }
 
 static void
-func SetInventoryItemId(Inventory *inventory, Int32 row, Int32 col, ItemId itemId)
+func SetInventoryItemId(Inventory *inventory, IntVec2 slot, ItemId itemId)
 {
-	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
-	Assert(IsIntBetween(col, 0, inventory->colN - 1));
-	SlotId slotId = GetInventorySlotId(inventory, row, col);
+	Assert(InventorySlotIsValid(inventory, slot));
+	SlotId slotId = GetInventorySlotId(inventory, slot);
 	Assert(ItemGoesIntoSlot(itemId, slotId));
 
-	inventory->items[row * inventory->colN + col] = itemId;
+	inventory->items[slot.row * inventory->colN + slot.col] = itemId;
+}
+
+static void
+func ClearInventory(Inventory *inventory)
+{
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			IntVec2 slot = MakeIntPoint(row, col);
+			SetInventoryItemId(inventory, slot, NoItemId);
+		}
+	}
 }
 
 static ItemId
-func GetInventoryItemId(Inventory *inventory, Int32 row, Int32 col)
+func GetInventoryItemId(Inventory *inventory, IntVec2 slot)
 {
-	Assert(IsIntBetween(row, 0, inventory->rowN - 1));
-	Assert(IsIntBetween(col, 0, inventory->colN - 1));
-	ItemId itemId = inventory->items[row * inventory->colN + col];
+	Assert(InventorySlotIsValid(inventory, slot));
+	ItemId itemId = inventory->items[slot.row * inventory->colN + slot.col];
 	return itemId;
 }
 
@@ -638,25 +673,22 @@ func InitInventory(Inventory *inventory, MemArena *arena, Int32 rowN, Int32 colN
 }
 
 static Bool32
-func InventorySlotIsValid(Inventory *inventory, IntVec2 slot)
-{
-	Bool32 rowIsValid = IsIntBetween(slot.row, 0, inventory->rowN - 1);
-	Bool32 colIsValid = IsIntBetween(slot.col, 0, inventory->colN - 1);
-	Bool32 isValid = (rowIsValid && colIsValid);
-	return isValid;
-}
-
-static void
-func SetSlotItemId(Inventory *inventory, IntVec2 slot, ItemId itemId)
-{
-	SetInventoryItemId(inventory, slot.row, slot.col, itemId);
-}
-
-static Bool32
 func InventoryItemIsValid(InventoryItem *item)
 {
 	Bool32 isValid = (item->inventory && InventorySlotIsValid(item->inventory, item->slot));
 	return isValid;
+}
+
+static InventoryItem
+func GetInventoryItem(Inventory *inventory, IntVec2 slot)
+{
+	Assert(InventorySlotIsValid(inventory, slot));
+	InventoryItem item = {};
+	item.inventory = inventory;
+	item.itemId = GetInventoryItemId(inventory, slot);
+	item.slotId = GetInventorySlotId(inventory, slot);
+	item.slot = slot;
+	return item;
 }
 
 static Bool32
@@ -667,7 +699,8 @@ func HasEmptySlot(Inventory *inventory)
 	{
 		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			ItemId itemId = GetInventoryItemId(inventory, row, col);
+			IntVec2 slot = MakeIntPoint(row, col);
+			ItemId itemId = GetInventoryItemId(inventory, slot);
 			if(itemId == NoItemId)
 			{
 				hasEmptySlot = true;
@@ -694,10 +727,11 @@ func AddItemToInventory(Inventory *inventory, ItemId itemId)
 	{
 		for(Int32 col = 0; col < inventory->colN; col++)
 		{
-			ItemId currentItemId = GetInventoryItemId(inventory, row, col);
+			IntVec2 slot = MakeIntPoint(row, col);
+			ItemId currentItemId = GetInventoryItemId(inventory, slot);
 			if(currentItemId == NoItemId)
 			{
-				SetInventoryItemId(inventory, row, col, itemId);
+				SetInventoryItemId(inventory, slot, itemId);
 				itemAdded = true;
 				break;
 			}
@@ -709,6 +743,17 @@ func AddItemToInventory(Inventory *inventory, ItemId itemId)
 		}
 	}
 	Assert(itemAdded);
+}
+
+static void
+func MoveItemToInventory(InventoryItem item, Inventory *inventory)
+{
+	Assert(item.inventory != 0);
+	Assert(item.inventory != inventory);
+	Assert(HasEmptySlot(inventory));
+
+	SetInventoryItemId(item.inventory, item.slot, NoItemId);
+	AddItemToInventory(inventory, item.itemId);
 }
 
 static ItemId
