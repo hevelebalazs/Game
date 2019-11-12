@@ -27,6 +27,8 @@ struct Game
 	Entity player;
 
 	Real32 *itemSpawnCooldowns;
+
+	Bool32 questFinished;
 };
 
 static void
@@ -58,6 +60,8 @@ func GameInit(Game *game, Canvas *canvas)
 
 	InitInventory(&game->tradeInventory, &game->arena, 3, 5);
 	game->showTradeWindow = false;
+
+	game->questFinished = false;
 }
 
 #define EntityRadius 0.5f
@@ -166,7 +170,7 @@ func UpdateEntityMovement(Entity *entity, Map *map, Real32 seconds)
 }
 
 static void
-func DrawInteractionDialog(Canvas *canvas)
+func DrawInteractionDialogWithText(Canvas *canvas, Int8 *text)
 {
 	Vec4 color = MakeColor(0.8f, 0.8f, 0.4f);
 	Vec4 outlineColor = MakeColor(1.0f, 1.0f, 0.5f);
@@ -185,7 +189,6 @@ func DrawInteractionDialog(Canvas *canvas)
 	Int32 textLeft = rect.left + 10;
 	Int32 textTop = rect.top + 10;
 
-	Int8 *text = "Can you bring me 10 crystals?";
 	DrawBitmapTextLineTopLeft(bitmap, text, canvas->glyphData, textLeft, textTop, textColor);
 }
 
@@ -420,6 +423,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 			{
 				StopTrading(game);
 			}
+			game->showInventory = false;
 		}
 		else
 		{
@@ -492,7 +496,16 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	if(playerNPCDistance <= interactionDistance)
 	{
 		DrawRectOutline(canvas, npcRect, npcBorderColor);
-		DrawInteractionDialog(canvas);
+		Int8 *text = 0;
+		if(game->questFinished)
+		{
+			text = "Thanks!";
+		}
+		else
+		{
+			text = "Can you bring me 10 crystals?";
+		}
+		DrawInteractionDialogWithText(canvas, text);
 
 		if(WasKeyReleased(userInput, 'E'))
 		{
@@ -541,31 +554,34 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 			}
 		}
 
-		Int32 crystalCount = 0;
-		Int32 itemCount = 0;
-		for(Int32 row = 0; row < tradeInventory->rowN; row++)
+		if(!game->questFinished)
 		{
-			for(Int32 col = 0; col < tradeInventory->colN; col++)
+			Int32 crystalCount = 0;
+			Int32 itemCount = 0;
+			for(Int32 row = 0; row < tradeInventory->rowN; row++)
 			{
-				IntVec2 slot = MakeIntPoint(row, col);
-				ItemId itemId = GetInventoryItemId(tradeInventory, slot);
-				if(itemId != NoItemId)
+				for(Int32 col = 0; col < tradeInventory->colN; col++)
 				{
-					itemCount++;
-					if(itemId == CrystalItemId)
+					IntVec2 slot = MakeIntPoint(row, col);
+					ItemId itemId = GetInventoryItemId(tradeInventory, slot);
+					if(itemId != NoItemId)
 					{
-						crystalCount++;
+						itemCount++;
+						if(itemId == CrystalItemId)
+						{
+							crystalCount++;
+						}
 					}
 				}
 			}
-		}
 
-		Bool32 areItemsExpected = (crystalCount == 10 && itemCount == 10);
-		if(areItemsExpected)
-		{
-			IntRect rect = GetInventoryRect(tradeInventory);
-			Vec4 color = MakeColor(0.0f, 1.0f, 0.0f);
-			DrawBitmapRectOutline(bitmap, rect, color);
+			Bool32 areItemsExpected = (crystalCount == 10 && itemCount == 10);
+			if(areItemsExpected)
+			{
+				game->questFinished = true;
+				ClearInventory(tradeInventory);
+				StopTrading(game);
+			}
 		}
 	}
 

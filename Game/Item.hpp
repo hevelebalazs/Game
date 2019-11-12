@@ -636,6 +636,19 @@ func SetInventoryItemId(Inventory *inventory, IntVec2 slot, ItemId itemId)
 	inventory->items[slot.row * inventory->colN + slot.col] = itemId;
 }
 
+static void
+func ClearInventory(Inventory *inventory)
+{
+	for(Int32 row = 0; row < inventory->rowN; row++)
+	{
+		for(Int32 col = 0; col < inventory->colN; col++)
+		{
+			IntVec2 slot = MakeIntPoint(row, col);
+			SetInventoryItemId(inventory, slot, NoItemId);
+		}
+	}
+}
+
 static ItemId
 func GetInventoryItemId(Inventory *inventory, IntVec2 slot)
 {
