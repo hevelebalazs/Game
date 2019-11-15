@@ -83,7 +83,7 @@ func ArenaPushData(MemArena *arena, UInt32 size, void* data)
 	return copyTo;
 }
 
-#define ArenaAllocType(arena, type) ((type *)ArenaAlloc((arena), sizeof(type))
+#define ArenaAllocType(arena, type) ((type *)ArenaAlloc((arena), sizeof(type)))
 #define ArenaAllocArray(arena, type, size) ((type *)ArenaAlloc((arena), (size) * sizeof(type)))
 
 /*

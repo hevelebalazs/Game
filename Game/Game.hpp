@@ -10,6 +10,8 @@ struct Entity
 {
 	Vec2 position;
 	Vec2 velocity;
+
+	Entity *target;
 };
 
 struct Game
@@ -29,6 +31,9 @@ struct Game
 	Real32 *itemSpawnCooldowns;
 
 	Bool32 questFinished;
+
+	Entity npc1;
+	Entity npc2;
 };
 
 static void
@@ -62,6 +67,17 @@ func GameInit(Game *game, Canvas *canvas)
 	game->showTradeWindow = false;
 
 	game->questFinished = false;
+
+	Entity *npc1 = &game->npc1;
+	Entity *npc2 = &game->npc2;
+
+	npc1->position = MakePoint(10.0f, 10.0f);
+	npc1->velocity = MakePoint(0.0f, 0.0f);
+	npc1->target = npc2;
+
+	npc2->position = MakePoint(20.0f, 20.0f);
+	npc2->velocity = MakePoint(0.0f, 0.0f);
+	npc2->target = npc1;
 }
 
 #define EntityRadius 0.5f
@@ -386,6 +402,41 @@ func StopTrading(Game *game)
 }
 
 static void
+func DrawEntity(Canvas *canvas, Entity *entity, Vec4 color)
+{
+	Rect rect = GetEntityRect(entity);
+	DrawRect(canvas, rect, color);
+}
+
+static void
+func HighlightEntity(Canvas *canvas, Entity *entity, Vec4 color)
+{
+	Rect rect = GetEntityRect(entity);
+	DrawRectOutline(canvas, rect, color);
+}
+
+static void
+func UpdateNpc(Entity *npc, Real32 seconds)
+{
+	npc->velocity = MakeVector(0.0f, 0.0f);
+	Entity *target = npc->target;
+	if(target)
+	{
+		Real32 distance = Distance(npc->position, target->position);
+
+		Real32 maxMeleeDistance = 3.0f;
+		if(distance > maxMeleeDistance)
+		{
+			Vec2 direction = PointDirection(npc->position, target->position);
+			Real32 speed = 10.0f;
+			npc->velocity = speed * direction;
+		}
+	}
+
+	npc->position += seconds * npc->velocity;
+}
+
+static void
 func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput)
 {
 	Bitmap *bitmap = &canvas->bitmap;
@@ -435,7 +486,6 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	UpdateEntityMovement(player, map, seconds);
 	canvas->camera->center = player->position;
 
-
 	DrawMapWithoutItems(canvas, map);
 	for(Int32 i = 0; i < map->itemN; i++)
 	{
@@ -479,8 +529,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	}
 	   
 	Vec4 playerColor = MakeColor(1.0f, 1.0f, 0.0f);
-	Rect playerRect = GetEntityRect(player);
-	DrawRect(canvas, playerRect, playerColor);
+	DrawEntity(canvas, player, playerColor);
 
 	Vec4 npcColor = MakeColor(1.0f, 0.0f, 1.0f);
 	Vec4 npcHighlightColor = MakeColor(0.5f, 0.0f, 0.5f);
@@ -492,10 +541,10 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 	Real32 interactionDistance = 3.0f;
 	Rect npcRect = GetEntityRect(&npc);
 
-	DrawRect(canvas, npcRect, npcColor);
+	DrawEntity(canvas, &npc, npcColor);
 	if(playerNPCDistance <= interactionDistance)
 	{
-		DrawRectOutline(canvas, npcRect, npcBorderColor);
+		HighlightEntity(canvas, &npc, npcBorderColor);
 		Int8 *text = 0;
 		if(game->questFinished)
 		{
@@ -527,6 +576,16 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 			StopTrading(game);
 		}
 	}
+
+	Vec4 npc1Color = MakeColor(1.0f, 0.0f, 0.0f);
+	Entity *npc1 = &game->npc1;
+	DrawEntity(canvas, npc1, npc1Color);
+	UpdateNpc(npc1, seconds);
+
+	Vec4 npc2Color = MakeColor(0.0f, 0.0f, 1.0f);
+	Entity *npc2 = &game->npc2;
+	DrawEntity(canvas, npc2, npc2Color);
+	UpdateNpc(npc2, seconds);
 
 	Inventory *tradeInventory = &game->tradeInventory;
 	Inventory *inventory = &game->inventory;
