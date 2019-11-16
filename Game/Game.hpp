@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Item.hpp"
 #include "Map.hpp"
@@ -10,6 +10,9 @@ struct Entity
 {
 	Vec2 position;
 	Vec2 velocity;
+
+	Int32 healthPoints;
+	Int32 maxHealthPoints;
 
 	Entity *target;
 };
@@ -48,6 +51,8 @@ func GameInit(Game *game, Canvas *canvas)
 	Entity *player = &game->player;
 	player->position = MakePoint(0.5f * MapTileSide, 0.5f * MapTileSide);
 	player->velocity = MakeVector(0.0f, 0.0f);
+	player->maxHealthPoints = 100;
+	player->healthPoints = player->maxHealthPoints;
 
 	Int8 *mapFile = "Data/Map.data";
 	game->map = ReadMapFromFile(mapFile, &game->arena); 
@@ -74,10 +79,14 @@ func GameInit(Game *game, Canvas *canvas)
 	npc1->position = MakePoint(10.0f, 10.0f);
 	npc1->velocity = MakePoint(0.0f, 0.0f);
 	npc1->target = npc2;
+	npc1->maxHealthPoints = 100;
+	npc1->healthPoints = npc1->maxHealthPoints;
 
 	npc2->position = MakePoint(20.0f, 20.0f);
 	npc2->velocity = MakePoint(0.0f, 0.0f);
 	npc2->target = npc1;
+	npc2->maxHealthPoints = 100;
+	npc2->healthPoints = npc2->maxHealthPoints;
 }
 
 #define EntityRadius 0.5f
@@ -406,6 +415,35 @@ func DrawEntity(Canvas *canvas, Entity *entity, Vec4 color)
 {
 	Rect rect = GetEntityRect(entity);
 	DrawRect(canvas, rect, color);
+
+	if(entity->maxHealthPoints > 0)
+	{
+		Assert(IsIntBetween(entity->healthPoints, 0, entity->maxHealthPoints));
+		Real32 ratio = (Real32)entity->healthPoints / (Real32)entity->maxHealthPoints;
+
+		Real32 unitInPixels = canvas->camera->unitInPixels;
+		Real32 barWidth = 50.0f / unitInPixels;
+		Real32 barHeight = 10.0f / unitInPixels;
+
+		Rect barRect = {};
+		barRect.left   = entity->position.x - barWidth * 0.5f;
+		barRect.right  = entity->position.x + barWidth * 0.5f;
+		barRect.bottom = rect.top - 10.0f / unitInPixels;
+		barRect.top    = barRect.bottom - barHeight;
+
+		Vec4 barBackgroundColor = MakeColor(0.5f, 0.5f, 0.5f);
+		Vec4 barOutlineColor = MakeColor(0.0f, 0.0f, 0.0f);
+
+		DrawRect(canvas, barRect, barBackgroundColor);
+
+		Vec4 filledBarColor = MakeColor(1.0f, 0.0f, 0.0f);
+		Rect filledBarRect = barRect;
+		filledBarRect.right = barRect.left + (barRect.right - barRect.left) * ratio;
+		DrawRect(canvas, filledBarRect, filledBarColor);
+
+
+		DrawRectOutline(canvas, barRect, barOutlineColor);
+	}
 }
 
 static void
