@@ -15,6 +15,8 @@ struct Entity
 	Int32 maxHealthPoints;
 
 	Entity *target;
+
+	Real32 rechargeTime;
 };
 
 struct Game
@@ -453,9 +455,30 @@ func HighlightEntity(Canvas *canvas, Entity *entity, Vec4 color)
 	DrawRectOutline(canvas, rect, color);
 }
 
+static Real32
+func ClipUpToZero(Real32 value)
+{
+	Real32 result = (value >= 0.0f) ? value : 0.0f;
+	return result;
+}
+
+static Int32
+func ClipIntUpToZero(Int32 value)
+{
+	Int32 result = (value >= 0) ? value : 0;
+	return result;
+}
+
+static void
+func DoDamage(Entity *target, Int32 damage)
+{
+	target->healthPoints = ClipIntUpToZero(target->healthPoints - damage);
+}
+
 static void
 func UpdateNpc(Entity *npc, Real32 seconds)
 {
+	npc->rechargeTime = ClipUpToZero(npc->rechargeTime - seconds);
 	npc->velocity = MakeVector(0.0f, 0.0f);
 	Entity *target = npc->target;
 	if(target)
@@ -468,6 +491,14 @@ func UpdateNpc(Entity *npc, Real32 seconds)
 			Vec2 direction = PointDirection(npc->position, target->position);
 			Real32 speed = 10.0f;
 			npc->velocity = speed * direction;
+		}
+		else
+		{
+			if(npc->rechargeTime == 0.0f)
+			{
+				DoDamage(target, 30);
+				npc->rechargeTime = 3.0f;
+			}
 		}
 	}
 
