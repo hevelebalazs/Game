@@ -6,6 +6,13 @@
 
 #define GameArenaSize (1 * MegaByte)
 
+enum EntityGroupId
+{
+	NeutralGroupId,
+	OrangeGroupId,
+	PurpleGroupId
+};
+
 struct Entity
 {
 	Vec2 position;
@@ -17,7 +24,10 @@ struct Entity
 	Entity *target;
 
 	Real32 rechargeTime;
+	EntityGroupId groupId;
 };
+
+#define NpcN 4
 
 struct Game
 {
@@ -37,9 +47,18 @@ struct Game
 
 	Bool32 questFinished;
 
-	Entity npc1;
-	Entity npc2;
+	Entity npcs[NpcN];
 };
+
+static void
+func InitNpc(Entity *npc, EntityGroupId groupId, Real32 x, Real32 y)
+{
+	npc->groupId = groupId;
+	npc->position = MakePoint(x, y);
+	npc->velocity = MakePoint(0.0f, 0.0f);
+	npc->maxHealthPoints = 100;
+	npc->healthPoints = npc->maxHealthPoints;
+}
 
 static void
 func GameInit(Game *game, Canvas *canvas)
@@ -75,20 +94,10 @@ func GameInit(Game *game, Canvas *canvas)
 
 	game->questFinished = false;
 
-	Entity *npc1 = &game->npc1;
-	Entity *npc2 = &game->npc2;
-
-	npc1->position = MakePoint(10.0f, 10.0f);
-	npc1->velocity = MakePoint(0.0f, 0.0f);
-	npc1->target = npc2;
-	npc1->maxHealthPoints = 100;
-	npc1->healthPoints = npc1->maxHealthPoints;
-
-	npc2->position = MakePoint(20.0f, 20.0f);
-	npc2->velocity = MakePoint(0.0f, 0.0f);
-	npc2->target = npc1;
-	npc2->maxHealthPoints = 100;
-	npc2->healthPoints = npc2->maxHealthPoints;
+	InitNpc(&game->npcs[0], OrangeGroupId, 10.0f, 10.0f);
+	InitNpc(&game->npcs[1], OrangeGroupId, 20.0f, 20.0f);
+	InitNpc(&game->npcs[2], PurpleGroupId, 10.0f, 20.0f);
+	InitNpc(&game->npcs[3], PurpleGroupId, 20.0f, 10.0f);
 }
 
 #define EntityRadius 0.5f
@@ -475,34 +484,106 @@ func DoDamage(Entity *target, Int32 damage)
 	target->healthPoints = ClipIntUpToZero(target->healthPoints - damage);
 }
 
-static void
-func UpdateNpc(Entity *npc, Real32 seconds)
-{
-	npc->rechargeTime = ClipUpToZero(npc->rechargeTime - seconds);
-	npc->velocity = MakeVector(0.0f, 0.0f);
-	Entity *target = npc->target;
-	if(target)
-	{
-		Real32 distance = Distance(npc->position, target->position);
+#define MaxAttackDistance 30.0f
+#define MaxMeleeDistance 3.0f
 
-		Real32 maxMeleeDistance = 3.0f;
-		if(distance > maxMeleeDistance)
+static void
+func UpdateNpcTarget(Game *game, Entity *npc)
+{
+	Assert(npc->healthPoints > 0);
+
+	Entity *target = npc->target;
+	if(target && target->healthPoints == 0)
+	{
+		target = 0;
+	}
+
+	if(!target)
+	{
+		for(Int32 i = 0; i < NpcN; i++)
 		{
-			Vec2 direction = PointDirection(npc->position, target->position);
-			Real32 speed = 10.0f;
-			npc->velocity = speed * direction;
-		}
-		else
-		{
-			if(npc->rechargeTime == 0.0f)
+			Entity *entity = &game->npcs[i];
+			if(entity != npc)
 			{
-				DoDamage(target, 30);
-				npc->rechargeTime = 3.0f;
+				Bool32 isAlive = (entity->healthPoints > 0);
+				Bool32 isEnemy = (entity->groupId != NeutralGroupId && entity->groupId != npc->groupId);
+				if(isAlive && isEnemy)
+				{
+					Real32 distance = Distance(npc->position, entity->position);
+					if(distance <= MaxAttackDistance)
+					{
+						target = entity;
+						break;
+					}
+				}
 			}
 		}
 	}
 
+	npc->target = target;
+}
+
+static void
+func UpdateNpc(Game *game, Entity *npc, Real32 seconds)
+{
+	if(npc->healthPoints > 0)
+	{
+		npc->rechargeTime = ClipUpToZero(npc->rechargeTime - seconds);
+		npc->velocity = MakeVector(0.0f, 0.0f);
+
+		UpdateNpcTarget(game, npc);
+
+		Entity *target = npc->target;
+		if(target)
+		{
+			Real32 distance = Distance(npc->position, target->position);
+			if(distance > MaxMeleeDistance)
+			{
+				Vec2 direction = PointDirection(npc->position, target->position);
+				Real32 speed = 10.0f;
+				npc->velocity = speed * direction;
+			}
+			else
+			{
+				if(npc->rechargeTime == 0.0f)
+				{
+					DoDamage(target, 30);
+					npc->rechargeTime = 3.0f;
+				}
+			}
+		}
+	}
+	else
+	{
+		npc->velocity = MakeVector(0.0f, 0.0f);
+	}
+
 	npc->position += seconds * npc->velocity;
+}
+
+static Vec4
+func GetEntityGroupColor(EntityGroupId groupId)
+{
+	Vec4 color = {};
+	switch(groupId)
+	{
+		case OrangeGroupId:
+		{
+			color = MakeColor(1.0f, 0.5f, 0.0f);
+			break;
+		}
+		case PurpleGroupId:
+		{
+			color = MakeColor(1.0f, 0.0f, 1.0f);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	return color;
 }
 
 static void
@@ -646,15 +727,13 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 		}
 	}
 
-	Vec4 npc1Color = MakeColor(1.0f, 0.0f, 0.0f);
-	Entity *npc1 = &game->npc1;
-	DrawEntity(canvas, npc1, npc1Color);
-	UpdateNpc(npc1, seconds);
-
-	Vec4 npc2Color = MakeColor(0.0f, 0.0f, 1.0f);
-	Entity *npc2 = &game->npc2;
-	DrawEntity(canvas, npc2, npc2Color);
-	UpdateNpc(npc2, seconds);
+	for(Int32 i = 0; i < NpcN; i++)
+	{
+		Entity *npc = &game->npcs[i];
+		Vec4 color = GetEntityGroupColor(npc->groupId);
+		DrawEntity(canvas, npc, color);
+		UpdateNpc(game, npc, seconds);
+	}
 
 	Inventory *tradeInventory = &game->tradeInventory;
 	Inventory *inventory = &game->inventory;
