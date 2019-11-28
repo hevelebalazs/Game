@@ -27,7 +27,7 @@ struct Entity
 	EntityGroupId groupId;
 };
 
-#define NpcN 4
+#define MaxNpcN 1024
 
 struct Game
 {
@@ -47,8 +47,17 @@ struct Game
 
 	Bool32 questFinished;
 
-	Entity npcs[NpcN];
+	Int32 npcN;
+	Entity npcs[MaxNpcN];
 };
+
+static void
+func AddNpc(Game *game, Entity *npc)
+{
+	Assert(game->npcN < MaxNpcN);
+	game->npcs[game->npcN] = *npc;
+	game->npcN++;
+}
 
 static void
 func InitNpc(Entity *npc, EntityGroupId groupId, Real32 x, Real32 y)
@@ -58,6 +67,27 @@ func InitNpc(Entity *npc, EntityGroupId groupId, Real32 x, Real32 y)
 	npc->velocity = MakePoint(0.0f, 0.0f);
 	npc->maxHealthPoints = 100;
 	npc->healthPoints = npc->maxHealthPoints;
+}
+
+static EntityGroupId
+func GetRandomGroupId()
+{
+	EntityGroupId id = NeutralGroupId;
+	Int32 random = IntRandom(0, 1);
+	if(random == 0)
+	{
+		id = OrangeGroupId;
+	}
+	else if(random == 1)
+	{
+		id = PurpleGroupId;
+	}
+	else
+	{
+		DebugBreak();
+	}
+
+	return id;
 }
 
 static void
@@ -94,10 +124,39 @@ func GameInit(Game *game, Canvas *canvas)
 
 	game->questFinished = false;
 
-	InitNpc(&game->npcs[0], OrangeGroupId, 10.0f, 10.0f);
-	InitNpc(&game->npcs[1], OrangeGroupId, 20.0f, 20.0f);
-	InitNpc(&game->npcs[2], PurpleGroupId, 10.0f, 20.0f);
-	InitNpc(&game->npcs[3], PurpleGroupId, 20.0f, 10.0f);
+	Map *map = &game->map;
+	for(Int32 row = 0; row < map->tileRowN; row++)
+	{
+		for(Int32 col = 0; col < map->tileColN; col++)
+		{
+			IntVec2 tile = MakeIntPoint(row, col);
+			TileId tileId = GetTileType(map, tile);
+			if(tileId != NoTileId)
+			{
+				Int32 tileNpcN = IntRandom(0, 3);
+
+				Rect tileRect = GetTileRect(map, tile);
+				for(Int32 i = 0; i < tileNpcN; i++)
+				{
+					Real32 x = RandomBetween(tileRect.left, tileRect.right);
+					Real32 y = RandomBetween(tileRect.top, tileRect.bottom);
+					EntityGroupId id = GetRandomGroupId();
+
+					Entity npc = {};
+					InitNpc(&npc, id, x, y);
+					AddNpc(game, &npc);
+				}
+			}
+		}
+	}
+
+	for(Int32 i = 0; i < game->npcN - 1; i++)
+	{
+		Int32 j = IntRandom(i + 1, game->npcN - 1);
+		Entity tmp = game->npcs[i];
+		game->npcs[i] = game->npcs[j];
+		game->npcs[j] = tmp;
+	}
 }
 
 #define EntityRadius 0.5f
@@ -500,7 +559,7 @@ func UpdateNpcTarget(Game *game, Entity *npc)
 
 	if(!target)
 	{
-		for(Int32 i = 0; i < NpcN; i++)
+		for(Int32 i = 0; i < game->npcN; i++)
 		{
 			Entity *entity = &game->npcs[i];
 			if(entity != npc)
@@ -727,7 +786,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *userInput
 		}
 	}
 
-	for(Int32 i = 0; i < NpcN; i++)
+	for(Int32 i = 0; i < game->npcN; i++)
 	{
 		Entity *npc = &game->npcs[i];
 		Vec4 color = GetEntityGroupColor(npc->groupId);
