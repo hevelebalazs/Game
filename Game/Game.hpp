@@ -21,6 +21,9 @@ struct Entity
 	Int32 healthPoints;
 	Int32 maxHealthPoints;
 
+	Vec2 startPosition;
+	Real32 resurrectTime;
+
 	Entity *target;
 
 	Real32 rechargeTime;
@@ -64,8 +67,9 @@ func InitNpc(Entity *npc, EntityGroupId groupId, Real32 x, Real32 y)
 {
 	npc->groupId = groupId;
 	npc->position = MakePoint(x, y);
+	npc->startPosition = npc->position;
 	npc->velocity = MakePoint(0.0f, 0.0f);
-	npc->maxHealthPoints = 100;
+	npc->maxHealthPoints = 300;
 	npc->healthPoints = npc->maxHealthPoints;
 }
 
@@ -540,7 +544,12 @@ func ClipIntUpToZero(Int32 value)
 static void
 func DoDamage(Entity *target, Int32 damage)
 {
+	Assert(target->healthPoints > 0);
 	target->healthPoints = ClipIntUpToZero(target->healthPoints - damage);
+	if(target->healthPoints == 0)
+	{
+		target->resurrectTime = 5.0f;
+	}
 }
 
 #define MaxAttackDistance 30.0f
@@ -614,7 +623,16 @@ func UpdateNpc(Game *game, Entity *npc, Real32 seconds)
 	}
 	else
 	{
+		Assert(npc->healthPoints == 0);
 		npc->velocity = MakeVector(0.0f, 0.0f);
+
+		npc->resurrectTime -= seconds;
+		if(npc->resurrectTime <= 0.0f)
+		{
+			npc->position = npc->startPosition;
+			npc->healthPoints = npc->maxHealthPoints;
+			npc->target = 0;
+		}
 	}
 
 	npc->position += seconds * npc->velocity;
