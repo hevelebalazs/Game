@@ -11,16 +11,16 @@ struct Bezier4
 };
 
 static Bezier4
-func TurnBezier4(Vec4 startPoint, Vec4 endPoint)
+func TurnBezier4(Vec4 start_point, Vec4 end_point)
 {
 	Bezier4 result = {};
 
-	Real32 turnRatio = Distance(startPoint.position, endPoint.position) * 0.33f;
+	Real32 turn_ratio = Distance(start_point.position, end_point.position) * 0.33f;
 
-	result.points[0] = startPoint.position;
-	result.points[1] = startPoint.position + (turnRatio * startPoint.direction);
-	result.points[2] = endPoint.position - (turnRatio * endPoint.direction);
-	result.points[3] = endPoint.position;
+	result.points[0] = start_point.position;
+	result.points[1] = start_point.position + (turn_ratio * start_point.direction);
+	result.points[2] = end_point.position - (turn_ratio * end_point.direction);
+	result.points[3] = end_point.position;
 
 	return result;
 }
@@ -74,29 +74,29 @@ func Bezier4DirectedPoint(Bezier4 bezier4, Real32 ratio)
 #define Bezier4PointN (Bezier4SegmentN + 1)
 
 static Real32
-func MoveOnBezier4(Bezier4 bezier4, Real32 startRatio, Real32 moveDistance)
+func MoveOnBezier4(Bezier4 bezier4, Real32 start_ratio, Real32 move_distance)
 {
-	Assert(IsBetween(startRatio, 0.0f, 1.0f));
-	Assert(moveDistance >= 0.0f);
-	Vec2 position = Bezier4Point(bezier4, startRatio);
-	Real32 ratio = startRatio;
-	Int32 nextPointIndex = Floor(ratio * Bezier4SegmentN) + 1;
-	while(nextPointIndex <= Bezier4SegmentN) 
+	Assert(IsBetween(start_ratio, 0.0f, 1.0f));
+	Assert(move_distance >= 0.0f);
+	Vec2 position = Bezier4Point(bezier4, start_ratio);
+	Real32 ratio = start_ratio;
+	Int32 next_point_index = Floor(ratio * Bezier4SegmentN) + 1;
+	while(next_point_index <= Bezier4SegmentN) 
 	{
-		Real32 nextRatio = (Real32)nextPointIndex / Bezier4SegmentN;
-		Vec2 nextPosition = Bezier4Point(bezier4, nextRatio);
-		Real32 distance = Distance(position, nextPosition);
-		if (moveDistance <= distance) 
+		Real32 next_ratio = (Real32)next_point_index / Bezier4SegmentN;
+		Vec2 next_position = Bezier4Point(bezier4, next_ratio);
+		Real32 distance = Distance(position, next_position);
+		if (move_distance <= distance) 
 		{
-			ratio = Lerp(ratio, moveDistance / distance, nextRatio);
+			ratio = Lerp(ratio, move_distance / distance, next_ratio);
 			break;
 		} 
 		else 
 		{
-			moveDistance -= distance;
-			position = nextPosition;
-			ratio = nextRatio;
-			nextPointIndex++;
+			move_distance -= distance;
+			position = next_position;
+			ratio = next_ratio;
+			next_point_index++;
 		}
 	}
 
@@ -109,30 +109,31 @@ func GetBezier4DistanceFromEnd(Bezier4 bezier4, Real32 ratio)
 {
 	Real32 result = 0;
 	Vec2 position = Bezier4Point(bezier4, ratio);
-	Int32 nextPointIndex = Floor(ratio * Bezier4PointN) + 1;
-	while (nextPointIndex <= Bezier4PointN) 
+	Int32 next_point_index = Floor(ratio * Bezier4PointN) + 1;
+	while (next_point_index <= Bezier4PointN) 
 	{
-		Vec2 nextPosition = Bezier4Point(bezier4, (Real32)nextPointIndex / Bezier4PointN);
-		Real32 distance = Distance(position, nextPosition);
+		Vec2 next_position = Bezier4Point(bezier4, (Real32)next_point_index / Bezier4PointN);
+		Real32 distance = Distance(position, next_position);
 		result += distance;
-		position = nextPosition;
-		nextPointIndex++;
+		position = next_position;
+		next_point_index++;
 	}
 	return result;
 }
 
 static void
-func DrawBezier4(Canvas *canvas, Bezier4 bezier4, Vec4 color, Real32 lineWidth, Int32 segmentCount)
+func DrawBezier4(Canvas *canvas, Bezier4 bezier4, Vec4 color, 
+				 Real32 line_width, Int32 segment_count)
 {
 	Vec2 point = bezier4.points[0];
 
-	for(Int32 i = 1; i <= segmentCount; ++i) 
+	for(Int32 i = 1; i <= segment_count; ++i) 
 	{
-		Real32 ratio = (Real32)i / (Real32)segmentCount;
-		Vec2 nextPoint = Bezier4Point(bezier4, ratio);
+		Real32 ratio = (Real32)i / (Real32)segment_count;
+		Vec2 next_point = Bezier4Point(bezier4, ratio);
 
-		DrawLine(canvas, point, nextPoint, color, lineWidth);
+		DrawLine(canvas, point, next_point, color, line_width);
 
-		point = nextPoint;
+		point = next_point;
 	}
 }

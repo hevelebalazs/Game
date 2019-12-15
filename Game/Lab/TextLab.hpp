@@ -9,8 +9,8 @@
 static void
 func TextLabInit(Canvas *canvas)
 {
-	canvas->glyphData = GetGlobalGlyphData();
-	canvas->camera->unitInPixels = 2.0f;
+	canvas->glyph_data = GetGlobalGlyphData();
+	canvas->camera->unit_in_pixels = 2.0f;
 }
 
 static void
@@ -24,50 +24,50 @@ func DrawTestToolTip(Canvas *canvas)
 		"to the first enemy hit.",
 		"Generates 20 Energy if it hits anything."
 	};
-	Int32 lineN = sizeof(lines) / sizeof(char*);
+	Int32 line_n = sizeof(lines) / sizeof(char*);
 
 	Bitmap *bitmap = &canvas->bitmap;
-	Int32 tooltipLeft = (bitmap->width / 2) - (TooltipWidth / 2);
-	Int32 tooltipTop = (bitmap->height / 2) - (GetTooltipHeight(lineN) / 2);
-	DrawBitmapTooltip(bitmap, lines, lineN, canvas->glyphData, tooltipTop, tooltipLeft);
+	Int32 tooltip_left = (bitmap->width / 2) - (TooltipWidth / 2);
+	Int32 tooltip_top = (bitmap->height / 2) - (GetTooltipHeight(line_n) / 2);
+	DrawBitmapTooltip(bitmap, lines, line_n, canvas->glyph_data, tooltip_top, tooltip_left);
 }
 
 static void
 func TextLabUpdate(Canvas *canvas)
 {
-	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
-	ClearScreen(canvas, backgroundColor);
+	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	ClearScreen(canvas, background_color);
 
-	Vec4 topLeftColor     = MakeColor(1.0f, 0.0f, 0.0f);
-	Vec4 topRightColor    = MakeColor(0.0f, 1.0f, 0.0f);
-	Vec4 bottomLeftColor  = MakeColor(0.0f, 0.0f, 1.0f);
-	Vec4 bottomRightColor = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 top_left_color     = MakeColor(1.0f, 0.0f, 0.0f);
+	Vec4 top_right_color    = MakeColor(0.0f, 1.0f, 0.0f);
+	Vec4 bottom_left_color  = MakeColor(0.0f, 0.0f, 1.0f);
+	Vec4 bottom_right_color = MakeColor(1.0f, 0.0f, 0.0f);
 
 	Bitmap *bitmap = &canvas->bitmap;
 	UInt32 *pixel = bitmap->memory;
 	for(Int32 row = 0; row < bitmap->height; row++)
 	{
-		Real32 yRatio = Real32(row) / Real32(bitmap->height - 1);
+		Real32 y_ratio = Real32(row) / Real32(bitmap->height - 1);
 
-		Vec4 leftColor = InterpolateColors(topLeftColor, yRatio, bottomLeftColor);
-		Vec4 rightColor = InterpolateColors(topRightColor, yRatio, bottomRightColor);
+		Vec4 left_color = InterpolateColors(top_left_color, y_ratio, bottom_left_color);
+		Vec4 right_color = InterpolateColors(top_right_color, y_ratio, bottom_right_color);
 
 		for(Int32 col = 0; col < bitmap->width; col++)
 		{
-			Real32 xRatio = Real32(col) / Real32(bitmap->width - 1);
+			Real32 x_ratio = Real32(col) / Real32(bitmap->width - 1);
 
-			Vec4 color = InterpolateColors(leftColor, xRatio, rightColor);
+			Vec4 color = InterpolateColors(left_color, x_ratio, right_color);
 			*pixel = GetColorCode(color);
 			pixel++;
 		}
 	}
 
 	Camera *camera = canvas->camera;
-	Real32 baseLineY = 0.5f * (CameraTopSide(camera) + CameraBottomSide(camera));
-	Real32 baseLineLeft = CameraLeftSide(camera);
-	Real32 baseLineRight = CameraRightSide(camera);
+	Real32 base_line_y = 0.5f * (CameraTopSide(camera) + CameraBottomSide(camera));
+	Real32 base_line_left = CameraLeftSide(camera);
+	Real32 base_line_right = CameraRightSide(camera);
 
-	Vec4 textColor = MakeColor(0.0f, 0.0f, 0.0f);
+	Vec4 text_color = MakeColor(0.0f, 0.0f, 0.0f);
 
 	DrawTestToolTip(canvas);
 }

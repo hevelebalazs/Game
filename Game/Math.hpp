@@ -67,8 +67,8 @@ func IntAbs(Int32 i)
 static Bool32
 func IsIntBetween(Int32 test, Int32 min, Int32 max)
 {
-	Bool32 isBetween = (min <= test && test <= max);
-	return isBetween;
+	Bool32 is_between = (min <= test && test <= max);
+	return is_between;
 }
 
 static Int32
@@ -138,7 +138,7 @@ func Floor(Real32 x)
 }
 
 static Real32
-func Fraction (Real32 x)
+func Fraction(Real32 x)
 {
     Real32 fraction = x - (Int32)x;
 	return fraction;
@@ -337,8 +337,8 @@ static Real32
 func Invert(Real32 value)
 {
 	Assert(value != 0.0f);
-	Real32 inverseValue = (1.0f / value);
-	return inverseValue;
+	Real32 inverse_value = (1.0f / value);
+	return inverse_value;
 }
 
 static Real32

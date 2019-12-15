@@ -50,17 +50,17 @@ enum ClassId
 };
 
 static ClassId
-func GetAbilityClass(AbilityId abilityId)
+func GetAbilityClass(AbilityId ability_id)
 {
-	ClassId classId = NoClassId;
-	switch(abilityId)
+	ClassId class_id = NoClassId;
+	switch(ability_id)
 	{
 		case LightningAbilityId:
 		case EarthShakeAbilityId:
 		case HealAbilityId:
 		case EarthShieldAbilityId:
 		{
-			classId = DruidClassId;
+			class_id = DruidClassId;
 			break;
 		}
 		case SmallPunchAbilityId:
@@ -70,7 +70,7 @@ func GetAbilityClass(AbilityId abilityId)
 		case RollAbilityId:
 		case AvoidanceAbilityId:
 		{
-			classId = MonkClassId;
+			class_id = MonkClassId;
 			break;
 		}
 		case SwordStabAbilityId:
@@ -81,23 +81,23 @@ func GetAbilityClass(AbilityId abilityId)
 		case BlessingOfTheSunAbilityId:
 		case MercyOfTheSunAbilityId:
 		{
-			classId = PaladinClassId;
+			class_id = PaladinClassId;
 			break;
 		}
 		case SnakeStrikeAbilityId:
 		{
-			classId = SnakeClassId;
+			class_id = SnakeClassId;
 			break;
 		}
 		case CrocodileBiteAbilityId:
 		case CrocodileLashAbilityId:
 		{
-			classId = CrocodileClassId;
+			class_id = CrocodileClassId;
 			break;
 		}
 		case TigerBiteAbilityId:
 		{
-			classId = TigerClassId;
+			class_id = TigerClassId;
 			break;
 		}
 		default:
@@ -105,147 +105,147 @@ func GetAbilityClass(AbilityId abilityId)
 			DebugBreak();
 		}
 	}
-	return classId;
+	return class_id;
 }
 
 static Int32
-func GetAbilityMinLevel(AbilityId abilityId)
+func GetAbilityMinLevel(AbilityId ability_id)
 {
-	Int32 minLevel = 0;
-	switch(abilityId)
+	Int32 min_level = 0;
+	switch(ability_id)
 	{
 		case EarthShakeAbilityId:
 		{
-			minLevel = 2;
+			min_level = 2;
 			break;
 		}
 		case HealAbilityId:
 		{
-			minLevel = 3;
+			min_level = 3;
 			break;
 		}
 		case EarthShieldAbilityId:
 		{
-			minLevel = 4;
+			min_level = 4;
 			break;
 		}
 		case SwordStabAbilityId:
 		{
-			minLevel = 1;
+			min_level = 1;
 			break;
 		}
 		case LightOfTheSunAbilityId:
 		{
-			minLevel = 1;
+			min_level = 1;
 			break;
 		}
 		case SwordSwingAbilityId:
 		{
-			minLevel = 2;
+			min_level = 2;
 			break;
 		}
 		case RaiseShieldAbilityId:
 		{
-			minLevel = 2;
+			min_level = 2;
 			break;
 		}
 		case BurnAbilityId:
 		{
-			minLevel = 3;
+			min_level = 3;
 			break;
 		}
 		case BlessingOfTheSunAbilityId:
 		{
-			minLevel = 4;
+			min_level = 4;
 			break;
 		}
 		case MercyOfTheSunAbilityId:
 		{
-			minLevel = 5;
+			min_level = 5;
 			break;
 		}
 		case SmallPunchAbilityId:
 		{
-			minLevel = 1;
+			min_level = 1;
 			break;
 		}
 		case BigPunchAbilityId:
 		{
-			minLevel = 2;
+			min_level = 2;
 			break;
 		}
 		case KickAbilityId:
 		{
-			minLevel = 3;
+			min_level = 3;
 			break;
 		}
 		case SpinningKickAbilityId:
 		{
-			minLevel = 3;
+			min_level = 3;
 			break;
 		}
 		case RollAbilityId:
 		{
-			minLevel = 4;
+			min_level = 4;
 			break;
 		}
 		case AvoidanceAbilityId:
 		{
-			minLevel = 5;
+			min_level = 5;
 			break;
 		}
 		default:
 		{
-			minLevel = 1;
+			min_level = 1;
 		}
 	}
-	return minLevel;
+	return min_level;
 }
 
 static Real32
-func GetAbilityCastDuration(AbilityId abilityId)
+func GetAbilityCastDuration(AbilityId ability_id)
 {
-	Assert(abilityId != NoAbilityId);
-	Real32 castDuration = 0.0f;
-	switch(abilityId)
+	Assert(ability_id != NoAbilityId);
+	Real32 cast_duration = 0.0f;
+	switch(ability_id)
 	{
 		case LightningAbilityId:
 		{
-			castDuration = 2.0f;
+			cast_duration = 2.0f;
 			break;
 		}
 		case HealAbilityId:
 		{
-			castDuration = 1.5f;
+			cast_duration = 1.5f;
 			break;
 		}
 		case LightOfTheSunAbilityId:
 		{
-			castDuration = 1.5f;
+			cast_duration = 1.5f;
 			break;
 		}
 		default:
 		{
-			castDuration = 0.0f;
+			cast_duration = 0.0f;
 			break;
 		}
 	}
-	return castDuration;
+	return cast_duration;
 }
 
 static Bool32
-func AbilityIsCasted(AbilityId abilityId)
+func AbilityIsCasted(AbilityId ability_id)
 {
-	Real32 castDuration = GetAbilityCastDuration(abilityId);
-	Bool32 isCasted = (castDuration > 0.0f);
-	return isCasted;
+	Real32 cast_duration = GetAbilityCastDuration(ability_id);
+	Bool32 is_casted = (cast_duration > 0.0f);
+	return is_casted;
 }
 
 static Real32
-func GetAbilityCooldownDuration(AbilityId abilityId)
+func GetAbilityCooldownDuration(AbilityId ability_id)
 {
 	Real32 cooldown = 0.0f;
-	switch(abilityId)
+	switch(ability_id)
 	{
 		case EarthShakeAbilityId:
 		{
@@ -321,18 +321,18 @@ func GetAbilityCooldownDuration(AbilityId abilityId)
 }
 
 static Bool32
-func AbilityHasCooldown(AbilityId abilityId)
+func AbilityHasCooldown(AbilityId ability_id)
 {
-	Real32 cooldownDuration = GetAbilityCooldownDuration(abilityId);
-	Bool32 hasCooldown = (cooldownDuration > 0.0f);
-	return hasCooldown;
+	Real32 cooldown_duration = GetAbilityCooldownDuration(ability_id);
+	Bool32 has_cooldown = (cooldown_duration > 0.0f);
+	return has_cooldown;
 }
 
 static Real32
-func GetAbilityRechargeDuration(AbilityId abilityId)
+func GetAbilityRechargeDuration(AbilityId ability_id)
 {
 	Real32 recharge = 0.0f;
-	switch(abilityId)
+	switch(ability_id)
 	{
 		case SnakeStrikeAbilityId:
 		{
@@ -365,10 +365,10 @@ func GetAbilityRechargeDuration(AbilityId abilityId)
 }
 
 static Int8 *
-func GetAbilityName(AbilityId abilityId)
+func GetAbilityName(AbilityId ability_id)
 {
 	Int8 *name = 0;
-	switch(abilityId)
+	switch(ability_id)
 	{
 		case LightningAbilityId:
 		{

@@ -29,10 +29,10 @@ enum EffectId
 };
 
 static Int8 *
-func GetEffectName(EffectId effectId)
+func GetEffectName(EffectId effect_id)
 {
 	Int8 *name = 0;
-	switch(effectId)
+	switch(effect_id)
 	{
 		case KickedEffectId:
 		{
@@ -148,30 +148,30 @@ func GetEffectName(EffectId effectId)
 }
 
 static Real32
-func EffectHasDuration(EffectId effectId)
+func EffectHasDuration(EffectId effect_id)
 {
-	bool hasDuration = true;
+	Bool32 has_duration = true;
 	switch(effectId)
 	{
 		case RegenerateEffectId:
 		{
-			hasDuration = false;
+			has_duration = false;
 			break;
 		}
 		default:
 		{
-			hasDuration = true;
+			has_duration = true;
 		}
 	}
-	return hasDuration;
+	return has_duration;
 }
 
 static Real32
-func GetEffectDuration(EffectId effectId)
+func GetEffectDuration(EffectId effect_id)
 {
-	Assert(EffectHasDuration(effectId));
+	Assert(EffectHasDuration(effect_id));
 	Real32 duration = 0.0f;
-	switch(effectId)
+	switch(effect_id)
 	{
 		case KickedEffectId:
 		{

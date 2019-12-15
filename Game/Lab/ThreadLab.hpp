@@ -11,7 +11,7 @@ struct RowPaintWork
 {
 	Bitmap *bitmap;
 	Int32 row;
-	UInt32 colorCode;
+	UInt32 color_code;
 };
 
 #define MaxRowPaintWorkListN 1024
@@ -19,15 +19,15 @@ struct RowPaintWork
 struct RowPaintWorkList 
 {
 	RowPaintWork works[MaxRowPaintWorkListN];
-	volatile Int32 workN;
-	volatile Int32 firstWorkToDo;
+	volatile Int32 work_n;
+	volatile Int32 first_work_to_do;
 	HANDLE semaphore;
-	HANDLE semaphoreDone;
+	HANDLE semaphore_done;
 };
 
 struct ThreadLabState 
 {
-	RowPaintWorkList workList;
+	RowPaintWorkList work_list;
 };
 
 static void
@@ -37,25 +37,25 @@ func ThreadLabBlit(Canvas *canvas, HDC context, RECT rect)
 	Int32 height = rect.bottom - rect.top;
 
 	Bitmap bitmap = canvas->bitmap;
-	BITMAPINFO bitmapInfo = GetBitmapInfo(&bitmap);
+	BITMAPINFO bitmap_info = GetBitmapInfo(&bitmap);
 	StretchDIBits(context,
 				  0, 0, bitmap.width, bitmap.height,
 				  0, 0, width, height,
 				  bitmap.memory,
-				  &bitmapInfo,
+				  &bitmap_info,
 				  DIB_RGB_COLORS,
 				  SRCCOPY
 	);
 }
 
 static void
-func PaintRow(Bitmap *bitmap, Int32 row, UInt32 colorCode)
+func PaintRow(Bitmap *bitmap, Int32 row, UInt32 color_code)
 {
 	Assert(row >= 0 && row < bitmap->height);
 	UInt32 *pixel = bitmap->memory +(row * bitmap->width);
 	for(Int32 col = 0; col < bitmap->width; col++) 
 	{
-		*pixel = colorCode;
+		*pixel = color_code;
 		pixel++;
 	}
 }
@@ -63,62 +63,62 @@ func PaintRow(Bitmap *bitmap, Int32 row, UInt32 colorCode)
 static DWORD WINAPI
 func RowPaintWorkProc(LPVOID parameter)
 {
-	RowPaintWorkList *workList = (RowPaintWorkList *)parameter;
+	RowPaintWorkList *work_list = (RowPaintWorkList *)parameter;
 	while(1) 
 	{
-		WaitForSingleObjectEx(workList->semaphore, INFINITE, FALSE);
-		Int32 workIndex = (Int32)InterlockedIncrement((volatile UInt64 *)&workList->firstWorkToDo) - 1;
-		RowPaintWork work = workList->works[workIndex];
-		PaintRow(work.bitmap, work.row, work.colorCode);
-		ReleaseSemaphore(workList->semaphoreDone, 1, 0);
+		WaitForSingleObjectEx(work_list->semaphore, INFINITE, FALSE);
+		Int32 work_index = (Int32)InterlockedIncrement((volatile UInt64 *)&work_list->first_work_to_do) - 1;
+		RowPaintWork work = work_list->works[work_index];
+		PaintRow(work.bitmap, work.row, work.color_code);
+		ReleaseSemaphore(work_list->semaphore_done, 1, 0);
 	}
 }
 
 static void
-func PushRowPaintWork(RowPaintWorkList *workList, RowPaintWork work)
+func PushRowPaintWork(RowPaintWorkList *work_list, RowPaintWork work)
 {
-	Assert(workList->workN < MaxRowPaintWorkListN);
-	workList->works[workList->workN] = work;
-	workList->workN++;
-	ReleaseSemaphore(workList->semaphore, 1, 0);
+	Assert(work_list->work_n < MaxRowPaintWorkListN);
+	work_list->works[work_list->work_n] = work;
+	work_list->work_n++;
+	ReleaseSemaphore(work_list->semaphore, 1, 0);
 }
 
 static void
-func ThreadLabInit(ThreadLabState *labState, Canvas *canvas)
+func ThreadLabInit(ThreadLabState *lab_state, Canvas *canvas)
 {
 	Camera *camera = canvas->camera;
-	camera->unitInPixels = 1.0f;
+	camera->unit_in_pixels = 1.0f;
 
-	labState->workList.semaphore = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
-	labState->workList.semaphoreDone = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
+	lab_state->work_list.semaphore = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
+	lab_state->work_list.semaphore_done = CreateSemaphore(0, 0, MaxRowPaintWorkListN, 0);
 	for(Int32 i = 0; i < 5; i++)
 	{
-		CreateThread(0, 0, RowPaintWorkProc, &labState->workList, 0, 0);
+		CreateThread(0, 0, RowPaintWorkProc, &lab_state->work_list, 0, 0);
 	}
 }
 
 static void
-func ThreadLabUpdate(ThreadLabState *labState, Canvas *canvas)
+func ThreadLabUpdate(ThreadLabState *lab_state, Canvas *canvas)
 {
-	Vec4 backgroundColor = MakeColor(0.8f, 1.0f, 1.0f);
+	Vec4 background_color = MakeColor(0.8f, 1.0f, 1.0f);
 	Bitmap *bitmap = &canvas->bitmap;
 
-	UInt32 paintColorCode = GetRandomColorCode();
+	UInt32 paint_color_code = GetRandomColorCode();
 
-	RowPaintWorkList *workList = &labState->workList;
-	workList->workN = 0;
-	workList->firstWorkToDo = 0;
+	RowPaintWorkList *work_list = &lab_state->work_list;
+	work_list->work_n = 0;
+	work_list->first_work_to_do = 0;
 	for(Int32 row = 0; row < bitmap->height; row++) 
 	{
 		RowPaintWork work = {};
 		work.bitmap = bitmap;
 		work.row = row;
-		work.colorCode = paintColorCode;
-		PushRowPaintWork(workList, work);
+		work.color_code = paint_color_code;
+		PushRowPaintWork(work_list, work);
 	}
 
 	for(Int32 row = 0; row < bitmap->height; row++)
 	{
-		WaitForSingleObjectEx(workList->semaphoreDone, INFINITE, FALSE);
+		WaitForSingleObjectEx(work_list->semaphore_done, INFINITE, FALSE);
 	}
 }

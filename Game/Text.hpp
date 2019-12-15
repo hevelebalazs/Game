@@ -9,34 +9,34 @@
 struct Glyph
 {
 	UInt8 alpha[32][32];
-	Real32 offsetX;
-	Real32 offsetY;
-	Real32 advanceX;
+	Real32 offset_x;
+	Real32 offset_y;
+	Real32 advance_x;
 };
 
 struct GlyphData
 {
 	Glyph glyphs[256];
-	Real32 kerningTable[256][256];
+	Real32 kerning_table[256][256];
 	Bool32 initialized;
 };
-GlyphData gGlyphData;
+GlyphData global_glyph_data;
 
-static void InitGlyphData(GlyphData *glyphData);
+static void InitGlyphData(GlyphData *glyph_data);
 
 static GlyphData *
 func GetGlobalGlyphData()
 {
-	if(!gGlyphData.initialized)
+	if(!global_glyph_data.initialized)
 	{
-		InitGlyphData(&gGlyphData);
+		InitGlyphData(&global_glyph_data);
 	}
 
-	return &gGlyphData;
+	return &global_glyph_data;
 }
 
 static void
-func InitGlyphData(GlyphData *glyphData)
+func InitGlyphData(GlyphData *glyph_data)
 {
 	static Glyph glyphs[256] =
 	{
@@ -4898,10 +4898,10 @@ func InitGlyphData(GlyphData *glyphData)
 
 	for(Int32 letter = 0; letter < 256; letter++)
 	{
-		glyphData->glyphs[letter] = glyphs[letter];
+		glyph_data->glyphs[letter] = glyphs[letter];
 	}
 
-	static Real32 kerningTable[256][256] = 
+	static Real32 kerning_table[256][256] = 
 	{
 		{},
 		{},
@@ -5165,7 +5165,7 @@ func InitGlyphData(GlyphData *glyphData)
 	{
 		for(Int32 letter2 = 0; letter2 <= 255; letter2++)
 		{
-			glyphData->kerningTable[letter1][letter2] = kerningTable[letter1][letter2];
+			glyph_data->kerning_table[letter1][letter2] = kerning_table[letter1][letter2];
 		}
 	}
 }

@@ -46,63 +46,63 @@ struct ItemAttributes
 };
 
 static Bool32
-func ItemGoesIntoSlot(ItemId itemId, SlotId slotId)
+func ItemGoesIntoSlot(ItemId item_id, SlotId slot_id)
 {
-	Bool32 goesIntoSlot = false;
+	Bool32 goes_into_slot = false;
 
-	if(itemId == NoItemId)
+	if(item_id == NoItemId)
 	{
-		goesIntoSlot = true;
+		goes_into_slot = true;
 	}
 	else
 	{
-		switch(slotId)
+		switch(slot_id)
 		{
 			case AnySlotId:
 			{
-				goesIntoSlot = true;
+				goes_into_slot = true;
 				break;
 			}
 			case HeadSlotId:
 			{
-				goesIntoSlot = (itemId == TestHelmItemId);
+				goes_into_slot = (item_id == TestHelmItemId);
 				break;
 			}
 			default:
 			{
-				goesIntoSlot = false;
+				goes_into_slot = false;
 			}
 		}
 	}
 
-	return goesIntoSlot;
+	return goes_into_slot;
 }
 
 static Bool32
-func ItemIsEquippable(ItemId itemId)
+func ItemIsEquippable(ItemId item_id)
 {
-	Bool32 isEquippable = false;
-	switch(itemId)
+	Bool32 is_equippable = false;
+	switch(item_id)
 	{
 		case TestHelmItemId:
 		{
-			isEquippable = true;
+			is_equippable = true;
 			break;
 		}
 		default:
 		{
-			isEquippable = false;
+			is_equippable = false;
 		}
 	}
-	return isEquippable;
+	return is_equippable;
 }
 
 static ItemAttributes
-func GetItemAttributes(ItemId itemId)
+func GetItemAttributes(ItemId item_id)
 {
-	Assert(ItemIsEquippable(itemId));
+	Assert(ItemIsEquippable(item_id));
 	ItemAttributes attributes = {};
-	switch(itemId)
+	switch(item_id)
 	{
 		case TestHelmItemId:
 		{
@@ -120,10 +120,10 @@ func GetItemAttributes(ItemId itemId)
 }
 
 static Int8 *
-func GetItemName(ItemId itemId)
+func GetItemName(ItemId item_id)
 {
 	Int8 *name = 0;
-	switch(itemId)
+	switch(item_id)
 	{
 		case HealthPotionItemId:
 		{
@@ -219,10 +219,10 @@ func GetItemName(ItemId itemId)
 }
 
 static Int8 *
-func GetItemSlotName(ItemId itemId)
+func GetItemSlotName(ItemId item_id)
 {
 	Int8 *name = 0;
-	switch(itemId)
+	switch(item_id)
 	{
 		case HealthPotionItemId:
 		{
@@ -318,56 +318,56 @@ func GetItemSlotName(ItemId itemId)
 }
 
 static ItemId
-func GetItemIdForCooldown(ItemId itemId)
+func GetItemIdForCooldown(ItemId item_id)
 {
-	ItemId cooldownItemId = NoItemId;;
-	switch(itemId)
+	ItemId cooldown_item_id = NoItemId;
+	switch(item_id)
 	{
 		case BlueFlowerOfIntellectItemId:
 		case BlueFlowerOfHealingItemId:
 		case BlueFlowerOfDampeningItemId:
 		{
-			cooldownItemId = BlueFlowerItemId;
+			cooldown_item_id = BlueFlowerItemId;
 			break;
 		}
 		case RedFlowerOfStrengthItemId:
 		case RedFlowerOfHealthItemId:
 		case RedFlowerOfPoisonItemId:
 		{
-			cooldownItemId = RedFlowerItemId;
+			cooldown_item_id = RedFlowerItemId;
 			break;
 		}
 		case YellowFlowerOfDexterityItemId:
 		case YellowFlowerOfAntivenomItemId:
 		case YellowFlowerOfRageItemId:
 		{
-			cooldownItemId = YellowFlowerItemId;
+			cooldown_item_id = YellowFlowerItemId;
 			break;
 		}
 		default:
 		{
-			cooldownItemId = itemId;
+			cooldown_item_id = item_id;
 		}
 	}
-	return cooldownItemId;
+	return cooldown_item_id;
 }
 
 static Bool32
-func ItemHasOwnCooldown(ItemId itemId)
+func ItemHasOwnCooldown(ItemId item_id)
 {
-	Int32 cooldownItemId = GetItemIdForCooldown(itemId);
-	Bool32 hasOwnCooldown = (cooldownItemId == itemId);
-	return hasOwnCooldown;
+	Int32 cooldown_item_id = GetItemIdForCooldown(item_id);
+	Bool32 has_own_cooldown = (cooldown_item_id == item_id);
+	return has_own_cooldown;
 }
 
 static Real32
-func GetItemCooldownDuration(ItemId itemId)
+func GetItemCooldownDuration(ItemId item_id)
 {
-	itemId = GetItemIdForCooldown(itemId);
-	Assert(ItemHasOwnCooldown(itemId));
+	item_id = GetItemIdForCooldown(item_id);
+	Assert(ItemHasOwnCooldown(item_id));
 
 	Real32 cooldown = 0.0f;
-	switch(itemId)
+	switch(item_id)
 	{
 		case HealthPotionItemId:
 		{
@@ -400,14 +400,14 @@ func GetItemCooldownDuration(ItemId itemId)
 }
 
 static String
-func GetItemTooltipText(ItemId itemId, Int8 *buffer, Int32 bufferSize)
+func GetItemTooltipText(ItemId item_id, Int8 *buffer, Int32 buffer_size)
 {
-	String text = StartString(buffer, bufferSize);
+	String text = StartString(buffer, buffer_size);
 
-	Int8* name = GetItemName(itemId);
+	Int8 *name = GetItemName(item_id);
 	AddLine(text, name);
 
-	Real32 cooldown = GetItemCooldownDuration(itemId);
+	Real32 cooldown = GetItemCooldownDuration(item_id);
 	if(cooldown > 0.0f)
 	{
 		if(cooldown == 1.0f)
@@ -420,9 +420,9 @@ func GetItemTooltipText(ItemId itemId, Int8 *buffer, Int32 bufferSize)
 		}
 	}
 
-	if(ItemIsEquippable(itemId))
+	if(ItemIsEquippable(item_id))
 	{
-		ItemAttributes attributes = GetItemAttributes(itemId);
+		ItemAttributes attributes = GetItemAttributes(item_id);
 
 		if(attributes.constitution > 0)
 		{
@@ -442,7 +442,7 @@ func GetItemTooltipText(ItemId itemId, Int8 *buffer, Int32 bufferSize)
 		}
 	}
 
-	switch(itemId)
+	switch(item_id)
 	{
 		case HealthPotionItemId:
 		{
@@ -540,10 +540,10 @@ func GetItemTooltipText(ItemId itemId, Int8 *buffer, Int32 bufferSize)
 
 
 static Int8 *
-func GetSlotName(SlotId slotId)
+func GetSlotName(SlotId slot_id)
 {
 	Int8 *name = 0;
-	switch(slotId)
+	switch(slot_id)
 	{
 		case HeadSlotId:
 		{
@@ -588,8 +588,8 @@ struct Inventory
 	Int32 left;
 	Int32 top;
 
-	Int32 rowN;
-	Int32 colN;
+	Int32 row_n;
+	Int32 col_n;
 	ItemId *items;
 	SlotId *slots;
 };
@@ -597,51 +597,51 @@ struct Inventory
 struct InventoryItem
 {
 	Inventory *inventory;
-	SlotId slotId;
-	ItemId itemId;
+	SlotId slot_id;
+	ItemId item_id;
 	IntVec2 slot;
 };
 
 static Bool32
 func InventorySlotIsValid(Inventory *inventory, IntVec2 slot)
 {
-	Bool32 rowIsValid = IsIntBetween(slot.row, 0, inventory->rowN - 1);
-	Bool32 colIsValid = IsIntBetween(slot.col, 0, inventory->colN - 1);
-	Bool32 isValid = (rowIsValid && colIsValid);
-	return isValid;
+	Bool32 row_is_valid = IsIntBetween(slot.row, 0, inventory->row_n - 1);
+	Bool32 col_is_valid = IsIntBetween(slot.col, 0, inventory->col_n - 1);
+	Bool32 is_valid = (row_is_valid && col_is_valid);
+	return is_valid;
 }
 
 static void
-func SetInventorySlotId(Inventory *inventory, IntVec2 slot, SlotId slotId)
+func SetInventorySlotId(Inventory *inventory, IntVec2 slot, SlotId slot_id)
 {
 	Assert(InventorySlotIsValid(inventory, slot));
-	inventory->slots[slot.row * inventory->colN + slot.col] = slotId;
+	inventory->slots[slot.row * inventory->col_n + slot.col] = slot_id;
 }
 
 static SlotId
 func GetInventorySlotId(Inventory *inventory, IntVec2 slot)
 {
 	Assert(InventorySlotIsValid(inventory, slot));
-	SlotId slotId = inventory->slots[slot.row * inventory->colN + slot.col];
-	return slotId;
+	SlotId slot_id = inventory->slots[slot.row * inventory->col_n + slot.col];
+	return slot_id;
 }
 
 static void
-func SetInventoryItemId(Inventory *inventory, IntVec2 slot, ItemId itemId)
+func SetInventoryItemId(Inventory *inventory, IntVec2 slot, ItemId item_id)
 {
 	Assert(InventorySlotIsValid(inventory, slot));
-	SlotId slotId = GetInventorySlotId(inventory, slot);
-	Assert(ItemGoesIntoSlot(itemId, slotId));
+	SlotId slot_id = GetInventorySlotId(inventory, slot);
+	Assert(ItemGoesIntoSlot(item_id, slot_id));
 
-	inventory->items[slot.row * inventory->colN + slot.col] = itemId;
+	inventory->items[slot.row * inventory->col_n + slot.col] = item_id;
 }
 
 static void
 func ClearInventory(Inventory *inventory)
 {
-	for(Int32 row = 0; row < inventory->rowN; row++)
+	for(Int32 row = 0; row < inventory->row_n; row++)
 	{
-		for(Int32 col = 0; col < inventory->colN; col++)
+		for(Int32 col = 0; col < inventory->col_n; col++)
 		{
 			IntVec2 slot = MakeIntPoint(row, col);
 			SetInventoryItemId(inventory, slot, NoItemId);
@@ -653,19 +653,19 @@ static ItemId
 func GetInventoryItemId(Inventory *inventory, IntVec2 slot)
 {
 	Assert(InventorySlotIsValid(inventory, slot));
-	ItemId itemId = inventory->items[slot.row * inventory->colN + slot.col];
+	ItemId itemId = inventory->items[slot.row * inventory->col_n + slot.col];
 	return itemId;
 }
 
 static void
-func InitInventory(Inventory *inventory, MemArena *arena, Int32 rowN, Int32 colN)
+func InitInventory(Inventory *inventory, MemArena *arena, Int32 row_n, Int32 col_n)
 {
-	inventory->rowN = rowN;
-	inventory->colN = colN;
-	Int32 itemN = (rowN * colN);
-	inventory->items = ArenaAllocArray(arena, ItemId, itemN);
-	inventory->slots = ArenaAllocArray(arena, SlotId, itemN);
-	for(Int32 i = 0; i < itemN; i++)
+	inventory->row_n = row_n;
+	inventory->col_n = col_n;
+	Int32 item_n = (row_n * col_n);
+	inventory->items = ArenaAllocArray(arena, ItemId, item_n);
+	inventory->slots = ArenaAllocArray(arena, SlotId, item_n);
+	for(Int32 i = 0; i < item_n; i++)
 	{
 		inventory->items[i] = NoItemId;
 		inventory->slots[i] = AnySlotId;
@@ -685,8 +685,8 @@ func GetInventoryItem(Inventory *inventory, IntVec2 slot)
 	Assert(InventorySlotIsValid(inventory, slot));
 	InventoryItem item = {};
 	item.inventory = inventory;
-	item.itemId = GetInventoryItemId(inventory, slot);
-	item.slotId = GetInventorySlotId(inventory, slot);
+	item.item_id = GetInventoryItemId(inventory, slot);
+	item.slot_id = GetInventorySlotId(inventory, slot);
 	item.slot = slot;
 	return item;
 }
@@ -694,55 +694,55 @@ func GetInventoryItem(Inventory *inventory, IntVec2 slot)
 static Bool32
 func HasEmptySlot(Inventory *inventory)
 {
-	Bool32 hasEmptySlot = false;
-	for(Int32 row = 0; row < inventory->rowN; row++)
+	Bool32 has_empty_slot = false;
+	for(Int32 row = 0; row < inventory->row_n; row++)
 	{
-		for(Int32 col = 0; col < inventory->colN; col++)
+		for(Int32 col = 0; col < inventory->col_n; col++)
 		{
 			IntVec2 slot = MakeIntPoint(row, col);
-			ItemId itemId = GetInventoryItemId(inventory, slot);
-			if(itemId == NoItemId)
+			ItemId item_id = GetInventoryItemId(inventory, slot);
+			if(item_id == NoItemId)
 			{
-				hasEmptySlot = true;
+				has_empty_slot = true;
 				break;
 			}
 		}
 
-		if(hasEmptySlot)
+		if(has_empty_slot)
 		{
 			break;
 		}
 	}
 
-	return hasEmptySlot;
+	return has_empty_slot;
 }
 
 
 static void
-func AddItemToInventory(Inventory *inventory, ItemId itemId)
+func AddItemToInventory(Inventory *inventory, ItemId item_id)
 {
 	Assert(HasEmptySlot(inventory));
-	Bool32 itemAdded = false;
-	for(Int32 row = 0; row < inventory->rowN; row++)
+	Bool32 item_added = false;
+	for(Int32 row = 0; row < inventory->row_n; row++)
 	{
-		for(Int32 col = 0; col < inventory->colN; col++)
+		for(Int32 col = 0; col < inventory->col_n; col++)
 		{
 			IntVec2 slot = MakeIntPoint(row, col);
-			ItemId currentItemId = GetInventoryItemId(inventory, slot);
-			if(currentItemId == NoItemId)
+			ItemId current_item_id = GetInventoryItemId(inventory, slot);
+			if(current_item_id == NoItemId)
 			{
-				SetInventoryItemId(inventory, slot, itemId);
-				itemAdded = true;
+				SetInventoryItemId(inventory, slot, item_id);
+				item_added = true;
 				break;
 			}
 		}
 
-		if(itemAdded)
+		if(item_added)
 		{
 			break;
 		}
 	}
-	Assert(itemAdded);
+	Assert(item_added);
 }
 
 static void
@@ -753,13 +753,13 @@ func MoveItemToInventory(InventoryItem item, Inventory *inventory)
 	Assert(HasEmptySlot(inventory));
 
 	SetInventoryItemId(item.inventory, item.slot, NoItemId);
-	AddItemToInventory(inventory, item.itemId);
+	AddItemToInventory(inventory, item.item_id);
 }
 
 static ItemId
 func GetRandomFlowerItemId()
 {
-	ItemId flowerItemIds[] =
+	ItemId flower_item_ids[] =
 	{
 		BlueFlowerOfIntellectItemId,
 		BlueFlowerOfHealingItemId,
@@ -771,10 +771,10 @@ func GetRandomFlowerItemId()
 		YellowFlowerOfDexterityItemId,
 		YellowFlowerOfRageItemId
 	};
-	Int32 itemCount = 9;
+	Int32 item_count = 9;
 
-	Int32 indexInArray = IntRandom(0, itemCount - 1);
-	ItemId itemId = flowerItemIds[indexInArray];
+	Int32 index_in_array = IntRandom(0, item_count - 1);
+	ItemId item_id = flower_item_ids[index_in_array];
 
-	return itemId;
+	return item_id;
 }
