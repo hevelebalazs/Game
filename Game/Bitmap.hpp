@@ -44,8 +44,8 @@ func ResizeBitmap(Bitmap *bitmap, Int32 width, Int32 height)
 	bitmap->width = width;
 	bitmap->height = height;
     
-	Int32 bitmapMemorySize = (bitmap->width * bitmap->height);
-	bitmap->memory = new UInt32[bitmapMemorySize];
+	Int32 bitmap_memory_size = (bitmap->width * bitmap->height);
+	bitmap->memory = new UInt32[bitmap_memory_size];
 }
 
 static Vec4
@@ -67,34 +67,34 @@ func GetColorCode(Vec4 color)
 	UInt8 green = (UInt8)(color.green * 255);
 	UInt8 blue  = (UInt8)(color.blue * 255);
     
-	UInt32 colorCode = (alpha << 24) + (red << 16) + (green << 8) + (blue);
-	return colorCode;
+	UInt32 color_code = (alpha << 24) + (red << 16) + (green << 8) + (blue);
+	return color_code;
 }
 
 static UInt32
 func MakeColorCode(Real32 red, Real32 green, Real32 blue)
 {
 	Vec4 color = MakeColor(red, green, blue);
-	UInt32 colorCode = GetColorCode(color);
-	return colorCode;
+	UInt32 color_code = GetColorCode(color);
+	return color_code;
 }
 
 static Vec4
 func GetRandomColor()
 {
-	Vec4 randomColor = MakeColor(RandomBetween(0.0f, 1.0f),
-								 RandomBetween(0.0f, 1.0f),
-								 RandomBetween(0.0f, 1.0f)
-                                 );
-	return randomColor;
+	Real32 r = RandomBetween(0.0f, 1.0f);
+	Real32 g = RandomBetween(0.0f, 1.0f);
+	Real32 b = RandomBetween(0.0f, 1.0f);
+	Vec4 random_color = MakeColor(r, g, b);
+	return random_color;
 }
 
 static UInt32
 func GetRandomColorCode()
 {
 	Vec4 color = GetRandomColor ();
-	Int32 colorCode = GetColorCode(color);
-	return colorCode;
+	Int32 color_code = GetColorCode(color);
+	return color_code;
 }
 
 static Vec4
@@ -117,13 +117,13 @@ func MakeAlphaColorCode(Real32 red, Real32 green, Real32 blue, Real32 alpha)
 }
 
 static Vec4
-func GetColorFromColorCode(UInt32 colorCode)
+func GetColorFromColorCode(UInt32 color_code)
 {
 	Vec4 color = {};
-	color.alpha = (Real32)((colorCode & 0xff000000) >> 24) * (1.0f / 255.0f);
-	color.red   = (Real32)((colorCode & 0x00ff0000) >> 16) * (1.0f / 255.0f);
-	color.green = (Real32)((colorCode & 0x0000ff00) >>  8) * (1.0f / 255.0f);
-	color.blue  = (Real32)((colorCode & 0x000000ff) >>  0) * (1.0f / 255.0f);
+	color.alpha = (Real32)((color_code & 0xff000000) >> 24) * (1.0f / 255.0f);
+	color.red   = (Real32)((color_code & 0x00ff0000) >> 16) * (1.0f / 255.0f);
+	color.green = (Real32)((color_code & 0x0000ff00) >>  8) * (1.0f / 255.0f);
+	color.blue  = (Real32)((color_code & 0x000000ff) >>  0) * (1.0f / 255.0f);
 	return color;
 }
 
@@ -138,27 +138,27 @@ func AddColors(Vec4 color1, Vec4 color2)
 }
 
 static Vec4
-func MixColors(Vec4 baseColor, Vec4 colorToAdd)
+func MixColors(Vec4 base_color, Vec4 color_to_add)
 {
 	Vec4 result = {};
-	Assert(IsBetween(baseColor.alpha, 0.0f, 1.0f));
-	Assert(IsBetween(colorToAdd.alpha, 0.0f, 1.0f));
-	result.alpha = baseColor.alpha + (1.0f - baseColor.alpha) * colorToAdd.alpha;
+	Assert(IsBetween(base_color.alpha, 0.0f, 1.0f));
+	Assert(IsBetween(color_to_add.alpha, 0.0f, 1.0f));
+	result.alpha = base_color.alpha + (1.0f - base_color.alpha) * color_to_add.alpha;
 	Assert(IsBetween(result.alpha, 0.0f, 1.0f));
-	result.red = colorToAdd.red + (baseColor.red * (1.0f - colorToAdd.alpha));
-	result.green = colorToAdd.green + (baseColor.green * (1.0f - colorToAdd.alpha));
-	result.blue = colorToAdd.blue + (baseColor.blue * (1.0f - colorToAdd.alpha));
+	result.red = color_to_add.red + (base_color.red * (1.0f - color_to_add.alpha));
+	result.green = color_to_add.green + (base_color.green * (1.0f - color_to_add.alpha));
+	result.blue = color_to_add.blue + (base_color.blue * (1.0f - color_to_add.alpha));
 	return result;
 }
 
 static UInt32
-func MixColorCodes(UInt32 baseColorCode, UInt32 colorCodeToAdd)
+func MixColorCodes(UInt32 base_color_code, UInt32 color_code_to_add)
 {
-	Vec4 baseColor = GetColorFromColorCode(baseColorCode);
-	Vec4 colorToAdd = GetColorFromColorCode(colorCodeToAdd);
-	Vec4 resultColor = MixColors(baseColor, colorToAdd);
-	UInt32 resultColorCode = GetColorCode(resultColor);
-	return resultColorCode;
+	Vec4 base_color = GetColorFromColorCode(base_color_code);
+	Vec4 color_to_add = GetColorFromColorCode(color_code_to_add);
+	Vec4 result_color = MixColors(base_color, color_to_add);
+	UInt32 result_color_code = GetColorCode(result_color);
+	return result_color_code;
 }
 
 static Vec4
@@ -177,63 +177,64 @@ func GetBitmapPixelAddress(Bitmap *bitmap, Int32 row, Int32 col)
 {
 	Assert(row >= 0 && row < bitmap->height);
 	Assert(col >= 0 && col < bitmap->width);
-	UInt32 *pixelAddress = bitmap->memory + row * bitmap->width + col;
-	return pixelAddress;
+	UInt32 *pixel_address = bitmap->memory + row * bitmap->width + col;
+	return pixel_address;
 }
 
 static Vec4
 func GetBitmapPixelColor(Bitmap *bitmap, Int32 row, Int32 col)
 {
 	UInt32 *address = GetBitmapPixelAddress(bitmap, row, col);
-	UInt32 colorCode = *address;
-	Vec4 color = GetColorFromColorCode(colorCode);
+	UInt32 color_code = *address;
+	Vec4 color = GetColorFromColorCode(color_code);
 	return color;
 }
 
 static UInt32
-func GetClosestBitmapColorCode(Bitmap *bitmap, Real32 heightRatio, Real32 widthRatio)
+func GetClosestBitmapColorCode(Bitmap *bitmap, Real32 height_ratio, Real32 width_ratio)
 {
-	Int32 row = Floor(heightRatio * (bitmap->height - 1));
-	Int32 col = Floor(widthRatio * (bitmap->width - 1));
+	Int32 row = Floor(height_ratio * (bitmap->height - 1));
+	Int32 col = Floor(width_ratio * (bitmap->width - 1));
 	Assert(IsIntBetween(row, 0, bitmap->height - 1));
 	Assert(IsIntBetween(col, 0, bitmap->width - 1));
 	UInt32 *address = GetBitmapPixelAddress(bitmap, row, col);
-	UInt32 colorCode = *address;
-	return colorCode;
+	UInt32 color_code = *address;
+	return color_code;
 }
 
 static Bool32
 func IsValidBitmapPixel(Bitmap *bitmap, Int32 row, Int32 col)
 {
-	Bool32 isValid = (IsIntBetween(row, 0, bitmap->height - 1) && 
-					  IsIntBetween(col, 0, bitmap->width - 1));
-	return isValid;
+	Bool32 is_valid_row = IsIntBetween(row, 0, bitmap->height - 1);
+	Bool32 is_valid_col = IsIntBetween(col, 0, bitmap->width - 1);
+	Bool32 is_valid = (is_valid_row && is_valid_col);
+	return is_valid;
 }
 
 static void
-func PaintBitmapPixel(Bitmap *bitmap, Int32 row, Int32 col, UInt32 colorCode)
+func PaintBitmapPixel(Bitmap *bitmap, Int32 row, Int32 col, UInt32 color_code)
 {
 	Assert(IsValidBitmapPixel(bitmap, row, col));
     
-	UInt32 *pixelAddress = GetBitmapPixelAddress(bitmap, row, col);
-	*pixelAddress = colorCode;
+	UInt32 *pixel_address = GetBitmapPixelAddress(bitmap, row, col);
+	*pixel_address = color_code;
 }
 
 static void
-func MixBitmapPixel(Bitmap *bitmap, Int32 row, Int32 col, Vec4 newColor)
+func MixBitmapPixel(Bitmap *bitmap, Int32 row, Int32 col, Vec4 new_color)
 {
 	Assert(IsValidBitmapPixel(bitmap, row, col));
-	Vec4 oldColor = GetBitmapPixelColor(bitmap, row, col);
-	Vec4 mixedColor = MixColors(oldColor, newColor);
-	PaintBitmapPixel(bitmap, row, col, GetColorCode(mixedColor));
+	Vec4 old_color = GetBitmapPixelColor(bitmap, row, col);
+	Vec4 mixed_color = MixColors(old_color, new_color);
+	PaintBitmapPixel(bitmap, row, col, GetColorCode(mixed_color));
 }
 
 struct BresenhamData 
 {
 	Int32 row1, col1;
 	Int32 row2, col2;
-	Int32 rowAbs, colAbs;
-	Int32 rowAdd, colAdd;
+	Int32 row_abs, col_abs;
+	Int32 row_add, col_add;
 	Int32 error1, error2;
 };
 
@@ -246,29 +247,29 @@ func InitBresenham(Int32 row1, Int32 col1, Int32 row2, Int32 col2)
 	data.col2 = col2;
 	data.row2 = row2;
     
-	data.rowAbs = IntAbs(data.row1 - data.row2);
-	data.colAbs = IntAbs(data.col1 - data.col2);
+	data.row_abs = IntAbs(data.row1 - data.row2);
+	data.col_abs = IntAbs(data.col1 - data.col2);
     
-	data.colAdd = 1;
+	data.col_add = 1;
 	if(data.col1 > data.col2)
 	{
-		data.colAdd = -1;
+		data.col_add = -1;
 	}
     
-	data.rowAdd = 1;
+	data.row_add = 1;
 	if(data.row1 > data.row2)
 	{
-		data.rowAdd = -1;
+		data.row_add = -1;
 	}
     
 	data.error1 = 0;
-	if(data.colAbs > data.rowAbs)
+	if(data.col_abs > data.row_abs)
 	{
-		data.error1 = data.colAbs / 2;
+		data.error1 = data.col_abs / 2;
 	}
 	else
 	{
-		data.error1 = -data.rowAbs / 2;
+		data.error1 = -data.row_abs / 2;
 	}
     
 	data.error2 = 0;
@@ -279,29 +280,32 @@ static void
 func AdvanceBresenham(BresenhamData *data)
 {
 	data->error2 = data->error1;
-	if(data->error2 > -data->colAbs) 
+	if(data->error2 > -data->col_abs) 
 	{
-		data->error1 -= data->rowAbs;
-		data->col1 += data->colAdd;
+		data->error1 -= data->row_abs;
+		data->col1 += data->col_add;
 	}
     
-	if(data->error2 < data->rowAbs) 
+	if(data->error2 < data->row_abs) 
 	{
-		data->error1 += data->colAbs;
-		data->row1 += data->rowAdd;
+		data->error1 += data->col_abs;
+		data->row1 += data->row_add;
 	}
 }
 
 static void
-func DrawBitmapBresenhamLine(Bitmap *bitmap, Int32 row1, Int32 col1, Int32 row2, Int32 col2, Vec4 color)
+func DrawBitmapBresenhamLine(Bitmap *bitmap, 
+							 Int32 row1, Int32 col1,
+							 Int32 row2, Int32 col2, 
+							 Vec4 color)
 {
-	UInt32 colorCode = GetColorCode(color);
+	UInt32 color_code = GetColorCode(color);
 	BresenhamData data = InitBresenham(row1, col1, row2, col2);
 	while(1) 
 	{
 		if(IsValidBitmapPixel(bitmap, data.row1, data.col1))
 		{
-			PaintBitmapPixel(bitmap, data.row1, data.col1, colorCode);
+			PaintBitmapPixel(bitmap, data.row1, data.col1, color_code);
 		}
         
 		if (data.row1 == data.row2 && data.col1 == data.col2)
@@ -314,311 +318,75 @@ func DrawBitmapBresenhamLine(Bitmap *bitmap, Int32 row1, Int32 col1, Int32 row2,
 }
 
 static void
-func FloodfillBitmap(Bitmap *bitmap, Int32 row, Int32 col, Vec4 color, MemArena* tmpArena)
-{
-	UInt32 paintColorCode = GetColorCode(color);
-	UInt32 baseColorCode  = *GetBitmapPixelAddress(bitmap, row, col);
-	Assert(paintColorCode != baseColorCode);
-	Int32 positionN = 0;
-	Int32 *positions = ArenaAllocArray(tmpArena, Int32, 0);
-	ArenaPushVar(tmpArena, row);
-	ArenaPushVar(tmpArena, col);
-	positionN++;
-    
-	// NOTE: Initial position has to be inserted twice, one for horizontal, one for vertical fill.
-	ArenaPushVar(tmpArena, row);
-	ArenaPushVar(tmpArena, col);
-	positionN++;
-    
-	Bool32 fillHorizontally = true;
-	Int32 directionSwitchPosition = 1;
-    
-	PaintBitmapPixel(bitmap, row, col, paintColorCode);
-    
-	for(Int32 i = 0; i < positionN; ++i) 
-	{
-		if(i == directionSwitchPosition) 
-		{
-			fillHorizontally = !fillHorizontally;
-			directionSwitchPosition = positionN;
-		}
-		Int32 row = positions[2 * i];
-		Int32 col = positions[2 * i + 1];
-        
-		UInt32 *pixelStart = GetBitmapPixelAddress(bitmap, row, col);
-		UInt32 *pixel = 0;
-        
-		if(fillHorizontally) 
-		{
-			pixel = pixelStart;
-			for(Int32 left = col - 1; left >= 0; --left) 
-			{
-				pixel--;
-				if(*pixel != baseColorCode)
-				{
-					break;
-				}
-				*pixel = paintColorCode;
-				ArenaPushVar(tmpArena, row);
-				ArenaPushVar(tmpArena, left);
-				positionN++;
-			}
-            
-			pixel = pixelStart;
-			for(Int32 right = col + 1; right < bitmap->width; ++right) 
-			{
-				pixel++;
-				if(*pixel != baseColorCode)
-				{
-					break;
-				}
-				*pixel = paintColorCode;
-				ArenaPushVar(tmpArena, row);
-				ArenaPushVar(tmpArena, right);
-				positionN++;
-			}
-		} 
-		else 
-		{
-			pixel = pixelStart;
-			for(Int32 top = row - 1; top >= 0; --top) 
-			{
-				pixel -= bitmap->width;
-				if(*pixel != baseColorCode)
-				{
-					break;
-				}
-				*pixel = paintColorCode;
-				ArenaPushVar(tmpArena, top);
-				ArenaPushVar(tmpArena, col);
-				positionN++;
-			}
-            
-			pixel = pixelStart;
-			for(Int32 bottom = row + 1; bottom < bitmap->height; ++bottom) 
-			{
-				pixel += bitmap->width;
-				if(*pixel != baseColorCode)
-				{
-					break;
-				}
-				*pixel = paintColorCode;
-				ArenaPushVar(tmpArena, bottom);
-				ArenaPushVar(tmpArena, col);
-				positionN++;
-			}
-		}
-	}
-	ArenaPopTo(tmpArena, positions);
-}
-
-static void
 func FillBitmapWithColor(Bitmap *bitmap, Vec4 color)
 {
-	UInt32 colorCode = GetColorCode(color);
+	UInt32 color_code = GetColorCode(color);
 	UInt32 *pixel = bitmap->memory;
 	for(Int32 row = 0; row < bitmap->height; ++row) 
 	{
 		for(Int32 col = 0; col < bitmap->width; ++col) 
 		{
-			*pixel = colorCode;
+			*pixel = color_code;
 			pixel++;
 		}
 	}
 }
 
 static void
-func CopyScaledRotatedBitmap(Bitmap *fromBitmap, Bitmap *toBitmap, Int32 toCenterRow, Int32 toCenterCol, Real32 width, Real32 height, Real32 rotationAngle)
+func CopyBitmap(Bitmap *from_bitmap, Bitmap *to_bitmap, Int32 to_left, Int32 to_top)
 {
-	Vec2 center = {};
-	center.x = (Real32)toCenterCol;
-	center.y = (Real32)toCenterRow;
+	Int32 to_right = to_left + from_bitmap->width - 1;
+	Int32 to_bottom = to_top + from_bitmap->height - 1;
     
-	Real32 inverseHeight = Invert(height);
-	Real32 inverseWidth  = Invert(width);
-    
-	Vec2 heightUnitVector = RotationVector(rotationAngle);
-	Vec2 widthUnitVector = TurnVectorToRight(heightUnitVector);
-    
-	Vec2 inverseHeightVector = heightUnitVector;
-	inverseHeightVector.x *= inverseHeight;
-	inverseHeightVector.y *= inverseHeight;
-    
-	Vec2 inverseWidthVector = widthUnitVector;
-	inverseWidthVector.x *= inverseWidth;
-	inverseWidthVector.y *= inverseWidth;
-    
-	Real32 halfHeight = (Real32)height * 0.5f;
-	Real32 halfWidth  = (Real32)width * 0.5f;
-	Vec2 frontCenter = center + (halfHeight * heightUnitVector);
-	Vec2 frontLeft   = frontCenter - (halfWidth * widthUnitVector);
-	Vec2 frontRight  = frontCenter + (halfWidth * widthUnitVector);
-    
-	Vec2 backCenter  = center - (halfHeight * heightUnitVector);
-	Vec2 backLeft    = backCenter - (halfWidth * widthUnitVector);
-	Vec2 backRight   = backCenter + (halfWidth * widthUnitVector);
-    
-	Int32 leftBoundary   = (Int32)Min4(frontLeft.x, frontRight.x, backLeft.x, backRight.x);
-	Int32 rightBoundary  = (Int32)Max4(frontLeft.x, frontRight.x, backLeft.x, backRight.x);
-	Int32 topBoundary    = (Int32)Min4(frontLeft.y, frontRight.y, backLeft.y, backRight.y);
-	Int32 bottomBoundary = (Int32)Max4(frontLeft.y, frontRight.y, backLeft.y, backRight.y);
-    
-	Int32 left   = IntMax2(leftBoundary, 0);
-	Int32 right  = IntMin2(rightBoundary, toBitmap->width - 1);
-	Int32 top    = IntMax2(topBoundary, 0);
-	Int32 bottom = IntMin2(bottomBoundary, toBitmap->height - 1);
-    
-	for(Int32 toRow = top; toRow <= bottom; ++toRow) 
+	Int32 from_left = 0;
+	if(to_left < 0)
 	{
-		for(Int32 toCol = left; toCol <= right; ++toCol) 
+		from_left = -to_left;
+	}
+    
+	Int32 from_right = from_bitmap->width - 1;
+	if(to_right > to_bitmap->width - 1)
+	{
+		from_right -= (to_right - (to_bitmap->width - 1));
+	}
+    
+	Int32 from_top = 0;
+	if(to_top < 0)
+	{
+		from_top = -to_top;
+	}
+    
+	Int32 from_bottom = from_bitmap->height - 1;
+	if(to_bottom > to_bitmap->height - 1)
+	{
+		from_bottom -= (to_bottom - (to_bitmap->height - 1));
+	}
+    
+	for(Int32 from_row = from_top; from_row <= from_bottom; ++from_row)
+	{
+		for(Int32 from_col = from_left; from_col <= from_right; ++from_col)
 		{
-			Vec2 position = {};
-			position.x = (Real32)toCol;
-			position.y = (Real32)toRow;
-			Vec2 positionVector = (position - center);
-			Real32 heightCoordinate = DotProduct(positionVector, inverseHeightVector);
-			Real32 widthCoordinate = DotProduct(positionVector, inverseWidthVector);
+			Int32 to_row = to_top + from_row;
+			Int32 to_col = to_left + from_col;
             
-			Real32 heightRatio = 1.0f - (0.5f + (heightCoordinate));
-			Real32 widthRatio  = 1.0f - (0.5f + (widthCoordinate));
-			if(!IsBetween(heightRatio, 0.0f, 1.0f))
-			{
-				continue;
-			}
-            
-			if(!IsBetween(widthRatio, 0.0f, 1.0f))
-			{
-				continue;
-			}
-            
-			Vec4 fillColor = MakeColor(1.0f, 0.0f, 1.0f);
-			UInt32 fromColorCode = GetClosestBitmapColorCode(fromBitmap, heightRatio, widthRatio);
-			Vec4 fromColor = GetColorFromColorCode(fromColorCode);
-			if(fromColor.alpha != 0.0f) 
-			{
-				UInt32 *pixelAddress = GetBitmapPixelAddress(toBitmap, toRow, toCol);
-				*pixelAddress = fromColorCode;
-			}
+			Vec4 from_color = GetBitmapPixelColor(from_bitmap, from_row, from_col);
+			Vec4 to_color = GetBitmapPixelColor(to_bitmap, to_row, to_col);
+			Vec4 mixed_color = MixColors(to_color, from_color);
+			*GetBitmapPixelAddress(to_bitmap, to_row, to_col) = GetColorCode(mixed_color);
 		}
 	}
 }
 
 static void
-func CopyBitmap(Bitmap *fromBitmap, Bitmap *toBitmap, Int32 toLeft, Int32 toTop)
+func DrawBitmapPolyOutline(Bitmap *bitmap, Int32 poly_n, Int32 *poly_col_row, Vec4 color)
 {
-	Int32 toRight = toLeft + fromBitmap->width - 1;
-	Int32 toBottom = toTop + fromBitmap->height - 1;
-    
-	Int32 fromLeft = 0;
-	if(toLeft < 0)
+	for(Int32 i = 0; i < poly_n; i++) 
 	{
-		fromLeft = -toLeft;
-	}
-    
-	Int32 fromRight = fromBitmap->width - 1;
-	if(toRight > toBitmap->width - 1)
-	{
-		fromRight -= (toRight - (toBitmap->width - 1));
-	}
-    
-	Int32 fromTop = 0;
-	if(toTop < 0)
-	{
-		fromTop = -toTop;
-	}
-    
-	Int32 fromBottom = fromBitmap->height - 1;
-	if(toBottom > toBitmap->height - 1)
-	{
-		fromBottom -= (toBottom - (toBitmap->height - 1));
-	}
-    
-	for(Int32 fromRow = fromTop; fromRow <= fromBottom; ++fromRow)
-	{
-		for(Int32 fromCol = fromLeft; fromCol <= fromRight; ++fromCol)
-		{
-			Int32 toRow = toTop + fromRow;
-			Int32 toCol = toLeft + fromCol;
-            
-			Vec4 fromColor = GetBitmapPixelColor(fromBitmap, fromRow, fromCol);
-			Vec4 toColor = GetBitmapPixelColor(toBitmap, toRow, toCol);
-			Vec4 mixedColor = MixColors(toColor, fromColor);
-			*GetBitmapPixelAddress(toBitmap, toRow, toCol) = GetColorCode(mixedColor);
-		}
-	}
-}
-
-static void
-func CopyStretchedBitmap(Bitmap *fromBitmap, Bitmap *toBitmap, Int32 toLeft, Int32 toRight, Int32 toTop, Int32 toBottom)
-{
-	Real32 toWidth  = (Real32)(toRight - toLeft);
-	Real32 toHeight = (Real32)(toBottom - toTop);
-    
-	Int32 left   = ClipInt(toLeft,    0, toBitmap->width);
-	Int32 right  = ClipInt(toRight,  -1, toBitmap->width - 1);
-	Int32 top    = ClipInt(toTop,     0, toBitmap->height);
-	Int32 bottom = ClipInt(toBottom, -1, toBitmap->height - 1);
-    
-	Real32 fromHeightStart = ((Real32)fromBitmap->height - 1.0f) * ((Real32)top - toTop) / toHeight;
-	Real32 fromHeightAdd   = ((Real32)fromBitmap->height - 1.0f) / toHeight;
-	Real32 fromWidthStart  = ((Real32)fromBitmap->width  - 1.0f) * ((Real32)left - toLeft) / toWidth;
-	Real32 fromWidthAdd    = ((Real32)fromBitmap->width  - 1.0f) / toWidth;
-    
-	Real32 fromHeight = fromHeightStart;
-	Real32 fromWidth = fromWidthStart;
-    
-	if(top <= bottom && left <= right) 
-	{
-		UInt32 *fromRowFirstPixelAddress = GetBitmapPixelAddress(fromBitmap, (Int32)fromHeight, (Int32)fromWidth);
-		UInt32 *toRowFirstPixelAddress = GetBitmapPixelAddress(toBitmap, top, left);
-        
-		Int32 prevFromRow = (Int32)fromHeight;
-		for(Int32 toRow = top; toRow <= bottom; ++toRow) 
-		{
-			Int32 fromRow = (Int32)fromHeight;
-			fromWidth = fromWidthStart;
-			Int32 prevFromCol = (Int32)fromWidth;
-			UInt32* fromPixelAddress = fromRowFirstPixelAddress;		
-			UInt32* toPixelAddress = toRowFirstPixelAddress;
-			for(Int32 toCol = left; toCol <= right; ++toCol) 
-			{
-				Int32 fromCol = (Int32)fromWidth;
-				fromPixelAddress += (fromCol - prevFromCol);
-				prevFromCol = fromCol;
-                
-				toPixelAddress++;
-                
-				*toPixelAddress = *fromPixelAddress;
-				fromWidth += fromWidthAdd;
-			}
-            
-			fromHeight += fromHeightAdd;
-			fromRowFirstPixelAddress += fromBitmap->width * (fromRow - prevFromRow);
-			prevFromRow = fromRow;
-            
-			toRowFirstPixelAddress += toBitmap->width;
-		}
-	}
-}
-
-static void
-func DrawBitmapPolyOutline(Bitmap *bitmap, Int32 polyN, Int32 *polyColRow, Vec4 color)
-{
-	for(Int32 i = 0; i < polyN; i++) 
-	{
-		Int32 next = 0;
-		if(i < polyN - 1)
-		{
-			next = i + 1;
-		}
-		else
-		{
-			next = 0;
-		}
-		Int32 row1 = polyColRow[2 * i];
-		Int32 col1 = polyColRow[2 * i + 1];
-		Int32 row2 = polyColRow[2 * next];
-		Int32 col2 = polyColRow[2 * next + 1];
+		Int32 next = (i < poly_n - 1) ? (i + 1) : (0);
+		Int32 row1 = poly_col_row[2 * i];
+		Int32 col1 = poly_col_row[2 * i + 1];
+		Int32 row2 = poly_col_row[2 * next];
+		Int32 col2 = poly_col_row[2 * next + 1];
 		DrawBitmapBresenhamLine(bitmap, row1, col1, row2, col2, color);
 	}
 }
@@ -637,16 +405,16 @@ func GetBitmapBounds(Bitmap *bitmap)
 static void
 func DrawBitmapRect(Bitmap *bitmap, IntRect rect, Vec4 color)
 {
-	IntRect bitmapBounds = GetBitmapBounds(bitmap);
-	IntRect drawRect = GetIntRectIntersection(rect, bitmapBounds);
+	IntRect bitmap_bounds = GetBitmapBounds(bitmap);
+	IntRect draw_rect = GetIntRectIntersection(rect, bitmap_bounds);
 
-	UInt32 colorCode = GetColorCode(color);
-	for(Int32 col = drawRect.left; col <= drawRect.right; col++)
+	UInt32 color_code = GetColorCode(color);
+	for(Int32 col = draw_rect.left; col <= draw_rect.right; col++)
 	{
-		for(Int32 row = drawRect.top; row <= drawRect.bottom; row++)
+		for(Int32 row = draw_rect.top; row <= draw_rect.bottom; row++)
 		{
-			UInt32 *pixelAddress = GetBitmapPixelAddress(bitmap, row, col);
-			*pixelAddress = colorCode;
+			UInt32 *pixel_address = GetBitmapPixelAddress(bitmap, row, col);
+			*pixel_address = color_code;
 		}
 	}
 }
@@ -661,45 +429,46 @@ func DrawBitmapRectOutline(Bitmap *bitmap, IntRect rect, Vec4 color)
 }
 
 static void
-func DrawBitmapGlyph(Bitmap *bitmap, Glyph *glyph, Int32 x, Int32 baseLineY, Vec4 color)
+func DrawBitmapGlyph(Bitmap *bitmap, Glyph *glyph, Int32 x, Int32 base_line_y, Vec4 color)
 {
-	Int32 startCol = x + (Int32)glyph->offsetX;
-	Int32 startRow = baseLineY + (Int32)glyph->offsetY;
+	Int32 start_col = x + (Int32)glyph->offset_x;
+	Int32 start_row = base_line_y + (Int32)glyph->offset_y;
     
 	for(Int32 row = 0; row < 32; row++)
 	{
 		for(Int32 col = 0; col < 32; col++)
 		{
-			UInt8 alphaValue = glyph->alpha[row][col];
-			if(alphaValue == 0)
+			UInt8 alpha_value = glyph->alpha[row][col];
+			if(alpha_value == 0)
 			{
 				continue;
 			}
             
-			Real32 alpha = (Real32)alphaValue / 255.0f;
-			Vec4 newColor = {};
-			newColor.red   = color.red * alpha;
-			newColor.green = color.green * alpha;
-			newColor.blue  = color.blue * alpha;
-			newColor.alpha = alpha;
+			Real32 alpha = (Real32)alpha_value / 255.0f;
+			Vec4 new_color = {};
+			new_color.red   = color.red * alpha;
+			new_color.green = color.green * alpha;
+			new_color.blue  = color.blue * alpha;
+			new_color.alpha = alpha;
             
-			Int32 toRow = startRow + row;
-			Int32 toCol = startCol + col;
+			Int32 to_row = start_row + row;
+			Int32 to_col = start_col + col;
             
-			if(IsValidBitmapPixel(bitmap, toRow, toCol))
+			if(IsValidBitmapPixel(bitmap, to_row, to_col))
 			{
-				MixBitmapPixel(bitmap, toRow, toCol, newColor);
+				MixBitmapPixel(bitmap, to_row, to_col, new_color);
 			}
 		}
 	}
 }
 
 static void
-func DrawBitmapTextLine(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, Int32 left, Int32 baseLineY, Vec4 color)
+func DrawBitmapTextLine(Bitmap *bitmap, Int8 *text, GlyphData *glyph_data, 
+						Int32 left, Int32 base_line_y, Vec4 color)
 {
-	Assert(glyphData);
+	Assert(glyph_data);
 	Real32 textX = (Real32)left;
-	Real32 textY = (Real32)baseLineY;
+	Real32 textY = (Real32)base_line_y;
     
 	for(Int32 i = 0; text[i]; i++)
 	{
@@ -709,13 +478,13 @@ func DrawBitmapTextLine(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, Int32 
 			continue;
 		}
         
-		Glyph *glyph = &glyphData->glyphs[c];
+		Glyph *glyph = &glyph_data->glyphs[c];
         
-		Real32 right = textX + glyph->advanceX;
+		Real32 right = textX + glyph->advance_x;
 		UInt8 nextC = text[i + 1];
 		if(nextC > 0)
 		{
-			right += glyphData->kerningTable[c][nextC];
+			right += glyph_data->kerning_table[c][nextC];
 		}
         
 		DrawBitmapGlyph(bitmap, glyph, (Int32)textX, (Int32)textY, color);
@@ -724,21 +493,21 @@ func DrawBitmapTextLine(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, Int32 
 }
 
 static Real32
-func GetTextPixelWidth(Int8 *text, GlyphData *glyphData)
+func GetTextPixelWidth(Int8 *text, GlyphData *glyph_data)
 {
-	Assert(glyphData != 0);
+	Assert(glyph_data != 0);
     
 	Real32 width = 0.0f;
 	for(Int32 i = 0; text[i]; i++)
 	{
 		UInt8 c = text[i];
-		Glyph *glyph = &glyphData->glyphs[c];
-		width += glyph->advanceX;
+		Glyph *glyph = &glyph_data->glyphs[c];
+		width += glyph->advance_x;
 		
-		UInt8 nextC = text[i + 1];
-		if(nextC > 0)
+		UInt8 next_c = text[i + 1];
+		if(next_c > 0)
 		{
-			width += glyphData->kerningTable[c][nextC];
+			width += glyph_data->kerning_table[c][next_c];
 		}
 	}
     
@@ -746,30 +515,33 @@ func GetTextPixelWidth(Int8 *text, GlyphData *glyphData)
 }
 
 static void
-func DrawBitmapTextLineCentered(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, IntRect rect, Vec4 color)
+func DrawBitmapTextLineCentered(Bitmap *bitmap, Int8 *text, GlyphData *glyph_data,
+								IntRect rect, Vec4 color)
 {
-	Int32 textHeight = TextHeightInPixels;
-	Int32 textWidth = (Int32)GetTextPixelWidth(text, glyphData);
-	Int32 textLeft = (rect.left + rect.right) / 2 - textWidth / 2;
-	Int32 textTop = (rect.bottom + rect.top) / 2 - textHeight / 2;
-	Int32 textBaseLineY = textTop + TextPixelsAboveBaseLine;
-	DrawBitmapTextLine(bitmap, text, glyphData, textLeft, textBaseLineY, color);
+	Int32 height = TextHeightInPixels;
+	Int32 width = (Int32)GetTextPixelWidth(text, glyph_data);
+	Int32 left = (rect.left + rect.right) / 2 - width / 2;
+	Int32 top = (rect.bottom + rect.top) / 2 - height / 2;
+	Int32 base_line_y = top + TextPixelsAboveBaseLine;
+	DrawBitmapTextLine(bitmap, text, glyph_data, left, base_line_y, color);
 }
 
 static void
-func DrawBitmapTextLineTopLeft(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, Int32 left, Int32 top, Vec4 color)
+func DrawBitmapTextLineTopLeft(Bitmap *bitmap, Int8 *text, GlyphData *glyph_data, 
+							   Int32 left, Int32 top, Vec4 color)
 {
-	Int32 baseLineY = top + TextPixelsAboveBaseLine;
-	DrawBitmapTextLine(bitmap, text, glyphData, left, baseLineY, color);
+	Int32 base_line_y = top + TextPixelsAboveBaseLine;
+	DrawBitmapTextLine(bitmap, text, glyph_data, left, base_line_y, color);
 }
 
 static void
-func DrawBitmapTextLineTopRight(Bitmap *bitmap, Int8 *text, GlyphData *glyphData, Int32 right, Int32 top, Vec4 color)
+func DrawBitmapTextLineTopRight(Bitmap *bitmap, Int8 *text, GlyphData *glyph_data,
+								Int32 right, Int32 top, Vec4 color)
 {
-	Int32 textWidth = (Int32)GetTextPixelWidth(text, glyphData);
-	Int32 left = right - textWidth;
-	Int32 baseLineY = top + TextPixelsAboveBaseLine;
-	DrawBitmapTextLine(bitmap, text, glyphData, left, baseLineY, color);
+	Int32 width = (Int32)GetTextPixelWidth(text, glyph_data);
+	Int32 left = right - width;
+	Int32 base_line_y = top + TextPixelsAboveBaseLine;
+	DrawBitmapTextLine(bitmap, text, glyph_data, left, base_line_y, color);
 }
 
 #define TooltipWidth 300
@@ -777,131 +549,137 @@ func DrawBitmapTextLineTopRight(Bitmap *bitmap, Int8 *text, GlyphData *glyphData
 #define TooltipTopPadding 5
 
 static Int32
-func GetTooltipHeight(Int32 lineN)
+func GetTooltipHeight(Int32 line_n)
 {
-	Int32 height = TooltipTopPadding + lineN * (TextHeightInPixels) + TooltipPadding;
+	Int32 height = TooltipTopPadding + line_n * (TextHeightInPixels) + TooltipPadding;
 	return height;
 }
 
 static void
-func DrawBitmapStringTooltip(Bitmap *bitmap, String string, GlyphData *glyphData, Int32 top, Int32 left)
+func DrawBitmapStringTooltip(Bitmap *bitmap, String string, GlyphData *glyph_data, 
+							 Int32 top, Int32 left)
 {
-	Int32 lineN = GetNumberOfLines(string);
+	Int32 line_n = GetNumberOfLines(string);
     
-	Assert(glyphData != 0);
+	Assert(glyph_data != 0);
 
 	IntRect rect = {};
 	rect.left = left;
 	rect.top = top;
     
 	rect.right = left + TooltipWidth;
-	Int32 height = GetTooltipHeight(lineN);
+	Int32 height = GetTooltipHeight(line_n);
 	rect.bottom = top + height;
     
-	Vec4 tooltipColor = MakeColor(0.0f, 0.0f, 0.0f);
-	DrawBitmapRect(bitmap, rect, tooltipColor);
+	Vec4 tooltip_color = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, rect, tooltip_color);
     
-	Vec4 tooltipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawBitmapRectOutline(bitmap, rect, tooltipBorderColor);
+	Vec4 tooltip_border_color = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, rect, tooltip_border_color);
     
-	Vec4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
-	Int32 baseLineY = top + TooltipTopPadding + TextPixelsAboveBaseLine;
-	Int32 textLeft = left + TooltipPadding;
+	Vec4 title_color = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 normal_color = MakeColor(1.0f, 1.0f, 1.0f);
+	Int32 base_line_y = top + TooltipTopPadding + TextPixelsAboveBaseLine;
+	Int32 text_left = left + TooltipPadding;
     
-	Real32 textX = (Real32)textLeft;
-	Int32 lineIndex = 0;
+	Real32 text_x = (Real32)text_left;
+	Int32 line_index = 0;
     
-	for(Int32 i = 0; i < string.usedSize; ++i)
+	for(Int32 i = 0; i < string.used_size; ++i)
 	{
 		UInt8 c = string.buffer[i];
 		Assert(c != 0);
         
 		if(c == '\n')
 		{
-			lineIndex++;
-			baseLineY += TextHeightInPixels;
-			textX = (Real32)textLeft;
+			line_index++;
+			base_line_y += TextHeightInPixels;
+			text_x = (Real32)text_left;
 		}
 		else
 		{
-			Glyph *glyph = &glyphData->glyphs[c];
+			Glyph *glyph = &glyph_data->glyphs[c];
             
-			Real32 right = textX + glyph->advanceX;
-			UInt8 nextC = string.buffer[i + 1];
-			if(nextC > 0)
+			Real32 right = text_x + glyph->advance_x;
+			UInt8 next_c = string.buffer[i + 1];
+			if(next_c > 0)
 			{
-				right += glyphData->kerningTable[c][nextC];
+				right += glyph_data->kerning_table[c][next_c];
 			}
             
-			Vec4 color = (lineIndex == 0) ? titleColor : normalColor;
-			DrawBitmapGlyph(bitmap, glyph, Int32(textX), Int32(baseLineY), color);
-			textX = right;
+			Vec4 color = (line_index == 0) ? title_color : normal_color;
+			DrawBitmapGlyph(bitmap, glyph, Int32(text_x), Int32(base_line_y), color);
+			text_x = right;
 		}
         
-		Assert(textX <= rect.right);
+		Assert(text_x <= rect.right);
 	}
 }
 
 static void
-func DrawBitmapStringTooltipBottom(Bitmap *bitmap, String string, GlyphData *glyphData, Int32 bottom, Int32 left)
+func DrawBitmapStringTooltipBottom(Bitmap *bitmap, String string, GlyphData *glyph_data, 
+								   Int32 bottom, Int32 left)
 {
-	Int32 lineN = GetNumberOfLines(string);
-	Int32 top = bottom - GetTooltipHeight(lineN);
-	DrawBitmapStringTooltip(bitmap, string, glyphData, top, left);
+	Int32 line_n = GetNumberOfLines(string);
+	Int32 top = bottom - GetTooltipHeight(line_n);
+	DrawBitmapStringTooltip(bitmap, string, glyph_data, top, left);
 }
 
 static void
-func DrawBitmapStringTooltipBottomRight(Bitmap *bitmap, String string, GlyphData *glyphData, Int32 bottom, Int32 right)
+func DrawBitmapStringTooltipBottomRight(Bitmap *bitmap, String string, GlyphData *glyph_data, 
+										Int32 bottom, Int32 right)
 {
-	Int32 lineN = GetNumberOfLines(string);
-	Int32 top = bottom - GetTooltipHeight(lineN);
+	Int32 line_n = GetNumberOfLines(string);
+	Int32 top = bottom - GetTooltipHeight(line_n);
 	Int32 left = right - TooltipWidth;
-	DrawBitmapStringTooltip(bitmap, string, glyphData, top, left);
+	DrawBitmapStringTooltip(bitmap, string, glyph_data, top, left);
 }
 
 static void
-func DrawBitmapTooltip(Bitmap *bitmap, Int8 **lines, Int32 lineN, GlyphData *glyphData, Int32 top, Int32 left)
+func DrawBitmapTooltip(Bitmap *bitmap, Int8 **lines, Int32 line_n, GlyphData *glyph_data, 
+					   Int32 top, Int32 left)
 {
-	Assert(glyphData != 0);
+	Assert(glyph_data != 0);
     
 	IntRect rect = {};
 	rect.left = left;
 	rect.top = top;
 	rect.right = left + TooltipWidth;
-	Int32 height = GetTooltipHeight(lineN);
+	Int32 height = GetTooltipHeight(line_n);
 	rect.bottom = top + height;
     
-	Vec4 tooltipColor = MakeColor(0.0f, 0.0f, 0.0f);
-	DrawBitmapRect(bitmap, rect, tooltipColor);
+	Vec4 tooltip_color = MakeColor(0.0f, 0.0f, 0.0f);
+	DrawBitmapRect(bitmap, rect, tooltip_color);
     
-	Vec4 tooltipBorderColor = MakeColor(1.0f, 1.0f, 1.0f);
-	DrawBitmapRectOutline(bitmap, rect, tooltipBorderColor);
+	Vec4 tooltip_border_color = MakeColor(1.0f, 1.0f, 1.0f);
+	DrawBitmapRectOutline(bitmap, rect, tooltip_border_color);
     
-	Vec4 titleColor = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 normalColor = MakeColor(1.0f, 1.0f, 1.0f);
-	Int32 baseLineY = top + TooltipTopPadding + TextPixelsAboveBaseLine;
-	Int32 textLeft = left + TooltipPadding;
-	for(Int32 i = 0; i < lineN; i++)
+	Vec4 title_color = MakeColor(1.0f, 1.0f, 0.0f);
+	Vec4 normal_color = MakeColor(1.0f, 1.0f, 1.0f);
+	Int32 base_line_y = top + TooltipTopPadding + TextPixelsAboveBaseLine;
+	Int32 text_left = left + TooltipPadding;
+	for(Int32 i = 0; i < line_n; i++)
 	{
-		Vec4 color = (i == 0) ? titleColor : normalColor;
+		Vec4 color = (i == 0) ? title_color : normal_color;
 		Int8* line = lines[i];
-		DrawBitmapTextLine(bitmap, line, glyphData, textLeft, baseLineY, color);
-		baseLineY += TextHeightInPixels;
+		DrawBitmapTextLine(bitmap, line, glyph_data, text_left, base_line_y, color);
+		base_line_y += TextHeightInPixels;
 	}
 }
 
 static void
-func DrawBitmapTooltipBottom(Bitmap *bitmap, Int8 **lines, Int32 lineN, GlyphData *glyphData, Int32 bottom, Int32 left)
+func DrawBitmapTooltipBottom(Bitmap *bitmap, Int8 **lines, Int32 line_n, 
+							 GlyphData *glyph_data, Int32 bottom, Int32 left)
 {
-	Int32 top = bottom - GetTooltipHeight(lineN);
-	DrawBitmapTooltip(bitmap, lines, lineN, glyphData, top, left);
+	Int32 top = bottom - GetTooltipHeight(line_n);
+	DrawBitmapTooltip(bitmap, lines, line_n, glyph_data, top, left);
 }
 
 static void
-func DrawBitmapTooltipBottomRight(Bitmap *bitmap, Int8 **lines, Int32 lineN, GlyphData *glyphData, Int32 bottom, Int32 right)
+func DrawBitmapTooltipBottomRight(Bitmap *bitmap, Int8 **lines, Int32 line_n, 
+								  GlyphData *glyph_data, Int32 bottom, Int32 right)
 {
-	Int32 top = bottom - GetTooltipHeight(lineN);
+	Int32 top = bottom - GetTooltipHeight(line_n);
 	Int32 left = right - TooltipWidth;
-	DrawBitmapTooltip(bitmap, lines, lineN, glyphData, top, left);
+	DrawBitmapTooltip(bitmap, lines, line_n, glyph_data, top, left);
 }

@@ -4,13 +4,13 @@
 #include "Type.hpp"
 
 #define AddLine(string, value) {string = string + value + "\n";}
-#define OneLineString(memory, maxSize, line) {StartString(memory, maxSize) + line;}
+#define OneLineString(memory, max_size, line) {StartString(memory, max_size) + line;}
 
 struct String
 {
 	Int8 *buffer;
-	Int32 bufferSize;
-	Int32 usedSize;
+	Int32 buffer_size;
+	Int32 used_size;
 };
 
 static void CloseString(String *string);
@@ -18,23 +18,23 @@ static void CloseString(String *string);
 static Bool32
 func StringIsTerminated(Int8 *string, Int32 length)
 {
-	Bool32 isTerminated = false;
+	Bool32 is_terminated = false;
 	for(Int32 i = 0; i < length; i++)
 	{
 		if(string[i] == 0)
 		{
-			isTerminated = true;
+			is_terminated = true;
 			break;
 		}
 	}
-	return isTerminated;
+	return is_terminated;
 }
 
 static void
-func StringCopy(Int8 *from, Int8 *to, Int32 maxSize)
+func StringCopy(Int8 *from, Int8 *to, Int32 max_size)
 {
 	Bool32 terminated = false;
-	for(Int32 i = 0; i < maxSize; i++)
+	for(Int32 i = 0; i < max_size; i++)
 	{
 		to[i] = from[i];
 		if(from[i] == 0)
@@ -47,22 +47,22 @@ func StringCopy(Int8 *from, Int8 *to, Int32 maxSize)
 }
 
 static String
-func StartString(Int8 *buffer, Int32 bufferSize)
+func StartString(Int8 *buffer, Int32 buffer_size)
 {
-	Assert(bufferSize > 0);
+	Assert(buffer_size > 0);
 	String string = {};
 	string.buffer = buffer;
-	string.bufferSize = bufferSize;
-	string.usedSize = 0;
+	string.buffer_size = buffer_size;
+	string.used_size = 0;
 	return string;
 }
 
 static void
 func AddChar(String *string, Int8 value)
 {
-	Assert(string->usedSize + 1 < string->bufferSize);
-	string->buffer[string->usedSize] = value;
-	string->usedSize++;
+	Assert(string->used_size + 1 < string->buffer_size);
+	string->buffer[string->used_size] = value;
+	string->used_size++;
 
 	CloseString(string);
 }
@@ -105,17 +105,17 @@ func AddInt(String *string, Int32 value)
 	}
 	else
 	{
-		Int32 digitN = GetNumberOfDigits(value);
-		Int32 position = string->usedSize + digitN - 1;
-		Assert(position < string->bufferSize);
+		Int32 digit_n = GetNumberOfDigits(value);
+		Int32 position = string->used_size + digit_n - 1;
+		Assert(position < string->buffer_size);
 		while(value > 0)
 		{
-			Assert(position >= string->usedSize);
+			Assert(position >= string->used_size);
 			string->buffer[position] = Int8('0' + GetLastDigit(value));
 			position--;
 			value = CutLastDigit(value);
 		}
-		string->usedSize += digitN;
+		string->used_size += digit_n;
 	}
 
 	CloseString(string);
@@ -155,8 +155,8 @@ func AddText(String *string, Int8* text)
 static void
 func CloseString(String *string)
 {
-	Assert(string->usedSize + 1 < string->bufferSize);
-	string->buffer[string->usedSize] = 0;
+	Assert(string->used_size + 1 < string->buffer_size);
+	string->buffer[string->used_size] = 0;
 }
 
 static String
@@ -194,23 +194,23 @@ func operator+(String string, Int8* text)
 static Int32
 func GetNumberOfLines(String string)
 {
-	Int32 lineN = 0;
+	Int32 line_n = 0;
 
-	for(Int32 i = 0; i < string.usedSize; i++)
+	for(Int32 i = 0; i < string.used_size; i++)
 	{
 		if(string.buffer[i] == '\n')
 		{
-			lineN++;
+			line_n++;
 		}
 	}
 
-	if(string.usedSize > 0 && string.buffer[string.usedSize - 1] != '\n')
+	if(string.used_size > 0 && string.buffer[string.used_size - 1] != '\n')
 	{
-		lineN++;
+		line_n++;
 	}
 
-	Assert(lineN >= 0);
-	return lineN;
+	Assert(line_n >= 0);
+	return line_n;
 }
 
 // TODO: Handle AddInt when the value is negative!

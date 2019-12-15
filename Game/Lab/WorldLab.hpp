@@ -20,135 +20,134 @@ enum WorldEditMode
 
 struct WorldLabState
 {
-	Int8 arenaMemory1[WorldLabArenaSize];
-	Int8 arenaMemory2[WorldLabArenaSize];
+	Int8 arena_memory1[WorldLabArenaSize];
+	Int8 arena_memory2[WorldLabArenaSize];
 	MemArena arena1;
 	MemArena arena2;
 	MemArena *arena;
-	MemArena *tmpArena;
+	MemArena *tmp_arena;
 
 	Map map;
 
-	WorldEditMode editMode;
+	WorldEditMode edit_mode;
 };
 
 static void
-func WorldLabSwapArenas(WorldLabState *labState)
+func WorldLabSwapArenas(WorldLabState *lab_state)
 {
-	MemArena *arena = labState->arena;
-	labState->arena = labState->tmpArena;
-	labState->tmpArena = arena;
+	MemArena *arena = lab_state->arena;
+	lab_state->arena = lab_state->tmp_arena;
+	lab_state->tmp_arena = arena;
 
-	Assert((labState->arena == &labState->arena1) && (labState->tmpArena == &labState->arena2) ||
-		   (labState->arena == &labState->arena2) && (labState->tmpArena == &labState->arena1));
+	Assert((lab_state->arena == &lab_state->arena1) && (lab_state->tmp_arena == &lab_state->arena2) ||
+		   (lab_state->arena == &lab_state->arena2) && (lab_state->tmp_arena == &lab_state->arena1));
 }
 
 static void
-func WorldLabInit(WorldLabState *labState, Canvas* canvas)
+func WorldLabInit(WorldLabState *lab_state, Canvas* canvas)
 {
-	labState->arena1 = CreateMemArena(labState->arenaMemory1, WorldLabArenaSize);
-	labState->arena2 = CreateMemArena(labState->arenaMemory2, WorldLabArenaSize);
-	labState->arena = &labState->arena1;
-	labState->tmpArena = &labState->arena2;
+	lab_state->arena2 = CreateMemArena(lab_state->arena_memory2, WorldLabArenaSize);
+	lab_state->arena = &lab_state->arena1;
+	lab_state->tmp_arena = &lab_state->arena2;
 
-	labState->map = {};
+	lab_state->map = {};
 
-	labState->editMode = PlaceTileMode;
+	lab_state->edit_mode = PlaceTileMode;
 
 	Camera *camera = canvas->camera;
-	camera->unitInPixels = 100.0f;
+	camera->unit_in_pixels = 100.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 }
 
 static void
-func HandlePlaceTileMode(WorldLabState *labState, Canvas *canvas, UserInput *userInput)
+func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *user_input)
 {
-	MemArena *arena = labState->arena;
-	MemArena *tmpArena = labState->tmpArena;
-	Map *map = &labState->map;
+	MemArena *arena = lab_state->arena;
+	MemArena *tmp_arena = lab_state->tmp_arena;
+	Map *map = &lab_state->map;
 
 	Camera *camera = canvas->camera;
-	Vec2 mousePosition = PixelToUnit(camera, userInput->mousePixelPosition);
+	Vec2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
 
 	IntVec2 tile = {};
-	tile.row = Floor(mousePosition.y / MapTileSide);
-	tile.col = Floor(mousePosition.x / MapTileSide);
+	tile.row = Floor(mouse_position.y / MapTileSide);
+	tile.col = Floor(mouse_position.x / MapTileSide);
 
-	if(WasKeyReleased(userInput, VK_LBUTTON))
+	if(WasKeyReleased(user_input, VK_LBUTTON))
 	{
-		ArenaReset(tmpArena);
+		ArenaReset(tmp_arena);
 
-		if(map->tileRowN == 0)
+		if(map->tile_row_n == 0)
 		{
-			Assert(map->tileColN == 0);
-			Assert(map->tileTypes == 0);
-			map->tileRowN = 1;
-			map->tileColN = 1;
-			map->tileTypes = ArenaAllocArray(tmpArena, TileId, 1);
+			Assert(map->tile_col_n == 0);
+			Assert(map->tile_types == 0);
+			map->tile_row_n = 1;
+			map->tile_col_n = 1;
+			map->tile_types = ArenaAllocArray(tmp_arena, TileId, 1);
 
-			IntVec2 newTile = MakeIntPoint(0, 0);
-			SetTileType(map, newTile, CaveTileId);
+			IntVec2 new_tile = MakeIntPoint(0, 0);
+			SetTileType(map, new_tile, CaveTileId);
 
 			camera->center.y -= tile.row * MapTileSide;
 			camera->center.x -= tile.col * MapTileSide;
 		}
 		else
 		{
-			Assert(map->tileColN > 0);
-			Assert(map->tileRowN > 0);
+			Assert(map->tile_col_n > 0);
+			Assert(map->tile_row_n > 0);
 
-			Int32 newRowN = map->tileRowN;
-			Int32 newColN = map->tileColN;
+			Int32 new_row_n = map->tile_row_n;
+			Int32 new_col_n = map->tile_col_n;
 
 			if(tile.row < 0)
 			{
-				newRowN += (-tile.row);
+				new_row_n += (-tile.row);
 			}
-			else if(tile.row >= map->tileRowN)
+			else if(tile.row >= map->tile_row_n)
 			{
-				newRowN += (tile.row - map->tileRowN + 1);
+				new_row_n += (tile.row - map->tile_row_n + 1);
 			}
 
 			if(tile.col < 0)
 			{
-				newColN += (-tile.col);
+				new_col_n += (-tile.col);
 			}
-			else if(tile.col >= map->tileColN)
+			else if(tile.col >= map->tile_col_n)
 			{
-				newColN += (tile.col - map->tileColN + 1);
-			}
-
-			TileId *newTiles = ArenaAllocArray(tmpArena, TileId, newRowN * newColN);
-			for(Int32 index = 0; index < newRowN * newColN; index++)
-			{
-				newTiles[index] = NoTileId;
+				new_col_n += (tile.col - map->tile_col_n + 1);
 			}
 
-			for(Int32 row = 0; row < map->tileRowN; row++)
+			TileId *new_tiles = ArenaAllocArray(tmp_arena, TileId, new_row_n * new_col_n);
+			for(Int32 index = 0; index < new_row_n * new_col_n; index++)
 			{
-				for(Int32 col = 0; col < map->tileColN; col++)
+				new_tiles[index] = NoTileId;
+			}
+
+			for(Int32 row = 0; row < map->tile_row_n; row++)
+			{
+				for(Int32 col = 0; col < map->tile_col_n; col++)
 				{
-					Int32 oldIndex = map->tileColN * row + col;
-					Int32 newRow = row;
+					Int32 old_index = map->tile_col_n * row + col;
+					Int32 new_row = row;
 					if(tile.row < 0)
 					{
-						newRow += (-tile.row);
+						new_row += (-tile.row);
 					}
 
-					Int32 newCol = col;
+					Int32 new_col = col;
 					if(tile.col < 0)
 					{
-						newCol += (-tile.col);
+						new_col += (-tile.col);
 					}
 
-					Int32 newIndex = newColN * newRow + newCol;
-					newTiles[newIndex] = map->tileTypes[oldIndex];
+					Int32 new_index = new_col_n * new_row + new_col;
+					new_tiles[new_index] = map->tile_types[old_index];
 				}
 			}
 
-			map->tileRowN = newRowN;
-			map->tileColN = newColN;
-			map->tileTypes = newTiles;
+			map->tile_row_n = new_row_n;
+			map->tile_col_n = new_col_n;
+			map->tile_types = new_tiles;
 
 			if(tile.row < 0)
 			{
@@ -165,216 +164,216 @@ func HandlePlaceTileMode(WorldLabState *labState, Canvas *canvas, UserInput *use
 
 		}
 
-		WorldLabSwapArenas(labState);
+		WorldLabSwapArenas(lab_state);
 	}
 
-	MapItem *oldItems = map->items;
-	map->items = ArenaAllocArray(arena, MapItem, map->itemN);
-	for(Int32 i = 0; i < map->itemN; i++)
+	MapItem *old_items = map->items;
+	map->items = ArenaAllocArray(arena, MapItem, map->item_n);
+	for(Int32 i = 0; i < map->item_n; i++)
 	{
-		map->items[i] = oldItems[i];
+		map->items[i] = old_items[i];
 	}
 	
-	Rect tileRect = {};
-	tileRect.left   = tile.col * MapTileSide;
-	tileRect.right  = tileRect.left + MapTileSide;
-	tileRect.top    = tile.row * MapTileSide;
-	tileRect.bottom = tileRect.top + MapTileSide;
+	Rect tile_rect = {};
+	tile_rect.left   = tile.col * MapTileSide;
+	tile_rect.right  = tile_rect.left + MapTileSide;
+	tile_rect.top    = tile.row * MapTileSide;
+	tile_rect.bottom = tile_rect.top + MapTileSide;
 
-	Vec4 tileColor = MakeColor(0.5f, 0.5f, 0.5f);
-	DrawRect(canvas, tileRect, tileColor);
+	Vec4 tile_color = MakeColor(0.5f, 0.5f, 0.5f);
+	DrawRect(canvas, tile_rect, tile_color);
 }
 
 static void
-func HandlePlaceItemMode(WorldLabState *labState, Canvas *canvas, UserInput *userInput)
+func HandlePlaceItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *user_input)
 {
-	Map *map = &labState->map;
+	Map *map = &lab_state->map;
 	Camera *camera = canvas->camera;
-	Vec2 mousePosition = PixelToUnit(camera, userInput->mousePixelPosition);
+	Vec2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
 
-	Real32 itemRadius = 0.2f;
-	Vec4 itemColor = MakeColor(1.0f, 0.0f, 1.0f);
+	Real32 item_radius = 0.2f;
+	Vec4 item_color = MakeColor(1.0f, 0.0f, 1.0f);
 
-	DrawCircle(canvas, mousePosition, itemRadius, itemColor);
+	DrawCircle(canvas, mouse_position, item_radius, item_color);
 
-	if(WasKeyReleased(userInput, VK_LBUTTON))
+	if(WasKeyReleased(user_input, VK_LBUTTON))
 	{
-		MemArena *arena = labState->arena;
+		MemArena *arena = lab_state->arena;
 		
-		Int8 *arenaTop = GetArenaTop(arena);
-		Int8 *itemsEnd = (Int8 *)&map->items[map->itemN];
-		Assert(arenaTop == itemsEnd);
+		Int8 *arena_top = GetArenaTop(arena);
+		Int8 *items_end = (Int8 *)&map->items[map->item_n];
+		Assert(arena_top == items_end);
 
 		ArenaAlloc(arena, sizeof(MapItem));
-		MapItem *item = &map->items[map->itemN];
-		item->itemId = NoItemId;
-		item->position = mousePosition;
-		map->itemN++;
+		MapItem *item = &map->items[map->item_n];
+		item->item_id = NoItemId;
+		item->position = mouse_position;
+		map->item_n++;
 	}
 }
 
 static void
-func HandleRemoveItemMode(WorldLabState *labState, Canvas *canvas, UserInput *userInput)
+func HandleRemoveItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *user_input)
 {
-	Vec2 mousePosition = PixelToUnit(canvas->camera, userInput->mousePixelPosition);
+	Vec2 mouse_position = PixelToUnit(canvas->camera, user_input->mouse_pixel_position);
 
-	Map *map = &labState->map;
-	MapItem *hoverItem = 0;
-	Int32 hoverIndex = -1;
-	for(Int32 i = 0; i < map->itemN; i++)
+	Map *map = &lab_state->map;
+	MapItem *hover_item = 0;
+	Int32 hover_index = -1;
+	for(Int32 i = 0; i < map->item_n; i++)
 	{
 		MapItem *item = &map->items[i];
-		Real32 distance = Distance(item->position, mousePosition);
+		Real32 distance = Distance(item->position, mouse_position);
 		if(distance <= MapItemRadius)
 		{
-			hoverItem = item;
-			hoverIndex = i;
+			hover_item = item;
+			hover_index = i;
 			break;
 		}
 	}
 
-	if(hoverItem)
+	if(hover_item)
 	{
-		Vec4 itemColor = MakeColor(0.2f, 0.2f, 0.2f);
-		DrawCircle(canvas, hoverItem->position, MapItemRadius, itemColor);
-		if(WasKeyReleased(userInput, VK_LBUTTON))
+		Vec4 item_color = MakeColor(0.2f, 0.2f, 0.2f);
+		DrawCircle(canvas, hover_item->position, MapItemRadius, item_color);
+		if(WasKeyReleased(user_input, VK_LBUTTON))
 		{
-			MemArena *arena = labState->arena;
-			Int8 *arenaTop = GetArenaTop(arena);
-			Int8 *itemsEnd = (Int8 *)&map->items[map->itemN];
-			Assert(arenaTop == itemsEnd);
+			MemArena *arena = lab_state->arena;
+			Int8 *arena_top = GetArenaTop(arena);
+			Int8 *items_end = (Int8 *)&map->items[map->item_n];
+			Assert(arena_top == items_end);
 
-			for(Int32 i = hoverIndex + 1; i < map->itemN; i++)
+			for(Int32 i = hover_index + 1; i < map->item_n; i++)
 			{
 				map->items[i - 1] = map->items[i];
 			}
 
-			map->itemN--;
-			itemsEnd -= sizeof(MapItem);
-			ArenaPopTo(arena, itemsEnd);
+			map->item_n--;
+			items_end -= sizeof(MapItem);
+			ArenaPopTo(arena, items_end);
 		}
 	}
 }
 
-static Int8 *mapFile = "Data/Map.data";
+static Int8 *map_file = "Data/Map.data";
 
 static void
-func WorldLabUpdate(WorldLabState *labState, Canvas *canvas, Real32 seconds, UserInput *userInput)
+func WorldLabUpdate(WorldLabState *lab_state, Canvas *canvas, Real32 seconds, UserInput *user_input)
 {
 	Bitmap *bitmap = &canvas->bitmap;
-	Vec4 backgroundColor = MakeColor(0.0f, 0.0f, 0.0f);
-	FillBitmapWithColor(bitmap, backgroundColor);
+	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	FillBitmapWithColor(bitmap, background_color);
 
-	Real32 cameraMoveSpeed = seconds * 50.0f;
+	Real32 camera_move_speed = seconds * 50.0f;
 	Camera *camera = canvas->camera;
 
-	if(IsKeyDown(userInput, 'A'))
+	if(IsKeyDown(user_input, 'A'))
 	{
-		camera->center.x -= cameraMoveSpeed;
+		camera->center.x -= camera_move_speed;
 	}
-	if(IsKeyDown(userInput, 'D'))
+	if(IsKeyDown(user_input, 'D'))
 	{
-		camera->center.x += cameraMoveSpeed;
-	}
-
-	if(IsKeyDown(userInput, 'W'))
-	{
-		camera->center.y -= cameraMoveSpeed;
-	}
-	if(IsKeyDown(userInput, 'S'))
-	{
-		camera->center.y += cameraMoveSpeed;
+		camera->center.x += camera_move_speed;
 	}
 
-	if(IsKeyDown(userInput, 'Q'))
+	if(IsKeyDown(user_input, 'W'))
 	{
-		camera->unitInPixels /= 1.01f;
+		camera->center.y -= camera_move_speed;
 	}
-	if(IsKeyDown(userInput, 'E'))
+	if(IsKeyDown(user_input, 'S'))
 	{
-		camera->unitInPixels *= 1.01f;
-	}
-
-	if(WasKeyPressed(userInput, '1'))
-	{
-		labState->editMode = PlaceTileMode;
-	}
-	if(WasKeyPressed(userInput, '2'))
-	{
-		labState->editMode = PlaceItemMode;
-	}
-	if(WasKeyPressed(userInput, '3'))
-	{
-		labState->editMode = RemoveItemMode;
+		camera->center.y += camera_move_speed;
 	}
 
-	MemArena *arena = labState->arena;
-	MemArena *tmpArena = labState->tmpArena;
-	if(WasKeyReleased(userInput, 'M'))
+	if(IsKeyDown(user_input, 'Q'))
 	{
-		HANDLE file = CreateFileA(mapFile, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+		camera->unit_in_pixels /= 1.01f;
+	}
+	if(IsKeyDown(user_input, 'E'))
+	{
+		camera->unit_in_pixels *= 1.01f;
+	}
+
+	if(WasKeyPressed(user_input, '1'))
+	{
+		lab_state->edit_mode = PlaceTileMode;
+	}
+	if(WasKeyPressed(user_input, '2'))
+	{
+		lab_state->edit_mode = PlaceItemMode;
+	}
+	if(WasKeyPressed(user_input, '3'))
+	{
+		lab_state->edit_mode = RemoveItemMode;
+	}
+
+	MemArena *arena = lab_state->arena;
+	MemArena *tmp_arena = lab_state->tmp_arena;
+	if(WasKeyReleased(user_input, 'M'))
+	{
+		HANDLE file = CreateFileA(map_file, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 		Assert(file != INVALID_HANDLE_VALUE);
 
-		MemArena *fileArena = tmpArena;
+		MemArena *file_arena = tmp_arena;
 		Int32 version = MapVersion;
-		ArenaPushVar(fileArena, version);
+		ArenaPushVar(file_arena, version);
 
-		Map *map = &labState->map;
-		Map *pushedMap = (Map *)ArenaPushVar(fileArena, *map);
-		Int32 tileN = (map->tileRowN * map->tileColN);
+		Map *map = &lab_state->map;
+		Map *pushed_map = (Map *)ArenaPushVar(file_arena, *map);
+		Int32 tile_n = (map->tile_row_n * map->tile_col_n);
 
-		TileId *tileTypes = (TileId *)ArenaPushData(fileArena, tileN * sizeof(TileId), map->tileTypes);
-		pushedMap->tileTypes = (TileId *)GetRelativeAddress(tileTypes, fileArena->baseAddress);
+		TileId *tile_types = (TileId *)ArenaPushData(file_arena, tile_n * sizeof(TileId), map->tile_types);
+		pushed_map->tile_types = (TileId *)GetRelativeAddress(tile_types, file_arena->base_address);
 
-		MapItem *items = (MapItem *)ArenaPushData(fileArena, map->itemN * sizeof(MapItem), map->items);
-		pushedMap->items = (MapItem *)GetRelativeAddress(items, fileArena->baseAddress);
+		MapItem *items = (MapItem *)ArenaPushData(file_arena, map->item_n * sizeof(MapItem), map->items);
+		pushed_map->items = (MapItem *)GetRelativeAddress(items, file_arena->base_address);
 
-		Int8 *data = fileArena->baseAddress;
-		DWORD dataSize = fileArena->usedSize;
-		DWORD writtenDataSize = 0;
+		Int8 *data = file_arena->base_address;
+		DWORD data_size = file_arena->used_size;
+		DWORD written_data_size = 0;
 
-		BOOL result = WriteFile(file, (LPCVOID)data, (DWORD)dataSize, &writtenDataSize, 0);
+		BOOL result = WriteFile(file, (LPCVOID)data, (DWORD)data_size, &written_data_size, 0);
 		Assert(result);
-		Assert(writtenDataSize == dataSize);
+		Assert(written_data_size == data_size);
 
 		result = CloseHandle(file);
 		Assert(result);
 
-		ArenaReset(tmpArena);
+		ArenaReset(tmp_arena);
 	}
 
-	if(WasKeyReleased(userInput, 'L'))
+	if(WasKeyReleased(user_input, 'L'))
 	{
-		labState->map = ReadMapFromFile(mapFile, arena);
+		lab_state->map = ReadMapFromFile(map_file, arena);
 	}
 
-	Map *map = &labState->map;
+	Map *map = &lab_state->map;
 	DrawMapWithItems(canvas, map);
 
-	if(map->tileRowN > 0)
+	if(map->tile_row_n > 0)
 	{
-		Assert(map->tileColN > 0);
+		Assert(map->tile_col_n > 0);
 		Rect rect = {};
 		rect.left = 0.0f;
 		rect.right = GetMapWidth(map);
 		rect.top = 0.0f;
 		rect.bottom = GetMapHeight(map);
 
-		Vec4 borderColor = MakeColor(1.0f, 1.0f, 0.0);
-		DrawRectOutline(canvas, rect, borderColor);
+		Vec4 border_color = MakeColor(1.0f, 1.0f, 0.0);
+		DrawRectOutline(canvas, rect, border_color);
 	}
 	
-	if(labState->editMode == PlaceTileMode)
+	if(lab_state->edit_mode == PlaceTileMode)
 	{
-		HandlePlaceTileMode(labState, canvas, userInput);
+		HandlePlaceTileMode(lab_state, canvas, user_input);
 	}
-	else if(labState->editMode == PlaceItemMode)
+	else if(lab_state->edit_mode == PlaceItemMode)
 	{
-		HandlePlaceItemMode(labState, canvas, userInput);
+		HandlePlaceItemMode(lab_state, canvas, user_input);
 	}
-	else if(labState->editMode == RemoveItemMode)
+	else if(lab_state->edit_mode == RemoveItemMode)
 	{
-		HandleRemoveItemMode(labState, canvas, userInput);
+		HandleRemoveItemMode(lab_state, canvas, user_input);
 	}
 	else
 	{
