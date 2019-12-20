@@ -8,18 +8,18 @@
 
 struct Entity
 {
-	Vec2 position;
-	Vec2 velocity;
+	V2 position;
+	V2 velocity;
 
-	Int32 health_points;
-	Int32 max_health_points;
+	I32 health_points;
+	I32 max_health_points;
 
-	Vec2 start_position;
-	Real32 resurrect_time;
+	V2 start_position;
+	R32 resurrect_time;
 
 	Entity *target;
 
-	Real32 recharge_time;
+	R32 recharge_time;
 	EntityGroupId group_id;
 };
 
@@ -27,23 +27,23 @@ struct Entity
 
 struct Game
 {
-	Int8 arena_memory[GameArenaSize];
+	I8 arena_memory[GameArenaSize];
 	MemArena arena;
 	Map map;
 
 	Inventory inventory;
-	Bool32 show_inventory;
+	B32 show_inventory;
 
 	Inventory trade_inventory;
-	Bool32 show_trade_window;
+	B32 show_trade_window;
 
 	Entity player;
 
-	Real32 *item_spawn_cooldowns;
+	R32 *item_spawn_cooldowns;
 
-	Bool32 quest_finished;
+	B32 quest_finished;
 
-	Int32 npc_n;
+	I32 npc_n;
 	Entity npcs[MaxNpcN];
 };
 
@@ -56,7 +56,7 @@ func AddNpc(Game *game, Entity *npc)
 }
 
 static void
-func InitNpc(Entity *npc, EntityGroupId group_id, Vec2 position)
+func InitNpc(Entity *npc, EntityGroupId group_id, V2 position)
 {
 	npc->group_id = group_id;
 	npc->position = position;
@@ -70,7 +70,7 @@ static EntityGroupId
 func GetRandomGroupId()
 {
 	EntityGroupId id = NeutralGroupId;
-	Int32 random = IntRandom(0, 1);
+	I32 random = IntRandom(0, 1);
 	if(random == 0)
 	{
 		id = OrangeGroupId;
@@ -102,11 +102,11 @@ func GameInit(Game *game, Canvas *canvas)
 	player->max_health_points = 100;
 	player->health_points = player->max_health_points;
 
-	Int8 *map_file = "Data/Map.data";
+	I8 *map_file = "Data/Map.data";
 	game->map = ReadMapFromFile(map_file, &game->arena); 
-	game->item_spawn_cooldowns = ArenaAllocArray(&game->arena, Real32, game->map.item_n);
+	game->item_spawn_cooldowns = ArenaAllocArray(&game->arena, R32, game->map.item_n);
 
-	for(Int32 i = 0; i < game->map.item_n; i++)
+	for(I32 i = 0; i < game->map.item_n; i++)
 	{
 		game->item_spawn_cooldowns[i] = 0.0f;
 	}
@@ -122,7 +122,7 @@ func GameInit(Game *game, Canvas *canvas)
 	game->quest_finished = false;
 
 	Map *map = &game->map;
-	for(Int32 i = 0; i < map->entity_n; i++)
+	for(I32 i = 0; i < map->entity_n; i++)
 	{
 		MapEntity *map_entity = &map->entities[i];
 		Entity npc = {};
@@ -141,58 +141,58 @@ func GetEntityRect(Entity *entity)
 	return rect;
 }
 
-static Vec2
+static V2
 func GetEntityLeft(Entity *entity)
 {
-	Vec2 left = entity->position + MakeVector(-EntityRadius, 0.0f);
+	V2 left = entity->position + MakeVector(-EntityRadius, 0.0f);
 	return left;
 }
 
-static Vec2
+static V2
 func GetEntityRight(Entity *entity)
 {
-	Vec2 right = entity->position + MakeVector(+EntityRadius, 0.0f);
+	V2 right = entity->position + MakeVector(+EntityRadius, 0.0f);
 	return right;
 }
 
-static Vec2
+static V2
 func GetEntityTop(Entity *entity)
 {
-	Vec2 top = entity->position + MakeVector(0.0f, -EntityRadius);
+	V2 top = entity->position + MakeVector(0.0f, -EntityRadius);
 	return top;
 }
 
-static Vec2
+static V2
 func GetEntityBottom(Entity *entity)
 {
-	Vec2 bottom = entity->position + MakeVector(0.0f, +EntityRadius);
+	V2 bottom = entity->position + MakeVector(0.0f, +EntityRadius);
 	return bottom;
 }
 
 static void
-func UpdateEntityMovement(Entity *entity, Map *map, Real32 seconds)
+func UpdateEntityMovement(Entity *entity, Map *map, R32 seconds)
 {
-	Vec2 move_vector = seconds * entity->velocity;
-	Vec2 old_position = entity->position;
-	Vec2 new_position = entity->position + move_vector;
+	V2 move_vector = seconds * entity->velocity;
+	V2 old_position = entity->position;
+	V2 new_position = entity->position + move_vector;
 
-	IntVec2 top_tile = GetContainingTile(map, GetEntityTop(entity));
+	IV2 top_tile = GetContainingTile(map, GetEntityTop(entity));
 	top_tile.row--;
 
-	IntVec2 bottom_tile = GetContainingTile(map, GetEntityBottom(entity));
+	IV2 bottom_tile = GetContainingTile(map, GetEntityBottom(entity));
 	bottom_tile.row++;
 
-	IntVec2 left_tile = GetContainingTile(map, GetEntityLeft(entity));
+	IV2 left_tile = GetContainingTile(map, GetEntityLeft(entity));
 	left_tile.col--;
 
-	IntVec2 right_tile = GetContainingTile(map, GetEntityRight(entity));
+	IV2 right_tile = GetContainingTile(map, GetEntityRight(entity));
 	right_tile.col++;
 
-	for(Int32 row = top_tile.row; row <= bottom_tile.row; row++)
+	for(I32 row = top_tile.row; row <= bottom_tile.row; row++)
 	{
-		for(Int32 col = left_tile.col; col <= right_tile.col; col++)
+		for(I32 col = left_tile.col; col <= right_tile.col; col++)
 		{
-			IntVec2 tile = MakeTile(row, col);
+			IV2 tile = MakeTile(row, col);
 			if(IsValidTile(map, tile) && IsTileType(map, tile, NoTileId))
 			{
 				Poly16 collision_poly = {};
@@ -228,8 +228,8 @@ func UpdateEntityMovement(Entity *entity, Map *map, Real32 seconds)
 		}
 	}
 
-	Real32 map_width  = GetMapWidth(map);
-	Real32 map_height = GetMapHeight (map);
+	R32 map_width  = GetMapWidth(map);
+	R32 map_height = GetMapHeight (map);
 	new_position.x = Clip(new_position.x, EntityRadius, map_width - EntityRadius);
 	new_position.y = Clip(new_position.y, EntityRadius, map_height - EntityRadius);
 
@@ -237,12 +237,12 @@ func UpdateEntityMovement(Entity *entity, Map *map, Real32 seconds)
 }
 
 static void
-func DrawInteractionDialogWithText(Canvas *canvas, Int8 *text)
+func DrawInteractionDialogWithText(Canvas *canvas, I8 *text)
 {
-	Vec4 color = MakeColor(0.8f, 0.8f, 0.4f);
-	Vec4 outline_color = MakeColor(1.0f, 1.0f, 0.5f);
+	V4 color = MakeColor(0.8f, 0.8f, 0.4f);
+	V4 outline_color = MakeColor(1.0f, 1.0f, 0.5f);
 
-	Int32 border = 30;
+	I32 border = 30;
 	Bitmap *bitmap = &canvas->bitmap;
 	IntRect rect = {};
 	rect.bottom = bitmap->height - border;
@@ -252,9 +252,9 @@ func DrawInteractionDialogWithText(Canvas *canvas, Int8 *text)
 	DrawBitmapRect(bitmap, rect, color);
 	DrawBitmapRectOutline(bitmap, rect, outline_color);
 
-	Vec4 text_color = MakeColor(0.0f, 0.0f, 0.0f);
-	Int32 text_left = rect.left + 10;
-	Int32 text_top = rect.top + 10;
+	V4 text_color = MakeColor(0.0f, 0.0f, 0.0f);
+	I32 text_left = rect.left + 10;
+	I32 text_top = rect.top + 10;
 
 	DrawBitmapTextLineTopLeft(bitmap, text, canvas->glyph_data, text_left, text_top, text_color);
 }
@@ -263,7 +263,7 @@ func DrawInteractionDialogWithText(Canvas *canvas, Int8 *text)
 #define InventorySlotPadding 2
 
 static IntRect
-func GetInventorySlotRect(Inventory *inventory, IntVec2 slot)
+func GetInventorySlotRect(Inventory *inventory, IV2 slot)
 {
 	Assert(InventorySlotIsValid(inventory, slot));
 	IntRect rect = {};
@@ -275,18 +275,18 @@ func GetInventorySlotRect(Inventory *inventory, IntVec2 slot)
 }
 
 static void
-func DrawInventorySlot(Canvas *canvas, Inventory *inventory, IntVec2 slot)
+func DrawInventorySlot(Canvas *canvas, Inventory *inventory, IV2 slot)
 {
 	Assert(InventorySlotIsValid(inventory, slot));
 	ItemId item_id = GetInventoryItemId(inventory, slot);
 	SlotId slot_id = GetInventorySlotId(inventory, slot);
 	IntRect slot_rect = GetInventorySlotRect(inventory, slot);
 
-	Vec4 slot_background_color = MakeColor(0.0f, 0.0f, 0.0f);
-	Vec4 item_background_color = MakeColor(0.1f, 0.1f, 0.1f);
-	Vec4 cooldown_color = MakeColor(0.2f, 0.0f, 0.0f);
-	Vec4 item_name_color = MakeColor(1.0f, 1.0f, 1.0f);
-	Vec4 slot_name_color = MakeColor(0.3f, 0.3f, 0.3f);
+	V4 slot_background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 item_background_color = MakeColor(0.1f, 0.1f, 0.1f);
+	V4 cooldown_color = MakeColor(0.2f, 0.0f, 0.0f);
+	V4 item_name_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 slot_name_color = MakeColor(0.3f, 0.3f, 0.3f);
 
 	Bitmap *bitmap = &canvas->bitmap;
 	GlyphData *glyph_data = canvas->glyph_data;
@@ -296,7 +296,7 @@ func DrawInventorySlot(Canvas *canvas, Inventory *inventory, IntVec2 slot)
 		DrawBitmapRect(bitmap, slot_rect, slot_background_color);
 		if(slot_id != AnySlotId)
 		{
-			Int8 *slot_name = GetSlotName(slot_id);
+			I8 *slot_name = GetSlotName(slot_id);
 			Assert(slot_name != 0);
 			DrawBitmapTextLineCentered(bitmap, slot_name, glyph_data, slot_rect, slot_name_color);
 		}
@@ -304,13 +304,13 @@ func DrawInventorySlot(Canvas *canvas, Inventory *inventory, IntVec2 slot)
 	else
 	{
 		DrawBitmapRect(bitmap, slot_rect, item_background_color);
-		Int8 *name = GetItemSlotName(item_id);
+		I8 *name = GetItemSlotName(item_id);
 		DrawBitmapTextLineCentered(bitmap, name, glyph_data, slot_rect, item_name_color);
 	}
 }
 
 static void
-func DrawInventorySlotOutline(Canvas *canvas, Inventory *inventory, IntVec2 slot, Vec4 color)
+func DrawInventorySlotOutline(Canvas *canvas, Inventory *inventory, IV2 slot, V4 color)
 {
 	Bitmap *bitmap = &canvas->bitmap;
 	IntRect rect = GetInventorySlotRect(inventory, slot);
@@ -319,43 +319,43 @@ func DrawInventorySlotOutline(Canvas *canvas, Inventory *inventory, IntVec2 slot
 
 #define InventorySlotPadding 2
 
-static Int32
+static I32
 func GetInventoryWidth(Inventory *inventory)
 {
-	Int32 width = InventorySlotPadding + inventory->col_n * (InventorySlotSide + InventorySlotPadding);
+	I32 width = InventorySlotPadding + inventory->col_n * (InventorySlotSide + InventorySlotPadding);
 	return width;
 }
 
-static Int32
+static I32
 func GetInventoryHeight(Inventory *inventory)
 {
-	Int32 height = InventorySlotPadding + inventory->row_n * (InventorySlotSide + InventorySlotPadding);
+	I32 height = InventorySlotPadding + inventory->row_n * (InventorySlotSide + InventorySlotPadding);
 	return height;
 }
 
 static void
-func MoveInventoryToRight(Inventory *inventory, Int32 right)
+func MoveInventoryToRight(Inventory *inventory, I32 right)
 {
-	Int32 width = GetInventoryWidth(inventory);
+	I32 width = GetInventoryWidth(inventory);
 	inventory->left = right - width;
 }
 
 static void
-func MoveInventoryToBottom(Inventory *inventory, Int32 bottom)
+func MoveInventoryToBottom(Inventory *inventory, I32 bottom)
 {
-	Int32 height = GetInventoryHeight(inventory);
+	I32 height = GetInventoryHeight(inventory);
 	inventory->top = bottom - height;
 }
 
 static void
-func MoveInventoryToBottomRight(Inventory *inventory, Int32 bottom, Int32 right)
+func MoveInventoryToBottomRight(Inventory *inventory, I32 bottom, I32 right)
 {
 	MoveInventoryToBottom(inventory, bottom);
 	MoveInventoryToRight(inventory, right);
 }
 
 static void
-func MoveInventoryToBottomLeft(Inventory *inventory, Int32 bottom, Int32 left)
+func MoveInventoryToBottomLeft(Inventory *inventory, I32 bottom, I32 left)
 {
 	MoveInventoryToBottom(inventory, bottom);
 	inventory->left = left;
@@ -367,8 +367,8 @@ func MoveInventoryToBottomLeft(Inventory *inventory, Int32 bottom, Int32 left)
 static IntRect
 func GetInventoryRect(Inventory *inventory)
 {
-	Int32 width = GetInventoryWidth(inventory);
-	Int32 height = GetInventoryHeight(inventory);
+	I32 width = GetInventoryWidth(inventory);
+	I32 height = GetInventoryHeight(inventory);
 
 	IntRect rect = {};
 	rect.left   = inventory->left;
@@ -388,16 +388,16 @@ func DrawInventory(Canvas *canvas, Inventory *inventory)
 
 	IntRect rect = GetInventoryRect(inventory);
 
-	Vec4 background_color = MakeColor(0.5f, 0.5f, 0.5f);
-	Vec4 hover_outline_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 invalid_outline_color = MakeColor(1.0f, 0.0f, 0.0f);
+	V4 background_color = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 hover_outline_color = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 invalid_outline_color = MakeColor(1.0f, 0.0f, 0.0f);
 	DrawBitmapRect(bitmap, rect, background_color);
 
-	for(Int32 row = 0; row < inventory->row_n; row++)
+	for(I32 row = 0; row < inventory->row_n; row++)
 	{
-		for(Int32 col = 0; col < inventory->col_n; col++)
+		for(I32 col = 0; col < inventory->col_n; col++)
 		{
-			IntVec2 slot = MakeIntPoint(row, col);
+			IV2 slot = MakeIntPoint(row, col);
 			SlotId slot_id = GetInventorySlotId(inventory, slot);
 			ItemId item_id = GetInventoryItemId(inventory, slot);
 			DrawInventorySlot(canvas, inventory, slot);
@@ -406,14 +406,14 @@ func DrawInventory(Canvas *canvas, Inventory *inventory)
 }
 
 static InventoryItem
-func GetInventoryItemAtPosition(Inventory *inventory, IntVec2 position)
+func GetInventoryItemAtPosition(Inventory *inventory, IV2 position)
 {
 	InventoryItem item = {};
-	for(Int32 row = 0; row < inventory->row_n; row++)
+	for(I32 row = 0; row < inventory->row_n; row++)
 	{
-		for(Int32 col = 0; col < inventory->col_n; col++)
+		for(I32 col = 0; col < inventory->col_n; col++)
 		{
-			IntVec2 slot = MakeIntPoint(row, col);
+			IV2 slot = MakeIntPoint(row, col);
 			ItemId item_id = GetInventoryItemId(inventory, slot);
 			IntRect rect = GetInventorySlotRect(inventory, slot);
 			if(IsPointInIntRect(position, rect))
@@ -434,11 +434,11 @@ func StopTrading(Game *game)
 
 	Inventory *inventory = &game->inventory;
 	Inventory *trade_inventory = &game->trade_inventory;
-	for(Int32 row = 0; row < trade_inventory->row_n; row++)
+	for(I32 row = 0; row < trade_inventory->row_n; row++)
 	{
-		for(Int32 col = 0; col < trade_inventory->col_n; col++)
+		for(I32 col = 0; col < trade_inventory->col_n; col++)
 		{
-			IntVec2 slot = MakeIntPoint(row, col);
+			IV2 slot = MakeIntPoint(row, col);
 			InventoryItem item = GetInventoryItem(trade_inventory, slot);
 			Assert(item.inventory == trade_inventory);
 			if(item.item_id != NoItemId)
@@ -453,7 +453,7 @@ func StopTrading(Game *game)
 }
 
 static void
-func DrawEntity(Canvas *canvas, Entity *entity, Vec4 color)
+func DrawEntity(Canvas *canvas, Entity *entity, V4 color)
 {
 	Rect rect = GetEntityRect(entity);
 	DrawRect(canvas, rect, color);
@@ -461,11 +461,11 @@ func DrawEntity(Canvas *canvas, Entity *entity, Vec4 color)
 	if(entity->max_health_points > 0)
 	{
 		Assert(IsIntBetween(entity->health_points, 0, entity->max_health_points));
-		Real32 ratio = (Real32)entity->health_points / (Real32)entity->max_health_points;
+		R32 ratio = (R32)entity->health_points / (R32)entity->max_health_points;
 
-		Real32 unit_in_pixels = canvas->camera->unit_in_pixels;
-		Real32 bar_width = 50.0f / unit_in_pixels;
-		Real32 bar_height = 10.0f / unit_in_pixels;
+		R32 unit_in_pixels = canvas->camera->unit_in_pixels;
+		R32 bar_width = 50.0f / unit_in_pixels;
+		R32 bar_height = 10.0f / unit_in_pixels;
 
 		Rect bar_rect = {};
 		bar_rect.left   = entity->position.x - bar_width * 0.5f;
@@ -473,12 +473,12 @@ func DrawEntity(Canvas *canvas, Entity *entity, Vec4 color)
 		bar_rect.bottom = rect.top - 10.0f / unit_in_pixels;
 		bar_rect.top    = bar_rect.bottom - bar_height;
 
-		Vec4 bar_background_color = MakeColor(0.5f, 0.5f, 0.5f);
-		Vec4 bar_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
+		V4 bar_background_color = MakeColor(0.5f, 0.5f, 0.5f);
+		V4 bar_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
 
 		DrawRect(canvas, bar_rect, bar_background_color);
 
-		Vec4 filled_bar_color = MakeColor(1.0f, 0.0f, 0.0f);
+		V4 filled_bar_color = MakeColor(1.0f, 0.0f, 0.0f);
 		Rect filled_bar_rect = bar_rect;
 		filled_bar_rect.right = bar_rect.left + (bar_rect.right - bar_rect.left) * ratio;
 		DrawRect(canvas, filled_bar_rect, filled_bar_color);
@@ -488,28 +488,28 @@ func DrawEntity(Canvas *canvas, Entity *entity, Vec4 color)
 }
 
 static void
-func HighlightEntity(Canvas *canvas, Entity *entity, Vec4 color)
+func HighlightEntity(Canvas *canvas, Entity *entity, V4 color)
 {
 	Rect rect = GetEntityRect(entity);
 	DrawRectOutline(canvas, rect, color);
 }
 
-static Real32
-func ClipUpToZero(Real32 value)
+static R32
+func ClipUpToZero(R32 value)
 {
-	Real32 result = (value >= 0.0f) ? value : 0.0f;
+	R32 result = (value >= 0.0f) ? value : 0.0f;
 	return result;
 }
 
-static Int32
-func ClipIntUpToZero(Int32 value)
+static I32
+func ClipIntUpToZero(I32 value)
 {
-	Int32 result = (value >= 0) ? value : 0;
+	I32 result = (value >= 0) ? value : 0;
 	return result;
 }
 
 static void
-func DoDamage(Entity *target, Int32 damage)
+func DoDamage(Entity *target, I32 damage)
 {
 	Assert(target->health_points > 0);
 	target->health_points = ClipIntUpToZero(target->health_points - damage);
@@ -535,16 +535,16 @@ func UpdateNpcTarget(Game *game, Entity *npc)
 
 	if(!target)
 	{
-		for(Int32 i = 0; i < game->npc_n; i++)
+		for(I32 i = 0; i < game->npc_n; i++)
 		{
 			Entity *entity = &game->npcs[i];
 			if(entity != npc)
 			{
-				Bool32 is_alive = (entity->health_points > 0);
-				Bool32 is_enemy = (entity->group_id != NeutralGroupId && entity->group_id != npc->group_id);
+				B32 is_alive = (entity->health_points > 0);
+				B32 is_enemy = (entity->group_id != NeutralGroupId && entity->group_id != npc->group_id);
 				if(is_alive && is_enemy)
 				{
-					Real32 distance = Distance(npc->position, entity->position);
+					R32 distance = Distance(npc->position, entity->position);
 					if(distance <= MaxAttackDistance)
 					{
 						target = entity;
@@ -559,7 +559,7 @@ func UpdateNpcTarget(Game *game, Entity *npc)
 }
 
 static void
-func UpdateNpc(Game *game, Entity *npc, Real32 seconds)
+func UpdateNpc(Game *game, Entity *npc, R32 seconds)
 {
 	if(npc->health_points > 0)
 	{
@@ -571,11 +571,11 @@ func UpdateNpc(Game *game, Entity *npc, Real32 seconds)
 		Entity *target = npc->target;
 		if(target)
 		{
-			Real32 distance = Distance(npc->position, target->position);
+			R32 distance = Distance(npc->position, target->position);
 			if(distance > MaxMeleeDistance)
 			{
-				Vec2 direction = PointDirection(npc->position, target->position);
-				Real32 speed = 10.0f;
+				V2 direction = PointDirection(npc->position, target->position);
+				R32 speed = 10.0f;
 				npc->velocity = speed * direction;
 			}
 			else
@@ -605,10 +605,10 @@ func UpdateNpc(Game *game, Entity *npc, Real32 seconds)
 	npc->position += seconds * npc->velocity;
 }
 
-static Vec4
+static V4
 func GetEntityGroupColor(EntityGroupId group_id)
 {
-	Vec4 color = {};
+	V4 color = {};
 	switch(group_id)
 	{
 		case OrangeGroupId:
@@ -631,15 +631,15 @@ func GetEntityGroupColor(EntityGroupId group_id)
 }
 
 static void
-func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_input)
+func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 {
 	Bitmap *bitmap = &canvas->bitmap;
-	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, background_color);
 
 	Entity *player = &game->player;
 
-	Real32 player_move_speed = 10.0f;
+	R32 player_move_speed = 10.0f;
 	player->velocity.x = 0.0f;
 	if(IsKeyDown(user_input, 'A'))
 	{
@@ -681,7 +681,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 	canvas->camera->center = player->position;
 
 	DrawMapWithoutItems(canvas, map);
-	for(Int32 i = 0; i < map->item_n; i++)
+	for(I32 i = 0; i < map->item_n; i++)
 	{
 		game->item_spawn_cooldowns[i] -= seconds;
 		if(game->item_spawn_cooldowns[i] <= 0.0f)
@@ -692,14 +692,14 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 		}
 	}
 
-	Int32 hover_item_index = 0;
+	I32 hover_item_index = 0;
 	MapItem *hover_item = 0;
-	for(Int32 i = 0; i < map->item_n; i++)
+	for(I32 i = 0; i < map->item_n; i++)
 	{
 		MapItem *item = &map->items[i];
 		if(game->item_spawn_cooldowns[i] == 0.0f)
 		{
-			Real32 distance = Distance(item->position, player->position);
+			R32 distance = Distance(item->position, player->position);
 			if(distance < 2.0f)
 			{
 				hover_item_index = i;
@@ -711,7 +711,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 
 	if(hover_item)
 	{
-		Vec4 hover_item_color = MakeColor(1.0f, 0.2f, 1.0f);
+		V4 hover_item_color = MakeColor(1.0f, 0.2f, 1.0f);
 		DrawCircle(canvas, hover_item->position, MapItemRadius, hover_item_color);
 
 		if(WasKeyReleased(user_input, 'E'))
@@ -722,24 +722,24 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 		}
 	}
 	   
-	Vec4 player_color = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 player_color = MakeColor(1.0f, 1.0f, 0.0f);
 	DrawEntity(canvas, player, player_color);
 
-	Vec4 npc_color = MakeColor(1.0f, 0.0f, 1.0f);
-	Vec4 npc_highlight_color = MakeColor(0.5f, 0.0f, 0.5f);
-	Vec4 npc_border_color = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 npc_color = MakeColor(1.0f, 0.0f, 1.0f);
+	V4 npc_highlight_color = MakeColor(0.5f, 0.0f, 0.5f);
+	V4 npc_border_color = MakeColor(1.0f, 1.0f, 0.0f);
 	Entity npc = {};
 	npc.position = MakePoint(50.0f, 25.0f);
 
-	Real32 player_npc_distance = Distance(player->position, npc.position);
-	Real32 interaction_distance = 3.0f;
+	R32 player_npc_distance = Distance(player->position, npc.position);
+	R32 interaction_distance = 3.0f;
 	Rect npc_rect = GetEntityRect(&npc);
 
 	DrawEntity(canvas, &npc, npc_color);
 	if(player_npc_distance <= interaction_distance)
 	{
 		HighlightEntity(canvas, &npc, npc_border_color);
-		Int8 *text = 0;
+		I8 *text = 0;
 		if(game->quest_finished)
 		{
 			text = "Thanks!";
@@ -771,10 +771,10 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 		}
 	}
 
-	for(Int32 i = 0; i < game->npc_n; i++)
+	for(I32 i = 0; i < game->npc_n; i++)
 	{
 		Entity *npc = &game->npcs[i];
-		Vec4 color = GetEntityGroupColor(npc->group_id);
+		V4 color = GetEntityGroupColor(npc->group_id);
 		DrawEntity(canvas, npc, color);
 		UpdateNpc(game, npc, seconds);
 	}
@@ -783,8 +783,8 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 	Inventory *inventory = &game->inventory;
 	if(game->show_trade_window)
 	{
-		Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-		Int32 left = UIBoxPadding;
+		I32 bottom = (bitmap->height - 1) - UIBoxPadding;
+		I32 left = UIBoxPadding;
 		MoveInventoryToBottomLeft(trade_inventory, bottom, left);
 
 		DrawInventory(canvas, trade_inventory);
@@ -793,7 +793,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 		InventoryItem hover_item = GetInventoryItemAtPosition(trade_inventory, user_input->mouse_pixel_position);
 		if(hover_item.inventory != 0 && hover_item.item_id != NoItemId)
 		{
-			Vec4 color = MakeColor(1.0f, 1.0f, 0.0f);
+			V4 color = MakeColor(1.0f, 1.0f, 0.0f);
 			DrawInventorySlotOutline(canvas, trade_inventory, hover_item.slot, color);
 
 			if(game->show_trade_window)
@@ -807,13 +807,13 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 
 		if(!game->quest_finished)
 		{
-			Int32 crystal_count = 0;
-			Int32 item_count = 0;
-			for(Int32 row = 0; row < trade_inventory->row_n; row++)
+			I32 crystal_count = 0;
+			I32 item_count = 0;
+			for(I32 row = 0; row < trade_inventory->row_n; row++)
 			{
-				for(Int32 col = 0; col < trade_inventory->col_n; col++)
+				for(I32 col = 0; col < trade_inventory->col_n; col++)
 				{
-					IntVec2 slot = MakeIntPoint(row, col);
+					IV2 slot = MakeIntPoint(row, col);
 					ItemId item_id = GetInventoryItemId(trade_inventory, slot);
 					if(item_id != NoItemId)
 					{
@@ -826,7 +826,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 				}
 			}
 
-			Bool32 are_items_expected = (crystal_count == 10 && item_count == 10);
+			B32 are_items_expected = (crystal_count == 10 && item_count == 10);
 			if(are_items_expected)
 			{
 				game->quest_finished = true;
@@ -838,8 +838,8 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 
 	if(game->show_inventory)
 	{
-		Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-		Int32 right  = (bitmap->width - 1) - UIBoxPadding;
+		I32 bottom = (bitmap->height - 1) - UIBoxPadding;
+		I32 right  = (bitmap->width - 1) - UIBoxPadding;
 		MoveInventoryToBottomRight(inventory, bottom, right);
 
 		DrawInventory(canvas, inventory);
@@ -847,7 +847,7 @@ func GameUpdate(Game *game, Canvas *canvas, Real32 seconds, UserInput *user_inpu
 		InventoryItem hover_item = GetInventoryItemAtPosition(inventory, user_input->mouse_pixel_position);
 		if(hover_item.inventory != 0 && hover_item.item_id != NoItemId)
 		{
-			Vec4 color = MakeColor(1.0f, 1.0f, 0.0f);
+			V4 color = MakeColor(1.0f, 1.0f, 0.0f);
 			DrawInventorySlotOutline(canvas, inventory, hover_item.slot, color);
 
 			if(game->show_trade_window)

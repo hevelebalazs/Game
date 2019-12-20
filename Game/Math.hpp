@@ -10,49 +10,49 @@
 #define PI	3.14159265358979323f
 #define TAU (2.0f * PI)
 
-struct Vec2 
+struct V2 
 {
-	Real32 x;
-	Real32 y;
+	R32 x;
+	R32 y;
 };
 
-struct IntVec2
+struct IV2
 {
-	Int32 row;
-	Int32 col;
+	I32 row;
+	I32 col;
 };
 
-struct Vec4 
+struct V4 
 {
 	union 
 	{
 		struct 
 		{
-			Vec2 position;
-			Vec2 direction;
+			V2 position;
+			V2 direction;
 		};
 		struct 
 		{
-			Real32 red;
-			Real32 green;
-			Real32 blue;
-			Real32 alpha;
+			R32 red;
+			R32 green;
+			R32 blue;
+			R32 alpha;
 		};
 	};
 };
 
 static void
-func IntSwap(Int32 *i, Int32 *j)
+func IntSwap(I32 *i, I32 *j)
 {
-	Int32 tmp = *i;
+	I32 tmp = *i;
 	*i = *j;
 	*j = tmp;
 }
 
-static Int32
-func IntAbs(Int32 i)
+static I32
+func IntAbs(I32 i)
 {
-	Int32 result = 0;
+	I32 result = 0;
 	if(i > 0)
 	{
 		result = i;
@@ -64,25 +64,25 @@ func IntAbs(Int32 i)
 	return result;
 }
 
-static Bool32
-func IsIntBetween(Int32 test, Int32 min, Int32 max)
+static B32
+func IsIntBetween(I32 test, I32 min, I32 max)
 {
-	Bool32 is_between = (min <= test && test <= max);
+	B32 is_between = (min <= test && test <= max);
 	return is_between;
 }
 
-static Int32
-func IntRandom(Int32 min, Int32 max)
+static I32
+func IntRandom(I32 min, I32 max)
 {
-	Int32 result = min + (rand() % (max - min + 1));
+	I32 result = min + (rand() % (max - min + 1));
 	Assert(IsIntBetween(result, min, max));
 	return result;
 }
 
-static Int32
-func IntMin2(Int32 i1, Int32 i2)
+static I32
+func IntMin2(I32 i1, I32 i2)
 {
-	Int32 min = 0;
+	I32 min = 0;
 	if(i1 < i2) 
 	{
 		min = i1;
@@ -94,10 +94,10 @@ func IntMin2(Int32 i1, Int32 i2)
 	return min;
 }
 
-static Int32
-func IntMax2(Int32 i1, Int32 i2)
+static I32
+func IntMax2(I32 i1, I32 i2)
 {
-	Int32 max = 0;
+	I32 max = 0;
 	if(i1 > i2)
 	{
 		max = i1;
@@ -109,16 +109,16 @@ func IntMax2(Int32 i1, Int32 i2)
 	return max;
 }
 
-static Real32
-func Sqrt(Real32 x)
+static R32
+func Sqrt(R32 x)
 {
 	return sqrtf(x);
 }
 
-static Real32
-func Abs(Real32 x)
+static R32
+func Abs(R32 x)
 {
-	Real32 result = 0;
+	R32 result = 0;
 	if(x > 0.0f)
 	{
 		result = x;
@@ -130,98 +130,98 @@ func Abs(Real32 x)
 	return result;
 }
 
-static Int32
-func Floor(Real32 x)
+static I32
+func Floor(R32 x)
 {
-	Int32 result = (Int32)floorf(x);
+	I32 result = (I32)floorf(x);
 	return result;
 }
 
-static Real32
-func Fraction(Real32 x)
+static R32
+func Fraction(R32 x)
 {
-    Real32 fraction = x - (Int32)x;
+    R32 fraction = x - (I32)x;
 	return fraction;
 }
 
-static Int32
-func RandMod(Int32 mod)
+static I32
+func RandMod(I32 mod)
 {
-	Int32 result = (rand() % mod);
+	I32 result = (rand() % mod);
 	return result;
 }
 
 static void
-func SeedRandom(Int32 seed)
+func SeedRandom(I32 seed)
 {
-	srand((UInt32)seed);
+	srand((U32)seed);
 }
 
-static Vec2
-func operator+(Vec2 point1, Vec2 point2)
+static V2
+func operator+(V2 point1, V2 point2)
 {
-	Vec2 result = {};
+	V2 result = {};
 	result.x = (point1.x + point2.x);
 	result.y = (point1.y + point2.y);
 	return result;
 }
 
 static void
-func operator+=(Vec2& point1, Vec2 point2)
+func operator+=(V2& point1, V2 point2)
 {
 	point1 = point1 + point2;
 }
 
-static Vec2
-func operator-(Vec2 point1, Vec2 point2)
+static V2
+func operator-(V2 point1, V2 point2)
 {
-	Vec2 result = {};
+	V2 result = {};
 	result.x = (point1.x - point2.x);
 	result.y = (point1.y - point2.y);
 	return result;
 }
 
-static Vec2
-func operator*(Real32 times, Vec2 point)
+static V2
+func operator*(R32 times, V2 point)
 {
-	Vec2 result = {};
+	V2 result = {};
 	result.x = (times * point.x);
 	result.y = (times * point.y);
 	return result;
 }
 
-static Bool32
-func operator==(Vec2 point1, Vec2 point2)
+static B32
+func operator==(V2 point1, V2 point2)
 {
-	Bool32 result = ((point1.x == point2.x) && (point1.y == point2.y));
+	B32 result = ((point1.x == point2.x) && (point1.y == point2.y));
 	return result;
 }
 
-static Bool32
-func operator!=(Vec2 point1, Vec2 point2)
+static B32
+func operator!=(V2 point1, V2 point2)
 {
-	Bool32 result = ((point1.x != point2.x) || (point1.y != point2.y));
+	B32 result = ((point1.x != point2.x) || (point1.y != point2.y));
 	return result;
 }
 
-static Bool32
-func operator==(IntVec2 point1, IntVec2 point2)
+static B32
+func operator==(IV2 point1, IV2 point2)
 {
-	Bool32 equal = ((point1.row == point2.row) && (point1.col == point2.col));
+	B32 equal = ((point1.row == point2.row) && (point1.col == point2.col));
 	return equal;
 }
 
-static Bool32
-func operator!=(IntVec2 point1, IntVec2 point2)
+static B32
+func operator!=(IV2 point1, IV2 point2)
 {
-	Bool32 different = ((point1.row != point2.row) || (point1.col != point2.col));
+	B32 different = ((point1.row != point2.row) || (point1.col != point2.col));
 	return different;
 }
 
-static Real32
-func Min2(Real32 x, Real32 y)
+static R32
+func Min2(R32 x, R32 y)
 {
-	Real32 min = 0.0f;
+	R32 min = 0.0f;
 	if(x < y)
 	{
 		min = x;
@@ -233,10 +233,10 @@ func Min2(Real32 x, Real32 y)
 	return min;
 }
 
-static Real32
-func Min4(Real32 x, Real32 y, Real32 z, Real32 w)
+static R32
+func Min4(R32 x, R32 y, R32 z, R32 w)
 {
-	Real32 min = x;
+	R32 min = x;
 	if(y < min)
 	{
 		min = y;
@@ -252,10 +252,10 @@ func Min4(Real32 x, Real32 y, Real32 z, Real32 w)
 	return min;
 }
 
-static Real32
-func Max2(Real32 x, Real32 y)
+static R32
+func Max2(R32 x, R32 y)
 {
-	Real32 max = 0.0f;
+	R32 max = 0.0f;
 	if(x > y)
 	{
 		max = x;
@@ -267,10 +267,10 @@ func Max2(Real32 x, Real32 y)
 	return max;
 }
 
-static Real32
-func Max3(Real32 x, Real32 y, Real32 z) 
+static R32
+func Max3(R32 x, R32 y, R32 z) 
 {
-	Real32 max = x;
+	R32 max = x;
 	if(y > max) 
 	{
 		max = y;
@@ -282,10 +282,10 @@ func Max3(Real32 x, Real32 y, Real32 z)
 	return max;
 }
 
-static Real32
-func Max4(Real32 x, Real32 y, Real32 z, Real32 w)
+static R32
+func Max4(R32 x, R32 y, R32 z, R32 w)
 {
-	Real32 max = x;
+	R32 max = x;
 	if(y > max)
 	{
 		max = y;
@@ -301,11 +301,11 @@ func Max4(Real32 x, Real32 y, Real32 z, Real32 w)
 	return max;
 }
 
-static Real32
-func Clip(Real32 value, Real32 min, Real32 max)
+static R32
+func Clip(R32 value, R32 min, R32 max)
 {
 	Assert(min < max);
-	Real32 result = value;
+	R32 result = value;
 	if(result < min)
 	{
 		result = min;
@@ -317,11 +317,11 @@ func Clip(Real32 value, Real32 min, Real32 max)
 	return result;
 }
 
-static Int32
-func ClipInt(Int32 value, Int32 min, Int32 max)
+static I32
+func ClipInt(I32 value, I32 min, I32 max)
 {
 	Assert(min < max);
-	Int32 result = value;
+	I32 result = value;
 	if(result < min)
 	{
 		result = min;
@@ -333,71 +333,71 @@ func ClipInt(Int32 value, Int32 min, Int32 max)
 	return result;
 }
 
-static Real32
-func Invert(Real32 value)
+static R32
+func Invert(R32 value)
 {
 	Assert(value != 0.0f);
-	Real32 inverse_value = (1.0f / value);
+	R32 inverse_value = (1.0f / value);
 	return inverse_value;
 }
 
-static Real32
-func Square(Real32 x)
+static R32
+func Square(R32 x)
 {
-	Real32 result = (x * x);
+	R32 result = (x * x);
 	return result;
 }
 
-static Int32
-func IntSquare(Int32 x)
+static I32
+func IntSquare(I32 x)
 {
-	Int32 result = (x * x);
+	I32 result = (x * x);
 	return result;
 }
 
 static void
 func InitRandom()
 {
-	srand ((UInt32)time(0));
+	srand ((U32)time(0));
 }
 
-static Real32
-func RandomBetween(Real32 min, Real32 max)
+static R32
+func RandomBetween(R32 min, R32 max)
 {
-	Real32 result = (min) + (max - min) * ((Real32)rand() / (Real32)RAND_MAX);
+	R32 result = (min) + (max - min) * ((R32)rand() / (R32)RAND_MAX);
 	return result;
 }
 
-static Bool32
-func IsBetween(Real32 test, Real32 value1, Real32 value2)
+static B32
+func IsBetween(R32 test, R32 value1, R32 value2)
 {
-	Real32 min = Min2(value1, value2);
-	Real32 max = Max2(value1, value2);
-	Bool32 result = (min <= test && test <= max);
+	R32 min = Min2(value1, value2);
+	R32 max = Max2(value1, value2);
+	B32 result = (min <= test && test <= max);
 	return result;
 }
 
-static Real32
-func Lerp(Real32 value1, Real32 ratio, Real32 value2)
+static R32
+func Lerp(R32 value1, R32 ratio, R32 value2)
 {
 	Assert(IsBetween(ratio, 0.0f, 1.0f));
 	return ((1.0f - ratio) * value1) + ((ratio) * value2);
 }
 
-static Vec2
-func PointLerp(Vec2 point1, Real32 ratio, Vec2 point2)
+static V2
+func PointLerp(V2 point1, R32 ratio, V2 point2)
 {
 	Assert(IsBetween(ratio, 0.0f, 1.0f));
-	Vec2 result = {};
+	V2 result = {};
 	result.x = Lerp(point1.x, ratio, point2.x);
 	result.y = Lerp(point1.y, ratio, point2.y);
 	return result;
 }
 
-static Bool32
-func IsPointInRectLRTB(Vec2 point, Real32 left, Real32 right, Real32 top, Real32 bottom)
+static B32
+func IsPointInRectLRTB(V2 point, R32 left, R32 right, R32 top, R32 bottom)
 {
-	Bool32 result = true;
+	B32 result = true;
 	if(point.x < left || point.x > right)
 	{
 		result = false;
@@ -409,10 +409,10 @@ func IsPointInRectLRTB(Vec2 point, Real32 left, Real32 right, Real32 top, Real32
 	return result;
 }
 
-static Bool32
-func IntSign(Int32 i)
+static B32
+func IntSign(I32 i)
 {
-	Int32 sign = 0;
+	I32 sign = 0;
 	if(i < 0)
 	{
 		sign = -1;

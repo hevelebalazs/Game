@@ -21,8 +21,8 @@ enum WorldEditMode
 
 struct WorldLabState
 {
-	Int8 arena_memory1[WorldLabArenaSize];
-	Int8 arena_memory2[WorldLabArenaSize];
+	I8 arena_memory1[WorldLabArenaSize];
+	I8 arena_memory2[WorldLabArenaSize];
 	MemArena arena1;
 	MemArena arena2;
 	MemArena *arena;
@@ -36,7 +36,7 @@ struct WorldLabState
 static void
 func DrawMapItems(Canvas *canvas, Map *map)
 {
-	for(Int32 i = 0; i < map->item_n; i++)
+	for(I32 i = 0; i < map->item_n; i++)
 	{
 		DrawMapItem(canvas, &map->items[i]);
 	}
@@ -45,9 +45,9 @@ func DrawMapItems(Canvas *canvas, Map *map)
 static void
 func DrawMapEntities(Canvas *canvas, Map *map)
 {
-	Vec4 color = MakeColor(1.0f, 0.5f, 0.0f);
-	Real32 radius = 0.5f;
-	for(Int32 i = 0; i < map->entity_n; i++)
+	V4 color = MakeColor(1.0f, 0.5f, 0.0f);
+	R32 radius = 0.5f;
+	for(I32 i = 0; i < map->entity_n; i++)
 	{
 		MapEntity *entity = &map->entities[i];
 		DrawCircle(canvas, entity->spawn_position, radius, color);
@@ -90,13 +90,13 @@ func WorldLabInit(WorldLabState *lab_state, Canvas* canvas)
 	camera->center = MakePoint(0.0f, 0.0f);
 }
 
-static Bool32
+static B32
 func ArenaContainsMapData(MemArena *arena, Map *map)
 {
-	Bool32 contains_tile_types = ArenaContainsAddress(arena, map->tile_types);
-	Bool32 contains_items = ArenaContainsAddress(arena, map->items);
-	Bool32 contains_entities = ArenaContainsAddress(arena, map->entities);
-	Bool32 contains_data = (contains_tile_types && contains_items && contains_entities);
+	B32 contains_tile_types = ArenaContainsAddress(arena, map->tile_types);
+	B32 contains_items = ArenaContainsAddress(arena, map->items);
+	B32 contains_entities = ArenaContainsAddress(arena, map->entities);
+	B32 contains_data = (contains_tile_types && contains_items && contains_entities);
 	return contains_data;
 }
 
@@ -114,9 +114,9 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 	Map *map = &lab_state->map;
 
 	Camera *camera = canvas->camera;
-	Vec2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
+	V2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
 
-	IntVec2 tile = {};
+	IV2 tile = {};
 	tile.row = Floor(mouse_position.y / MapTileSide);
 	tile.col = Floor(mouse_position.x / MapTileSide);
 
@@ -132,7 +132,7 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 			map->tile_col_n = 1;
 			map->tile_types = ArenaAllocArray(tmp_arena, TileId, 1);
 
-			IntVec2 new_tile = MakeIntPoint(0, 0);
+			IV2 new_tile = MakeIntPoint(0, 0);
 			SetTileType(map, new_tile, CaveTileId);
 
 			camera->center.y -= tile.row * MapTileSide;
@@ -143,8 +143,8 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 			Assert(map->tile_col_n > 0);
 			Assert(map->tile_row_n > 0);
 
-			Int32 new_row_n = map->tile_row_n;
-			Int32 new_col_n = map->tile_col_n;
+			I32 new_row_n = map->tile_row_n;
+			I32 new_col_n = map->tile_col_n;
 
 			if(tile.row < 0)
 			{
@@ -165,29 +165,29 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 			}
 
 			TileId *new_tiles = ArenaAllocArray(tmp_arena, TileId, new_row_n * new_col_n);
-			for(Int32 index = 0; index < new_row_n * new_col_n; index++)
+			for(I32 index = 0; index < new_row_n * new_col_n; index++)
 			{
 				new_tiles[index] = NoTileId;
 			}
 
-			for(Int32 row = 0; row < map->tile_row_n; row++)
+			for(I32 row = 0; row < map->tile_row_n; row++)
 			{
-				for(Int32 col = 0; col < map->tile_col_n; col++)
+				for(I32 col = 0; col < map->tile_col_n; col++)
 				{
-					Int32 old_index = map->tile_col_n * row + col;
-					Int32 new_row = row;
+					I32 old_index = map->tile_col_n * row + col;
+					I32 new_row = row;
 					if(tile.row < 0)
 					{
 						new_row += (-tile.row);
 					}
 
-					Int32 new_col = col;
+					I32 new_col = col;
 					if(tile.col < 0)
 					{
 						new_col += (-tile.col);
 					}
 
-					Int32 new_index = new_col_n * new_row + new_col;
+					I32 new_index = new_col_n * new_row + new_col;
 					new_tiles[new_index] = map->tile_types[old_index];
 				}
 			}
@@ -215,7 +215,7 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 
 		MapItem *old_items = map->items;
 		map->items = ArenaAllocArray(arena, MapItem, map->item_n);
-		for(Int32 i = 0; i < map->item_n; i++)
+		for(I32 i = 0; i < map->item_n; i++)
 		{
 			map->items[i] = old_items[i];
 		}
@@ -227,7 +227,7 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 	tile_rect.top    = tile.row * MapTileSide;
 	tile_rect.bottom = tile_rect.top + MapTileSide;
 
-	Vec4 tile_color = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 tile_color = MakeColor(0.5f, 0.5f, 0.5f);
 	DrawRect(canvas, tile_rect, tile_color);
 }
 
@@ -236,10 +236,10 @@ func HandlePlaceItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 {
 	Map *map = &lab_state->map;
 	Camera *camera = canvas->camera;
-	Vec2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
+	V2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
 
-	Real32 item_radius = 0.2f;
-	Vec4 item_color = MakeColor(1.0f, 0.0f, 1.0f);
+	R32 item_radius = 0.2f;
+	V4 item_color = MakeColor(1.0f, 0.0f, 1.0f);
 
 	DrawCircle(canvas, mouse_position, item_radius, item_color);
 
@@ -251,16 +251,16 @@ func HandlePlaceItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 
 		ArenaReset(tmp_arena);
 
-		Int32 tile_n = map->tile_row_n * map->tile_col_n;
+		I32 tile_n = map->tile_row_n * map->tile_col_n;
 		TileId *new_tile_types = ArenaAllocArray(tmp_arena, TileId, tile_n);
-		for(Int32 i = 0; i < tile_n; i++)
+		for(I32 i = 0; i < tile_n; i++)
 		{
 			new_tile_types[i] = map->tile_types[i];
 		}
 		map->tile_types = new_tile_types;
 
 		MapItem *new_items = ArenaAllocArray(tmp_arena, MapItem, map->item_n + 1);
-		for(Int32 i = 0; i < map->item_n; i++)
+		for(I32 i = 0; i < map->item_n; i++)
 		{
 			new_items[i] = map->items[i];
 		}
@@ -271,7 +271,7 @@ func HandlePlaceItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 		map->items = new_items;
 
 		MapEntity *new_entities = ArenaAllocArray(tmp_arena, MapEntity, map->entity_n);
-		for(Int32 i = 0; i < map->entity_n; i++)
+		for(I32 i = 0; i < map->entity_n; i++)
 		{
 			new_entities[i] = map->entities[i];
 		}
@@ -287,15 +287,15 @@ func HandlePlaceItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 static void
 func HandleRemoveItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *user_input)
 {
-	Vec2 mouse_position = PixelToUnit(canvas->camera, user_input->mouse_pixel_position);
+	V2 mouse_position = PixelToUnit(canvas->camera, user_input->mouse_pixel_position);
 
 	Map *map = &lab_state->map;
 	MapItem *hover_item = 0;
-	Int32 hover_index = -1;
-	for(Int32 i = 0; i < map->item_n; i++)
+	I32 hover_index = -1;
+	for(I32 i = 0; i < map->item_n; i++)
 	{
 		MapItem *item = &map->items[i];
-		Real32 distance = Distance(item->position, mouse_position);
+		R32 distance = Distance(item->position, mouse_position);
 		if(distance <= MapItemRadius)
 		{
 			hover_item = item;
@@ -308,7 +308,7 @@ func HandleRemoveItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *u
 	{
 		Assert(IsIntBetween(hover_index, 0, map->item_n - 1));
 
-		Vec4 item_color = MakeColor(0.2f, 0.2f, 0.2f);
+		V4 item_color = MakeColor(0.2f, 0.2f, 0.2f);
 		DrawCircle(canvas, hover_item->position, MapItemRadius, item_color);
 		if(WasKeyReleased(user_input, VK_LBUTTON))
 		{
@@ -316,17 +316,17 @@ func HandleRemoveItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *u
 			
 			ArenaReset(tmp_arena);
 
-			Int32 tile_n = map->tile_row_n * map->tile_col_n;
+			I32 tile_n = map->tile_row_n * map->tile_col_n;
 			TileId *new_tile_types = ArenaAllocArray(tmp_arena, TileId, tile_n);
-			for(Int32 i = 0; i < tile_n; i++)
+			for(I32 i = 0; i < tile_n; i++)
 			{
 				new_tile_types[i] = map->tile_types[i];
 			}
 			map->tile_types = new_tile_types;
 
-			Int32 item_index = 0;
+			I32 item_index = 0;
 			MapItem *new_items = ArenaAllocArray(tmp_arena, MapItem, map->item_n - 1);
-			for(Int32 i = 0; i < map->item_n; i++)
+			for(I32 i = 0; i < map->item_n; i++)
 			{
 				if(i != hover_index)
 				{
@@ -339,7 +339,7 @@ func HandleRemoveItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *u
 			map->items = new_items;
 
 			MapEntity *new_entities = ArenaAllocArray(tmp_arena, MapEntity, map->entity_n);
-			for(Int32 i = 0; i < map->entity_n; i++)
+			for(I32 i = 0; i < map->entity_n; i++)
 			{
 				new_entities[i] = map->entities[i];
 			}
@@ -358,10 +358,10 @@ func HandlePlaceEntityMode(WorldLabState *lab_state, Canvas *canvas, UserInput *
 {
 	Map *map = &lab_state->map;
 	Camera *camera = canvas->camera;
-	Vec2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
+	V2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
 
-	Real32 entity_radius = 0.5f;
-	Vec4 entity_color = MakeColor(1.0f, 0.5f, 0.0f);;
+	R32 entity_radius = 0.5f;
+	V4 entity_color = MakeColor(1.0f, 0.5f, 0.0f);;
 
 	DrawCircle(canvas, mouse_position, entity_radius, entity_color);
 
@@ -370,23 +370,23 @@ func HandlePlaceEntityMode(WorldLabState *lab_state, Canvas *canvas, UserInput *
 		MemArena *tmp_arena = lab_state->tmp_arena;
 		ArenaReset(tmp_arena);
 
-		Int32 tile_n = map->tile_row_n * map->tile_col_n;
+		I32 tile_n = map->tile_row_n * map->tile_col_n;
 		TileId *new_tile_types = ArenaAllocArray(tmp_arena, TileId, tile_n);
-		for(Int32 i = 0; i < tile_n; i++)
+		for(I32 i = 0; i < tile_n; i++)
 		{
 			new_tile_types[i] = map->tile_types[i];
 		}
 		map->tile_types = new_tile_types;
 
 		MapItem *new_items = ArenaAllocArray(tmp_arena, MapItem, map->item_n);
-		for(Int32 i = 0; i < map->item_n; i++)
+		for(I32 i = 0; i < map->item_n; i++)
 		{
 			new_items[i] = map->items[i];
 		}
 		map->items = new_items;
 
 		MapEntity *new_entities = ArenaAllocArray(tmp_arena, MapEntity, map->entity_n + 1);
-		for(Int32 i = 0; i < map->entity_n; i++)
+		for(I32 i = 0; i < map->entity_n; i++)
 		{
 			new_entities[i] = map->entities[i];
 		}
@@ -403,16 +403,16 @@ func HandlePlaceEntityMode(WorldLabState *lab_state, Canvas *canvas, UserInput *
 	}
 }
 
-static Int8 *map_file = "Data/Map.data";
+static I8 *map_file = "Data/Map.data";
 
 static void
-func WorldLabUpdate(WorldLabState *lab_state, Canvas *canvas, Real32 seconds, UserInput *user_input)
+func WorldLabUpdate(WorldLabState *lab_state, Canvas *canvas, R32 seconds, UserInput *user_input)
 {
 	Bitmap *bitmap = &canvas->bitmap;
-	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, background_color);
 
-	Real32 camera_move_speed = seconds * 50.0f;
+	R32 camera_move_speed = seconds * 50.0f;
 	Camera *camera = canvas->camera;
 
 	if(IsKeyDown(user_input, 'A'))
@@ -470,12 +470,12 @@ func WorldLabUpdate(WorldLabState *lab_state, Canvas *canvas, Real32 seconds, Us
 
 		MemArena *file_arena = tmp_arena;
 		ArenaReset(file_arena);
-		Int32 version = MapVersion;
+		I32 version = MapVersion;
 		ArenaPushVar(file_arena, version);
 
 		Map *map = &lab_state->map;
 		Map *pushed_map = (Map *)ArenaPushVar(file_arena, *map);
-		Int32 tile_n = (map->tile_row_n * map->tile_col_n);
+		I32 tile_n = (map->tile_row_n * map->tile_col_n);
 
 		TileId *tile_types = (TileId *)ArenaPushData(file_arena, tile_n * sizeof(TileId), map->tile_types);
 		pushed_map->tile_types = (TileId *)GetRelativeAddress(tile_types, file_arena->base_address);
@@ -486,7 +486,7 @@ func WorldLabUpdate(WorldLabState *lab_state, Canvas *canvas, Real32 seconds, Us
 		MapEntity *entities = (MapEntity *)ArenaPushData(file_arena, map->entity_n * sizeof(MapEntity), map->entities);
 		pushed_map->entities = (MapEntity *)GetRelativeAddress(entities, file_arena->base_address);
 
-		Int8 *data = file_arena->base_address;
+		I8 *data = file_arena->base_address;
 		DWORD data_size = file_arena->used_size;
 		DWORD written_data_size = 0;
 
@@ -515,7 +515,7 @@ func WorldLabUpdate(WorldLabState *lab_state, Canvas *canvas, Real32 seconds, Us
 		rect.top = 0.0f;
 		rect.bottom = GetMapHeight(map);
 
-		Vec4 border_color = MakeColor(1.0f, 1.0f, 0.0);
+		V4 border_color = MakeColor(1.0f, 1.0f, 0.0);
 		DrawRectOutline(canvas, rect, border_color);
 	}
 	

@@ -28,10 +28,10 @@ enum EffectId
 	BleedingEffectId
 };
 
-static Int8 *
+static I8 *
 func GetEffectName(EffectId effect_id)
 {
-	Int8 *name = 0;
+	I8 *name = 0;
 	switch(effect_id)
 	{
 		case KickedEffectId:
@@ -147,10 +147,10 @@ func GetEffectName(EffectId effect_id)
 	return name;
 }
 
-static Real32
+static R32
 func EffectHasDuration(EffectId effect_id)
 {
-	Bool32 has_duration = true;
+	B32 has_duration = true;
 	switch(effectId)
 	{
 		case RegenerateEffectId:
@@ -166,11 +166,11 @@ func EffectHasDuration(EffectId effect_id)
 	return has_duration;
 }
 
-static Real32
+static R32
 func GetEffectDuration(EffectId effect_id)
 {
 	Assert(EffectHasDuration(effect_id));
-	Real32 duration = 0.0f;
+	R32 duration = 0.0f;
 	switch(effect_id)
 	{
 		case KickedEffectId:

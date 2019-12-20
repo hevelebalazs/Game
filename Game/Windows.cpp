@@ -18,7 +18,7 @@
 Camera global_camera;
 Canvas global_canvas;
 UserInput global_user_input;
-Bool32 global_running;
+B32 global_running;
 
 #if RUN_GAME
 Game global_game;
@@ -39,7 +39,7 @@ func WinInit()
 }
 
 static void
-func WinUpdate(Real32 seconds, UserInput *user_input)
+func WinUpdate(R32 seconds, UserInput *user_input)
 {
 #if RUN_GAME
 	GameUpdate(&global_game, &global_canvas, seconds, user_input);
@@ -60,8 +60,8 @@ func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 		{
 			RECT client_rect = {};
 			GetClientRect(window, &client_rect);
-			Int32 width  = client_rect.right - client_rect.left;
-			Int32 height = client_rect.bottom - client_rect.top;
+			I32 width  = client_rect.right - client_rect.left;
+			I32 height = client_rect.bottom - client_rect.top;
 
 			Canvas *canvas = &global_canvas;
 			Assert(canvas != 0);
@@ -89,7 +89,7 @@ func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 		case WM_KEYDOWN:
 		{
 			Assert(wparam >= 0 && wparam < 256);
-			UInt8 key_code = (UInt8)wparam;
+			U8 key_code = (U8)wparam;
 			user_input->is_key_down[key_code] = true;
 			user_input->key_toggle_count[key_code]++;
 			break;
@@ -97,7 +97,7 @@ func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 		case WM_KEYUP:
 		{
 			Assert(wparam >= 0 && wparam < 256);
-			UInt8 key_code = (UInt8)wparam;
+			U8 key_code = (U8)wparam;
 			user_input->is_key_down[key_code] = false;
 			user_input->key_toggle_count[key_code]++;
 			break;
@@ -135,19 +135,19 @@ func WinCallback(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 	return result;
 }
 
-static IntVec2
+static IV2
 func GetMousePixelPosition(HWND window)
 {
 	POINT cursor_point = {};
 	GetCursorPos(&cursor_point);
 	ScreenToClient(window, &cursor_point);
 
-	IntVec2 mouse_position = MakeIntPoint(cursor_point.y, cursor_point.x);
+	IV2 mouse_position = MakeIntPoint(cursor_point.y, cursor_point.x);
 	return mouse_position;
 }
 
-Int32 CALLBACK
-func WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, Int32 cmd_show)
+I32 CALLBACK
+func WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, I32 cmd_show)
 {
 	global_running = true;
 
@@ -198,9 +198,9 @@ func WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, Int32 
 
 		LARGE_INTEGER counter;
 		QueryPerformanceCounter(&counter);
-		Int64 microseconds = counter.QuadPart - last_counter.QuadPart;
-		Real32 milliseconds = (Real32(microseconds) * 1000.0f) / Real32(counter_frequency.QuadPart);
-		Real32 seconds = 0.001f * milliseconds;
+		I64 microseconds = counter.QuadPart - last_counter.QuadPart;
+		R32 milliseconds = (R32(microseconds) * 1000.0f) / R32(counter_frequency.QuadPart);
+		R32 seconds = 0.001f * milliseconds;
 		last_counter = counter;
 
 		WinUpdate(seconds, user_input);
@@ -213,8 +213,8 @@ func WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, Int32 
 		Bitmap *bitmap = &canvas->bitmap;
 		BITMAPINFO bitmap_info = GetBitmapInfo(bitmap);
 
-		Int32 width  = rect.right - rect.left;
-		Int32 height = rect.bottom - rect.top;
+		I32 width  = rect.right - rect.left;
+		I32 height = rect.bottom - rect.top;
 
 		StretchDIBits(context,
 					  0, 0, bitmap->width, bitmap->height,

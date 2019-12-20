@@ -8,18 +8,18 @@
 
 struct String
 {
-	Int8 *buffer;
-	Int32 buffer_size;
-	Int32 used_size;
+	I8 *buffer;
+	I32 buffer_size;
+	I32 used_size;
 };
 
 static void CloseString(String *string);
 
-static Bool32
-func StringIsTerminated(Int8 *string, Int32 length)
+static B32
+func StringIsTerminated(I8 *string, I32 length)
 {
-	Bool32 is_terminated = false;
-	for(Int32 i = 0; i < length; i++)
+	B32 is_terminated = false;
+	for(I32 i = 0; i < length; i++)
 	{
 		if(string[i] == 0)
 		{
@@ -31,10 +31,10 @@ func StringIsTerminated(Int8 *string, Int32 length)
 }
 
 static void
-func StringCopy(Int8 *from, Int8 *to, Int32 max_size)
+func StringCopy(I8 *from, I8 *to, I32 max_size)
 {
-	Bool32 terminated = false;
-	for(Int32 i = 0; i < max_size; i++)
+	B32 terminated = false;
+	for(I32 i = 0; i < max_size; i++)
 	{
 		to[i] = from[i];
 		if(from[i] == 0)
@@ -47,7 +47,7 @@ func StringCopy(Int8 *from, Int8 *to, Int32 max_size)
 }
 
 static String
-func StartString(Int8 *buffer, Int32 buffer_size)
+func StartString(I8 *buffer, I32 buffer_size)
 {
 	Assert(buffer_size > 0);
 	String string = {};
@@ -58,7 +58,7 @@ func StartString(Int8 *buffer, Int32 buffer_size)
 }
 
 static void
-func AddChar(String *string, Int8 value)
+func AddChar(String *string, I8 value)
 {
 	Assert(string->used_size + 1 < string->buffer_size);
 	string->buffer[string->used_size] = value;
@@ -67,11 +67,11 @@ func AddChar(String *string, Int8 value)
 	CloseString(string);
 }
 
-static Int32
-func GetNumberOfDigits(Int32 value)
+static I32
+func GetNumberOfDigits(I32 value)
 {
 	Assert(value > 0);
-	Int32 result = 0;
+	I32 result = 0;
 	while(value > 0)
 	{
 		result++;
@@ -80,24 +80,24 @@ func GetNumberOfDigits(Int32 value)
 	return result;
 }
 
-static Int32
-func GetLastDigit(Int32 value)
+static I32
+func GetLastDigit(I32 value)
 {
 	Assert(value >= 0);
-	Int32 result = value % 10;
+	I32 result = value % 10;
 	return result;
 }
 
-static Int32 
-func CutLastDigit(Int32 value)
+static I32 
+func CutLastDigit(I32 value)
 {
 	Assert(value > 0);
-	Int32 result = value / 10;
+	I32 result = value / 10;
 	return result;
 }
 
 static void
-func AddInt(String *string, Int32 value)
+func AddInt(String *string, I32 value)
 {
 	if(value == 0)
 	{
@@ -105,13 +105,13 @@ func AddInt(String *string, Int32 value)
 	}
 	else
 	{
-		Int32 digit_n = GetNumberOfDigits(value);
-		Int32 position = string->used_size + digit_n - 1;
+		I32 digit_n = GetNumberOfDigits(value);
+		I32 position = string->used_size + digit_n - 1;
 		Assert(position < string->buffer_size);
 		while(value > 0)
 		{
 			Assert(position >= string->used_size);
-			string->buffer[position] = Int8('0' + GetLastDigit(value));
+			string->buffer[position] = I8('0' + GetLastDigit(value));
 			position--;
 			value = CutLastDigit(value);
 		}
@@ -122,29 +122,29 @@ func AddInt(String *string, Int32 value)
 }
 
 static void
-func AddFloat(String *string, Real32 value)
+func AddFloat(String *string, R32 value)
 {
 	Assert(value >= 0.0f);
-	AddInt(string, (Int32)value);
+	AddInt(string, (I32)value);
 	AddChar(string, '.');
 	
-	Int8 digit = 0;
+	I8 digit = 0;
 
-	digit = (Int32)(value * 10) % 10;
+	digit = (I32)(value * 10) % 10;
 	Assert(IsIntBetween(digit, 0, 9));
 	AddChar(string, '0' + digit);
 	value = value * 10.0f;
 
-	digit = (Int32)(value * 10) % 10;
+	digit = (I32)(value * 10) % 10;
 	Assert(IsIntBetween(digit, 0, 9));
 	AddChar(string, '0' + digit);
 	value = value * 10.0f;
 }
 
 static void
-func AddText(String *string, Int8* text)
+func AddText(String *string, I8* text)
 {
-	for(Int32 i = 0; text[i]; i++)
+	for(I32 i = 0; text[i]; i++)
 	{
 		AddChar(string, text[i]);
 	}
@@ -160,7 +160,7 @@ func CloseString(String *string)
 }
 
 static String
-func operator+(String string, Int8 value)
+func operator+(String string, I8 value)
 {
 	String result = string;
 	AddChar(&result, value);
@@ -168,7 +168,7 @@ func operator+(String string, Int8 value)
 }
 
 static String
-func operator+(String string, Int32 value)
+func operator+(String string, I32 value)
 {
 	String result = string;
 	AddInt(&result, value);
@@ -176,7 +176,7 @@ func operator+(String string, Int32 value)
 }
 
 static String
-func operator+(String string, Real32 value)
+func operator+(String string, R32 value)
 {
 	String result = string;
 	AddFloat(&result, value);
@@ -184,19 +184,19 @@ func operator+(String string, Real32 value)
 }
 
 static String
-func operator+(String string, Int8* text)
+func operator+(String string, I8* text)
 {
 	String result = string;
 	AddText(&result, text);
 	return result;
 }
 
-static Int32
+static I32
 func GetNumberOfLines(String string)
 {
-	Int32 line_n = 0;
+	I32 line_n = 0;
 
-	for(Int32 i = 0; i < string.used_size; i++)
+	for(I32 i = 0; i < string.used_size; i++)
 	{
 		if(string.buffer[i] == '\n')
 		{
