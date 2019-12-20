@@ -8,17 +8,17 @@
 
 struct Glyph
 {
-	UInt8 alpha[32][32];
-	Real32 offset_x;
-	Real32 offset_y;
-	Real32 advance_x;
+	U8 alpha[32][32];
+	R32 offset_x;
+	R32 offset_y;
+	R32 advance_x;
 };
 
 struct GlyphData
 {
 	Glyph glyphs[256];
-	Real32 kerning_table[256][256];
-	Bool32 initialized;
+	R32 kerning_table[256][256];
+	B32 initialized;
 };
 GlyphData global_glyph_data;
 
@@ -4896,12 +4896,12 @@ func InitGlyphData(GlyphData *glyph_data)
 		}
 	};
 
-	for(Int32 letter = 0; letter < 256; letter++)
+	for(I32 letter = 0; letter < 256; letter++)
 	{
 		glyph_data->glyphs[letter] = glyphs[letter];
 	}
 
-	static Real32 kerning_table[256][256] = 
+	static R32 kerning_table[256][256] = 
 	{
 		{},
 		{},
@@ -5161,9 +5161,9 @@ func InitGlyphData(GlyphData *glyph_data)
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.588024f, 0, 0, 0, 0, 0.588024f, 0, 0, 0, 0, -0.588024f, 0, -0.588024f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.294012f}
 	};
 
-	for(Int32 letter1 = 0; letter1 <= 255; letter1++)
+	for(I32 letter1 = 0; letter1 <= 255; letter1++)
 	{
-		for(Int32 letter2 = 0; letter2 <= 255; letter2++)
+		for(I32 letter2 = 0; letter2 <= 255; letter2++)
 		{
 			glyph_data->kerning_table[letter1][letter2] = kerning_table[letter1][letter2];
 		}

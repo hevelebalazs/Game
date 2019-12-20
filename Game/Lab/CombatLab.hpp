@@ -9,7 +9,7 @@
 #define EntityRadius 1.0f
 
 #define MaxLevel 5
-Int32 MaxHealthAtLevel[] =
+I32 MaxHealthAtLevel[] =
 {
 	0,
 	100,
@@ -27,92 +27,92 @@ enum GroupId
 
 struct Entity
 {
-	Int8 *name;
+	I8 *name;
 
-	Int32 level;
+	I32 level;
 
-	Vec2 position;
-	Vec2 velocity;
+	V2 position;
+	V2 velocity;
 
-	Real32 recharge;
-	Real32 recharge_from;
-	Int32 health;
-	Int32 absorb_damage;
+	R32 recharge;
+	R32 recharge_from;
+	I32 health;
+	I32 absorb_damage;
 
 	AbilityId casted_ability;
-	Real32 cast_time_total;
-	Real32 cast_time_remaining;
+	R32 cast_time_total;
+	R32 cast_time_remaining;
 	Entity *cast_target;
 
 	ClassId class_id;
 	GroupId group_id;
 	Entity *target;
 
-	Int32 strength;
-	Int32 intellect;
-	Int32 constitution;
-	Int32 dexterity;
+	I32 strength;
+	I32 intellect;
+	I32 constitution;
+	I32 dexterity;
 
-	Int32 herbalism;
+	I32 herbalism;
 
-	Vec2 input_direction;
+	V2 input_direction;
 };
 
 struct AbilityCooldown
 {
 	Entity *entity;
 	AbilityId ability_id;
-	Real32 time_remaining;
+	R32 time_remaining;
 };
 
 struct ItemCooldown
 {
 	Entity *entity;
 	ItemId item_id;
-	Real32 time_remaining;
+	R32 time_remaining;
 };
 
 #define DamageDisplayDuration 2.0f
 struct DamageDisplay
 {
-	Real32 time_remaining;
-	Vec2 position;
-	Int32 damage;
+	R32 time_remaining;
+	V2 position;
+	I32 damage;
 };
 
 struct Effect
 {
 	Entity *entity;
 	EffectId effect_id;
-	Real32 time_remaining;
+	R32 time_remaining;
 };
 
 struct HateTableEntry
 {
 	Entity *source;
 	Entity *target;
-	Int32 value;
+	I32 value;
 };
 
 #define MaxHateTableEntryN 64
 struct HateTable
 {
 	HateTableEntry entries[MaxHateTableEntryN];
-	Int32 entry_n;
+	I32 entry_n;
 };
 
 #define DroppedItemTotalDuration 10.0f
 
 struct DroppedItem
 {
-	Vec2 position;
+	V2 position;
 	ItemId item_id;
-	Real32 time_left;
+	R32 time_left;
 };
 
 struct Flower
 {
-	Vec2 position;
+	V2 position;
 	ItemId item_id;
 };
 
@@ -129,46 +129,46 @@ struct Flower
 
 struct CombatLabState
 {
-	Int8 arena_memory[CombatLabArenaSize];
+	I8 arena_memory[CombatLabArenaSize];
 	MemArena arena;
 
 	Map map;
 
 	AbilityCooldown ability_cooldowns[MaxAbilityCooldownN];
-	Int32 ability_cooldown_n;
+	I32 ability_cooldown_n;
 
 	ItemCooldown item_cooldowns[MaxItemCooldownN];
-	Int32 item_cooldown_n;
+	I32 item_cooldown_n;
 
 	Effect effects[MaxEffectN];
-	Int32 effect_n;
+	I32 effect_n;
 
 	Entity entities[EntityN];
 
 	DroppedItem dropped_items[MaxDroppedItemN];
-	Int32 dropped_item_n;
+	I32 dropped_item_n;
 
 	Flower flowers[MaxFlowerN];
-	Int32 flower_n;
+	I32 flower_n;
 	Flower *hover_flower;
 
 	DroppedItem *hover_dropped_item;
 
 	DamageDisplay damage_displays[MaxDamageDisplayN];
-	Int32 damage_display_n;
+	I32 damage_display_n;
 
-	Int8 combat_log_lines[MaxCombatLogLineN][MaxCombatLogLineLength + 1];
-	Int32 combat_log_last_line_index;
-	Int32 combat_log_line_n;
+	I8 combat_log_lines[MaxCombatLogLineN][MaxCombatLogLineLength + 1];
+	I32 combat_log_last_line_index;
+	I32 combat_log_line_n;
 
 	HateTable hate_table;
 
 	AbilityId hover_ability_id;
 
-	Bool32 show_character_info;
+	B32 show_character_info;
 	Inventory equip_inventory;
 
-	Bool32 show_inventory;
+	B32 show_inventory;
 	Inventory inventory;
 
 	InventoryItem hover_item;
@@ -183,21 +183,21 @@ struct CombatLabState
 #define MaxMeleeAttackDistance (4.0f * EntityRadius)
 #define MaxRangedAttackDistance (30.0f)
 
-static Int32
-func GetNextCombatLogLineIndex(Int32 index)
+static I32
+func GetNextCombatLogLineIndex(I32 index)
 {
-	Int32 next_index = (index < MaxCombatLogLineN - 1) ? (index + 1) : 0;
+	I32 next_index = (index < MaxCombatLogLineN - 1) ? (index + 1) : 0;
 	return next_index;
 }
 
 static void
-func AddCombatLogLine(CombatLabState *lab_state, Int8* line)
+func AddCombatLogLine(CombatLabState *lab_state, I8* line)
 {
-	Int32 last_index = lab_state->combat_log_last_line_index;
-	Int32 next_index = GetNextCombatLogLineIndex(last_index);
+	I32 last_index = lab_state->combat_log_last_line_index;
+	I32 next_index = GetNextCombatLogLineIndex(last_index);
 
-	Bool32 has_zero_byte = false;
-	for(Int32 i = 0; i < MaxCombatLogLineLength; i++)
+	B32 has_zero_byte = false;
+	for(I32 i = 0; i < MaxCombatLogLineLength; i++)
 	{
 		lab_state->combat_log_lines[next_index][i] = line[i];
 		if(line[i] == 0)
@@ -212,7 +212,7 @@ func AddCombatLogLine(CombatLabState *lab_state, Int8* line)
 	lab_state->combat_log_line_n++;
 }
 
-#define CombatLog(lab_state, line) {Int8 log_line[MaxCombatLogLineLength + 1]; \
+#define CombatLog(lab_state, line) {I8 log_line[MaxCombatLogLineLength + 1]; \
 								   OneLineString(log_line, MaxCombatLogLineLength + 1, line); \
 								   AddCombatLogLine(lab_state, log_line);}
 
@@ -222,19 +222,19 @@ func AddCombatLogStringLine(CombatLabState *lab_state, String line)
 	AddCombatLogLine(lab_state, line.buffer);
 }
 
-static Vec2
+static V2
 func FindEntityStartPosition(Map *map)
 {
-	IntVec2 initial_tile = GetRandomTile(map);
-	Vec2 start_position = GetTileCenter(map, initial_tile);
+	IV2 initial_tile = GetRandomTile(map);
+	V2 start_position = GetTileCenter(map, initial_tile);
 	return start_position;
 }
 
-static Int32
+static I32
 func GetEntityMaxHealth(Entity *entity)
 {
 	Assert(IsIntBetween(entity->level, 1, 5));
-	Int32 max_health = MaxHealthAtLevel[entity->level] + entity->constitution * 10;
+	I32 max_health = MaxHealthAtLevel[entity->level] + entity->constitution * 10;
 	return max_health;
 }
 
@@ -251,14 +251,14 @@ func CombatLabInit(CombatLabState *lab_state, Canvas *canvas)
 	camera->unit_in_pixels = 15.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
 
-	Real32 map_width  = GetMapWidth(map);
-	Real32 map_height = GetMapHeight(map);
+	R32 map_width  = GetMapWidth(map);
+	R32 map_height = GetMapHeight(map);
 
 	Entity *player = &lab_state->entities[0];
 	player->level = 1;
 	player->name = "Player";
 	player->position = FindEntityStartPosition(map);
-	IntVec2 player_tile = GetContainingTile(map, player->position);
+	IV2 player_tile = GetContainingTile(map, player->position);
 	player->input_direction = MakePoint(0.0f, 0.0f);
 	player->class_id = DruidClassId;
 	player->group_id = PlayerGroupId;
@@ -272,10 +272,10 @@ func CombatLabInit(CombatLabState *lab_state, Canvas *canvas)
 
 	player->health = GetEntityMaxHealth(player);
 
-	for(Int32 i = 1; i < EntityN; i++)
+	for(I32 i = 1; i < EntityN; i++)
 	{
 		Entity *enemy = &lab_state->entities[i];
-		IntVec2 tile = GetRandomTile(map);
+		IV2 tile = GetRandomTile(map);
 		enemy->position = GetTileCenter(map, tile);
 
 		enemy->group_id = EnemyGroupId;
@@ -301,7 +301,7 @@ func CombatLabInit(CombatLabState *lab_state, Canvas *canvas)
 	SetInventorySlotId(equip_inventory, 0, 5, FeetSlotId);
 
 	lab_state->flower_n = MaxFlowerN;
-	for(Int32 i = 0; i < lab_state->flower_n; i++)
+	for(I32 i = 0; i < lab_state->flower_n; i++)
 	{
 		Flower *flower = &lab_state->flowers[i];
 		flower->position = GetRandomTileCenter(&lab_state->map);
@@ -311,11 +311,11 @@ func CombatLabInit(CombatLabState *lab_state, Canvas *canvas)
 
 #define TileGridColor MakeColor(0.2f, 0.2f, 0.2f)
 
-static Bool32
+static B32
 func AbilityIsOnCooldown(CombatLabState *labState, Entity *entity, AbilityId ability_id)
 {
-	Bool32 is_on_cooldown = false;
-	for(Int32 i = 0; i < labState->ability_cooldown_n; i++)
+	B32 is_on_cooldown = false;
+	for(I32 i = 0; i < labState->ability_cooldown_n; i++)
 	{
 		AbilityCooldown *cooldown = &labState->ability_cooldowns[i];
 		if(cooldown->entity == entity && cooldown->ability_id == ability_id)
@@ -327,18 +327,18 @@ func AbilityIsOnCooldown(CombatLabState *labState, Entity *entity, AbilityId abi
 	return is_on_cooldown;
 }
 
-static Bool32
+static B32
 func IsDead(Entity *entity)
 {
-	Bool32 is_dead = (entity->health == 0);
+	B32 is_dead = (entity->health == 0);
 	return is_dead;
 }
 
-static Bool32
+static B32
 func HasEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 {
-	Bool32 has_effect = false;
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	B32 has_effect = false;
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
 		if(effect->entity == entity && effect->effect_id == effect_id)
@@ -350,23 +350,23 @@ func HasEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 	return has_effect;
 }
 
-static Bool32
+static B32
 func AbilityIsEnabled(CombatLabState *lab_state, Entity *entity, AbilityId ability_id)
 {
-	Bool32 enabled = false;
+	B32 enabled = false;
 	Entity *target = entity->target;
 
-	Int32 ability_class_id = GetAbilityClass(ability_id);
+	I32 ability_class_id = GetAbilityClass(ability_id);
 
-	Bool32 has_living_enemy_target = (target != 0) && 
+	B32 has_living_enemy_target = (target != 0) && 
 									 (!IsDead(target)) && 
 									 (entity->group_id != target->group_id);
 
-	Bool32 has_living_friendly_target = (target != 0) && 
+	B32 has_living_friendly_target = (target != 0) && 
 										(!IsDead(target)) && 
 										(entity->group_id == target->group_id);
 
-	Real32 distance_from_target = (target != 0) 
+	R32 distance_from_target = (target != 0) 
 									? MaxDistance(entity->position, target->position) 
 									: 0.0f;
 
@@ -414,7 +414,7 @@ func AbilityIsEnabled(CombatLabState *lab_state, Entity *entity, AbilityId abili
 			case HealAbilityId:
 			{
 				Map* map = &labState->map;
-				IntVec2 entity_tile = GetContainingTile(map, entity->position);
+				IV2 entity_tile = GetContainingTile(map, entity->position);
 				enabled = (has_living_friendly_target);
 				break;
 			}
@@ -456,11 +456,11 @@ func AbilityIsEnabled(CombatLabState *lab_state, Entity *entity, AbilityId abili
 	return enabled;
 }
 
-static Bool32
+static B32
 func CanUseAbility(CombatLabState *lab_state, Entity *entity, AbilityId ability_id)
 {
-	Bool32 can_use_ability = true;
-	Int32 min_level = GetAbilityMinLevel(ability_id);
+	B32 can_use_ability = true;
+	I32 min_level = GetAbilityMinLevel(ability_id);
 	if(entity->level < min_level)
 	{
 		can_use_ability = false;
@@ -481,7 +481,7 @@ func CanUseAbility(CombatLabState *lab_state, Entity *entity, AbilityId ability_
 }
 
 static void
-func PutOnRecharge(Entity *entity, Real32 recharge_time)
+func PutOnRecharge(Entity *entity, R32 recharge_time)
 {
 	Assert(recharge_time > 0.0f);
 	Assert(entity->recharge == 0.0f);
@@ -489,10 +489,10 @@ func PutOnRecharge(Entity *entity, Real32 recharge_time)
 	entity->recharge = recharge_time;
 }
 
-static Bool32
+static B32
 func CanTakeDamage(CombatLabState *lab_state, Entity* entity)
 {
-	Bool32 can_damage = false;
+	B32 can_damage = false;
 	if(IsDead(entity))
 	{
 		can_damage = false;
@@ -509,7 +509,7 @@ func CanTakeDamage(CombatLabState *lab_state, Entity* entity)
 }
 
 static void
-func AddDamageDisplay(CombatLabState *lab_state, Vec2 position, Int32 damage)
+func AddDamageDisplay(CombatLabState *lab_state, V2 position, I32 damage)
 {
 	Assert(lab_state->damageDisplayN < MaxDamageDisplayN);
 	DamageDisplay *display = &lab_state->damageDisplays[labState->damage_display_n];
@@ -523,7 +523,7 @@ static HateTableEntry *
 func GetHateTableEntry(HateTable *hate_table, Entity* source, Entity* target)
 {
 	HateTableEntry *result = 0;
-	for(Int32 i = 0; i < hate_table->entry_n; i++)
+	for(I32 i = 0; i < hate_table->entry_n; i++)
 	{
 		HateTableEntry *entry = &hate_table->entries[i];
 		if(entry->source == source && entry->target == target)
@@ -550,7 +550,7 @@ func AddEmptyHateTableEntry(HateTable *hate-table, Entity *source, Entity *targe
 }
 
 static void
-func GenerateHate(HateTable *hate_table, Entity *source, Entity *target, Int32 value)
+func GenerateHate(HateTable *hate_table, Entity *source, Entity *target, I32 value)
 {
 	Assert(value >= 0);
 	HateTableEntry *entry = GetHateTableEntry(hate_table, source, target);
@@ -569,7 +569,7 @@ func GetVisibleItemId(CombatLabState *lab_state, ItemId item_id)
 	Entity *player = &lab_state->entities[0];
 	Assert(item_id != NoItemId);
 
-	Int32 herbalism = player->herbalism;
+	I32 herbalism = player->herbalism;
 	ItemId visible_item_id = NoItemId;
 	switch(item_id)
 	{
@@ -604,11 +604,11 @@ func GetVisibleItemId(CombatLabState *lab_state, ItemId item_id)
 	return visible_item_id;
 }
 
-static Int8 *
+static I8 *
 func GetVisibleItemName(CombatLabState *lab_state, ItemId itemId)
 {
 	ItemId visible_item_id = GetVisibleItemId(lab_state, item_id);
-	Int8 *name = GetItemName(visible_item_id);
+	I8 *name = GetItemName(visible_item_id);
 	return name;
 }
 
@@ -626,7 +626,7 @@ func DropItem(CombatLabState *lab_state, Entity* entity, ItemId item_id)
 	lab_state->dropped_items[lab_state->dropped_item_n] = item;
 	lab_state->dropped_item_n++;
 
-	Int8 *item_name = GetVisibleItemName(lab_state, item_id);
+	I8 *item_name = GetVisibleItemName(lab_state, item_id);
 	CombatLog(lab_state, entity->name + " drops " + item_name + ".");
 }
 
@@ -640,7 +640,7 @@ func DropLoot(CombatLabState *lab_state, Entity *entity)
 }
 
 static void
-func DealFinalDamage(Entity *entity, Int32 damage)
+func DealFinalDamage(Entity *entity, I32 damage)
 {
 	Assert(damage > 0);
 
@@ -667,10 +667,10 @@ func LevelUp(Entity *entity)
 	entity->constitution++;
 }
 
-static Int32
-func GetFinalDamage(CombatLabState *lab_state, Entity *source, Entity *target, Int32 damage)
+static I32
+func GetFinalDamage(CombatLabState *lab_state, Entity *source, Entity *target, I32 damage)
 {
-	Int32 final_damage = damage;
+	I32 final_damage = damage;
 	Assert(CanTakeDamage(lab_state, target));
 
 	if(source)
@@ -697,12 +697,12 @@ func GetFinalDamage(CombatLabState *lab_state, Entity *source, Entity *target, I
 }
 
 static void
-func DealDamageFromEntity(CombatLabState *lab_state, Entity *source, Entity *target, Int32 damage)
+func DealDamageFromEntity(CombatLabState *lab_state, Entity *source, Entity *target, I32 damage)
 {
 	Assert(source->group_id != target->group_id);
 	if(CanTakeDamage(lab_state, target))
 	{
-		Int32 final_damage = GetFinalDamage(lab_state, source, target, damage);
+		I32 final_damage = GetFinalDamage(lab_state, source, target, damage);
 
 		DealFinalDamage(target, final_damage);
 		AddDamageDisplay(lab_state, target->position, final_damage);
@@ -729,15 +729,15 @@ func DealDamageFromEntity(CombatLabState *lab_state, Entity *source, Entity *tar
 
 static void
 func DealDamageFromEffect(CombatLabState *lab_state, EffectId effect_id, 
-						  Entity *target, Int32 damage)
+						  Entity *target, I32 damage)
 {
 	if(CanTakeDamage(lab_state, target))
 	{
-		Int32 final_damage = GetFinalDamage(lab_state, 0, target, damage);
+		I32 final_damage = GetFinalDamage(lab_state, 0, target, damage);
 		DealFinalDamage(target, final_damage);
 		AddDamageDisplay(lab_state, target->position, final_damage);
 
-		Int8 *effect_name = GetEffectName(effect_id);
+		I8 *effect_name = GetEffectName(effect_id);
 		CombatLog(lab_state, effect_name + " deals " + final_damage + " damage to " + target->name + ".");
 		if(IsDead(target))
 		{
@@ -756,20 +756,20 @@ func DealDamageFromEffect(CombatLabState *lab_state, EffectId effect_id,
 	}
 }
 
-static Bool32
+static B32
 func CanBeHealed(Entity *entity)
 {
-	Bool32 can_be_healed = !IsDead(entity);
+	B32 can_be_healed = !IsDead(entity);
 	return can_be_healed;
 }
 
 static void
-func Heal(CombatLabState *lab_state, Entity *source, Entity *target, Int32 healing)
+func Heal(CombatLabState *lab_state, Entity *source, Entity *target, I32 healing)
 {
 	Assert(CanBeHealed(target));
 	Assert(!IsDead(source));
 	Assert(source->groupId == target->group_id);
-	Int32 max_health = GetEntityMaxHealth(target);
+	I32 max_health = GetEntityMaxHealth(target);
 	target->health = IntMin2(target->health + healing, max_health);
 	AddDamageDisplay(lab_state, target->position, -healing);
 
@@ -784,7 +784,7 @@ func Heal(CombatLabState *lab_state, Entity *source, Entity *target, Int32 heali
 }
 
 static void
-func AttemptToHeal(CombatLabState *lab_state, Entity *source, Entity *target, Int32 healing)
+func AttemptToHeal(CombatLabState *lab_state, Entity *source, Entity *target, I32 healing)
 {
 	if(CanBeHealed(target))
 	{
@@ -796,7 +796,7 @@ static void
 func AddAbilityCooldown(CombatLabState *lab_state, Entity *entity, AbilityId ability_id)
 {
 	Assert(AbilityHasCooldown(ability_id));
-	Real32 duration = GetAbilityCooldownDuration(ability_id);
+	R32 duration = GetAbilityCooldownDuration(ability_id);
 
 	Assert(duration > 0.0f);
 	Assert(lab_state->ability_cooldown_n < MaxAbilityCooldownN);
@@ -812,7 +812,7 @@ static AbilityCooldown *
 func GetAbilityCooldown(CombatLabState *lab_state, Entity *entity, AbilityId ability_id)
 {
 	AbilityCooldown *result = 0;
-	for(Int32 i = 0; i < labState->ability_cooldown_n; i++)
+	for(I32 i = 0; i < labState->ability_cooldown_n; i++)
 	{
 		AbilityCooldown *cooldown = &lab_state->ability_cooldowns[i];
 		if(cooldown->entity == entity && cooldown->ability_id == ability_id)
@@ -824,14 +824,14 @@ func GetAbilityCooldown(CombatLabState *lab_state, Entity *entity, AbilityId abi
 	return result;
 }
 
-static Vec2
-func GetClosestMoveDirection(Vec2 distance)
+static V2
+func GetClosestMoveDirection(V2 distance)
 {
-	Vec2 left  = MakeVector(-1.0f, 0.0f);
-	Vec2 right = MakeVector(+1.0f, 0.0f);
-	Vec2 up    = MakeVector(0.0f, -1.0f);
-	Vec2 down  = MakeVector(0.0f, +1.0f);
-	Vec2 direction = {};
+	V2 left  = MakeVector(-1.0f, 0.0f);
+	V2 right = MakeVector(+1.0f, 0.0f);
+	V2 up    = MakeVector(0.0f, -1.0f);
+	V2 down  = MakeVector(0.0f, +1.0f);
+	V2 direction = {};
 
 	if(distance.x > 0.0f)
 	{
@@ -894,9 +894,9 @@ func RecalculatePlayerAttributes(CombatLabState *lab_state)
 	player->dexterity    = player->level;
 
 	Inventory *equip_inventory = &labState->equip_inventory;
-	for(Int32 row = 0; row < equip_inventory->rowN; row++)
+	for(I32 row = 0; row < equip_inventory->rowN; row++)
 	{
-		for(Int32 col = 0; col < equip_inventory->colN; col++)
+		for(I32 col = 0; col < equip_inventory->colN; col++)
 		{
 			ItemId item_id = GetInventoryItemId(equip_inventory, row, col);
 			if(item_id != NoItemId)
@@ -910,7 +910,7 @@ func RecalculatePlayerAttributes(CombatLabState *lab_state)
 		}
 	}
 
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
 		if(effect->entity == player)
@@ -950,8 +950,8 @@ func RecalculatePlayerAttributes(CombatLabState *lab_state)
 static void
 func RemoveEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 {
-	Int32 remaining_effect_n = 0;
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	I32 remaining_effect_n = 0;
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
 		if(effect->entity != entity || effect->effect_id != effect_id)
@@ -969,10 +969,10 @@ func RemoveEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 	}
 }
 
-static Bool32
+static B32
 func CanAddEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 {
-	Bool32 can_add_effect = true;
+	B32 can_add_effect = true;
 	switch(effect_id)
 	{
 		case PoisonedEffectId:
@@ -1002,7 +1002,7 @@ func AddEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 	
 	if(EffectHasDuration(effect_id))
 	{
-		Real32 duration = GetEffectDuration(effect_id);
+		R32 duration = GetEffectDuration(effect_id);
 		Assert(duration > 0.0f);
 		effect->time_remaining = duration;
 	}
@@ -1013,15 +1013,15 @@ func AddEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 		RecalculatePlayerAttributes(lab_state);
 	}
 
-	Int8 *effect_name = GetEffectName(effect_id);
+	I8 *effect_name = GetEffectName(effect_id);
 	CombatLog(lab_state, entity->name + " gets " + effect_name + ".");
 }
 
 static void
 func ResetOrAddEffect(CombatLabState *lab_state, Entity *entity, EffectId effect_id)
 {
-	Bool32 found_effect = false;
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	B32 found_effect = false;
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
 		if(effect->entity == entity && effect->effect_id == effect_id)
@@ -1029,7 +1029,7 @@ func ResetOrAddEffect(CombatLabState *lab_state, Entity *entity, EffectId effect
 
 			if(EffectHasDuration(effect_id))
 			{
-				Real32 duration = GetEffectDuration(effect_id);
+				R32 duration = GetEffectDuration(effect_id);
 				Assert(duration > 0.0f);
 				effect->time_remaining = duration;
 			}
@@ -1047,10 +1047,10 @@ func ResetOrAddEffect(CombatLabState *lab_state, Entity *entity, EffectId effect
 	}
 }
 
-static Int32
+static I32
 func GetAbilityDamage(Entity *entity, AbilityId ability_id)
 {
-	Int32 damage = 0;
+	I32 damage = 0;
 	switch(ability_Id)
 	{
 		case LightningAbilityId:
@@ -1113,13 +1113,13 @@ func UseInstantAbility(CombatLabState *lab_state, Entity *entity, AbilityId abil
 	Assert(!AbilityIsCasted(ability_id));
 	Assert(CanUseAbility(lab_state, entity, ability_id));
 
-	Int8 *ability_name = GetAbilityName(ability_id);
+	I8 *ability_name = GetAbilityName(ability_id);
 	CombatLog(lab_state, entity->name + " uses ability " + ability_name + ".");
 
 	Entity *target = entity->target;
-	Bool32 has_enemy_target = (target != 0 && target->group_id != entity->group_id);
-	Bool32 has_friendly_target = (target != 0 && target->group_id == entity->group_id);
-	Int32 damage = GetAbilityDamage(entity, ability_id);
+	B32 has_enemy_target = (target != 0 && target->group_id != entity->group_id);
+	B32 has_friendly_target = (target != 0 && target->group_id == entity->group_id);
+	I32 damage = GetAbilityDamage(entity, ability_id);
 	switch(ability_id)
 	{
 		case EarthShakeAbilityId:
@@ -1150,19 +1150,19 @@ func UseInstantAbility(CombatLabState *lab_state, Entity *entity, AbilityId abil
 		case KickAbilityId:
 		{
 			Assert(has_enemy_target);
-			Real32 move_speed = 20.0f;
+			R32 move_speed = 20.0f;
 			target->velocity = move_speed * GetClosestMoveDirection(target->position - entity->position);
 			AddEffect(lab_state, target, KickedEffectId);
 			break;
 		}
 		case SpinningKickAbilityId:
 		{
-			for(Int32 i = 0; i < EntityN; i++)
+			for(I32 i = 0; i < EntityN; i++)
 			{
 				Entity *target = &lab_state->entities[i];
 				if(target->group_id != entity->group_id)
 				{
-					Real32 distance = Distance(entity->position, target->position);
+					R32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
 						DealDamageFromEntity(lab_state, entity, target, damage);
@@ -1173,7 +1173,7 @@ func UseInstantAbility(CombatLabState *lab_state, Entity *entity, AbilityId abil
 		}
 		case RollAbilityId:
 		{
-			Real32 move_speed = 20.0f;
+			R32 move_speed = 20.0f;
 			entity->velocity = moveSpeed * GetClosestMoveDirection(entity->input_direction);
 			AddEffect(lab_state, entity, RollingEffectId);
 			break;
@@ -1203,12 +1203,12 @@ func UseInstantAbility(CombatLabState *lab_state, Entity *entity, AbilityId abil
 				Heal(lab_state, entity, entity, 2);
 			}
 
-			for(Int32 i = 0; i < EntityN; i++)
+			for(I32 i = 0; i < EntityN; i++)
 			{
 				Entity *target = &lab_state->entities[i];
 				if(target->group_id != entity->group_id)
 				{
-					Real32 distance = Distance(entity->position, target->position);
+					R32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
 						DealDamageFromEntity(lab_state, entity, target, damage);
@@ -1241,12 +1241,12 @@ func UseInstantAbility(CombatLabState *lab_state, Entity *entity, AbilityId abil
 		case MercyOfTheSunAbilityId:
 		{
 			Heal(lab_state, entity, entity, 30);
-			for(Int32 i = 0; i < EntityN; i++)
+			for(I32 i = 0; i < EntityN; i++)
 			{
 				Entity* target = &lab_state->entities[i];
 				if(!IsDead(target) && target->group_id != entity->group_id)
 				{
-					Real32 distance = Distance(entity->position, target->position);
+					R32 distance = Distance(entity->position, target->position);
 					if(distance <= MaxMeleeAttackDistance)
 					{
 						AddEffect(labState, target, BlindEffectId);
@@ -1304,9 +1304,9 @@ func FinishCasting(CombatLabState *lab_state, Entity *entity)
 	Assert(ability_id != NoAbilityId);
 	Assert(AbilityIsCasted(ability_id));
 	Entity *target = entity->cast_target;
-	Bool32 has_enemy_target = (target != 0 && target->group_id != entity->group_id);
-	Bool32 has_friendly_target = (target != 0 && target->group_id == entity->group_id);
-	Int32 damage = GetAbilityDamage(entity, ability_id);
+	B32 has_enemy_target = (target != 0 && target->group_id != entity->group_id);
+	B32 has_friendly_target = (target != 0 && target->group_id == entity->group_id);
+	I32 damage = GetAbilityDamage(entity, ability_id);
 	switch(ability_id)
 	{
 		case LightningAbilityId:
@@ -1349,7 +1349,7 @@ func UseAbility(CombatLabState *lab_state, Entity *entity, AbilityId ability_id)
 	if(AbilityIsCasted(ability_id))
 	{
 		Assert(CanUseAbility(lab_state, entity, ability_id));
-		Real32 cast_duration = GetAbilityCastDuration(ability_id);
+		R32 cast_duration = GetAbilityCastDuration(ability_id);
 		Assert(cast_durection > 0.0f);
 		entity->casted_ability = ability_id;
 		entity->cast_time_total = cast_duration;
@@ -1361,7 +1361,7 @@ func UseAbility(CombatLabState *lab_state, Entity *entity, AbilityId ability_id)
 		UseInstantAbility(lab_state, entity, ability_id);
 	}
 
-	Real32 recharge_duration = GetAbilityRechargeDuration(ability_id);
+	R32 recharge_duration = GetAbilityRechargeDuration(ability_id);
 	if(recharge_duration > 0.0f)
 	{
 		PutOnRecharge(entity, recharge_duration);
@@ -1378,15 +1378,15 @@ func AttemptToUseAbility(CombatLabState *lab_state, Entity *entity, AbilityId ab
 }
 
 static AbilityId
-func GetAvailableClassAbilityAtIndex(Entity *entity, Int32 ability_index)
+func GetAvailableClassAbilityAtIndex(Entity *entity, I32 ability_index)
 {
 	AbilityId result = NoAbilityId;
-	Int32 class_ability_index = 0;
-	for(Int32 id = 1; id < AbilityN; id++)
+	I32 class_ability_index = 0;
+	for(I32 id = 1; id < AbilityN; id++)
 	{
 		AbilityId ability_id = (AbilityId)id;
-		Int32 ability_level = GetAbilityMinLevel(ability_id);
-		Int32 ability_class_id = GetAbilityClass(ability_id);
+		I32 ability_level = GetAbilityMinLevel(ability_id);
+		I32 ability_class_id = GetAbilityClass(ability_id);
 		if(entity->level >= ability_level && entity->class_id == ability_class_id)
 		{
 			if(class_ability_index == ability_index)
@@ -1401,7 +1401,7 @@ func GetAvailableClassAbilityAtIndex(Entity *entity, Int32 ability_index)
 }
 
 static void
-func AttemptToUseAbilityAtIndex(CombatLabState *lab_state, Entity *entity, Int32 ability_index)
+func AttemptToUseAbilityAtIndex(CombatLabState *lab_state, Entity *entity, I32 ability_index)
 {
 	AbilityId ability_id = GetAvailableClassAbilityAtIndex(entity, ability_index);
 	if(ability_id != NoAbilityId)
@@ -1411,17 +1411,17 @@ func AttemptToUseAbilityAtIndex(CombatLabState *lab_state, Entity *entity, Int32
 }
 
 static void
-func DrawEntity(Canvas *canvas, Entity *entity, Vec4 color)
+func DrawEntity(Canvas *canvas, Entity *entity, V4 color)
 {
-	Vec4 entity_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 entity_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
 	DrawCircle(canvas, entity->position, EntityRadius, color);
 	DrawCircleOutline(canvas, entity->position, EntityRadius, entity_outline_color);
 }
 
 static void
-func DrawSelectedEntity(Canvas *canvas, Entity *entity, Vec4 color)
+func DrawSelectedEntity(Canvas *canvas, Entity *entity, V4 color)
 {
-	Vec4 selection_outline_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 selection_outline_color = MakeColor(1.0f, 1.0f, 1.0f);
 	DrawCircle(canvas, entity->position, EntityRadius, color);
 	DrawCircleOutline(canvas, entity->position, EntityRadius, selection_outline_color);
 }
@@ -1429,17 +1429,17 @@ func DrawSelectedEntity(Canvas *canvas, Entity *entity, Vec4 color)
 static void
 func DrawEntityBars(Canvas *canvas, Entity *entity)
 {
-	Vec2 health_bar_center = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
-	Real32 health_bar_width = 2.0f * EntityRadius;
-	Real32 health_bar_height = 0.5f * EntityRadius;
+	V2 health_bar_center = entity->position + MakeVector(0.0f, -1.5f * EntityRadius);
+	R32 health_bar_width = 2.0f * EntityRadius;
+	R32 health_bar_height = 0.5f * EntityRadius;
 
-	Vec4 health_bar_background_color = MakeColor(0.5f, 0.5f, 0.5f);
-	Vec4 health_bar_filled_color = MakeColor(1.0f, 0.0f, 0.0f);
-	Vec4 health_bar_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 health_bar_background_color = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 health_bar_filled_color = MakeColor(1.0f, 0.0f, 0.0f);
+	V4 health_bar_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
 
-	Real32 max_health = (Real32)GetEntityMaxHealth(entity);
+	R32 max_health = (R32)GetEntityMaxHealth(entity);
 	Assert(max_health > 0.0f);
-	Real32 health_ratio = Real32(entity->health) / max_health;
+	R32 health_ratio = R32(entity->health) / max_health;
 	Assert(IsBetween(health_ratio, 0.0f, 1.0f));
 
 	Rect health_bar_background_rect = MakeRect(health_bar_center, health_bar_width, health_bar_height);
@@ -1451,12 +1451,12 @@ func DrawEntityBars(Canvas *canvas, Entity *entity)
 
 	if(entity->absorb_damage > 0)
 	{
-		Vec4 absorb_damage_background_color = MakeColor(1.0f, 1.0f, 1.0f);
+		V4 absorb_damage_background_color = MakeColor(1.0f, 1.0f, 1.0f);
 		Rect absorb_damage_rect = health_bar_background_rect;
 		absorb_damage_rect.left = health_bar_filled_rect.right;
-		Real32 max_health = (Real32)GetEntityMaxHealth(entity);
+		R32 max_health = (R32)GetEntityMaxHealth(entity);
 		Assert(max_health > 0.0f);
-		Real32 absorb_damage_width = Real32(entity->absorb_damage) / max_health * health_bar_width;
+		R32 absorb_damage_width = R32(entity->absorb_damage) / max_health * health_bar_width;
 		absorb_damage_rect.right = Min2(health_bar_background_rect.right, absorb_damage_rect.left + absorb_damage_width);
 		DrawRect(canvas, absorb_damage_rect, absorb_damage_background_color);
 	}
@@ -1465,19 +1465,19 @@ func DrawEntityBars(Canvas *canvas, Entity *entity)
 
 	if(entity->casted_ability != NoAbilityId)
 	{
-		Real32 cast_bar_width = health_bar_width;
-		Real32 cast_bar_height = 0.3f * EntityRadius;
-		Vec2 cast_bar_center = health_bar_center + MakeVector(0.0f, -health_bar_height * 0.5f - cast_bar_height * 0.5f);
+		R32 cast_bar_width = health_bar_width;
+		R32 cast_bar_height = 0.3f * EntityRadius;
+		V2 cast_bar_center = health_bar_center + MakeVector(0.0f, -health_bar_height * 0.5f - cast_bar_height * 0.5f);
 
-		Vec4 cast_bar_background_color = MakeColor(0.0, 0.5f, 0.5f);
-		Vec4 cast_bar_filled_color = MakeColor(0.0f, 1.0f, 1.0f);
-		Vec4 cast_bar_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
+		V4 cast_bar_background_color = MakeColor(0.0, 0.5f, 0.5f);
+		V4 cast_bar_filled_color = MakeColor(0.0f, 1.0f, 1.0f);
+		V4 cast_bar_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
 
 		Rect cast_bar_background_rect = MakeRect(cast_bar_center, cast_bar_width, cast_bar_height);
 		DrawRect(canvas, cast_bar_background_rect, cast_bar_background_color);
 
 		Assert(entity->cast_time_total > 0.0f);
-		Real32 cast_ratio = 1.0f - (entity->cast_time_remaining / entity->cast_time_total);
+		R32 cast_ratio = 1.0f - (entity->cast_time_remaining / entity->cast_time_total);
 		Assert(IsBetween(cast_ratio, 0.0f, 1.0f));
 
 		Rect cast_bar_filled_rect = cast_bar_background_rect;
@@ -1489,14 +1489,14 @@ func DrawEntityBars(Canvas *canvas, Entity *entity)
 }
 
 static String
-func GetAbilityTooltipText(AbilityId ability_id, Entity *entity, Int8 *buffer, Int32 buffer_size)
+func GetAbilityTooltipText(AbilityId ability_id, Entity *entity, I8 *buffer, I32 buffer_size)
 {
 	String text = StartString(buffer, buffer_size);
 
-	Int8 *ability_name = GetAbilityName(ability_id);
+	I8 *ability_name = GetAbilityName(ability_id);
 	AddLine(text, ability_name);
 
-	Real32 cast_duration = GetAbilityCastDuration(ability_id);
+	R32 cast_duration = GetAbilityCastDuration(ability_id);
 	if(cast_duration > 0.0f)
 	{
 		if(cast_duration == 1.0f)
@@ -1513,7 +1513,7 @@ func GetAbilityTooltipText(AbilityId ability_id, Entity *entity, Int8 *buffer, I
 		AddLine(text, "Instant");
 	}
 
-	Real32 recharge_duration = GetAbilityRechargeDuration(ability_id);
+	R32 recharge_duration = GetAbilityRechargeDuration(ability_id);
 	if(recharge_duration == 1.0f)
 	{
 		AddLine(text, "Recharge: 1 second");
@@ -1525,7 +1525,7 @@ func GetAbilityTooltipText(AbilityId ability_id, Entity *entity, Int8 *buffer, I
 
 	if(AbilityHasCooldown(ability_id))
 	{
-		Real32 cooldown_duration = GetAbilityCooldownDuration(ability_id);
+		R32 cooldown_duration = GetAbilityCooldownDuration(ability_id);
 		Assert(cooldown_duration > 0.0f);
 		if(cooldown_duration == 1.0f)
 		{
@@ -1537,7 +1537,7 @@ func GetAbilityTooltipText(AbilityId ability_id, Entity *entity, Int8 *buffer, I
 		}
 	}
 
-	Int32 damage = GetAbilityDamage(entity, ability_id);
+	I32 damage = GetAbilityDamage(entity, ability_id);
 
 	switch(ability_id)
 	{
@@ -1689,10 +1689,10 @@ func GetAbilityTooltipText(AbilityId ability_id, Entity *entity, Int8 *buffer, I
 	return text;
 }
 
-static Vec4
+static V4
 func GetFlowerColor(ItemId item_id)
 {
-	Vec4 color = {};
+	V4 color = {};
 	switch(item_id)
 	{
 		case BlueFlowerItemId:
@@ -1728,37 +1728,37 @@ func GetFlowerColor(ItemId item_id)
 }
 
 static void
-func UpdateAndDrawFlowers(Canvas *canvas, CombatLabState *lab_state, Vec2 mouse_position)
+func UpdateAndDrawFlowers(Canvas *canvas, CombatLabState *lab_state, V2 mouse_position)
 {
 	GlyphData *glyph_data = canvas->glyph_data;
 
-	Real32 radius = 0.5f;
+	R32 radius = 0.5f;
 
-	Vec4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
-	Vec4 text_backgroud_color = MakeColor(0.5f, 0.5f, 0.5f);
-	Vec4 text_hover_background_color = MakeColor(0.7f, 0.5f, 0.5f);
+	V4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 text_backgroud_color = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 text_hover_background_color = MakeColor(0.7f, 0.5f, 0.5f);
 
 	labState->hover_flower = 0;
 
-	for(Int32 i = 0; i < lab_state->flower_n; i++)
+	for(I32 i = 0; i < lab_state->flower_n; i++)
 	{
 		Flower *flower = &lab_state->flowers[i];
-		Vec4 color = GetFlowerColor(flower->item_id);
+		V4 color = GetFlowerColor(flower->item_id);
 		DrawCircle(canvas, flower->position, radius, color);
 
-		Int8 *text = GetVisibleItemName(lab_state, flower->item_id);
+		I8 *text = GetVisibleItemName(lab_state, flower->item_id);
 
-		Real32 text_width = GetTextWidth(canvas, text);
-		Real32 text_height = GetTextHeight(canvas, text);
+		R32 text_width = GetTextWidth(canvas, text);
+		R32 text_height = GetTextHeight(canvas, text);
 
-		Real32 text_bottom = flower->position.y - radius;
-		Real32 text_center_x = flower->position.x;
+		R32 text_bottom = flower->position.y - radius;
+		R32 text_center_x = flower->position.x;
 		
-		Vec2 text_bottom_center = MakePoint(text_center_x, text_bottom);
+		V2 text_bottom_center = MakePoint(text_center_x, text_bottom);
 		Rect text_background_rect = MakeRectBottom(text_bottom_center, text_width, text_height);
 
-		Bool32 is_hover = IsPointInRect(mouse_position, text_background_rect);
-		Vec4 background_color = (is_hover) ? text_hover_background_color : text_background_color;
+		B32 is_hover = IsPointInRect(mouse_position, text_background_rect);
+		V4 background_color = (is_hover) ? text_hover_background_color : text_background_color;
 
 		if(is_hover)
 		{
@@ -1774,40 +1774,40 @@ func UpdateAndDrawFlowers(Canvas *canvas, CombatLabState *lab_state, Vec2 mouse_
 #define UIBoxPadding 5
 
 static void
-func DrawUIBox(Bitmap *bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 recharge_ratio, Vec4 color)
+func DrawUIBox(Bitmap *bitmap, I32 left, I32 right, I32 top, I32 bottom, R32 recharge_ratio, V4 color)
 {
-	Vec4 outline_color = MakeColor(1.0f, 1.0f, 1.0f);
-	Vec4 recharge_color = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 outline_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 recharge_color = MakeColor(0.5f, 0.5f, 0.5f);
 
 	DrawBitmapRect(bitmap, left, right, top, bottom, color);
 
 	Assert(IsBetween(recharge_ratio, 0.0f, 1.0f));
-	Int32 recharge_right = (Int32)Lerp((Real32)left, recharge_ratio, (Real32)right);
+	I32 recharge_right = (I32)Lerp((R32)left, recharge_ratio, (R32)right);
 	DrawBitmapRect(bitmap, left, recharge_right, top, bottom, recharge_color);
 
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outline_color);
 }
 
 static void
-func DrawUIBoxWithText(Bitmap *bitmap, Int32 left, Int32 right, Int32 top, Int32 bottom, Real32 recharge_ratio,
-					   Int8 *text, GlyphData *glyph_data, Vec4 color)
+func DrawUIBoxWithText(Bitmap *bitmap, I32 left, I32 right, I32 top, I32 bottom, R32 recharge_ratio,
+					   I8 *text, GlyphData *glyph_data, V4 color)
 {
 	DrawUIBox(bitmap, left, right, top, bottom, recharge_ratio, color);
-	Vec4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
 	Assert(text != 0 && glyphData != 0);
 	DrawBitmapTextLineCentered(bitmap, text, glyph_data, left, right, top, bottom, text_color);
 }
 
 static void
-func DrawEffectUIBox(Bitmap *bitmap, Effect *effect, Int32 top, Int32 left)
+func DrawEffectUIBox(Bitmap *bitmap, Effect *effect, I32 top, I32 left)
 {
-	Int32 right = left + UIBoxSide;
-	Int32 bottom = top + UIBoxSide;
+	I32 right = left + UIBoxSide;
+	I32 bottom = top + UIBoxSide;
 
-	Real32 duration_ratio = 0.0f;
+	R32 duration_ratio = 0.0f;
 	if(EffectHasDuration(effect->effect_id))
 	{
-		Real32 total_duration = GetEffectDuration(effect->effect_id);
+		R32 total_duration = GetEffectDuration(effect->effect_id);
 		Assert(total_duration > 0.0f);
 
 		duration_ratio = (effect->time_remaining / total_duration);
@@ -1819,7 +1819,7 @@ func DrawEffectUIBox(Bitmap *bitmap, Effect *effect, Int32 top, Int32 left)
 
 	Assert(IsBetween(duration_ratio, 0.0f, 1.0f));
 
-	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 	DrawUIBox(bitmap, left, right, top, bottom, duration_ratio, background_color);
 }
 
@@ -1833,12 +1833,12 @@ func DrawPlayerEffectBar(Canvas *canvas, CombatLabState *lab_state)
 	Entity* player = &lab_state->entities[0];
 	Assert(player->group_id == PlayerGroupId);
 
-	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 
-	Int32 left = UIBoxPadding;
-	Int32 top = UIBoxPadding;
+	I32 left = UIBoxPadding;
+	I32 top = UIBoxPadding;
 
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
 		if(effect->entity == player)
@@ -1863,12 +1863,12 @@ func DrawTargetEffectBar(Canvas *canvas, CombatLabState *lab_state)
 
 	if(target)
 	{
-		Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+		V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 
-		Int32 left = (bitmap->width - 1) - UIBoxPadding - UIBoxSide;
-		Int32 top = UIBoxPadding;
+		I32 left = (bitmap->width - 1) - UIBoxPadding - UIBoxSide;
+		I32 top = UIBoxPadding;
 
-		for(Int32 i = 0; i < lab_state->effect_n; i++)
+		for(I32 i = 0; i < lab_state->effect_n; i++)
 		{
 			Effect *effect = &lab_state->effects[i];
 			if(effect->entity == target)
@@ -1881,27 +1881,27 @@ func DrawTargetEffectBar(Canvas *canvas, CombatLabState *lab_state)
 }
 
 static void
-func DrawHelpBar(Canvas *canvas, CombatLabState *lab_state, IntVec2 mouse_position)
+func DrawHelpBar(Canvas *canvas, CombatLabState *lab_state, IV2 mouse_position)
 {
 	Bitmap *bitmap = &canvas->bitmap;
 	GlyphData *glyph_data = canvas->glyph_data;
 	Assert(glyph_data != 0);
 
-	Int32 right  = (bitmap->width - 1) - UIBoxPadding;
-	Int32 left   = right - UIBoxSide;
-	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	Int32 top    = bottom - UIBoxSide;
+	I32 right  = (bitmap->width - 1) - UIBoxPadding;
+	I32 left   = right - UIBoxSide;
+	I32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	I32 top    = bottom - UIBoxSide;
 
-	Vec4 box_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 box_color = MakeColor(0.0f, 0.0f, 0.0f);
 
-	Int8 text_buffer[8] = {};
+	I8 text_buffer[8] = {};
 	OneLineString(text_buffer, 8, "Help");
 
 	DrawUIBoxWithText(bitmap, left, right, top, bottom, 0.0f, text_buffer, glyph_data, box_color);
 
 	if(IsIntBetween(mouse_position.col, left, right) && IsIntBetween(mouse_position.row, top, bottom))
 	{
-		Int8 tooltip_buffer[256] = {};
+		I8 tooltip_buffer[256] = {};
 		String tooltip = StartString(tooltip_buffer, 256);
 		AddLine(tooltip, "Key binds");
 		AddLine(tooltip, "[W][A][S][D] or Arrows - Move");
@@ -1911,14 +1911,14 @@ func DrawHelpBar(Canvas *canvas, CombatLabState *lab_state, IntVec2 mouse_positi
 		AddLine(tooltip, "[V] - Show/hide inventory");
 		AddLine(tooltip, "[C] - Show/hide character info");
 
-		Int32 tooltip_bottom = top - UIBoxPadding;
-		Int32 tooltip_right = (bitmap->width - 1);
+		I32 tooltip_bottom = top - UIBoxPadding;
+		I32 tooltip_right = (bitmap->width - 1);
 		DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyph_data, tooltip_bottom, tooltip_right);
 	}
 }
 
 static void
-func DrawAbilityBar(Canvas *canvas, CombatLabState *lab_state, IntVec2 mouse_position)
+func DrawAbilityBar(Canvas *canvas, CombatLabState *lab_state, IV2 mouse_position)
 {
 	Bitmap *bitmap = &canvas->bitmap;
 	GlyphData *glyph_data = canvas->glyph_data;
@@ -1929,49 +1929,49 @@ func DrawAbilityBar(Canvas *canvas, CombatLabState *lab_state, IntVec2 mouse_pos
 	ClassId class_id = entity->class_id;
 	Assert(class_id != NoClassId);
 
-	Int32 ability_n = 0;
-	for(Int32 id = 1; id < AbilityN; id++)
+	I32 ability_n = 0;
+	for(I32 id = 1; id < AbilityN; id++)
 	{
 		AbilityId ability_id = (AbilityId)id;
 		ClassId ability_class_id = GetAbilityClass(ability_id);
-		Int32 ability_min_level = GetAbilityMinLevel(ability_id);
+		I32 ability_min_level = GetAbilityMinLevel(ability_id);
 		if(entity->level >= ability_min_level && entity->classId == ability_class_id)
 		{
 			ability_n++;
 		}
 	}
 
-	Int32 center_x = (bitmap->width - 1) / 2;
-	Int32 width = UIBoxSide * ability_n + UIBoxPadding * (ability_n - 1);
+	I32 center_x = (bitmap->width - 1) / 2;
+	I32 width = UIBoxSide * ability_n + UIBoxPadding * (ability_n - 1);
 
-	Int32 left   = center_x - width / 2;
-	Int32 right  = center_x + width / 2;
-	Int32 bottom = (bitmap->height - 1) - 30;
-	Int32 top    = bottom - UIBoxSide;
+	I32 left   = center_x - width / 2;
+	I32 right  = center_x + width / 2;
+	I32 bottom = (bitmap->height - 1) - 30;
+	I32 top    = bottom - UIBoxSide;
 
-	Int32 box_left = left;
-	Int32 ability_index = 0;
+	I32 box_left = left;
+	I32 ability_index = 0;
 
 	lab_state->hover_ability_id = NoAbilityId;
 
-	for(Int32 id = 1; id < AbilityN; id++)
+	for(I32 id = 1; id < AbilityN; id++)
 	{
 		AbilityId ability_id = (AbilityId)id;
 		ClassId ability_class_id = GetAbilityClass(ability_id);
-		Int32 ability_min_level = GetAbilityMinLevel(ability_id);
+		I32 ability_min_level = GetAbilityMinLevel(ability_id);
 		if(entity->level >= ability_min_level && entity->class_id == ability_class_id)
 		{
-			Int32 box_right = box_left + UIBoxSide;
-			Int32 box_top = top;
-			Int32 box_bottom = bottom;
+			I32 box_right = box_left + UIBoxSide;
+			I32 box_top = top;
+			I32 box_bottom = bottom;
 
-			Vec4 box_background_color = MakeColor(0.0f, 0.0f, 0.0f);
-			Vec4 box_cannot_use_color = MakeColor(0.2f, 0.0f, 0.0f);
+			V4 box_background_color = MakeColor(0.0f, 0.0f, 0.0f);
+			V4 box_cannot_use_color = MakeColor(0.2f, 0.0f, 0.0f);
 
-			Vec4 color = boxBackgroundColor;
+			V4 color = boxBackgroundColor;
 
-			Real32 recharge = 0.0f;
-			Real32 recharge_from = 0.0f;
+			R32 recharge = 0.0f;
+			R32 recharge_from = 0.0f;
 			AbilityCooldown *cooldown = GetAbilityCooldown(lab_state, entity, ability_id);
 			if(cooldown)
 			{
@@ -1989,19 +1989,19 @@ func DrawAbilityBar(Canvas *canvas, CombatLabState *lab_state, IntVec2 mouse_pos
 				color = box_cannot_use_color;
 			}
 
-			Real32 recharge_ratio = (recharge_from > 0.0f) ? (recharge / recharge_from) : 0.0f;
+			R32 recharge_ratio = (recharge_from > 0.0f) ? (recharge / recharge_from) : 0.0f;
 
-			Int8 name[8] = {};
+			I8 name[8] = {};
 			OneLineString(name, 8, (ability_index + 1));
 
 			DrawUIBoxWithText(bitmap, box_left, box_right, box_top, box_bottom, recharge_ratio, name, glyph_data, color);
 
 			if(IsIntBetween(mouse_position.col, box_left, box_right) && IsIntBetween(mousePosition.row, box_top, box_bottom))
 			{
-				Int32 tooltip_left = (box_left + box_right) / 2 - TooltipWidth / 2;
-				Int32 tooltip_bottom = box_top - 5;
+				I32 tooltip_left = (box_left + box_right) / 2 - TooltipWidth / 2;
+				I32 tooltip_bottom = box_top - 5;
 
-				static Int8 tooltip_buffer[512] = {};
+				static I8 tooltip_buffer[512] = {};
 				String tooltip_text = GetAbilityTooltipText(ability_id, entity, tooltip_buffer, 512);
 				DrawBitmapStringTooltipBottom(bitmap, tooltip_text, glyph_data, tooltip_bottom, tooltip_left);
 
@@ -2015,16 +2015,16 @@ func DrawAbilityBar(Canvas *canvas, CombatLabState *lab_state, IntVec2 mouse_pos
 }
 
 static void
-func UpdateEntityRecharge(Entity *entity, Real32 seconds)
+func UpdateEntityRecharge(Entity *entity, R32 seconds)
 {
 	entity->recharge = Max2(entity->recharge - seconds, 0.0f);
 }
 
 static void
-func UpdateAbilityCooldowns(CombatLabState *lab_state, Real32 seconds)
+func UpdateAbilityCooldowns(CombatLabState *lab_state, R32 seconds)
 {
-	Int32 remaining_n = 0;
-	for(Int32 i = 0; i < lab_state->ability_cooldown_n; i++)
+	I32 remaining_n = 0;
+	for(I32 i = 0; i < lab_state->ability_cooldown_n; i++)
 	{
 		AbilityCooldown *cooldown = &lab_state->ability_cooldowns[i];
 		cooldown->time_remaining -= seconds;
@@ -2039,10 +2039,10 @@ func UpdateAbilityCooldowns(CombatLabState *lab_state, Real32 seconds)
 }
 
 static void
-func UpdateItemCooldowns(CombatLabState *lab_state, Real32 seconds)
+func UpdateItemCooldowns(CombatLabState *lab_state, R32 seconds)
 {
-	Int32 remaining_n = 0;
-	for(Int32 i = 0; i < lab_state->item_cooldown_n; i++)
+	I32 remaining_n = 0;
+	for(I32 i = 0; i < lab_state->item_cooldown_n; i++)
 	{
 		ItemCooldown *cooldown = &lab_state->item_cooldowns[i];
 		cooldown->time_remaining -= seconds;
@@ -2060,32 +2060,32 @@ static void
 func DrawCombatLog(Canvas *canvas, CombatLabState *lab_state)
 {
 	Bitmap *bitmap = &canvas->bitmap;
-	Int32 width  = 300;
-	Int32 height = 200;
+	I32 width  = 300;
+	I32 height = 200;
 
-	Int32 left   = UIBoxPadding;
-	Int32 right  = left + width;
-	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	Int32 top    = bottom - height;
+	I32 left   = UIBoxPadding;
+	I32 right  = left + width;
+	I32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	I32 top    = bottom - height;
 
-	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
-	Vec4 outline_color = MakeColor(0.5f, 0.5f, 0.5f);
-	Vec4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 outline_color = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
 
 	DrawBitmapRect(bitmap, left, right, top, bottom, backgrond_color);
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, outline_color);
 
-	Int32 text_left   = left + UIBoxPadding;
-	Int32 text_right  = right - UIBoxPadding;
-	Int32 text_top    = top + UIBoxPadding;
-	Int32 text_bottom = bottom + UIBoxPadding;
+	I32 text_left   = left + UIBoxPadding;
+	I32 text_right  = right - UIBoxPadding;
+	I32 text_top    = top + UIBoxPadding;
+	I32 text_bottom = bottom + UIBoxPadding;
 
-	Int32 text_height = text_bottom - text_top;
+	I32 text_height = text_bottom - text_top;
 
-	Int32 last_index = lab_state->combat_log_last_line_index;
-	Int32 first_index = GetNextCombatLogLineIndex(last_index);
+	I32 last_index = lab_state->combat_log_last_line_index;
+	I32 first_index = GetNextCombatLogLineIndex(last_index);
 
-	Int32 log_height = lab_state->combat_log_line_n * TextHeightInPixels;
+	I32 log_height = lab_state->combat_log_line_n * TextHeightInPixels;
 	if(log_height > text_height)
 	{
 		first_index = last_index - (text_height / TextHeightInPixels - 1);
@@ -2096,10 +2096,10 @@ func DrawCombatLog(Canvas *canvas, CombatLabState *lab_state)
 		Assert(IsIntBetween(first_index, 0, MaxCombatLogLineN + 1));
 	}
 
-	Int32 index = first_index;
+	I32 index = first_index;
 	while(1)
 	{
-		Int8 *text = lab_state->combat_log_lines[index];
+		I8 *text = lab_state->combat_log_lines[index];
 		if(text[0] != 0)
 		{
 			DrawBitmapTextLineTopLeft(bitmap, text, canvas->glyph_data, text_left, text_top, text_color);
@@ -2114,12 +2114,12 @@ func DrawCombatLog(Canvas *canvas, CombatLabState *lab_state)
 	}
 }
 
-static Int32
+static I32
 GetHateTableEntityEntryN(HateTable *htae_table, Entity* source)
 {
 	Assert(source != 0);
-	Int32 entry_n = 0;
-	for(Int32 i = 0; i < hate_table->entry_n; i++)
+	I32 entry_n = 0;
+	for(I32 i = 0; i < hate_table->entry_n; i++)
 	{
 		HateTableEntry *entry = &hate_table->entries[i];
 		if(entry->source == source)
@@ -2134,8 +2134,8 @@ GetHateTableEntityEntryN(HateTable *htae_table, Entity* source)
 static void
 func RemoveDeadEntitiesFromHateTable(HateTable *hate_table)
 {
-	Int32 remaining_entry_n = 0;
-	for(Int32 i = 0; i < hate_table->entry_n; i++)
+	I32 remaining_entry_n = 0;
+	for(I32 i = 0; i < hate_table->entry_n; i++)
 	{
 		HateTableEntry *entry = &hate_table->entries[i];
 		if(!IsDead(entry->source) && !IsDead(entry->target))
@@ -2151,13 +2151,13 @@ func RemoveDeadEntitiesFromHateTable(HateTable *hate_table)
 static void
 func SortHateTable(HateTable *hate_table)
 {
-	for(Int32 index = 0; index < hate_table->entry_n; index++)
+	for(I32 index = 0; index < hate_table->entry_n; index++)
 	{
 		HateTableEntry entry = hate_table->entries[index];
-		for(Int32 previous_index = index - 1; previous_index >= 0; previous_index--)
+		for(I32 previous_index = index - 1; previous_index >= 0; previous_index--)
 		{
 			HateTableEntry previous_entry = hate_table->entries[previous_index];
-			Bool32 need_swap = false;
+			B32 need_swap = false;
 			if(previous_entry.source > entry.source)
 			{
 				need_swap = true;
@@ -2185,7 +2185,7 @@ func UpdateEnemyTargets(CombatLabState *lab_state)
 {
 	HateTable *hate_table = &lab_state->hate_table;
 	HateTableEntry *previous_entry = 0;
-	for(Int32 i = 0; i < hate_table->entry_n; i++)
+	for(I32 i = 0; i < hate_table->entry_n; i++)
 	{
 		HateTableEntry *entry = &hate_table->entries[i];
 		if(entry->source->group_id == EnemyGroupId)
@@ -2219,7 +2219,7 @@ func GetItemCooldown(CombatLabState *lab_state, Entity *entity, ItemId item_id)
 	Assert(ItemHasOwnCooldown(item_id));
 
 	ItemCooldown *result = 0;
-	for(Int32 i = 0; i < lab_state->item_cooldown_n; i++)
+	for(I32 i = 0; i < lab_state->item_cooldown_n; i++)
 	{
 		ItemCooldown *cooldown = &lab_state->item_cooldowns[i];
 		if(cooldown->entity == entity && cooldown->item_id == item_id)
@@ -2231,15 +2231,15 @@ func GetItemCooldown(CombatLabState *lab_state, Entity *entity, ItemId item_id)
 	return result;
 }
 
-static Bool32
+static B32
 func CanSwapItems(InventoryItem *item1, InventoryItem *item2)
 {
 	Assert(InventoryItemIsValid(item1));
 	Assert(InventoryItemIsValid(item2));
 
-	Bool32 can_put_item1 = ItemGoesIntoSlot(item1->item_id, item2->slot_id);
-	Bool32 can_put_item2 = ItemGoesIntoSlot(item2->item_id, item1->slot_id);
-	Bool32 can_swap = (can_put_item1 && can_put_item2);
+	B32 can_put_item1 = ItemGoesIntoSlot(item1->item_id, item2->slot_id);
+	B32 can_put_item2 = ItemGoesIntoSlot(item2->item_id, item1->slot_id);
+	B32 can_swap = (can_put_item1 && can_put_item2);
 	return can_swap;
 }
 
@@ -2264,16 +2264,16 @@ func AttemptToSwapItems(InventoryItem *item1, InventoryItem *item2)
 #define InventorySlotSide 50
 
 static void
-func DrawInventorySlot(Canvas *canvas, CombatLabState *lab_state, SlotId slotId, ItemId item_id, Int32 top, Int32 left)
+func DrawInventorySlot(Canvas *canvas, CombatLabState *lab_state, SlotId slotId, ItemId item_id, I32 top, I32 left)
 {
-	Int32 bottom = top + InventorySlotSide;
-	Int32 right  = left + InventorySlotSide;
+	I32 bottom = top + InventorySlotSide;
+	I32 right  = left + InventorySlotSide;
 
-	Vec4 slot_background_color = MakeColor(0.0f, 0.0f, 0.0f);
-	Vec4 item_background_color = MakeColor(0.1f, 0.1f, 0.1f);
-	Vec4 cooldown_color = MakeColor(0.2f, 0.0f, 0.0f);
-	Vec4 item_name_color = MakeColor(1.0f, 1.0f, 1.0f);
-	Vec4 slot_name_color = MakeColor(0.3f, 0.3f, 0.3f);
+	V4 slot_background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 item_background_color = MakeColor(0.1f, 0.1f, 0.1f);
+	V4 cooldown_color = MakeColor(0.2f, 0.0f, 0.0f);
+	V4 item_name_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 slot_name_color = MakeColor(0.3f, 0.3f, 0.3f);
 
 	Bitmap *bitmap = &canvas->bitmap;
 	GlyphData *glyph_data = canvas->glyph_data;
@@ -2283,7 +2283,7 @@ func DrawInventorySlot(Canvas *canvas, CombatLabState *lab_state, SlotId slotId,
 		DrawBitmapRect(bitmap, left, right, top, bottom, slot_background_color);
 		if(slot_id != AnySlotId)
 		{
-			Int8 *slot_name = GetSlotName(slot_id);
+			I8 *slot_name = GetSlotName(slot_id);
 			Assert(slot_name != 0);
 			DrawBitmapTextLineCentered(bitmap, slot_name, glyph_data, left, right, top, bottom, slot_name_color);
 		}
@@ -2292,91 +2292,91 @@ func DrawInventorySlot(Canvas *canvas, CombatLabState *lab_state, SlotId slotId,
 	{
 		DrawBitmapRect(bitmap, left, right, top, bottom, item_background_color);
 
-		Real32 total_cooldown = GetItemCooldownDuration(item_id);
+		R32 total_cooldown = GetItemCooldownDuration(item_id);
 		if(total_cooldown > 0.0f)
 		{
 			Entity *player = &lab_state->entities[0];
 			ItemCooldown* cooldown = GetItemCooldown(lab_state, player, itemId);
 			if(cooldown)
 			{
-				Real32 remaining_cooldown = cooldown->time_remaining;
-				Real32 cooldown_ratio = (remaining_cooldown / total_cooldown);
+				R32 remaining_cooldown = cooldown->time_remaining;
+				R32 cooldown_ratio = (remaining_cooldown / total_cooldown);
 				Assert(IsBetween(cooldown_ratio, 0.0f, 1.0f));
 
-				Int32 cooldown_right = (Int32)Lerp((Real32)left, cooldown_ratio, (Real32)right);
+				I32 cooldown_right = (I32)Lerp((R32)left, cooldown_ratio, (R32)right);
 				DrawBitmapRect(bitmap, left, cooldown_right, top, bottom, cooldown_color);
 			}
 		}
 
-		Int8 *name = GetItemSlotName(item_id);
+		I8 *name = GetItemSlotName(item_id);
 		DrawBitmapTextLineCentered(bitmap, name, glyph_data, left, right, top, bottom, item_name_color);
 	}
 }
 
 static void
-func DrawInventorySlotOutline(Canvas *canvas, Int32 top, Int32 left, Vec4 color)
+func DrawInventorySlotOutline(Canvas *canvas, I32 top, I32 left, V4 color)
 {
 	Bitmap *bitmap = &canvas->bitmap;
-	Int32 bottom = top + InventorySlotSide;
-	Int32 right = left + InventorySlotSide;
+	I32 bottom = top + InventorySlotSide;
+	I32 right = left + InventorySlotSide;
 	DrawBitmapRectOutline(bitmap, left, right, top, bottom, color);
 }
 
 #define InventorySlotPadding 2
 
-static Int32
+static I32
 func GetInventoryWidth(Inventory *inventory)
 {
-	Int32 width = InventorySlotPadding + inventory->colN * (InventorySlotSide + InventorySlotPadding);
+	I32 width = InventorySlotPadding + inventory->colN * (InventorySlotSide + InventorySlotPadding);
 	return width;
 }
 
-static Int32
+static I32
 func GetInventoryHeight(Inventory *inventory)
 {
-	Int32 height = InventorySlotPadding + inventory->rowN * (InventorySlotSide + InventorySlotPadding);
+	I32 height = InventorySlotPadding + inventory->rowN * (InventorySlotSide + InventorySlotPadding);
 	return height;
 }
 
 static void
-func UpdateAndDrawInventory(Canvas *canvas, CombatLabState *lab_state, Inventory *inventory, IntVec2 mouse_position)
+func UpdateAndDrawInventory(Canvas *canvas, CombatLabState *lab_state, Inventory *inventory, IV2 mouse_position)
 {
 	Bitmap *bitmap = &canvas->bitmap;
 	GlyphData *glyph_data = canvas->glyph_data;
 	Assert(glyph_data != 0);
 
-	Int32 slot_padding = 2;
+	I32 slot_padding = 2;
 
-	Int32 width = GetInventoryWidth(inventory);
-	Int32 height = GetInventoryHeight(inventory);
+	I32 width = GetInventoryWidth(inventory);
+	I32 height = GetInventoryHeight(inventory);
 
-	Int32 left   = inventory->left;
-	Int32 right  = left + width;
-	Int32 top    = inventory->top;
-	Int32 bottom = top + height;
+	I32 left   = inventory->left;
+	I32 right  = left + width;
+	I32 top    = inventory->top;
+	I32 bottom = top + height;
 
-	Vec4 background_color = MakeColor(0.5f, 0.5f, 0.5f);
-	Vec4 hover_outline_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 invalid_outline_color = MakeColor(1.0f, 0.0f, 0.0f);
+	V4 background_color = MakeColor(0.5f, 0.5f, 0.5f);
+	V4 hover_outline_color = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 invalid_outline_color = MakeColor(1.0f, 0.0f, 0.0f);
 	DrawBitmapRect(bitmap, left, right, top, bottom, background_color);
 
 	InventoryItem *drag_item = &lab_state->drag_item;
 	InventoryItem *hover_item = &lab_state->hover_item;
 
-	Int32 slot_top = top + slot_padding;
-	for(Int32 row = 0; row < inventory->row_n; row++)
+	I32 slot_top = top + slot_padding;
+	for(I32 row = 0; row < inventory->row_n; row++)
 	{
-		Int32 slot_left = left + slot_padding;
-		for(Int32 col = 0; col < inventory->col_n; col++)
+		I32 slot_left = left + slot_padding;
+		for(I32 col = 0; col < inventory->col_n; col++)
 		{
 			SlotId slot_id = GetInventorySlotId(inventory, row, col);
 			ItemId item_id = GetInventoryItemId(inventory, row, col);
 			
 			ItemId visible_item_id = (item_id == NoItemId) ? NoItemId : GetVisibleItemId(lab_state, item_id);
 
-			Bool32 is_hover = (IsIntBetween(mouse_position.col, slot_left, slot_left + InventorySlotSide) &&
+			B32 is_hover = (IsIntBetween(mouse_position.col, slot_left, slot_left + InventorySlotSide) &&
 							   IsIntBetween(mouse_position.row, slot_top, slot_top + InventorySlotSide));
-			Bool32 is_drag = (drag_item->inventory == inventory && 
+			B32 is_drag = (drag_item->inventory == inventory && 
 							  drag_item->slot.row == row && drag_item->slot.col == col);
 
 			if(!is_drag)
@@ -2392,18 +2392,18 @@ func UpdateAndDrawInventory(Canvas *canvas, CombatLabState *lab_state, Inventory
 			{
 				if(!is_drag && item_id != NoItemId)
 				{
-					Int32 tooltip_bottom = slot_top - UIBoxPadding;
-					Int32 tooltip_right = IntMin2((slot_left + InventorySlotSide / 2) + TooltipWidth / 2,
+					I32 tooltip_bottom = slot_top - UIBoxPadding;
+					I32 tooltip_right = IntMin2((slot_left + InventorySlotSide / 2) + TooltipWidth / 2,
 												  (bitmap->width - 1) - UIBoxPadding);
 
 					tooltip_right = IntMax2(tooltipRight, UIBoxPadding + TooltipWidth);
 
-					Int8 tooltip_buffer[128];
+					I8 tooltip_buffer[128];
 					String tooltip = GetItemTooltipText(visible_item_id, tooltip_buffer, 128);
 					DrawBitmapStringTooltipBottomRight(bitmap, tooltip, glyph_data, tooltip_bottom, tooltip_right);
 				}
 
-				Vec4 outline_color = hover_outline_color;
+				V4 outline_color = hover_outline_color;
 				if(drag_item->inventory && !ItemGoesIntoSlot(drag_item->item_id, slot_id))
 				{
 					outline_color = invalid_outline_color;
@@ -2425,21 +2425,21 @@ func UpdateAndDrawInventory(Canvas *canvas, CombatLabState *lab_state, Inventory
 }
 
 static void
-func DrawCharacterInfo(Canvas *canvas, Entity *entity, CombatLabState *lab_state, IntVec2 mouse_position)
+func DrawCharacterInfo(Canvas *canvas, Entity *entity, CombatLabState *lab_state, IV2 mouse_position)
 {
 	Bitmap *bitmap = &canvas->bitmap;
 	
-	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
-	Vec4 outline_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 outline_color = MakeColor(1.0f, 1.0f, 1.0f);
 
 	Inventory *inventory = &lab_state->equip_inventory;
-	Int32 width = GetInventoryWidth(inventory);
-	Int32 height = UIBoxPadding + 14 * TextHeightInPixels + UIBoxPadding;
+	I32 width = GetInventoryWidth(inventory);
+	I32 height = UIBoxPadding + 14 * TextHeightInPixels + UIBoxPadding;
 
-	Int32 left   = UIBoxPadding;
-	Int32 right  = left + width;
-	Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-	Int32 top    = bottom - height;
+	I32 left   = UIBoxPadding;
+	I32 right  = left + width;
+	I32 bottom = (bitmap->height - 1) - UIBoxPadding;
+	I32 top    = bottom - height;
 
 	inventory->left = right - GetInventoryWidth(inventory);
 	inventory->top = top - GetInventoryHeight(inventory);
@@ -2450,17 +2450,17 @@ func DrawCharacterInfo(Canvas *canvas, Entity *entity, CombatLabState *lab_state
 	GlyphData *glyph_data = canvas->glyph_data;
 	Assert(glyph_data != 0);
 
-	Vec4 text_color  = MakeColor(1.0f, 1.0f, 1.0f);
-	Vec4 title_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 info_color  = MakeColor(0.3f, 0.3f, 0.3f);
+	V4 text_color  = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 title_color = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 info_color  = MakeColor(0.3f, 0.3f, 0.3f);
 
-	Int32 text_left = left + UIBoxPadding;
-	Int32 text_top = top + UIBoxPadding;
+	I32 text_left = left + UIBoxPadding;
+	I32 text_top = top + UIBoxPadding;
 
 	DrawBitmapTextLineTopLeft(bitmap, "Character Info", glyph_data, text_left, text_top, title_color);
 	text_top += TextHeightInPixels;
 
-	Int8 line_buffer[128] = {};
+	I8 line_buffer[128] = {};
 	OneLineString(line_buffer, 128, "Level " + entity->level);
 	DrawBitmapTextLineTopLeft(bitmap, line_buffer, glyph_data, text_left, text_top, text_color);
 	text_top += TextHeightInPixels;
@@ -2524,38 +2524,38 @@ func DrawHateTable(Canvas *canvas, CombatLabState *lab_state)
 
 	if(target != 0 && target->group_id != player->group_id)
 	{
-		Int32 line_n = GetHateTableEntityEntryN(hate_table, target);
+		I32 line_n = GetHateTableEntityEntryN(hate_table, target);
 		if(line_n > 0)
 		{
-			Int32 width = 200;
-			Int32 height = UIBoxPadding + TextHeightInPixels + line_n * TextHeightInPixels + UIBoxPadding;
-			Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
-			Vec4 outline_color = MakeColor(0.5f, 0.5f, 0.5f);
-			Vec4 title_color = MakeColor(1.0f, 1.0f, 0.0f);
-			Vec4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
+			I32 width = 200;
+			I32 height = UIBoxPadding + TextHeightInPixels + line_n * TextHeightInPixels + UIBoxPadding;
+			V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+			V4 outline_color = MakeColor(0.5f, 0.5f, 0.5f);
+			V4 title_color = MakeColor(1.0f, 1.0f, 0.0f);
+			V4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
 
-			Int32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
-			Int32 left   = right - width;
-			Int32 bottom = (bitmap->height - 1) - UIBoxPadding;
-			Int32 top    = bottom - height;
+			I32 right  = (bitmap->width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+			I32 left   = right - width;
+			I32 bottom = (bitmap->height - 1) - UIBoxPadding;
+			I32 top    = bottom - height;
 
 			DrawBitmapRect(bitmap, left, right, top, bottom, background_color);
 			DrawBitmapRectOutline(bitmap, left, right, top, bottom, outline_color);
 
-			Int32 text_left = left + UIBoxPadding;
-			Int32 text_right = right - UIBoxPadding;
-			Int32 text_top  = top + UIBoxPadding;
+			I32 text_left = left + UIBoxPadding;
+			I32 text_right = right - UIBoxPadding;
+			I32 text_top  = top + UIBoxPadding;
 
 			DrawBitmapTextLineTopLeft(bitmap, "Hate", canvas->glyph_data, text_left, text_top, title_color);
 			text_top += TextHeightInPixels;
 
-			for(Int32 i = 0; i < hate_table->entryN; i++)
+			for(I32 i = 0; i < hate_table->entryN; i++)
 			{
 				HateTableEntry* entry = &hate_table->entries[i];
 				if(entry->source == target)
 				{
-					Int8 *name = entry->target->name;
-					Int8 value[8];
+					I8 *name = entry->target->name;
+					I8 value[8];
 					OneLineString(value, 8, entry->value);
 					DrawBitmapTextLineTopLeft(bitmap, name, canvas->glyph_data, text_left, text_top, text_color);
 					DrawBitmapTextLineTopRight(bitmap, value, canvas->glyph_data, text_right, text_top, text_color);
@@ -2567,10 +2567,10 @@ func DrawHateTable(Canvas *canvas, CombatLabState *lab_state)
 }
 
 static void
-func UpdateEffects(CombatLabState *lab_state, Real32 seconds)
+func UpdateEffects(CombatLabState *lab_state, R32 seconds)
 {
-	Int32 remaining_effect_n = 0;
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	I32 remaining_effect_n = 0;
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
 		effect->time_remaining -= seconds;
@@ -2586,11 +2586,11 @@ func UpdateEffects(CombatLabState *lab_state, Real32 seconds)
 	}
 	labState->effect_n = remaining_effect_n;
 
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
-		Real32 time = effect->time_remaining;
-		Real32 previous_time = time + seconds;
+		R32 time = effect->time_remaining;
+		R32 previous_time = time + seconds;
 		EffectId effect_id = effect->effect_id;
 		switch(effect_id)
 		{
@@ -2638,12 +2638,12 @@ func UpdateEffects(CombatLabState *lab_state, Real32 seconds)
 }
 
 static void
-func UpdateDamageDisplays(CombatLabState *lab_state, Real32 seconds)
+func UpdateDamageDisplays(CombatLabState *lab_state, R32 seconds)
 {
-	Real32 scroll_up_speed = 1.0f;
+	R32 scroll_up_speed = 1.0f;
 
-	Int32 remaining_display_n = 0;
-	for(Int32 i = 0; i < lab_state->damage_display_n; i++)
+	I32 remaining_display_n = 0;
+	for(I32 i = 0; i < lab_state->damage_display_n; i++)
 	{
 		DamageDisplay *display = &lab_state->damage_displays[i];
 		display->position.y -= scoll_up_speed * seconds;
@@ -2659,10 +2659,10 @@ func UpdateDamageDisplays(CombatLabState *lab_state, Real32 seconds)
 	lab_state->damage_display_n = remaining_display_n;
 }
 
-static Bool32
+static B32
 func CanMove(CombatLabState *lab_State, Entity *entity)
 {
-	Bool32 can_move = false;
+	B32 can_move = false;
 	if(IsDead(entity))
 	{
 		can_move = false;
@@ -2678,12 +2678,12 @@ func CanMove(CombatLabState *lab_State, Entity *entity)
 	return can_move;
 }
 
-static Bool32
+static B32
 func CanPickUpItem(CombatLabState *lab_state, Entity *entity, DroppedItem *item)
 {
-	Bool32 is_alive = !IsDead(entity);
-	Bool32 has_empty_slot = HasEmptySlot(&lab_state->inventory);
-	Bool32 can_pick_up_item = (is_alive && has_empty_slot);
+	B32 is_alive = !IsDead(entity);
+	B32 has_empty_slot = HasEmptySlot(&lab_state->inventory);
+	B32 can_pick_up_item = (is_alive && has_empty_slot);
 	return can_pick_up_item;
 }
 
@@ -2693,9 +2693,9 @@ func PickUpItem(CombatLabState *lab_State, Entity *entity, DroppedItem *item)
 	Assert(item != 0);
 	Assert(CanPickUpItem(lab_state, entity, item));
 
-	Int32 item_index = 0;
-	Bool32 item_found = false;
-	for(Int32 i = 0; i < lab_state->dropped_item_n; i++)
+	I32 item_index = 0;
+	B32 item_found = false;
+	for(I32 i = 0; i < lab_state->dropped_item_n; i++)
 	{
 		if(item == &lab_state->dropped_items[i])
 		{
@@ -2707,14 +2707,14 @@ func PickUpItem(CombatLabState *lab_State, Entity *entity, DroppedItem *item)
 
 	Assert(item_found);
 	lab_state->dropped_item_n--;
-	for(Int32 i = item_index; i < lab_state->dropped_item_n; i++)
+	for(I32 i = item_index; i < lab_state->dropped_item_n; i++)
 	{
 		lab_state->dropped_items[i] = lab_state->dropped_items[i + 1];
 	}
 
 	AddItemToInventory(&lab_state->inventory, item->item_id);
 
-	Int8 *item_name = GetVisibleItemName(lab_state, item->item_id);
+	I8 *item_name = GetVisibleItemName(lab_state, item->item_id);
 	CombatLog(lab_state, entity->name + " picks up " + item_name + ".");
 }
 
@@ -2724,9 +2724,9 @@ func PickUpFlower(CombatLabState *lab_state, Flower *flower)
 	Inventory *inventory = &lab_state->inventory;
 	Assert(HasEmptySlot(inventory));
 
-	Bool32 found_flower = false;
-	Int32 flower_index = 0;
-	for(Int32 i = 0; i < lab_state->flower_n; i++)
+	B32 found_flower = false;
+	I32 flower_index = 0;
+	for(I32 i = 0; i < lab_state->flower_n; i++)
 	{
 		if(&lab_state->flowers[i] == flower)
 		{
@@ -2740,10 +2740,10 @@ func PickUpFlower(CombatLabState *lab_state, Flower *flower)
 	AddItemToInventory(inventory, flower->item_id);
 
 	Entity *player = &lab_state->entities[0];
-	Int8 *visible_flower_name = GetVisibleItemName(lab_state, flower->item_id);
+	I8 *visible_flower_name = GetVisibleItemName(lab_state, flower->item_id);
 	CombatLog(lab_state, player->name + " picks up " + visible_flower_name + ".");
 
-	for(Int32 i = flower_index + 1; i < lab_state->flower_n; i++)
+	for(I32 i = flower_index + 1; i < lab_state->flower_n; i++)
 	{
 		lab_state->flowers[i - 1] = lab_state->flowers[i];
 	}
@@ -2752,12 +2752,12 @@ func PickUpFlower(CombatLabState *lab_state, Flower *flower)
 }
 
 static void
-func UpdateAndDrawDroppedItems(Canvas *canvas, CombatLabState *lab_state, Vec2 mouse_position, Real32 seconds)
+func UpdateAndDrawDroppedItems(Canvas *canvas, CombatLabState *lab_state, V2 mouse_position, R32 seconds)
 {
 	lab_state->hover_dropped_item = 0;
 
-	Int32 remaining_n = 0;
-	for(Int32 i = 0; i < lab_state->dropped_item_n; i++)
+	I32 remaining_n = 0;
+	for(I32 i = 0; i < lab_state->dropped_item_n; i++)
 	{
 		DroppedItem *item = &lab_state->dropped_items[i];
 		item->time_left -= seconds;
@@ -2769,23 +2769,23 @@ func UpdateAndDrawDroppedItems(Canvas *canvas, CombatLabState *lab_state, Vec2 m
 	}
 	lab_state->dropped_item_n = remaining_n;
 
-	for(Int32 i = 0; i < lab_state->dropped_item_n; i++)
+	for(I32 i = 0; i < lab_state->dropped_item_n; i++)
 	{
 		DroppedItem *item = &lab_state->dropped_items[i];
-		Int8 *item_name = GetVisibleItemName(lab_state, item->item_id);
+		I8 *item_name = GetVisibleItemName(lab_state, item->item_id);
 
-		Vec4 normal_background_color = MakeColor(0.5f, 0.5f, 0.5f);
-		Vec4 hover_background_color = MakeColor(0.7f, 0.5f, 0.5f);
-		Vec4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
+		V4 normal_background_color = MakeColor(0.5f, 0.5f, 0.5f);
+		V4 hover_background_color = MakeColor(0.7f, 0.5f, 0.5f);
+		V4 text_color = MakeColor(1.0f, 1.0f, 1.0f);
 
-		Real32 text_width = GetTextWidth(canvas, item_name);
-		Real32 text_height = GetTextHeight(canvas, item_name);
+		R32 text_width = GetTextWidth(canvas, item_name);
+		R32 text_height = GetTextHeight(canvas, item_name);
 		
 		Camera *camera = canvas->camera;
 		Assert(camera->unit_in_pixels > 0.0f);
 		Rect rect = MakeRect(item->position, text_width, text_height);
 
-		Vec4 background_color = normal_background_color;
+		V4 background_color = normal_background_color;
 		if(IsPointInRect(mouse_position, rect))
 		{
 			background_color = hover_background_color;
@@ -2800,13 +2800,13 @@ func UpdateAndDrawDroppedItems(Canvas *canvas, CombatLabState *lab_state, Vec2 m
 static void
 func DrawDamageDisplays(Canvas *canvas, CombatLabState *lab_state)
 {
-	Vec4 damage_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 heal_color = MakeColor(0.0f, 0.5f, 0.0f);
-	for(Int32 i = 0; i < lab_state->damage_display_n; i++)
+	V4 damage_color = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 heal_color = MakeColor(0.0f, 0.5f, 0.0f);
+	for(I32 i = 0; i < lab_state->damage_display_n; i++)
 	{
 		DamageDisplay *display = &lab_state->damage_displays[i];
-		Int8 text[16] = {};
-		Vec4 text_color = {};
+		I8 text[16] = {};
+		V4 text_color = {};
 		if(display->damage > 0)
 		{
 			text_color = damage_color;
@@ -2825,20 +2825,20 @@ func DrawDamageDisplays(Canvas *canvas, CombatLabState *lab_state)
 	}
 }
 
-static Vec2
-func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
+static V2
+func GetClosestRectOutlinePosition(Rect rect, V2 point)
 {
-	Vec2 result = {};
+	V2 result = {};
 
 	Assert(IsPointInRect(point, rect));
 
-	Real32 left_distance = (point.x - rect.left);
+	R32 left_distance = (point.x - rect.left);
 	Assert(left_distance >= 0.0f);
 
-	Real32 min_distance = left_distance;
+	R32 min_distance = left_distance;
 	result = MakePoint(rect.left, point.y);
 
-	Real32 right_distance = (rect.right - point.x);
+	R32 right_distance = (rect.right - point.x);
 	Assert(right_distance >= 0.0f);
 	if(right_distance < min_distance)
 	{
@@ -2846,7 +2846,7 @@ func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
 		result = MakePoint(rect.right, point.y);
 	}
 
-	Real32 top_distance = (point.y - rect.top);
+	R32 top_distance = (point.y - rect.top);
 	Assert(top_distance >= 0.0f);
 	if(top_distance < min_distance)
 	{
@@ -2854,7 +2854,7 @@ func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
 		result = MakePoint(point.x, rect.top);
 	}
 
-	Real32 bottom_distance = (rect.bottom - point.y);
+	R32 bottom_distance = (rect.bottom - point.y);
 	Assert(bottom_distance >= 0.0f);
 	if(bottom_distance < min_distance)
 	{
@@ -2865,44 +2865,44 @@ func GetClosestRectOutlinePosition(Rect rect, Vec2 point)
 	return result;
 }
 
-static Vec2
+static V2
 func GetEntityLeft(Entity *entity)
 {
-	Vec2 left = entity->position + MakeVector(-EntityRadius, 0.0f);
+	V2 left = entity->position + MakeVector(-EntityRadius, 0.0f);
 	return left;
 }
 
-static Vec2
+static V2
 func GetEntityRight(Entity *entity)
 {
-	Vec2 right = entity->position + MakeVector(+EntityRadius, 0.0f);
+	V2 right = entity->position + MakeVector(+EntityRadius, 0.0f);
 	return right;
 }
 
-static Vec2
+static V2
 func GetEntityTop(Entity *entity)
 {
-	Vec2 top = entity->position + MakeVector(0.0f, -EntityRadius);
+	V2 top = entity->position + MakeVector(0.0f, -EntityRadius);
 	return top;
 }
 
-static Vec2
+static V2
 func GetEntityBottom(Entity *entity)
 {
-	Vec2 bottom = entity->position + MakeVector(0.0f, +EntityRadius);
+	V2 bottom = entity->position + MakeVector(0.0f, +EntityRadius);
 	return bottom;
 }
 
 static void
-func UpdateEntityMovement(Entity *entity, Map *map, Real32 seconds)
+func UpdateEntityMovement(Entity *entity, Map *map, R32 seconds)
 {
 }
 
 static void
 func RemoveEffectsOfDeadEntities(CombatLabState *lab_state)
 {
-	Int32 remaining_effect_n = 0;
-	for(Int32 i = 0; i < lab_state->effect_n; i++)
+	I32 remaining_effect_n = 0;
+	for(I32 i = 0; i < lab_state->effect_n; i++)
 	{
 		Effect *effect = &lab_state->effects[i];
 		if(!IsDead(effect->entity))
@@ -2932,15 +2932,15 @@ func DeleteInventoryItem(InventoryItem item)
 	SetSlotItemId(item.inventory, item.slot, NoItemId);
 }
 
-static Bool32
+static B32
 func ItemIsOnCooldown(CombatLabState *lab_state, Entity *entity, ItemId item_id)
 {
-	Bool32 is_on_cooldown = false;
+	B32 is_on_cooldown = false;
 
 	ItemId cooldown_item_id = GetItemIdForCooldown(item_id);
 	Assert(ItemHasOwnCooldown(cooldown_item_id));
 
-	for(Int32 i = 0; i < lab_state->item_cooldown_n; i++)
+	for(I32 i = 0; i < lab_state->item_cooldown_n; i++)
 	{
 		ItemCooldown *cooldown = &lab_state->item_cooldowns[i];
 		Assert(ItemHasOwnCooldown(cooldown->item_id));
@@ -2961,7 +2961,7 @@ func AddItemCooldown(CombatLabState *lab_state, Entity *entity, ItemId item_id)
 	item_id = GetItemIdForCooldown(item_id);
 	Assert(ItemHasOwnCooldown(item_id));
 
-	Real32 duration = GetItemCooldownDuration(item_id);
+	R32 duration = GetItemCooldownDuration(item_id);
 	Assert(duration > 0.0f);
 
 	ItemCooldown cooldown = {};
@@ -2974,10 +2974,10 @@ func AddItemCooldown(CombatLabState *lab_state, Entity *entity, ItemId item_id)
 	lab_state->item_cooldown_n++;
 }
 
-static Bool32
+static B32
 func CanUseItem(CombatLabState *lab_state, Entity *entity, ItemId item_id)
 {
-	Bool32 can_use = true;
+	B32 can_use = true;
 	if(IsDead(entity))
 	{
 		can_use = false;
@@ -3117,7 +3117,7 @@ func UseItem(CombatLabState *lab_state, Entity *entity, InventoryItem item)
 		}
 	}
 
-	Int8 *item_name = GetVisibleItemName(lab_state, item_id);
+	I8 *item_name = GetVisibleItemName(lab_state, item_id);
 	CombatLog(lab_state, entity->name + " uses item " + item_name + ".");
 	DeleteInventoryItem(item);
 
@@ -3127,10 +3127,10 @@ func UseItem(CombatLabState *lab_state, Entity *entity, InventoryItem item)
 	}
 }
 
-static Real32
+static R32
 func GetEntityMoveSpeed(CombatLabState *lab_state, Entity *entity)
 {
-	Real32 move_speed = EntityMoveSpeed;
+	R32 move_speed = EntityMoveSpeed;
 	if(IsDead(entity))
 	{
 		moveSpeed = 0.0f;
@@ -3159,7 +3159,7 @@ func GetEntityMoveSpeed(CombatLabState *lab_state, Entity *entity)
 		if(HasEffect(lab_state, entity, EarthShakeEffectId))
 		{
 			Map* map = &lab_state->map;
-			IntVec2 tile = GetContainingTile(map, entity->position);
+			IV2 tile = GetContainingTile(map, entity->position);
 			TileId tile_type = GetTileType(map, tile);
 		}
 	}
@@ -3167,11 +3167,11 @@ func GetEntityMoveSpeed(CombatLabState *lab_state, Entity *entity)
 	return move_speed;
 }
 
-static Bool32
+static B32
 func IsNeutral(Entity *entity)
 {
 	Assert(entity != 0);
-	Bool32 neutral = false;
+	B32 neutral = false;
 	switch(entity->class_id)
 	{
 		case SnakeClassId:
@@ -3185,18 +3185,18 @@ func IsNeutral(Entity *entity)
 }
 
 static void
-func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, UserInput *user_input)
+func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, R32 seconds, UserInput *user_input)
 {
-	Vec4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
+	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 	ClearScreen(canvas, background_color);
 
 	DrawMap(canvas, &labState->map);
 
-	Vec2 mouse_position = PixelToUnit(canvas->camera, user_input->mouse_pixel_position);
+	V2 mouse_position = PixelToUnit(canvas->camera, user_input->mouse_pixel_position);
 	UpdateAndDrawFlowers(canvas, lab_state, mouse_position);
 
-	Real32 map_width  = GetMapWidth(&lab_state->map);
-	Real32 map_height = GetMapHeight(&lab_state->map);
+	R32 map_width  = GetMapWidth(&lab_state->map);
+	R32 map_height = GetMapHeight(&lab_state->map);
 
 	Entity *player = &lab_state->entities[0];
 	Assert(player->group_id == PlayerGroupId);
@@ -3210,12 +3210,12 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 
 	Map *map = &lab_state->map;
 
-	Bool32 input_move_left  = IsKeyDown(user_input, 'A') || IsKeyDown(user_input, VK_LEFT);
-	Bool32 input_move_right = IsKeyDown(user_input, 'D') || IsKeyDown(user_input, VK_RIGHT);
-	Bool32 input_move_up    = IsKeyDown(user_input, 'W') || IsKeyDown(user_input, VK_UP);
-	Bool32 input_move_down  = IsKeyDown(user_input, 'S') || IsKeyDown(user_input, VK_DOWN);	
+	B32 input_move_left  = IsKeyDown(user_input, 'A') || IsKeyDown(user_input, VK_LEFT);
+	B32 input_move_right = IsKeyDown(user_input, 'D') || IsKeyDown(user_input, VK_RIGHT);
+	B32 input_move_up    = IsKeyDown(user_input, 'W') || IsKeyDown(user_input, VK_UP);
+	B32 input_move_down  = IsKeyDown(user_input, 'S') || IsKeyDown(user_input, VK_DOWN);	
 
-	IntVec2 player_tile = GetContainingTile(map, player->position);
+	IV2 player_tile = GetContainingTile(map, player->position);
 	if(input_move_left && input_move_right)
 	{
 		player->input_diretion.x = 0.0f;
@@ -3248,7 +3248,7 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 	}
 	if(CanMove(labState, player))
 	{
-		Real32 move_speed = GetEntityMoveSpeed(lab_state, player);
+		R32 move_speed = GetEntityMoveSpeed(lab_state, player);
 		player->velocity = move_speed * player->input_direction;
 	}
 
@@ -3264,8 +3264,8 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 	}
 
-	Real32 enemy_pull_distance = 30.0f;
-	for(Int32 i = 0; i < EntityN; i++)
+	R32 enemy_pull_distance = 30.0f;
+	for(I32 i = 0; i < EntityN; i++)
 	{
 		Entity *enemy = &lab_state->entities[i];
 		if (enemy->group_id != EnemyGroupId)
@@ -3275,8 +3275,8 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 
 		if(enemy->target == 0)
 		{
-			Real32 distance_from_player = MaxDistance(player->position, enemy->position);
-			Bool32 is_neutral = IsNeutral(enemy);
+			R32 distance_from_player = MaxDistance(player->position, enemy->position);
+			B32 is_neutral = IsNeutral(enemy);
 			if(!is_neutral && distance_from_player <= enemy_pull_distance)
 			{
 				enemy->target = player;
@@ -3298,9 +3298,9 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 		else if(CanMove(labState, enemy))
 		{
-			IntVec2 enemy_tile = GetContainingTile(map, enemy->position);
+			IV2 enemy_tile = GetContainingTile(map, enemy->position);
 			Assert(enemy->group_id != enemy->target->group_id);
-			IntVec2 target_tile = GetContainingTile(map, enemy->target->position);
+			IV2 target_tile = GetContainingTile(map, enemy->target->position);
 			if(enemy_tile == target_tile)
 			{
 				enemy->velocity = MakeVector(0.0f, 0.0f);
@@ -3316,8 +3316,8 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 	if(WasKeyPressed(user_input, VK_TAB))
 	{
 		Entity *target = 0;
-		Real32 target_player_distance = 0.0f;
-		for(Int32 i = 0; i < EntityN; i++)
+		R32 target_player_distance = 0.0f;
+		for(I32 i = 0; i < EntityN; i++)
 		{
 			Entity *enemy = &lab_state->entities[i];
 			if(enemy->group_id == player->group_id || IsDead(enemy) || enemy == player->target)
@@ -3326,7 +3326,7 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 			}
 			Assert(enemy != player);
 
-			Real32 enemy_player_distance = Distance(enemy->position, player->position);
+			R32 enemy_player_distance = Distance(enemy->position, player->position);
 			if(target == 0 || enemy_player_distance < target_player_distance)
 			{
 				target = enemy;
@@ -3353,10 +3353,10 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 		else
 		{
-			for(Int32 i = 0; i < EntityN; i++)
+			for(I32 i = 0; i < EntityN; i++)
 			{
 				Entity *entity = &lab_state->entities[i];
-				Real32 distance_from_mouse = Distance(mouse_position, entity->position);
+				R32 distance_from_mouse = Distance(mouse_position, entity->position);
 				if(!IsDead(entity) && distance_from_mouse <= EntityRadius)
 				{
 					player->target = entity;
@@ -3366,13 +3366,13 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 	}
 
-	for(Int32 i = 0; i < EntityN; i++)
+	for(I32 i = 0; i < EntityN; i++)
 	{
 		Entity *entity = &lab_state->entities[i];
 		UpdateEntityRecharge(entity, seconds);
 	}
 
-	for(Int32 i = '1'; i <= '7'; i++)
+	for(I32 i = '1'; i <= '7'; i++)
 	{
 		if(WasKeyPressed(user_input, i))
 		{
@@ -3380,7 +3380,7 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 	}
 
-	for(Int32 i = 1; i < EntityN; i++)
+	for(I32 i = 1; i < EntityN; i++)
 	{
 		Entity *entity = &lab_state->entities[i];
 		if(entity->class_id == SnakeClassId)
@@ -3402,7 +3402,7 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 	}
 
-	for(Int32 i = 0; i < EntityN; i++)
+	for(I32 i = 0; i < EntityN; i++)
 	{
 		Entity *entity = &lab_state->entities[i];
 		if(entity->casted_ability != NoAbilityId)
@@ -3439,7 +3439,7 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 	UpdateEnemyTargets(lab_state);
 	RemoveEffectsOfDeadEntities(lab_state);
 
-	Vec4 player_color = MakeColor(0.0f, 1.0f, 1.0f);
+	V4 player_color = MakeColor(0.0f, 1.0f, 1.0f);
 	if(player == player->target)
 	{
 		DrawSelectedEntity(canvas, player, player_color);
@@ -3449,9 +3449,9 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		DrawEntity(canvas, player, player_color);
 	}
 
-	Vec4 neutral_enemy_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Vec4 hostile_enemy_color = MakeColor(1.0f, 0.0f, 0.0f);
-	for(Int32 i = 0; i < EntityN; i++)
+	V4 neutral_enemy_color = MakeColor(1.0f, 1.0f, 0.0f);
+	V4 hostile_enemy_color = MakeColor(1.0f, 0.0f, 0.0f);
+	for(I32 i = 0; i < EntityN; i++)
 	{
 		Entity* enemy = &lab_state->entities[i];
 		if(enemy->group_id != EnemyGroupId)
@@ -3459,8 +3459,8 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 			continue;
 		}
 
-		Bool32 is_neutral = IsNeutral(enemy);
-		Vec4 enemy_color = (is_neutral) ? neutral_enemy_color : hostile_enemy_color;
+		B32 is_neutral = IsNeutral(enemy);
+		V4 enemy_color = (is_neutral) ? neutral_enemy_color : hostile_enemy_color;
 
 		if(enemy == player->target)
 		{
@@ -3472,19 +3472,19 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 	}
 
-	for(Int32 i = 0; i < EntityN; i++)
+	for(I32 i = 0; i < EntityN; i++)
 	{
 		Entity *entity = &lab_state->entities[i];
 		DrawEntityBars(canvas, entity);
 	}
 
-	Vec4 entity_name_color = MakeColor(1.0f, 1.0f, 1.0f);
-	Vec4 cast_ability_name_color = MakeColor(0.0f, 1.0f, 1.0f);
-	for(Int32 i = 0; i < EntityN; i++)
+	V4 entity_name_color = MakeColor(1.0f, 1.0f, 1.0f);
+	V4 cast_ability_name_color = MakeColor(0.0f, 1.0f, 1.0f);
+	for(I32 i = 0; i < EntityN; i++)
 	{
 		Entity *entity = &lab_state->entities[i];
-		Real32 text_center_x = entity->position.x;
-		Real32 text_bottom = entity->position.y - 2.0f * EntityRadius;
+		R32 text_center_x = entity->position.x;
+		R32 text_bottom = entity->position.y - 2.0f * EntityRadius;
 
 		if(entity->casted_ability == NoAbilityId)
 		{
@@ -3492,7 +3492,7 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 		}
 		else
 		{
-			Int8 *ability_name = GetAbilityName(entity->casted_ability);
+			I8 *ability_name = GetAbilityName(entity->casted_ability);
 			DrawTextLineBottomXCentered(canvas, ability_name, text_bottom, text_center_x, cast_ability_name_color);
 		}
 	}
@@ -3562,8 +3562,8 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 	if(lab_state->show_inventory)
 	{
 		Inventory *inventory = &lab_state->inventory;
-		Int32 right = (canvas->bitmap.width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
-		Int32 bottom = (canvas->bitmap.height - 1) - UIBoxPadding;
+		I32 right = (canvas->bitmap.width - 1) - UIBoxPadding - UIBoxSide - UIBoxPadding;
+		I32 bottom = (canvas->bitmap.height - 1) - UIBoxPadding;
 		inventory->left = right - GetInventoryWidth(inventory);
 		inventory->top = bottom - GetInventoryHeight(inventory);
 		UpdateAndDrawInventory(canvas, lab_state, inventory, user_input->mouse_pixel_position);
@@ -3593,10 +3593,10 @@ func CombatLabUpdate(CombatLabState *lab_state, Canvas *canvas, Real32 seconds, 
 	{
 		Assert(drag_item->item_id != 0);
 		
-		Int32 slot_top  = user_input->mouse_pixel_position.row - InventorySlotSide / 2;
-		Int32 slot_left = user_input->mouse_pixel_position.col - InventorySlotSide / 2;
+		I32 slot_top  = user_input->mouse_pixel_position.row - InventorySlotSide / 2;
+		I32 slot_left = user_input->mouse_pixel_position.col - InventorySlotSide / 2;
 
-		Vec4 drag_outline_color = MakeColor(1.0f, 0.5f, 0.0f);
+		V4 drag_outline_color = MakeColor(1.0f, 0.5f, 0.0f);
 
 		DrawInventorySlot(canvas, lab_state, drag_item->slot_id, drag_item->item_id, slot_top, slot_left);
 		DrawInventorySlotOutline(canvas, slot_top, slot_left, drag_outline_color);

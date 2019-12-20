@@ -108,10 +108,10 @@ func GetAbilityClass(AbilityId ability_id)
 	return class_id;
 }
 
-static Int32
+static I32
 func GetAbilityMinLevel(AbilityId ability_id)
 {
-	Int32 min_level = 0;
+	I32 min_level = 0;
 	switch(ability_id)
 	{
 		case EarthShakeAbilityId:
@@ -202,11 +202,11 @@ func GetAbilityMinLevel(AbilityId ability_id)
 	return min_level;
 }
 
-static Real32
+static R32
 func GetAbilityCastDuration(AbilityId ability_id)
 {
 	Assert(ability_id != NoAbilityId);
-	Real32 cast_duration = 0.0f;
+	R32 cast_duration = 0.0f;
 	switch(ability_id)
 	{
 		case LightningAbilityId:
@@ -233,18 +233,18 @@ func GetAbilityCastDuration(AbilityId ability_id)
 	return cast_duration;
 }
 
-static Bool32
+static B32
 func AbilityIsCasted(AbilityId ability_id)
 {
-	Real32 cast_duration = GetAbilityCastDuration(ability_id);
-	Bool32 is_casted = (cast_duration > 0.0f);
+	R32 cast_duration = GetAbilityCastDuration(ability_id);
+	B32 is_casted = (cast_duration > 0.0f);
 	return is_casted;
 }
 
-static Real32
+static R32
 func GetAbilityCooldownDuration(AbilityId ability_id)
 {
-	Real32 cooldown = 0.0f;
+	R32 cooldown = 0.0f;
 	switch(ability_id)
 	{
 		case EarthShakeAbilityId:
@@ -320,18 +320,18 @@ func GetAbilityCooldownDuration(AbilityId ability_id)
 	return cooldown;
 }
 
-static Bool32
+static B32
 func AbilityHasCooldown(AbilityId ability_id)
 {
-	Real32 cooldown_duration = GetAbilityCooldownDuration(ability_id);
-	Bool32 has_cooldown = (cooldown_duration > 0.0f);
+	R32 cooldown_duration = GetAbilityCooldownDuration(ability_id);
+	B32 has_cooldown = (cooldown_duration > 0.0f);
 	return has_cooldown;
 }
 
-static Real32
+static R32
 func GetAbilityRechargeDuration(AbilityId ability_id)
 {
-	Real32 recharge = 0.0f;
+	R32 recharge = 0.0f;
 	switch(ability_id)
 	{
 		case SnakeStrikeAbilityId:
@@ -364,10 +364,10 @@ func GetAbilityRechargeDuration(AbilityId ability_id)
 	return recharge;
 }
 
-static Int8 *
+static I8 *
 func GetAbilityName(AbilityId ability_id)
 {
-	Int8 *name = 0;
+	I8 *name = 0;
 	switch(ability_id)
 	{
 		case LightningAbilityId:

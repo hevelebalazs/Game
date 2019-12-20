@@ -12,16 +12,16 @@
 
 struct MemArena 
 {
-	Int8 *base_address;
-	UInt32 used_size;
-	UInt32 max_size;
+	I8 *base_address;
+	U32 used_size;
+	U32 max_size;
 };
 
 static MemArena
-func CreateMemArena(void *memory, UInt32 size)
+func CreateMemArena(void *memory, U32 size)
 {
 	MemArena arena = {};
-	arena.base_address = (Int8 *)memory;
+	arena.base_address = (I8 *)memory;
 	arena.max_size = size;
 	arena.used_size = 0;
 	return arena;
@@ -34,23 +34,23 @@ func ArenaReset(MemArena *arena)
 }
 
 static void *
-func ArenaAlloc(MemArena *arena, UInt32 size)
+func ArenaAlloc(MemArena *arena, U32 size)
 {
 	Assert(arena->used_size + size <= arena->max_size);
-	Int8 *result = arena->base_address + arena->used_size;
+	I8 *result = arena->base_address + arena->used_size;
 	arena->used_size += size;
 	return result;
 }
 
-static UInt32
+static U32
 func GetArenaSize(MemArena *arena)
 {
-	UInt32 result = arena->used_size;
+	U32 result = arena->used_size;
 	return result;
 }
 
 static void
-func SetArenaSize(MemArena *arena, UInt32 size)
+func SetArenaSize(MemArena *arena, U32 size)
 {
 	arena->used_size = size;
 }
@@ -60,22 +60,22 @@ func ArenaPopTo(MemArena *arena, void *address)
 {
 	Assert(arena->base_address <= address);
 	Assert(address < arena->base_address + arena->used_size);
-	arena->used_size = (UInt32)((Int8 *)address - arena->base_address);
+	arena->used_size = (U32)((I8 *)address - arena->base_address);
 }
 
-static Int8 *
+static I8 *
 func GetArenaTop(MemArena *arena)
 {
-	Int8 *top = arena->base_address + arena->used_size;
+	I8 *top = arena->base_address + arena->used_size;
 	return top;
 }
 
-static Int8 *
-func ArenaPushData(MemArena *arena, UInt32 size, void* data)
+static I8 *
+func ArenaPushData(MemArena *arena, U32 size, void* data)
 {
-	Int8 *copy_to = (Int8*)ArenaAlloc(arena, size);
-	Int8 *copy_from = (Int8*)data;
-	for(UInt32 index = 0; index < size; index++)
+	I8 *copy_to = (I8*)ArenaAlloc(arena, size);
+	I8 *copy_from = (I8*)data;
+	for(U32 index = 0; index < size; index++)
 	{
 		copy_to[index] = copy_from[index];
 	}
@@ -94,14 +94,14 @@ func ArenaPushData(MemArena *arena, UInt32 size, void* data)
 #define ArenaPushVar(arena, variable) ArenaPushData(arena, sizeof(variable), &(variable))
 
 static MemArena
-func CreateSubArena(MemArena *arena, UInt32 size)
+func CreateSubArena(MemArena *arena, U32 size)
 {
 	MemArena result = {};
-	result.base_address = (Int8 *)ArenaAlloc(arena, size);
+	result.base_address = (I8 *)ArenaAlloc(arena, size);
 	result.used_size = 0;
 	result.max_size = size;
 	return result;
 }
 
-#define GetRelativeAddress(absolute_address, base) ((UInt64)(absolute_address) - (UInt64)(base))
-#define GetAbsoluteAddress(relative_address, base) ((UInt64)(relative_address) + (UInt64)(base))
+#define GetRelativeAddress(absolute_address, base) ((U64)(absolute_address) - (U64)(base))
+#define GetAbsoluteAddress(relative_address, base) ((U64)(relative_address) + (U64)(base))
