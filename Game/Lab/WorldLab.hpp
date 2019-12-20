@@ -122,6 +122,8 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 
 	if(WasKeyReleased(user_input, VK_LBUTTON))
 	{
+		V2 world_offset = {};
+
 		ArenaReset(tmp_arena);
 
 		if(map->tile_row_n == 0)
@@ -198,27 +200,38 @@ func HandlePlaceTileMode(WorldLabState *lab_state, Canvas *canvas, UserInput *us
 
 			if(tile.row < 0)
 			{
-				camera->center.y += (-tile.row) * MapTileSide;
+				world_offset.y = (-tile.row) * MapTileSide;
 			}
 			if(tile.col < 0)
 			{
-				camera->center.x += (-tile.col) * MapTileSide;
+				world_offset.x = (-tile.col) * MapTileSide;
 			}
 
 			tile.row = IntMax2(tile.row, 0);
 			tile.col = IntMax2(tile.col, 0);
 			SetTileType(map, tile, CaveTileId);
-
 		}
 
-		WorldLabSwapArenas(lab_state);
-
-		MapItem *old_items = map->items;
-		map->items = ArenaAllocArray(arena, MapItem, map->item_n);
+		MapItem *new_items = ArenaAllocArray(tmp_arena, MapItem, map->item_n);
 		for(I32 i = 0; i < map->item_n; i++)
 		{
-			map->items[i] = old_items[i];
+			new_items[i] = map->items[i];
+			new_items[i].position += world_offset;
 		}
+		map->items = new_items;
+
+		MapEntity *new_entities = ArenaAllocArray(tmp_arena, MapEntity, map->entity_n);
+		for(I32 i = 0; i < map->entity_n; i++)
+		{
+			new_entities[i] = map->entities[i];
+			new_entities[i].spawn_position += world_offset;
+		}
+		map->entities = new_entities;
+
+		camera->center += world_offset;
+
+		WorldLabSwapArenas(lab_state);
+		CheckConsistency(lab_state);
 	}
 	
 	Rect tile_rect = {};
