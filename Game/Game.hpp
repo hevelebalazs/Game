@@ -6,13 +6,6 @@
 
 #define GameArenaSize (1 * MegaByte)
 
-enum EntityGroupId
-{
-	NeutralGroupId,
-	OrangeGroupId,
-	PurpleGroupId
-};
-
 struct Entity
 {
 	Vec2 position;
@@ -63,13 +56,13 @@ func AddNpc(Game *game, Entity *npc)
 }
 
 static void
-func InitNpc(Entity *npc, EntityGroupId group_id, Real32 x, Real32 y)
+func InitNpc(Entity *npc, EntityGroupId group_id, Vec2 position)
 {
 	npc->group_id = group_id;
-	npc->position = MakePoint(x, y);
-	npc->start_position = npc->position;
+	npc->position = position;
+	npc->start_position = position;
 	npc->velocity = MakePoint(0.0f, 0.0f);
-	npc->max_health_points = 300;
+	npc->max_health_points = 100;
 	npc->health_points = npc->max_health_points;
 }
 
@@ -129,37 +122,12 @@ func GameInit(Game *game, Canvas *canvas)
 	game->quest_finished = false;
 
 	Map *map = &game->map;
-	for(Int32 row = 0; row < map->tile_row_n; row++)
+	for(Int32 i = 0; i < map->entity_n; i++)
 	{
-		for(Int32 col = 0; col < map->tile_col_n; col++)
-		{
-			IntVec2 tile = MakeIntPoint(row, col);
-			TileId tile_id = GetTileType(map, tile);
-			if(tile_id != NoTileId)
-			{
-				Int32 tile_npc_n = IntRandom(0, 3);
-
-				Rect tile_rect = GetTileRect(map, tile);
-				for(Int32 i = 0; i < tile_npc_n; i++)
-				{
-					Real32 x = RandomBetween(tile_rect.left, tile_rect.right);
-					Real32 y = RandomBetween(tile_rect.top, tile_rect.bottom);
-					EntityGroupId id = GetRandomGroupId();
-
-					Entity npc = {};
-					InitNpc(&npc, id, x, y);
-					AddNpc(game, &npc);
-				}
-			}
-		}
-	}
-
-	for(Int32 i = 0; i < game->npc_n - 1; i++)
-	{
-		Int32 j = IntRandom(i + 1, game->npc_n - 1);
-		Entity tmp = game->npcs[i];
-		game->npcs[i] = game->npcs[j];
-		game->npcs[j] = tmp;
+		MapEntity *map_entity = &map->entities[i];
+		Entity npc = {};
+		InitNpc(&npc, map_entity->group_id, map_entity->spawn_position);
+		AddNpc(game, &npc);
 	}
 }
 
@@ -614,7 +582,7 @@ func UpdateNpc(Game *game, Entity *npc, Real32 seconds)
 			{
 				if(npc->recharge_time == 0.0f)
 				{
-					DoDamage(target, 30);
+					DoDamage(target, 3);
 					npc->recharge_time = 3.0f;
 				}
 			}
