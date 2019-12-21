@@ -25,6 +25,31 @@ enum EntityGroupId
 	PurpleGroupId
 };
 
+static V4
+func GetEntityGroupColor(EntityGroupId group_id)
+{
+	V4 color = {};
+	switch(group_id)
+	{
+		case OrangeGroupId:
+		{
+			color = MakeColor(1.0f, 0.5f, 0.0f);
+			break;
+		}
+		case PurpleGroupId:
+		{
+			color = MakeColor(1.0f, 0.0f, 1.0f);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	return color;
+}
+
 struct MapEntity
 {
 	EntityGroupId group_id;

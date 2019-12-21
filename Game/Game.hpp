@@ -58,12 +58,31 @@ func AddNpc(Game *game, Entity *npc)
 static void
 func InitNpc(Entity *npc, EntityGroupId group_id, V2 position)
 {
+	I32 health_points = 0;
+	switch(group_id)
+	{
+		case OrangeGroupId:
+		{
+			health_points = 100;
+			break;
+		}
+		case PurpleGroupId:
+		{
+			health_points = 10;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
 	npc->group_id = group_id;
 	npc->position = position;
 	npc->start_position = position;
 	npc->velocity = MakePoint(0.0f, 0.0f);
-	npc->max_health_points = 100;
-	npc->health_points = npc->max_health_points;
+	npc->max_health_points = health_points;
+	npc->health_points = health_points;
 }
 
 static EntityGroupId
@@ -515,11 +534,11 @@ func DoDamage(Entity *target, I32 damage)
 	target->health_points = ClipIntUpToZero(target->health_points - damage);
 	if(target->health_points == 0)
 	{
-		target->resurrect_time = 5.0f;
+		target->resurrect_time = 30.0f;
 	}
 }
 
-#define MaxAttackDistance 30.0f
+#define MaxAttackDistance 15.0f
 #define MaxMeleeDistance 3.0f
 
 static void
@@ -533,6 +552,7 @@ func UpdateNpcTarget(Game *game, Entity *npc)
 		target = 0;
 	}
 
+	R32 closest_distance = MaxAttackDistance;
 	if(!target)
 	{
 		for(I32 i = 0; i < game->npc_n; i++)
@@ -545,10 +565,10 @@ func UpdateNpcTarget(Game *game, Entity *npc)
 				if(is_alive && is_enemy)
 				{
 					R32 distance = Distance(npc->position, entity->position);
-					if(distance <= MaxAttackDistance)
+					if(distance <= closest_distance)
 					{
 						target = entity;
-						break;
+						closest_distance = distance;
 					}
 				}
 			}
@@ -582,7 +602,26 @@ func UpdateNpc(Game *game, Entity *npc, R32 seconds)
 			{
 				if(npc->recharge_time == 0.0f)
 				{
-					DoDamage(target, 3);
+					I32 damage = 0;
+					switch(npc->group_id)
+					{
+						case OrangeGroupId:
+						{
+							damage = 2;
+							break;
+						}
+						case PurpleGroupId:
+						{
+							damage = 2;
+							break;
+						}
+						default:
+						{
+							DebugBreak();
+						}
+					}
+
+					DoDamage(target, damage);
 					npc->recharge_time = 3.0f;
 				}
 			}
@@ -603,31 +642,6 @@ func UpdateNpc(Game *game, Entity *npc, R32 seconds)
 	}
 
 	npc->position += seconds * npc->velocity;
-}
-
-static V4
-func GetEntityGroupColor(EntityGroupId group_id)
-{
-	V4 color = {};
-	switch(group_id)
-	{
-		case OrangeGroupId:
-		{
-			color = MakeColor(1.0f, 0.5f, 0.0f);
-			break;
-		}
-		case PurpleGroupId:
-		{
-			color = MakeColor(1.0f, 0.0f, 1.0f);
-			break;
-		}
-		default:
-		{
-			DebugBreak();
-		}
-	}
-
-	return color;
 }
 
 static void

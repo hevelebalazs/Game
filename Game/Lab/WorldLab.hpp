@@ -31,6 +31,8 @@ struct WorldLabState
 	Map map;
 
 	WorldEditMode edit_mode;
+
+	EntityGroupId place_entity_group_id;
 };
 
 static void
@@ -50,6 +52,7 @@ func DrawMapEntities(Canvas *canvas, Map *map)
 	for(I32 i = 0; i < map->entity_n; i++)
 	{
 		MapEntity *entity = &map->entities[i];
+		V4 color = GetEntityGroupColor(entity->group_id);
 		DrawCircle(canvas, entity->spawn_position, radius, color);
 	}
 }
@@ -88,6 +91,8 @@ func WorldLabInit(WorldLabState *lab_state, Canvas* canvas)
 	Camera *camera = canvas->camera;
 	camera->unit_in_pixels = 100.0f;
 	camera->center = MakePoint(0.0f, 0.0f);
+
+	lab_state->place_entity_group_id = OrangeGroupId;
 }
 
 static B32
@@ -369,13 +374,14 @@ func HandleRemoveItemMode(WorldLabState *lab_state, Canvas *canvas, UserInput *u
 static void
 func HandlePlaceEntityMode(WorldLabState *lab_state, Canvas *canvas, UserInput *user_input)
 {
+	Assert(lab_state->edit_mode == PlaceEntityMode);
+
 	Map *map = &lab_state->map;
 	Camera *camera = canvas->camera;
 	V2 mouse_position = PixelToUnit(camera, user_input->mouse_pixel_position);
 
 	R32 entity_radius = 0.5f;
-	V4 entity_color = MakeColor(1.0f, 0.5f, 0.0f);;
-
+	V4 entity_color = GetEntityGroupColor(lab_state->place_entity_group_id);
 	DrawCircle(canvas, mouse_position, entity_radius, entity_color);
 
 	if(WasKeyReleased(user_input, VK_LBUTTON))
@@ -404,7 +410,7 @@ func HandlePlaceEntityMode(WorldLabState *lab_state, Canvas *canvas, UserInput *
 			new_entities[i] = map->entities[i];
 		}
 		MapEntity *new_entity = &new_entities[map->entity_n];
-		new_entity->group_id = OrangeGroupId;
+		new_entity->group_id = lab_state->place_entity_group_id;
 		new_entity->spawn_position = mouse_position;
 		map->entity_n++;
 		map->entities = new_entities;
@@ -469,7 +475,25 @@ func WorldLabUpdate(WorldLabState *lab_state, Canvas *canvas, R32 seconds, UserI
 	}
 	if(WasKeyPressed(user_input, '4'))
 	{
-		lab_state->edit_mode = PlaceEntityMode;
+		if(lab_state->edit_mode == PlaceEntityMode)
+		{
+			if(lab_state->place_entity_group_id == OrangeGroupId)
+			{
+				lab_state->place_entity_group_id = PurpleGroupId;
+			}
+			else if(lab_state->place_entity_group_id == PurpleGroupId)
+			{
+				lab_state->place_entity_group_id = OrangeGroupId;
+			}
+			else
+			{
+				DebugBreak();
+			}
+		}
+		else
+		{
+			lab_state->edit_mode = PlaceEntityMode;
+		}
 	}
 
 	MemArena *arena = lab_state->arena;
