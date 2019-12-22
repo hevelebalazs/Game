@@ -798,11 +798,33 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 		player->target = 0;
 	}
 
+	player->recharge_time = ClipUpToZero(player->recharge_time - seconds);
+
+	if(WasKeyPressed(user_input, '1'))
+	{
+		if(IsAlive(player) && player->target && IsAlive(player->target))
+		{
+			Assert(IsEnemyOf(player, player->target));
+			if(player->recharge_time == 0.0f)
+			{
+				R32 distance_from_target = Distance(player->position, player->target->position);
+				DoDamage(player->target, 3);
+				player->recharge_time = 3.0f;
+			}
+		}
+	}
+
 	for(I32 i = 0; i < game->entity_n; i++)
 	{
 		Entity *entity = &game->entities[i];
 		V4 color = GetEntityGroupColor(entity->group_id);
 		DrawEntity(canvas, entity, color);
+
+		if(entity->recharge_time > 0.0f)
+		{
+			V4 color = MakeColor(0.0f, 1.0f, 1.0f);
+			HighlightEntity(canvas, entity, color);
+		}
 
 		if(entity == player->target)
 		{
