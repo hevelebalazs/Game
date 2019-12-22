@@ -809,7 +809,7 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 			{
 				R32 distance_from_target = Distance(player->position, player->target->position);
 				DoDamage(player->target, 3);
-				player->recharge_time = 3.0f;
+				player->recharge_time = 1.0f;
 			}
 		}
 	}
@@ -819,12 +819,6 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 		Entity *entity = &game->entities[i];
 		V4 color = GetEntityGroupColor(entity->group_id);
 		DrawEntity(canvas, entity, color);
-
-		if(entity->recharge_time > 0.0f)
-		{
-			V4 color = MakeColor(0.0f, 1.0f, 1.0f);
-			HighlightEntity(canvas, entity, color);
-		}
 
 		if(entity == player->target)
 		{
@@ -836,6 +830,30 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 		{
 			UpdateNpc(game, entity, seconds);
 		}
+	}
+
+	if(player->recharge_time > 0.0f)
+	{
+		R32 recharge_from = 1.0f;
+		R32 r = (player->recharge_time / recharge_from);
+		Assert(IsBetween(r, 0.0f, 1.0f));
+
+		Bitmap *bitmap = &canvas->bitmap;
+
+		I32 bar_height = 10;
+		IntRect bar_rect = {};
+		bar_rect.left = 0;
+		bar_rect.right = bitmap->width - 1;
+		bar_rect.bottom = bitmap->height - 1;
+		bar_rect.top = bar_rect.bottom - bar_height;
+
+		V4 background_color = MakeColor(0.3f, 0.3f, 0.3f);
+		DrawBitmapRect(bitmap, bar_rect, background_color);
+
+		IntRect filled_rect = bar_rect;
+		filled_rect.right = (I32)Lerp((R32)bar_rect.left, r, (R32)bar_rect.right);
+		V4 filled_color = MakeColor(0.8f, 0.8f, 0.8f);
+		DrawBitmapRect(bitmap, filled_rect, filled_color);
 	}
 
 	Inventory *trade_inventory = &game->trade_inventory;
