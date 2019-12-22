@@ -43,8 +43,6 @@ struct Game
 	Entity *player;
 
 	R32 *item_spawn_cooldowns;
-
-	B32 quest_finished;
 };
 
 static Entity *
@@ -150,8 +148,6 @@ func GameInit(Game *game, Canvas *canvas)
 
 	InitInventory(&game->trade_inventory, &game->arena, 3, 5);
 	game->show_trade_window = false;
-
-	game->quest_finished = false;
 
 	Map *map = &game->map;
 	for(I32 i = 0; i < map->entity_n; i++)
@@ -554,6 +550,27 @@ func DoDamage(Entity *target, I32 damage)
 #define MaxAttackDistance 15.0f
 #define MaxMeleeDistance 3.0f
 
+static B32
+func IsEnemyOf(Entity *a, Entity *b)
+{
+	B32 is_enemy = (a->group_id != NeutralGroupId && b->group_id != NeutralGroupId && b->group_id != a->group_id);
+	return is_enemy;
+}
+
+static B32
+func IsDead(Entity *entity)
+{
+	B32 is_dead = (entity->health_points == 0);
+	return is_dead;
+}
+
+static B32
+func IsAlive(Entity *entity)
+{
+	B32 is_alive = (entity->health_points > 0);
+	return is_alive;
+}
+
 static void
 func UpdateNpcTarget(Game *game, Entity *npc)
 {
@@ -574,7 +591,7 @@ func UpdateNpcTarget(Game *game, Entity *npc)
 			if(entity != npc)
 			{
 				B32 is_alive = (entity->health_points > 0);
-				B32 is_enemy = (entity->group_id != NeutralGroupId && entity->group_id != npc->group_id);
+				B32 is_enemy = IsEnemyOf(npc, entity);
 				if(is_alive && is_enemy)
 				{
 					R32 distance = Distance(npc->position, entity->position);
@@ -749,51 +766,36 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 			game->item_spawn_cooldowns[hover_item_index] = 30.0f;
 		}
 	}
-	   
-	V4 npc_color = MakeColor(1.0f, 0.0f, 1.0f);
-	V4 npc_highlight_color = MakeColor(0.5f, 0.0f, 0.5f);
-	V4 npc_border_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Entity npc = {};
-	npc.position = MakePoint(50.0f, 25.0f);
 
-	R32 player_npc_distance = Distance(player->position, npc.position);
-	R32 interaction_distance = 3.0f;
-	Rect npc_rect = GetEntityRect(&npc);
-
-	DrawEntity(canvas, &npc, npc_color);
-	if(player_npc_distance <= interaction_distance)
+	if(WasKeyPressed(user_input, VK_TAB))
 	{
-		HighlightEntity(canvas, &npc, npc_border_color);
-		I8 *text = 0;
-		if(game->quest_finished)
-		{
-			text = "Thanks!";
-		}
-		else
-		{
-			text = "Can you bring me 10 crystals?";
-		}
-		DrawInteractionDialogWithText(canvas, text);
+		R32 max_target_distance = 30.0f;
 
-		if(WasKeyReleased(user_input, 'E'))
+		Entity *new_target = player->target;
+		R32 new_target_distance = max_target_distance;
+		for(I32 i = 0; i < game->entity_n; i++)
 		{
-			if(game->show_trade_window)
+			Entity *entity = &game->entities[i];
+			if(entity != player && entity != player->target)
 			{
-				StopTrading(game);
-			}
-			else
-			{
-				game->show_trade_window = true;
-				game->show_inventory = true; 
+				if(IsAlive(entity) && IsEnemyOf(player, entity))
+				{
+					R32 distance = Distance(entity->position, player->position);
+					if(distance < new_target_distance)
+					{
+						new_target = entity;
+						new_target_distance = distance;
+					}
+				}
 			}
 		}
+
+		player->target = new_target;
 	}
-	else
+
+	if(player->target && IsDead(player->target))
 	{
-		if(game->show_trade_window)
-		{
-			StopTrading(game);
-		}
+		player->target = 0;
 	}
 
 	for(I32 i = 0; i < game->entity_n; i++)
@@ -801,6 +803,12 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 		Entity *entity = &game->entities[i];
 		V4 color = GetEntityGroupColor(entity->group_id);
 		DrawEntity(canvas, entity, color);
+
+		if(entity == player->target)
+		{
+			V4 highlight_color = MakeColor(1.0f, 1.0f, 0.0f);
+			HighlightEntity(canvas, entity, highlight_color);
+		}
 
 		if(entity != game->player)
 		{
@@ -831,36 +839,6 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 				{
 					MoveItemToInventory(hover_item, inventory);
 				}
-			}
-		}
-
-		if(!game->quest_finished)
-		{
-			I32 crystal_count = 0;
-			I32 item_count = 0;
-			for(I32 row = 0; row < trade_inventory->row_n; row++)
-			{
-				for(I32 col = 0; col < trade_inventory->col_n; col++)
-				{
-					IV2 slot = MakeIntPoint(row, col);
-					ItemId item_id = GetInventoryItemId(trade_inventory, slot);
-					if(item_id != NoItemId)
-					{
-						item_count++;
-						if(item_id == CrystalItemId)
-						{
-							crystal_count++;
-						}
-					}
-				}
-			}
-
-			B32 are_items_expected = (crystal_count == 10 && item_count == 10);
-			if(are_items_expected)
-			{
-				game->quest_finished = true;
-				ClearInventory(trade_inventory);
-				StopTrading(game);
 			}
 		}
 	}
