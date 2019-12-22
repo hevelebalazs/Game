@@ -23,7 +23,7 @@ struct Entity
 	EntityGroupId group_id;
 };
 
-#define MaxNpcN 1024
+#define MaxEntityN 1024
 
 struct Game
 {
@@ -37,22 +37,33 @@ struct Game
 	Inventory trade_inventory;
 	B32 show_trade_window;
 
-	Entity player;
+	Entity entities[MaxEntityN];
+	I32 entity_n;
+
+	Entity *player;
 
 	R32 *item_spawn_cooldowns;
 
 	B32 quest_finished;
-
-	I32 npc_n;
-	Entity npcs[MaxNpcN];
 };
 
-static void
-func AddNpc(Game *game, Entity *npc)
+static Entity *
+func AddEntity(Game *game, Entity entity)
 {
-	Assert(game->npc_n < MaxNpcN);
-	game->npcs[game->npc_n] = *npc;
-	game->npc_n++;
+	Assert(game->entity_n < MaxEntityN);
+	Entity *result = &game->entities[game->entity_n];
+	game->entity_n++;
+	*result = entity;
+	return result;
+}
+
+static Entity *
+func AddPlayer(Game *game, Entity entity)
+{
+	Assert(game->player == 0);
+	Entity *result = AddEntity(game, entity);
+	game->player = result;
+	return result;
 }
 
 static void
@@ -115,11 +126,13 @@ func GameInit(Game *game, Canvas *canvas)
 	camera->unit_in_pixels = 30;
 	camera->center = MakePoint(0.0, 0.0);
 
-	Entity *player = &game->player;
-	player->position = MakePoint(0.5f * MapTileSide, 0.5f * MapTileSide);
-	player->velocity = MakeVector(0.0f, 0.0f);
-	player->max_health_points = 100;
-	player->health_points = player->max_health_points;
+	Entity player = {};
+	player.position = MakePoint(0.5f * MapTileSide, 0.5f * MapTileSide);
+	player.velocity = MakeVector(0.0f, 0.0f);
+	player.max_health_points = 10;
+	player.health_points = player.max_health_points;
+	player.group_id = OrangeGroupId;
+	AddPlayer(game, player);
 
 	I8 *map_file = "Data/Map.data";
 	game->map = ReadMapFromFile(map_file, &game->arena); 
@@ -146,7 +159,7 @@ func GameInit(Game *game, Canvas *canvas)
 		MapEntity *map_entity = &map->entities[i];
 		Entity npc = {};
 		InitNpc(&npc, map_entity->group_id, map_entity->spawn_position);
-		AddNpc(game, &npc);
+		AddEntity(game, npc);
 	}
 }
 
@@ -555,9 +568,9 @@ func UpdateNpcTarget(Game *game, Entity *npc)
 	R32 closest_distance = MaxAttackDistance;
 	if(!target)
 	{
-		for(I32 i = 0; i < game->npc_n; i++)
+		for(I32 i = 0; i < game->entity_n; i++)
 		{
-			Entity *entity = &game->npcs[i];
+			Entity *entity = &game->entities[i];
 			if(entity != npc)
 			{
 				B32 is_alive = (entity->health_points > 0);
@@ -651,7 +664,8 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, background_color);
 
-	Entity *player = &game->player;
+	Entity *player = game->player;
+	Assert(player != 0);
 
 	R32 player_move_speed = 10.0f;
 	player->velocity.x = 0.0f;
@@ -736,9 +750,6 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 		}
 	}
 	   
-	V4 player_color = MakeColor(1.0f, 1.0f, 0.0f);
-	DrawEntity(canvas, player, player_color);
-
 	V4 npc_color = MakeColor(1.0f, 0.0f, 1.0f);
 	V4 npc_highlight_color = MakeColor(0.5f, 0.0f, 0.5f);
 	V4 npc_border_color = MakeColor(1.0f, 1.0f, 0.0f);
@@ -785,12 +796,16 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 		}
 	}
 
-	for(I32 i = 0; i < game->npc_n; i++)
+	for(I32 i = 0; i < game->entity_n; i++)
 	{
-		Entity *npc = &game->npcs[i];
-		V4 color = GetEntityGroupColor(npc->group_id);
-		DrawEntity(canvas, npc, color);
-		UpdateNpc(game, npc, seconds);
+		Entity *entity = &game->entities[i];
+		V4 color = GetEntityGroupColor(entity->group_id);
+		DrawEntity(canvas, entity, color);
+
+		if(entity != game->player)
+		{
+			UpdateNpc(game, entity, seconds);
+		}
 	}
 
 	Inventory *trade_inventory = &game->trade_inventory;
