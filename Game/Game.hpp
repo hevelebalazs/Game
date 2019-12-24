@@ -6,6 +6,61 @@
 
 #define GameArenaSize (1 * MegaByte)
 
+struct SubTile
+{
+	IV2 tile_index;
+	IV2 sub_index;
+};
+
+#define SubTileSideN 8
+#define SubTileSide ((MapTileSide) / ((R32)(SubTileSideN)))
+
+static SubTile
+func MakeSubTile(I32 row, I32 col, I32 sub_row, I32 sub_col)
+{
+	SubTile sub_tile = {};
+	sub_tile.tile_index = MakeIntPoint(row, col);
+	sub_tile.sub_index = MakeIntPoint(sub_row, sub_col);
+	return sub_tile;
+}
+
+static B32
+func IsValidSubTile(Map *map, SubTile sub_tile)
+{
+	B32 is_valid_tile_index = IsValidTile(map, sub_tile.tile_index);
+
+	B32 is_valid_subtile_row = IsIntBetween(sub_tile.sub_index.row, 0, SubTileSideN);
+	B32 is_valid_subtile_col = IsIntBetween(sub_tile.sub_index.col, 0, SubTileSideN);
+	B32 is_valid_subtile_index = (is_valid_subtile_row && is_valid_subtile_col);
+
+	B32 is_valid = (is_valid_tile_index && is_valid_subtile_index);
+	return is_valid;
+}
+
+static V2
+func GetSubTileCenter(Map *map, SubTile sub_tile)
+{
+	Assert(IsValidSubTile(map, sub_tile));
+
+	V2 tile_center = GetTileCenter(map, sub_tile.tile_index);
+	V2 tile_top_left = tile_center - 0.5f * MakePoint(MapTileSide, MapTileSide);
+
+	V2 sub_tile_center = {};
+	sub_tile_center.x = tile_top_left.x + (sub_tile.sub_index.row * SubTileSide) + (0.5f * SubTileSide);
+	sub_tile_center.y = tile_top_left.y + (sub_tile.sub_index.col * SubTileSide) + (0.5f * SubTileSide);
+	return sub_tile_center;
+}
+
+static Rect
+func GetSubTileRect(Map *map, SubTile sub_tile)
+{
+	Assert(IsValidSubTile(map, sub_tile));
+
+	V2 center = GetSubTileCenter(map, sub_tile);
+	Rect rect = MakeSquareRect(center, SubTileSide);
+	return rect;
+}
+
 struct Entity
 {
 	V2 position;
@@ -127,7 +182,7 @@ func GameInit(Game *game, Canvas *canvas)
 	Entity player = {};
 	player.position = MakePoint(0.5f * MapTileSide, 0.5f * MapTileSide);
 	player.velocity = MakeVector(0.0f, 0.0f);
-	player.max_health_points = 10;
+	player.max_health_points = 10000;
 	player.health_points = player.max_health_points;
 	player.group_id = OrangeGroupId;
 	AddPlayer(game, player);
@@ -750,6 +805,23 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 				hover_item_index = i;
 				hover_item = item;
 				break;
+			}
+		}
+	}
+
+	for(I32 row = 0; row < map->tile_row_n; row++)
+	{
+		for(I32 col = 0; col < map->tile_col_n; col++)
+		{
+			for(I32 sub_row = 0; sub_row < SubTileSideN; sub_row++)
+			{
+				for(I32 sub_col = 0; sub_col < SubTileSideN; sub_col++)
+				{
+					SubTile sub_tile = MakeSubTile(row, col, sub_row, sub_col);
+					Rect sub_tile_rect = GetSubTileRect(map, sub_tile);
+					V4 color = MakeColor(0.0f, 0.0f, 1.0f);
+					DrawRectOutline(canvas, sub_tile_rect, color);
+				}
 			}
 		}
 	}
