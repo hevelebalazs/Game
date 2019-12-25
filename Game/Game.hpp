@@ -46,8 +46,8 @@ func GetSubTileCenter(Map *map, SubTile sub_tile)
 	V2 tile_top_left = tile_center - 0.5f * MakePoint(MapTileSide, MapTileSide);
 
 	V2 sub_tile_center = {};
-	sub_tile_center.x = tile_top_left.x + (sub_tile.sub_index.row * SubTileSide) + (0.5f * SubTileSide);
-	sub_tile_center.y = tile_top_left.y + (sub_tile.sub_index.col * SubTileSide) + (0.5f * SubTileSide);
+	sub_tile_center.x = tile_top_left.x + (sub_tile.sub_index.col * SubTileSide) + (0.5f * SubTileSide);
+	sub_tile_center.y = tile_top_left.y + (sub_tile.sub_index.row * SubTileSide) + (0.5f * SubTileSide);
 	return sub_tile_center;
 }
 
@@ -59,6 +59,20 @@ func GetSubTileRect(Map *map, SubTile sub_tile)
 	V2 center = GetSubTileCenter(map, sub_tile);
 	Rect rect = MakeSquareRect(center, SubTileSide);
 	return rect;
+}
+
+static void
+func DrawSubTile(Canvas *canvas, Map *map, SubTile sub_tile, V4 color)
+{
+	Rect rect = GetSubTileRect(map, sub_tile);
+	DrawRect(canvas, rect, color);
+}
+
+static void
+func DrawSubTileOutline(Canvas *canvas, Map *map, SubTile sub_tile, V4 color)
+{
+	Rect rect = GetSubTileRect(map, sub_tile);
+	DrawRectOutline(canvas, rect, color);
 }
 
 struct Entity
@@ -77,6 +91,22 @@ struct Entity
 	R32 recharge_time;
 	EntityGroupId group_id;
 };
+
+static SubTile
+func GetContainingSubTile(Map *map, V2 point)
+{
+	IV2 tile_index = GetContainingTile(map, point);
+	Rect tile_rect = GetTileRect(map, tile_index);
+	I32 row = Floor((point.y - tile_rect.top) / SubTileSide);
+	I32 col = Floor((point.x - tile_rect.left) / SubTileSide);
+	Assert(IsIntBetween(row, 0, SubTileSideN - 1));
+	Assert(IsIntBetween(col, 0, SubTileSideN - 1));
+	
+	SubTile sub_tile;
+	sub_tile.tile_index = tile_index;
+	sub_tile.sub_index = MakeIntPoint(row, col);
+	return sub_tile;
+}
 
 #define MaxEntityN 1024
 
@@ -780,7 +810,7 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 	UpdateEntityMovement(player, map, seconds);
 	canvas->camera->center = player->position;
 
-	DrawMapWithoutItems(canvas, map);
+	// DrawMapWithoutItems(canvas, map);
 	for(I32 i = 0; i < map->item_n; i++)
 	{
 		game->item_spawn_cooldowns[i] -= seconds;
@@ -809,18 +839,31 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 		}
 	}
 
+	for(I32 i = 0; i < game->entity_n; i++)
+	{
+		Entity *entity = &game->entities[i];
+		SubTile player_sub_tile = GetContainingSubTile(map, entity->position);
+		V4 color = MakeColor(1.0f, 1.0f, 0.0f);
+		DrawSubTile(canvas, map, player_sub_tile, color);
+	}
+
 	for(I32 row = 0; row < map->tile_row_n; row++)
 	{
 		for(I32 col = 0; col < map->tile_col_n; col++)
 		{
-			for(I32 sub_row = 0; sub_row < SubTileSideN; sub_row++)
+			IV2 tile_index = MakeIntPoint(row, col);
+			TileId tile_id = GetTileType(map, tile_index);
+
+			if(tile_id != NoTileId)
 			{
-				for(I32 sub_col = 0; sub_col < SubTileSideN; sub_col++)
+				for(I32 sub_row = 0; sub_row < SubTileSideN; sub_row++)
 				{
-					SubTile sub_tile = MakeSubTile(row, col, sub_row, sub_col);
-					Rect sub_tile_rect = GetSubTileRect(map, sub_tile);
-					V4 color = MakeColor(0.0f, 0.0f, 1.0f);
-					DrawRectOutline(canvas, sub_tile_rect, color);
+					for(I32 sub_col = 0; sub_col < SubTileSideN; sub_col++)
+					{
+						SubTile sub_tile = MakeSubTile(row, col, sub_row, sub_col);
+						V4 color = MakeColor(0.0f, 0.0f, 1.0f);
+						DrawSubTileOutline(canvas, map, sub_tile, color);
+					}
 				}
 			}
 		}
