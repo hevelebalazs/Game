@@ -92,6 +92,15 @@ struct Entity
 	EntityGroupId group_id;
 };
 
+static B32
+func SubTilesAreEqual(SubTile a, SubTile b)
+{
+	B32 tile_index_equal = (a.tile_index.row == b.tile_index.row && a.tile_index.col == b.tile_index.col);
+	B32 sub_index_equal = (a.sub_index.row == b.sub_index.row && a.sub_index.col == b.sub_index.col);
+	B32 equal = (tile_index_equal && sub_index_equal);
+	return equal;
+}
+
 static SubTile
 func GetContainingSubTile(Map *map, V2 point)
 {
@@ -129,6 +138,27 @@ struct Game
 
 	R32 *item_spawn_cooldowns;
 };
+
+static B32
+func SubTileIsOccupied(Game *game, SubTile sub_tile)
+{
+	Map *map = &game->map;
+	Assert(IsValidSubTile(map, sub_tile));
+
+	B32 is_occupied = false;
+	for(I32 i = 0; i < game->entity_n; i++)
+	{
+		Entity *entity = &game->entities[i];
+		SubTile entity_sub_tile = GetContainingSubTile(map, entity->position);
+		if(SubTilesAreEqual(entity_sub_tile, sub_tile))
+		{
+			is_occupied = true;
+			break;
+		}
+	}
+
+	return is_occupied;
+}
 
 static Entity *
 func AddEntity(Game *game, Entity entity)
@@ -283,8 +313,10 @@ func GetEntityBottom(Entity *entity)
 }
 
 static void
-func UpdateEntityMovement(Entity *entity, Map *map, R32 seconds)
+func UpdateEntityMovement(Game *game, Entity *entity, R32 seconds)
 {
+	Map *map = &game->map;
+
 	V2 move_vector = seconds * entity->velocity;
 	V2 old_position = entity->position;
 	V2 new_position = entity->position + move_vector;
@@ -346,7 +378,23 @@ func UpdateEntityMovement(Entity *entity, Map *map, R32 seconds)
 	new_position.x = Clip(new_position.x, EntityRadius, map_width - EntityRadius);
 	new_position.y = Clip(new_position.y, EntityRadius, map_height - EntityRadius);
 
-	entity->position = new_position;
+	SubTile old_sub_tile = GetContainingSubTile(map, entity->position);
+	SubTile new_sub_tile = GetContainingSubTile(map, new_position);
+
+	B32 can_move = false;
+	if(SubTilesAreEqual(old_sub_tile, new_sub_tile))
+	{
+		can_move = true;
+	}
+	else
+	{
+		can_move = (!SubTileIsOccupied(game, new_sub_tile));
+	}
+
+	if(can_move)
+	{
+		entity->position = new_position;
+	}
 }
 
 static void
@@ -756,7 +804,7 @@ func UpdateNpc(Game *game, Entity *npc, R32 seconds)
 		}
 	}
 
-	npc->position += seconds * npc->velocity;
+	UpdateEntityMovement(game, npc, seconds);
 }
 
 static void
@@ -807,10 +855,10 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 	}
 
 	Map *map = &game->map;
-	UpdateEntityMovement(player, map, seconds);
+	UpdateEntityMovement(game, player, seconds);
 	canvas->camera->center = player->position;
 
-	// DrawMapWithoutItems(canvas, map);
+	DrawMapWithoutItems(canvas, map);
 	for(I32 i = 0; i < map->item_n; i++)
 	{
 		game->item_spawn_cooldowns[i] -= seconds;
@@ -835,36 +883,6 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 				hover_item_index = i;
 				hover_item = item;
 				break;
-			}
-		}
-	}
-
-	for(I32 i = 0; i < game->entity_n; i++)
-	{
-		Entity *entity = &game->entities[i];
-		SubTile player_sub_tile = GetContainingSubTile(map, entity->position);
-		V4 color = MakeColor(1.0f, 1.0f, 0.0f);
-		DrawSubTile(canvas, map, player_sub_tile, color);
-	}
-
-	for(I32 row = 0; row < map->tile_row_n; row++)
-	{
-		for(I32 col = 0; col < map->tile_col_n; col++)
-		{
-			IV2 tile_index = MakeIntPoint(row, col);
-			TileId tile_id = GetTileType(map, tile_index);
-
-			if(tile_id != NoTileId)
-			{
-				for(I32 sub_row = 0; sub_row < SubTileSideN; sub_row++)
-				{
-					for(I32 sub_col = 0; sub_col < SubTileSideN; sub_col++)
-					{
-						SubTile sub_tile = MakeSubTile(row, col, sub_row, sub_col);
-						V4 color = MakeColor(0.0f, 0.0f, 1.0f);
-						DrawSubTileOutline(canvas, map, sub_tile, color);
-					}
-				}
 			}
 		}
 	}
