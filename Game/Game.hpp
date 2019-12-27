@@ -312,10 +312,10 @@ func GetEntityBottom(Entity *entity)
 	return bottom;
 }
 
-static void
-func UpdateEntityMovement(Game *game, Entity *entity, R32 seconds)
+static V2
+func GetUpdatedEntityPosition(Game *game, Entity *entity, R32 seconds)
 {
-	Map *map = &game->map;
+		Map *map = &game->map;
 
 	V2 move_vector = seconds * entity->velocity;
 	V2 old_position = entity->position;
@@ -378,6 +378,15 @@ func UpdateEntityMovement(Game *game, Entity *entity, R32 seconds)
 	new_position.x = Clip(new_position.x, EntityRadius, map_width - EntityRadius);
 	new_position.y = Clip(new_position.y, EntityRadius, map_height - EntityRadius);
 
+	return new_position;
+}
+
+static void
+func UpdateEntityMovementWithSubTileCollision(Game *game, Entity *entity, R32 seconds)
+{
+	Map *map = &game->map;
+	V2 new_position = GetUpdatedEntityPosition(game, entity, seconds);
+
 	SubTile old_sub_tile = GetContainingSubTile(map, entity->position);
 	SubTile new_sub_tile = GetContainingSubTile(map, new_position);
 
@@ -395,6 +404,13 @@ func UpdateEntityMovement(Game *game, Entity *entity, R32 seconds)
 	{
 		entity->position = new_position;
 	}
+}
+
+static void
+func UpdateEntityMovementWithoutSubTileCollision(Game *game, Entity *entity, R32 seconds)
+{
+	V2 new_position = GetUpdatedEntityPosition(game, entity, seconds);
+	entity->position = new_position;
 }
 
 static void
@@ -804,7 +820,7 @@ func UpdateNpc(Game *game, Entity *npc, R32 seconds)
 		}
 	}
 
-	UpdateEntityMovement(game, npc, seconds);
+	UpdateEntityMovementWithSubTileCollision(game, npc, seconds);
 }
 
 static void
@@ -855,7 +871,7 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 	}
 
 	Map *map = &game->map;
-	UpdateEntityMovement(game, player, seconds);
+	UpdateEntityMovementWithoutSubTileCollision(game, player, seconds);
 	canvas->camera->center = player->position;
 
 	DrawMapWithoutItems(canvas, map);
