@@ -242,7 +242,7 @@ func GameInit(Game *game, Canvas *canvas)
 	Entity player = {};
 	player.position = MakePoint(0.5f * MapTileSide, 0.5f * MapTileSide);
 	player.velocity = MakeVector(0.0f, 0.0f);
-	player.max_health_points = 10000;
+	player.max_health_points = 20;
 	player.health_points = player.max_health_points;
 	player.group_id = OrangeGroupId;
 	AddPlayer(game, player);
@@ -312,71 +312,90 @@ func GetEntityBottom(Entity *entity)
 	return bottom;
 }
 
+static B32
+func IsDead(Entity *entity)
+{
+	B32 is_dead = (entity->health_points == 0);
+	return is_dead;
+}
+
+static B32
+func IsAlive(Entity *entity)
+{
+	B32 is_alive = (entity->health_points > 0);
+	return is_alive;
+}
+
 static V2
 func GetUpdatedEntityPosition(Game *game, Entity *entity, R32 seconds)
 {
+	V2 old_position = entity->position;
+	V2 new_position = old_position;
+
+	if(IsAlive(entity))
+	{
 		Map *map = &game->map;
 
-	V2 move_vector = seconds * entity->velocity;
-	V2 old_position = entity->position;
-	V2 new_position = entity->position + move_vector;
+		V2 move_vector = seconds * entity->velocity;
+		new_position = entity->position + move_vector;
 
-	IV2 top_tile = GetContainingTile(map, GetEntityTop(entity));
-	top_tile.row--;
+		IV2 top_tile = GetContainingTile(map, GetEntityTop(entity));
+		top_tile.row--;
 
-	IV2 bottom_tile = GetContainingTile(map, GetEntityBottom(entity));
-	bottom_tile.row++;
+		IV2 bottom_tile = GetContainingTile(map, GetEntityBottom(entity));
+		bottom_tile.row++;
 
-	IV2 left_tile = GetContainingTile(map, GetEntityLeft(entity));
-	left_tile.col--;
+		IV2 left_tile = GetContainingTile(map, GetEntityLeft(entity));
+		left_tile.col--;
 
-	IV2 right_tile = GetContainingTile(map, GetEntityRight(entity));
-	right_tile.col++;
+		IV2 right_tile = GetContainingTile(map, GetEntityRight(entity));
+		right_tile.col++;
 
-	for(I32 row = top_tile.row; row <= bottom_tile.row; row++)
-	{
-		for(I32 col = left_tile.col; col <= right_tile.col; col++)
+		for(I32 row = top_tile.row; row <= bottom_tile.row; row++)
 		{
-			IV2 tile = MakeTile(row, col);
-			if(IsValidTile(map, tile) && IsTileType(map, tile, NoTileId))
+			for(I32 col = left_tile.col; col <= right_tile.col; col++)
 			{
-				Poly16 collision_poly = {};
-				Rect tile_rect = GetTileRect(map, tile);
-				Rect collision_rect = GetExtendedRect(tile_rect, EntityRadius);
-
-				if(IsBetween(old_position.x, collision_rect.left, collision_rect.right))
+				IV2 tile = MakeTile(row, col);
+				if(IsValidTile(map, tile) && IsTileType(map, tile, NoTileId))
 				{
-					if(old_position.y <= collision_rect.top && new_position.y > collision_rect.top)
+					Poly16 collision_poly = {};
+					Rect tile_rect = GetTileRect(map, tile);
+					Rect collision_rect = GetExtendedRect(tile_rect, EntityRadius);
+
+					if(IsBetween(old_position.x, collision_rect.left, collision_rect.right))
 					{
-						new_position.y = collision_rect.top;
+						if(old_position.y <= collision_rect.top && new_position.y > collision_rect.top)
+						{
+							new_position.y = collision_rect.top;
+						}
+
+						if(old_position.y >= collision_rect.bottom && new_position.y < collision_rect.bottom)
+						{
+							new_position.y = collision_rect.bottom;
+						}
 					}
 
-					if(old_position.y >= collision_rect.bottom && new_position.y < collision_rect.bottom)
+					if(IsBetween(old_position.y, collision_rect.top, collision_rect.bottom))
 					{
-						new_position.y = collision_rect.bottom;
-					}
-				}
+						if(old_position.x <= collision_rect.left && new_position.x > collision_rect.left)
+						{
+							new_position.x = collision_rect.left;
+						}
 
-				if(IsBetween(old_position.y, collision_rect.top, collision_rect.bottom))
-				{
-					if(old_position.x <= collision_rect.left && new_position.x > collision_rect.left)
-					{
-						new_position.x = collision_rect.left;
-					}
-
-					if(old_position.x >= collision_rect.right && new_position.x < collision_rect.right)
-					{
-						new_position.x = collision_rect.right;
+						if(old_position.x >= collision_rect.right && new_position.x < collision_rect.right)
+						{
+							new_position.x = collision_rect.right;
+						}
 					}
 				}
 			}
 		}
-	}
 
-	R32 map_width  = GetMapWidth(map);
-	R32 map_height = GetMapHeight (map);
-	new_position.x = Clip(new_position.x, EntityRadius, map_width - EntityRadius);
-	new_position.y = Clip(new_position.y, EntityRadius, map_height - EntityRadius);
+		R32 map_width  = GetMapWidth(map);
+		R32 map_height = GetMapHeight (map);
+		new_position.x = Clip(new_position.x, EntityRadius, map_width - EntityRadius);
+		new_position.y = Clip(new_position.y, EntityRadius, map_height - EntityRadius);
+	}
 
 	return new_position;
 }
@@ -704,20 +723,6 @@ func IsEnemyOf(Entity *a, Entity *b)
 {
 	B32 is_enemy = (a->group_id != NeutralGroupId && b->group_id != NeutralGroupId && b->group_id != a->group_id);
 	return is_enemy;
-}
-
-static B32
-func IsDead(Entity *entity)
-{
-	B32 is_dead = (entity->health_points == 0);
-	return is_dead;
-}
-
-static B32
-func IsAlive(Entity *entity)
-{
-	B32 is_alive = (entity->health_points > 0);
-	return is_alive;
 }
 
 static void
