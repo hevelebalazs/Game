@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Item.hpp"
 #include "Map.hpp"
@@ -6,11 +6,146 @@
 
 #define GameArenaSize (1 * MegaByte)
 
+struct SubTile
+{
+	IV2 tile_index;
+	IV2 sub_index;
+};
+
+#define SubTileSideN 8
+#define SubTileSide ((MapTileSide) / ((R32)(SubTileSideN)))
+
+static SubTile
+func MakeSubTile(I32 row, I32 col, I32 sub_row, I32 sub_col)
+{
+	SubTile sub_tile = {};
+	sub_tile.tile_index = MakeIntPoint(row, col);
+	sub_tile.sub_index = MakeIntPoint(sub_row, sub_col);
+	return sub_tile;
+}
+
+static B32
+func IsValidSubTile(Map *map, SubTile sub_tile)
+{
+	B32 is_valid_tile_index = IsValidTile(map, sub_tile.tile_index);
+
+	B32 is_valid_subtile_row = IsIntBetween(sub_tile.sub_index.row, 0, SubTileSideN);
+	B32 is_valid_subtile_col = IsIntBetween(sub_tile.sub_index.col, 0, SubTileSideN);
+	B32 is_valid_subtile_index = (is_valid_subtile_row && is_valid_subtile_col);
+
+	B32 is_valid = (is_valid_tile_index && is_valid_subtile_index);
+	return is_valid;
+}
+
+static SubTile
+func OffsetSubTile(SubTile tile, IV2 offset)
+{
+	SubTile result = tile;
+	result.sub_index.row += offset.row;
+	result.sub_index.col += offset.col;
+
+	result.tile_index.row += (result.sub_index.row / SubTileSideN);
+	result.sub_index.row %= SubTileSideN;
+	if(result.sub_index.row < 0)
+	{
+		result.tile_index.row--;
+		result.sub_index.row += SubTileSideN;
+	}
+
+	result.tile_index.col += (result.sub_index.col / SubTileSideN);
+	result.sub_index.col %= SubTileSideN;
+	if(result.sub_index.col < 0)
+	{
+		result.tile_index.col--;
+		result.sub_index.col += SubTileSideN;
+	}
+
+	Assert(IsIntBetween(result.sub_index.row, 0, SubTileSideN - 1));
+	Assert(IsIntBetween(result.sub_index.col, 0, SubTileSideN - 1));
+	return result;
+}
+
+static V2
+func GetSubTileCenter(Map *map, SubTile sub_tile)
+{
+	Assert(IsValidSubTile(map, sub_tile));
+
+	V2 tile_center = GetTileCenter(map, sub_tile.tile_index);
+	V2 tile_top_left = tile_center - 0.5f * MakePoint(MapTileSide, MapTileSide);
+
+	V2 sub_tile_center = {};
+	sub_tile_center.x = tile_top_left.x + (sub_tile.sub_index.col * SubTileSide) + (0.5f * SubTileSide);
+	sub_tile_center.y = tile_top_left.y + (sub_tile.sub_index.row * SubTileSide) + (0.5f * SubTileSide);
+	return sub_tile_center;
+}
+
+static Rect
+func GetSubTileRect(Map *map, SubTile sub_tile)
+{
+	Assert(IsValidSubTile(map, sub_tile));
+
+	V2 center = GetSubTileCenter(map, sub_tile);
+	Rect rect = MakeSquareRect(center, SubTileSide);
+	return rect;
+}
+
+static void
+func DrawSubTile(Canvas *canvas, Map *map, SubTile sub_tile, V4 color)
+{
+	Rect rect = GetSubTileRect(map, sub_tile);
+	DrawRect(canvas, rect, color);
+}
+
+static void
+func DrawSubTileOutline(Canvas *canvas, Map *map, SubTile sub_tile, V4 color)
+{
+	Rect rect = GetSubTileRect(map, sub_tile);
+	DrawRectOutline(canvas, rect, color);
+}
+
 struct Entity
 {
 	V2 position;
 	V2 velocity;
+
+	I32 health_points;
+	I32 max_health_points;
+
+	V2 start_position;
+	R32 resurrect_time;
+
+	Entity *target;
+
+	R32 recharge_time;
+	EntityGroupId group_id;
 };
+
+static B32
+func SubTilesAreEqual(SubTile a, SubTile b)
+{
+	B32 tile_index_equal = (a.tile_index.row == b.tile_index.row && a.tile_index.col == b.tile_index.col);
+	B32 sub_index_equal = (a.sub_index.row == b.sub_index.row && a.sub_index.col == b.sub_index.col);
+	B32 equal = (tile_index_equal && sub_index_equal);
+	return equal;
+}
+
+static SubTile
+func GetContainingSubTile(Map *map, V2 point)
+{
+	IV2 tile_index = GetContainingTile(map, point);
+	Rect tile_rect = GetTileRect(map, tile_index);
+	I32 row = Floor((point.y - tile_rect.top) / SubTileSide);
+	I32 col = Floor((point.x - tile_rect.left) / SubTileSide);
+	Assert(IsIntBetween(row, 0, SubTileSideN - 1));
+	Assert(IsIntBetween(col, 0, SubTileSideN - 1));
+	
+	SubTile sub_tile;
+	sub_tile.tile_index = tile_index;
+	sub_tile.sub_index = MakeIntPoint(row, col);
+	return sub_tile;
+}
+
+#define MaxEntityN 1024
 
 struct Game
 {
@@ -24,12 +159,104 @@ struct Game
 	Inventory trade_inventory;
 	B32 show_trade_window;
 
-	Entity player;
+	Entity entities[MaxEntityN];
+	I32 entity_n;
+
+	Entity *player;
 
 	R32 *item_spawn_cooldowns;
-
-	B32 quest_finished;
 };
+
+static B32
+func SubTileIsOccupied(Game *game, SubTile sub_tile)
+{
+	Map *map = &game->map;
+	Assert(IsValidSubTile(map, sub_tile));
+
+	B32 is_occupied = false;
+	for(I32 i = 0; i < game->entity_n; i++)
+	{
+		Entity *entity = &game->entities[i];
+		SubTile entity_sub_tile = GetContainingSubTile(map, entity->position);
+		if(SubTilesAreEqual(entity_sub_tile, sub_tile))
+		{
+			is_occupied = true;
+			break;
+		}
+	}
+
+	return is_occupied;
+}
+
+static Entity *
+func AddEntity(Game *game, Entity entity)
+{
+	Assert(game->entity_n < MaxEntityN);
+	Entity *result = &game->entities[game->entity_n];
+	game->entity_n++;
+	*result = entity;
+	return result;
+}
+
+static Entity *
+func AddPlayer(Game *game, Entity entity)
+{
+	Assert(game->player == 0);
+	Entity *result = AddEntity(game, entity);
+	game->player = result;
+	return result;
+}
+
+static void
+func InitNpc(Entity *npc, EntityGroupId group_id, V2 position)
+{
+	I32 health_points = 0;
+	switch(group_id)
+	{
+		case OrangeGroupId:
+		{
+			health_points = 100;
+			break;
+		}
+		case PurpleGroupId:
+		{
+			health_points = 10;
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	npc->group_id = group_id;
+	npc->position = position;
+	npc->start_position = position;
+	npc->velocity = MakePoint(0.0f, 0.0f);
+	npc->max_health_points = health_points;
+	npc->health_points = health_points;
+}
+
+static EntityGroupId
+func GetRandomGroupId()
+{
+	EntityGroupId id = NeutralGroupId;
+	I32 random = IntRandom(0, 1);
+	if(random == 0)
+	{
+		id = OrangeGroupId;
+	}
+	else if(random == 1)
+	{
+		id = PurpleGroupId;
+	}
+	else
+	{
+		DebugBreak();
+	}
+
+	return id;
+}
 
 static void
 func GameInit(Game *game, Canvas *canvas)
@@ -40,9 +267,13 @@ func GameInit(Game *game, Canvas *canvas)
 	camera->unit_in_pixels = 30;
 	camera->center = MakePoint(0.0, 0.0);
 
-	Entity *player = &game->player;
-	player->position = MakePoint(0.5f * MapTileSide, 0.5f * MapTileSide);
-	player->velocity = MakeVector(0.0f, 0.0f);
+	Entity player = {};
+	player.position = MakePoint(0.5f * MapTileSide, 0.5f * MapTileSide);
+	player.velocity = MakeVector(0.0f, 0.0f);
+	player.max_health_points = 20;
+	player.health_points = player.max_health_points;
+	player.group_id = OrangeGroupId;
+	AddPlayer(game, player);
 
 	I8 *map_file = "Data/Map.data";
 	game->map = ReadMapFromFile(map_file, &game->arena); 
@@ -61,7 +292,14 @@ func GameInit(Game *game, Canvas *canvas)
 	InitInventory(&game->trade_inventory, &game->arena, 3, 5);
 	game->show_trade_window = false;
 
-	game->quest_finished = false;
+	Map *map = &game->map;
+	for(I32 i = 0; i < map->entity_n; i++)
+	{
+		MapEntity *map_entity = &map->entities[i];
+		Entity npc = {};
+		InitNpc(&npc, map_entity->group_id, map_entity->spawn_position);
+		AddEntity(game, npc);
+	}
 }
 
 #define EntityRadius 0.5f
@@ -102,70 +340,123 @@ func GetEntityBottom(Entity *entity)
 	return bottom;
 }
 
-static void
-func UpdateEntityMovement(Entity *entity, Map *map, R32 seconds)
+static B32
+func IsDead(Entity *entity)
 {
-	V2 move_vector = seconds * entity->velocity;
+	B32 is_dead = (entity->health_points == 0);
+	return is_dead;
+}
+
+static B32
+func IsAlive(Entity *entity)
+{
+	B32 is_alive = (entity->health_points > 0);
+	return is_alive;
+}
+
+static V2
+func GetUpdatedEntityPosition(Game *game, Entity *entity, R32 seconds)
+{
 	V2 old_position = entity->position;
-	V2 new_position = entity->position + move_vector;
+	V2 new_position = old_position;
 
-	IV2 top_tile = GetContainingTile(map, GetEntityTop(entity));
-	top_tile.row--;
-
-	IV2 bottom_tile = GetContainingTile(map, GetEntityBottom(entity));
-	bottom_tile.row++;
-
-	IV2 left_tile = GetContainingTile(map, GetEntityLeft(entity));
-	left_tile.col--;
-
-	IV2 right_tile = GetContainingTile(map, GetEntityRight(entity));
-	right_tile.col++;
-
-	for(I32 row = top_tile.row; row <= bottom_tile.row; row++)
+	if(IsAlive(entity))
 	{
-		for(I32 col = left_tile.col; col <= right_tile.col; col++)
+		Map *map = &game->map;
+
+		V2 move_vector = seconds * entity->velocity;
+		new_position = entity->position + move_vector;
+
+		IV2 top_tile = GetContainingTile(map, GetEntityTop(entity));
+		top_tile.row--;
+
+		IV2 bottom_tile = GetContainingTile(map, GetEntityBottom(entity));
+		bottom_tile.row++;
+
+		IV2 left_tile = GetContainingTile(map, GetEntityLeft(entity));
+		left_tile.col--;
+
+		IV2 right_tile = GetContainingTile(map, GetEntityRight(entity));
+		right_tile.col++;
+
+		for(I32 row = top_tile.row; row <= bottom_tile.row; row++)
 		{
-			IV2 tile = MakeTile(row, col);
-			if(IsValidTile(map, tile) && IsTileType(map, tile, NoTileId))
+			for(I32 col = left_tile.col; col <= right_tile.col; col++)
 			{
-				Poly16 collision_poly = {};
-				Rect tile_rect = GetTileRect(map, tile);
-				Rect collision_rect = GetExtendedRect(tile_rect, EntityRadius);
-
-				if(IsBetween(old_position.x, collision_rect.left, collision_rect.right))
+				IV2 tile = MakeTile(row, col);
+				if(IsValidTile(map, tile) && IsTileType(map, tile, NoTileId))
 				{
-					if(old_position.y <= collision_rect.top && new_position.y > collision_rect.top)
+					Poly16 collision_poly = {};
+					Rect tile_rect = GetTileRect(map, tile);
+					Rect collision_rect = GetExtendedRect(tile_rect, EntityRadius);
+
+					if(IsBetween(old_position.x, collision_rect.left, collision_rect.right))
 					{
-						new_position.y = collision_rect.top;
+						if(old_position.y <= collision_rect.top && new_position.y > collision_rect.top)
+						{
+							new_position.y = collision_rect.top;
+						}
+
+						if(old_position.y >= collision_rect.bottom && new_position.y < collision_rect.bottom)
+						{
+							new_position.y = collision_rect.bottom;
+						}
 					}
 
-					if(old_position.y >= collision_rect.bottom && new_position.y < collision_rect.bottom)
+					if(IsBetween(old_position.y, collision_rect.top, collision_rect.bottom))
 					{
-						new_position.y = collision_rect.bottom;
-					}
-				}
+						if(old_position.x <= collision_rect.left && new_position.x > collision_rect.left)
+						{
+							new_position.x = collision_rect.left;
+						}
 
-				if(IsBetween(old_position.y, collision_rect.top, collision_rect.bottom))
-				{
-					if(old_position.x <= collision_rect.left && new_position.x > collision_rect.left)
-					{
-						new_position.x = collision_rect.left;
-					}
-
-					if(old_position.x >= collision_rect.right && new_position.x < collision_rect.right)
-					{
-						new_position.x = collision_rect.right;
+						if(old_position.x >= collision_rect.right && new_position.x < collision_rect.right)
+						{
+							new_position.x = collision_rect.right;
+						}
 					}
 				}
 			}
 		}
+
+		R32 map_width  = GetMapWidth(map);
+		R32 map_height = GetMapHeight (map);
+		new_position.x = Clip(new_position.x, EntityRadius, map_width - EntityRadius);
+		new_position.y = Clip(new_position.y, EntityRadius, map_height - EntityRadius);
 	}
 
-	R32 map_width  = GetMapWidth(map);
-	R32 map_height = GetMapHeight (map);
-	new_position.x = Clip(new_position.x, EntityRadius, map_width - EntityRadius);
-	new_position.y = Clip(new_position.y, EntityRadius, map_height - EntityRadius);
+	return new_position;
+}
 
+static void
+func UpdateEntityMovementWithSubTileCollision(Game *game, Entity *entity, R32 seconds)
+{
+	Map *map = &game->map;
+	V2 new_position = GetUpdatedEntityPosition(game, entity, seconds);
+
+	SubTile old_sub_tile = GetContainingSubTile(map, entity->position);
+	SubTile new_sub_tile = GetContainingSubTile(map, new_position);
+
+	B32 can_move = false;
+	if(SubTilesAreEqual(old_sub_tile, new_sub_tile))
+	{
+		can_move = true;
+	}
+	else
+	{
+		can_move = (!SubTileIsOccupied(game, new_sub_tile));
+	}
+
+	if(can_move)
+	{
+		entity->position = new_position;
+	}
+}
+
+static void
+func UpdateEntityMovementWithoutSubTileCollision(Game *game, Entity *entity, R32 seconds)
+{
+	V2 new_position = GetUpdatedEntityPosition(game, entity, seconds);
 	entity->position = new_position;
 }
 
@@ -386,13 +677,194 @@ func StopTrading(Game *game)
 }
 
 static void
+func DrawEntity(Canvas *canvas, Entity *entity, V4 color)
+{
+	Rect rect = GetEntityRect(entity);
+	DrawRect(canvas, rect, color);
+
+	if(entity->max_health_points > 0)
+	{
+		Assert(IsIntBetween(entity->health_points, 0, entity->max_health_points));
+		R32 ratio = (R32)entity->health_points / (R32)entity->max_health_points;
+
+		R32 unit_in_pixels = canvas->camera->unit_in_pixels;
+		R32 bar_width = 50.0f / unit_in_pixels;
+		R32 bar_height = 10.0f / unit_in_pixels;
+
+		Rect bar_rect = {};
+		bar_rect.left   = entity->position.x - bar_width * 0.5f;
+		bar_rect.right  = entity->position.x + bar_width * 0.5f;
+		bar_rect.bottom = rect.top - 10.0f / unit_in_pixels;
+		bar_rect.top    = bar_rect.bottom - bar_height;
+
+		V4 bar_background_color = MakeColor(0.5f, 0.5f, 0.5f);
+		V4 bar_outline_color = MakeColor(0.0f, 0.0f, 0.0f);
+
+		DrawRect(canvas, bar_rect, bar_background_color);
+
+		V4 filled_bar_color = MakeColor(1.0f, 0.0f, 0.0f);
+		Rect filled_bar_rect = bar_rect;
+		filled_bar_rect.right = bar_rect.left + (bar_rect.right - bar_rect.left) * ratio;
+		DrawRect(canvas, filled_bar_rect, filled_bar_color);
+
+		DrawRectOutline(canvas, bar_rect, bar_outline_color);
+	}
+}
+
+static void
+func HighlightEntity(Canvas *canvas, Entity *entity, V4 color)
+{
+	Rect rect = GetEntityRect(entity);
+	DrawRectOutline(canvas, rect, color);
+}
+
+static R32
+func ClipUpToZero(R32 value)
+{
+	R32 result = (value >= 0.0f) ? value : 0.0f;
+	return result;
+}
+
+static I32
+func ClipIntUpToZero(I32 value)
+{
+	I32 result = (value >= 0) ? value : 0;
+	return result;
+}
+
+static void
+func DoDamage(Entity *target, I32 damage)
+{
+	Assert(target->health_points > 0);
+	target->health_points = ClipIntUpToZero(target->health_points - damage);
+	if(target->health_points == 0)
+	{
+		target->resurrect_time = 30.0f;
+	}
+}
+
+#define MaxAttackDistance 15.0f
+#define MaxMeleeDistance 3.0f
+
+static B32
+func IsEnemyOf(Entity *a, Entity *b)
+{
+	B32 is_enemy = (a->group_id != NeutralGroupId && b->group_id != NeutralGroupId && b->group_id != a->group_id);
+	return is_enemy;
+}
+
+static void
+func UpdateNpcTarget(Game *game, Entity *npc)
+{
+	Assert(npc->health_points > 0);
+
+	Entity *target = npc->target;
+	if(target && target->health_points == 0)
+	{
+		target = 0;
+	}
+
+	R32 closest_distance = MaxAttackDistance;
+	if(!target)
+	{
+		for(I32 i = 0; i < game->entity_n; i++)
+		{
+			Entity *entity = &game->entities[i];
+			if(entity != npc)
+			{
+				B32 is_alive = (entity->health_points > 0);
+				B32 is_enemy = IsEnemyOf(npc, entity);
+				if(is_alive && is_enemy)
+				{
+					R32 distance = Distance(npc->position, entity->position);
+					if(distance <= closest_distance)
+					{
+						target = entity;
+						closest_distance = distance;
+					}
+				}
+			}
+		}
+	}
+
+	npc->target = target;
+}
+
+static void
+func UpdateNpc(Game *game, Entity *npc, R32 seconds)
+{
+	if(npc->health_points > 0)
+	{
+		npc->recharge_time = ClipUpToZero(npc->recharge_time - seconds);
+		npc->velocity = MakeVector(0.0f, 0.0f);
+
+		UpdateNpcTarget(game, npc);
+
+		Entity *target = npc->target;
+		if(target)
+		{
+			R32 distance = Distance(npc->position, target->position);
+			if(distance > MaxMeleeDistance)
+			{
+				V2 direction = PointDirection(npc->position, target->position);
+				R32 speed = 10.0f;
+				npc->velocity = speed * direction;
+			}
+			else
+			{
+				if(npc->recharge_time == 0.0f)
+				{
+					I32 damage = 0;
+					switch(npc->group_id)
+					{
+						case OrangeGroupId:
+						{
+							damage = 2;
+							break;
+						}
+						case PurpleGroupId:
+						{
+							damage = 2;
+							break;
+						}
+						default:
+						{
+							DebugBreak();
+						}
+					}
+
+					DoDamage(target, damage);
+					npc->recharge_time = 3.0f;
+				}
+			}
+		}
+	}
+	else
+	{
+		Assert(npc->health_points == 0);
+		npc->velocity = MakeVector(0.0f, 0.0f);
+
+		npc->resurrect_time -= seconds;
+		if(npc->resurrect_time <= 0.0f)
+		{
+			npc->position = npc->start_position;
+			npc->health_points = npc->max_health_points;
+			npc->target = 0;
+		}
+	}
+
+	UpdateEntityMovementWithSubTileCollision(game, npc, seconds);
+}
+
+static void
 func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 {
 	Bitmap *bitmap = &canvas->bitmap;
 	V4 background_color = MakeColor(0.0f, 0.0f, 0.0f);
 	FillBitmapWithColor(bitmap, background_color);
 
-	Entity *player = &game->player;
+	Entity *player = game->player;
+	Assert(player != 0);
 
 	R32 player_move_speed = 10.0f;
 	player->velocity.x = 0.0f;
@@ -432,9 +904,8 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 	}
 
 	Map *map = &game->map;
-	UpdateEntityMovement(player, map, seconds);
+	UpdateEntityMovementWithoutSubTileCollision(game, player, seconds);
 	canvas->camera->center = player->position;
-
 
 	DrawMapWithoutItems(canvas, map);
 	for(I32 i = 0; i < map->item_n; i++)
@@ -477,55 +948,109 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 			game->item_spawn_cooldowns[hover_item_index] = 30.0f;
 		}
 	}
-	   
-	V4 player_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Rect player_rect = GetEntityRect(player);
-	DrawRect(canvas, player_rect, player_color);
 
-	V4 npc_color = MakeColor(1.0f, 0.0f, 1.0f);
-	V4 npc_highlight_color = MakeColor(0.5f, 0.0f, 0.5f);
-	V4 npc_border_color = MakeColor(1.0f, 1.0f, 0.0f);
-	Entity npc = {};
-	npc.position = MakePoint(50.0f, 25.0f);
-
-	R32 player_npc_distance = Distance(player->position, npc.position);
-	R32 interaction_distance = 3.0f;
-	Rect npc_rect = GetEntityRect(&npc);
-
-	DrawRect(canvas, npc_rect, npc_color);
-	if(player_npc_distance <= interaction_distance)
+	if(WasKeyPressed(user_input, VK_TAB))
 	{
-		DrawRectOutline(canvas, npc_rect, npc_border_color);
-		I8 *text = 0;
-		if(game->quest_finished)
-		{
-			text = "Thanks!";
-		}
-		else
-		{
-			text = "Can you bring me 10 crystals?";
-		}
-		DrawInteractionDialogWithText(canvas, text);
+		R32 max_target_distance = 30.0f;
 
-		if(WasKeyReleased(user_input, 'E'))
+		Entity *new_target = player->target;
+		R32 new_target_distance = max_target_distance;
+		for(I32 i = 0; i < game->entity_n; i++)
 		{
-			if(game->show_trade_window)
+			Entity *entity = &game->entities[i];
+			if(entity != player && entity != player->target)
 			{
-				StopTrading(game);
+				if(IsAlive(entity) && IsEnemyOf(player, entity))
+				{
+					R32 distance = Distance(entity->position, player->position);
+					if(distance < new_target_distance)
+					{
+						new_target = entity;
+						new_target_distance = distance;
+					}
+				}
 			}
-			else
+		}
+
+		player->target = new_target;
+	}
+
+	if(player->target && IsDead(player->target))
+	{
+		player->target = 0;
+	}
+
+	player->recharge_time = ClipUpToZero(player->recharge_time - seconds);
+
+	if(WasKeyPressed(user_input, '1'))
+	{
+		if(IsAlive(player) && player->target && IsAlive(player->target))
+		{
+			Assert(IsEnemyOf(player, player->target));
+			if(player->recharge_time == 0.0f)
 			{
-				game->show_trade_window = true;
-				game->show_inventory = true; 
+				R32 distance_from_target = Distance(player->position, player->target->position);
+				DoDamage(player->target, 3);
+				player->recharge_time = 1.0f;
 			}
 		}
 	}
-	else
+
+	if(player->target)
 	{
-		if(game->show_trade_window)
+		SubTile sub_tile = GetContainingSubTile(map, player->target->position);
+		for(I32 row = -2; row <= 2; row++)
 		{
-			StopTrading(game);
+			for(I32 col = -2; col <= 2; col++)
+			{
+				IV2 offset = MakeIntPoint(row, col);
+				SubTile highlight_tile = OffsetSubTile(sub_tile, offset);
+				V4 color = MakeColor(1.0f, 1.0f, 0.0f);
+				DrawSubTileOutline(canvas, map, highlight_tile, color);
+			}
 		}
+	}
+
+	for(I32 i = 0; i < game->entity_n; i++)
+	{
+		Entity *entity = &game->entities[i];
+		V4 color = GetEntityGroupColor(entity->group_id);
+		DrawEntity(canvas, entity, color);
+
+		if(entity == player->target)
+		{
+			V4 highlight_color = MakeColor(1.0f, 1.0f, 0.0f);
+			HighlightEntity(canvas, entity, highlight_color);
+		}
+
+		if(entity != game->player)
+		{
+			UpdateNpc(game, entity, seconds);
+		}
+	}
+
+	if(player->recharge_time > 0.0f)
+	{
+		R32 recharge_from = 1.0f;
+		R32 r = (player->recharge_time / recharge_from);
+		Assert(IsBetween(r, 0.0f, 1.0f));
+
+		Bitmap *bitmap = &canvas->bitmap;
+
+		I32 bar_height = 10;
+		IntRect bar_rect = {};
+		bar_rect.left = 0;
+		bar_rect.right = bitmap->width - 1;
+		bar_rect.bottom = bitmap->height - 1;
+		bar_rect.top = bar_rect.bottom - bar_height;
+
+		V4 background_color = MakeColor(0.3f, 0.3f, 0.3f);
+		DrawBitmapRect(bitmap, bar_rect, background_color);
+
+		IntRect filled_rect = bar_rect;
+		filled_rect.right = (I32)Lerp((R32)bar_rect.left, r, (R32)bar_rect.right);
+		V4 filled_color = MakeColor(0.8f, 0.8f, 0.8f);
+		DrawBitmapRect(bitmap, filled_rect, filled_color);
 	}
 
 	Inventory *trade_inventory = &game->trade_inventory;
@@ -551,36 +1076,6 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 				{
 					MoveItemToInventory(hover_item, inventory);
 				}
-			}
-		}
-
-		if(!game->quest_finished)
-		{
-			I32 crystal_count = 0;
-			I32 item_count = 0;
-			for(I32 row = 0; row < trade_inventory->row_n; row++)
-			{
-				for(I32 col = 0; col < trade_inventory->col_n; col++)
-				{
-					IV2 slot = MakeIntPoint(row, col);
-					ItemId item_id = GetInventoryItemId(trade_inventory, slot);
-					if(item_id != NoItemId)
-					{
-						item_count++;
-						if(item_id == CrystalItemId)
-						{
-							crystal_count++;
-						}
-					}
-				}
-			}
-
-			B32 are_items_expected = (crystal_count == 10 && item_count == 10);
-			if(are_items_expected)
-			{
-				game->quest_finished = true;
-				ClearInventory(trade_inventory);
-				StopTrading(game);
 			}
 		}
 	}

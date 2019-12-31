@@ -18,6 +18,44 @@ struct MapItem
 	V2 position;
 };
 
+enum EntityGroupId
+{
+	NeutralGroupId,
+	OrangeGroupId,
+	PurpleGroupId
+};
+
+static V4
+func GetEntityGroupColor(EntityGroupId group_id)
+{
+	V4 color = {};
+	switch(group_id)
+	{
+		case OrangeGroupId:
+		{
+			color = MakeColor(1.0f, 0.5f, 0.0f);
+			break;
+		}
+		case PurpleGroupId:
+		{
+			color = MakeColor(1.0f, 0.0f, 1.0f);
+			break;
+		}
+		default:
+		{
+			DebugBreak();
+		}
+	}
+
+	return color;
+}
+
+struct MapEntity
+{
+	EntityGroupId group_id;
+	V2 spawn_position;
+};
+
 struct Map
 {
 	I32 tile_row_n;
@@ -26,6 +64,9 @@ struct Map
 
 	I32 item_n;
 	MapItem *items;
+
+	I32 entity_n;
+	MapEntity *entities;
 };
 
 #define MapTileSide 10.0f
@@ -221,15 +262,6 @@ func DrawMapItem(Canvas *canvas, MapItem *item)
 }
 
 static void
-func DrawMapItems(Canvas *canvas, Map *map)
-{
-	for(I32 i = 0; i < map->item_n; i++)
-	{
-		DrawMapItem(canvas, &map->items[i]);
-	}
-}
-
-static void
 func DrawMapWithoutItems(Canvas *canvas, Map *map)
 {
 	Camera *camera = canvas->camera;
@@ -267,14 +299,7 @@ func DrawMapWithoutItems(Canvas *canvas, Map *map)
 	}
 }
 
-static void
-func DrawMapWithItems(Canvas *canvas, Map *map)
-{
-	DrawMapWithoutItems(canvas, map);
-	DrawMapItems(canvas, map);
-}
-
-#define MapVersion 1
+#define MapVersion 3
 
 static Map
 func ReadMapFromFile(I8 *file_path, MemArena *arena)
@@ -303,10 +328,12 @@ func ReadMapFromFile(I8 *file_path, MemArena *arena)
 	Map *map = (Map *)position;
 	map->tile_types = (TileId *)GetAbsoluteAddress(map->tile_types, base);
 	map->items = (MapItem *)GetAbsoluteAddress(map->items, base);
+	map->entities = (MapEntity *)GetAbsoluteAddress(map->entities, base);
 
 	position += sizeof(Map);
 	position += map->tile_row_n * map->tile_col_n * sizeof(TileId);
 	position += map->item_n * sizeof(MapItem);
+	position += map->entity_n * sizeof(MapEntity);
 
 	I8 *arena_top = GetArenaTop(arena);
 	Assert(position == arena_top);

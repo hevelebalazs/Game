@@ -83,7 +83,17 @@ func ArenaPushData(MemArena *arena, U32 size, void* data)
 	return copy_to;
 }
 
-#define ArenaAllocType(arena, type) ((type *)ArenaAlloc((arena), sizeof(type))
+static B32
+func ArenaContainsAddress(MemArena *arena, void *address)
+{
+	I8 *bottom = arena->base_address;
+	I8 *top = arena->base_address + arena->used_size;
+	I8 *test_address = (I8 *)address;
+	B32 is_in_arena = (bottom <= test_address && test_address <= top);
+	return is_in_arena;
+}
+
+#define ArenaAllocType(arena, type) ((type *)ArenaAlloc((arena), sizeof(type)))
 #define ArenaAllocArray(arena, type, size) ((type *)ArenaAlloc((arena), (size) * sizeof(type)))
 
 /*
