@@ -998,15 +998,132 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 
 	if(player->target)
 	{
-		SubTile sub_tile = GetContainingSubTile(map, player->target->position);
+		SubTile base_sub_tile = GetContainingSubTile(map, player->target->position);
+
+		SubTile top_left_sub_tile = OffsetSubTile(base_sub_tile, MakeIntPoint(-2, -2));
+
+		IV2 visited_offsets[5 * 5] = {};
+		I32 visited_n = 0;
+		B32 is_visited[5][5] = {};
+
+		IV2 came_from_offset[5][5] = {};
+
+		is_visited[2][2] = true;
+		came_from_offset[2][2] = MakeIntPoint(2, 2);
+		visited_offsets[visited_n] = MakeIntPoint(2, 2);
+		visited_n++;
+
+		V2 target_position = player->position;
+
+		IV2 closest_visited_offset = MakeIntPoint(2, 2);
+		R32 closest_distance = Distance(GetSubTileCenter(map, base_sub_tile), target_position);
+
+		for(I32 i = 0; i < visited_n; i++)
+		{
+			IV2 start_offset = visited_offsets[i];
+			IV2 to_visit[4] = 
+			{
+				start_offset + MakeIntPoint(-1, 0),
+				start_offset + MakeIntPoint(+1, 0),
+				start_offset + MakeIntPoint(0, -1),
+				start_offset + MakeIntPoint(0, +1)
+			};
+
+			for(I32 j = 0; j < 4; j++)
+			{
+				IV2 offset = to_visit[j];
+				if(!IsIntBetween(offset.row, 0, 4) || !IsIntBetween(offset.col, 0, 4))
+				{
+					continue;
+				}
+
+				SubTile sub_tile = OffsetSubTile(top_left_sub_tile, offset);
+				TileId tile_id = GetTileType(map, sub_tile.tile_index);
+				if(tile_id == NoTileId)
+				{
+					continue;
+				}
+
+				if(SubTileIsOccupied(game, sub_tile))
+				{
+					continue;
+				}
+
+				if(is_visited[offset.row][offset.col])
+				{
+					continue;
+				}
+
+				R32 distance = Distance(GetSubTileCenter(map, sub_tile), target_position);
+				if(distance < closest_distance)
+				{
+					closest_distance = distance;
+					closest_visited_offset = offset;
+				}
+
+				is_visited[offset.row][offset.col] = true;
+				came_from_offset[offset.row][offset.col] = start_offset;
+				visited_offsets[visited_n] = offset;
+				visited_n++;
+			}
+		}
+
+		/*
 		for(I32 row = -2; row <= 2; row++)
 		{
 			for(I32 col = -2; col <= 2; col++)
 			{
 				IV2 offset = MakeIntPoint(row, col);
-				SubTile highlight_tile = OffsetSubTile(sub_tile, offset);
+				SubTile sub_tile = OffsetSubTile(base_sub_tile, offset);
+				V4 color = MakeColor(0.8f, 0.8f, 0.0f);
+				if(is_visited[row + 2][col + 2])
+				{
+					DrawSubTile(canvas, map, sub_tile, color);
+				}
+			}
+		}
+		*/
+
+		V4 closest_color = MakeColor(0.0f, 0.8f, 0.0f);
+		SubTile closest_visited_sub_tile = OffsetSubTile(top_left_sub_tile, closest_visited_offset);
+		DrawSubTile(canvas, map, closest_visited_sub_tile, closest_color);
+
+		IV2 offset = closest_visited_offset;
+		while(1)
+		{
+			Assert(IsIntBetween(offset.row, 0, 4));
+			Assert(IsIntBetween(offset.col, 0, 4));
+			Assert(is_visited[offset.row][offset.col]);
+			IV2 from_offset = came_from_offset[offset.row][offset.col];
+			if(offset.row == from_offset.row && offset.col == from_offset.col)
+			{
+				break;
+			}
+
+			SubTile sub_tile1 = OffsetSubTile(top_left_sub_tile, offset);
+			SubTile sub_tile2 = OffsetSubTile(top_left_sub_tile, from_offset);
+
+			V2 center1 = GetSubTileCenter(map, sub_tile1);
+			V2 center2 = GetSubTileCenter(map, sub_tile2);
+
+			V4 path_color = MakeColor(0.0f, 1.0f, 0.0f);
+			Bresenham(canvas, center1, center2, path_color);
+			
+			offset = from_offset;
+		}
+
+		for(I32 row = -2; row <= 2; row++)
+		{
+			for(I32 col = -2; col <= 2; col++)
+			{
+				IV2 offset = MakeIntPoint(row, col);
+				SubTile sub_tile = OffsetSubTile(base_sub_tile, offset);
 				V4 color = MakeColor(1.0f, 1.0f, 0.0f);
-				DrawSubTileOutline(canvas, map, highlight_tile, color);
+				TileId tile_id = GetTileType(map, sub_tile.tile_index);
+				if(tile_id != NoTileId)
+				{
+					DrawSubTileOutline(canvas, map, sub_tile, color);
+				}
 			}
 		}
 	}

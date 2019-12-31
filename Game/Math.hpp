@@ -190,6 +190,15 @@ func operator*(R32 times, V2 point)
 	return result;
 }
 
+static IV2
+func operator+(IV2 point1, IV2 point2)
+{
+	IV2 result = {};
+	result.row = point1.row + point2.row;
+	result.col = point1.col + point2.col;
+	return result;
+}
+
 static B32
 func operator==(V2 point1, V2 point2)
 {
