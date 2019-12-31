@@ -37,6 +37,34 @@ func IsValidSubTile(Map *map, SubTile sub_tile)
 	return is_valid;
 }
 
+static SubTile
+func OffsetSubTile(SubTile tile, IV2 offset)
+{
+	SubTile result = tile;
+	result.sub_index.row += offset.row;
+	result.sub_index.col += offset.col;
+
+	result.tile_index.row += (result.sub_index.row / SubTileSideN);
+	result.sub_index.row %= SubTileSideN;
+	if(result.sub_index.row < 0)
+	{
+		result.tile_index.row--;
+		result.sub_index.row += SubTileSideN;
+	}
+
+	result.tile_index.col += (result.sub_index.col / SubTileSideN);
+	result.sub_index.col %= SubTileSideN;
+	if(result.sub_index.col < 0)
+	{
+		result.tile_index.col--;
+		result.sub_index.col += SubTileSideN;
+	}
+
+	Assert(IsIntBetween(result.sub_index.row, 0, SubTileSideN - 1));
+	Assert(IsIntBetween(result.sub_index.col, 0, SubTileSideN - 1));
+	return result;
+}
+
 static V2
 func GetSubTileCenter(Map *map, SubTile sub_tile)
 {
@@ -964,6 +992,21 @@ func GameUpdate(Game *game, Canvas *canvas, R32 seconds, UserInput *user_input)
 				R32 distance_from_target = Distance(player->position, player->target->position);
 				DoDamage(player->target, 3);
 				player->recharge_time = 1.0f;
+			}
+		}
+	}
+
+	if(player->target)
+	{
+		SubTile sub_tile = GetContainingSubTile(map, player->target->position);
+		for(I32 row = -2; row <= 2; row++)
+		{
+			for(I32 col = -2; col <= 2; col++)
+			{
+				IV2 offset = MakeIntPoint(row, col);
+				SubTile highlight_tile = OffsetSubTile(sub_tile, offset);
+				V4 color = MakeColor(1.0f, 1.0f, 0.0f);
+				DrawSubTileOutline(canvas, map, highlight_tile, color);
 			}
 		}
 	}
